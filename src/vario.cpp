@@ -57,6 +57,11 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
     absoluteAlt.value = altitude / 100; // altitude is in m *10000 and AbsoluteAlt must be in m * 100
     absoluteAlt.available=true;  // Altitude is considered as available only after several loop in order to reduce number of transmission on Sport.
     sensitivityAvailable = true ;
+    if (altOffset == 0) altOffset = absoluteAlt.value ;
+    relativeAlt.value = absoluteAlt.value - altOffset ;
+    relativeAlt.available = true ;
+    if ( relativeAlt.value > relativeAltMax.value ) relativeAltMax.value = relativeAlt.value ;
+    relativeAltMax.available = true ;
     if ( altMillis > nextAverageAltMillis ){ // calculation of the difference of altitude (in m) between the 10 last sec
         nextAverageAltMillis = altMillis + 500 ; // calculate only once every 500 msec
         vSpeed10Sec.value = (absoluteAlt.value - prevAlt[idxPrevAlt]) /100 ;

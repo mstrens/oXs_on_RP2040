@@ -11,7 +11,7 @@
 #define VOLTAGE_FRAME_INTERVAL 500 // msec
 #define VARIO_FRAME_INTERVAL 100 
 #define GPS_FRAME_INTERVAL 500
-
+#define ATTITUDE_FRAME_INTERVAL 100
 
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
@@ -23,6 +23,7 @@ extern VOLTAGE voltage ;
 #endif  
 #if defined( VARIO1) && (VARIO1 == MS5611)
 varioFrameStruct varioFrame;
+attitudeFrameStruct attitudeFrame;
 extern VARIO vario1 ;
 #endif  
 #if defined(A_GPS_IS_CONNECTED) && (A_GPS_IS_CONNECTED == YES)
@@ -101,9 +102,12 @@ bool dataAvailable(uint8_t idx) {
             return voltage.mVolt[0].available ;
         #endif
         #if defined( VARIO1) && (VARIO1 == MS5611)
-        case CRSF_FRAMEIDX_VARIO :
-            return vario1.climbRate.available ;    
+        //case CRSF_FRAMEIDX_VARIO :
+        //    return vario1.climbRate.available ;    
+        case CRSF_FRAMEIDX_ATTITUDE :
+            return vario1.climbRate.available ;    // in this version, attitude frame is used to transmit altitude and vspeed 
         #endif
+
         #if defined(A_GPS_IS_CONNECTED) && (A_GPS_IS_CONNECTED == YES)
         case CRSF_FRAMEIDX_GPS :
             return gps.GPS_lonAvailable ;    
@@ -149,6 +153,22 @@ void fillFrameVario(uint8_t idx){
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
 }
+void fillFrameAttitude(uint8_t idx){
+    attitudeFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
+    attitudeFrame.frame_size = CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
+    attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE ;
+    attitudeFrame.pitch = vario1.climbRate.value ;
+    attitudeFrame.pitch = vario1.absoluteAlt.value ;
+    attitudeFrame.pitch = 0;
+    attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    vario1.climbRate.available = false ;
+    crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
+    printf("filling dma buffer with vario and altitude data\n");
+    CRSFBufferLength = sizeof(attitudeFrame);
+    memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
+    dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
+    dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
+}
 #endif
 
 #if defined(A_GPS_IS_CONNECTED) && (A_GPS_IS_CONNECTED == YES)
@@ -181,8 +201,11 @@ void fillOneFrame(uint8_t idx){
             return ;
         #endif
         #if defined( VARIO1) && (VARIO1 == MS5611)
-        case CRSF_FRAMEIDX_VARIO :
-            fillFrameVario(idx);
+        //case CRSF_FRAMEIDX_VARIO :
+        //    fillFrameVario(idx);
+        //    return ;
+        case CRSF_FRAMEIDX_ATTITUDE :
+            fillFrameAttitude(idx);
             return ;
         #endif
         #if defined(A_GPS_IS_CONNECTED) && (A_GPS_IS_CONNECTED == YES)

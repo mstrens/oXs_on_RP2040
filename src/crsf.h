@@ -98,6 +98,25 @@ struct gpsFrameStruct
     uint8_t crc;
 } __attribute__((packed)) ;
 
+/*
+0x1E Attitude
+Payload:
+int16_t     Pitch angle ( rad / 10000 )
+int16_t     Roll angle ( rad / 10000 )
+int16_t     Yaw angle ( rad / 10000 )
+*/
+struct attitudeFrameStruct
+{
+    uint8_t  device_addr; // should be 0xEC (=receiver)
+    uint8_t  frame_size;  // counts size after this byte, so it must be the payload size + 2 (type and crc)
+    uint8_t  type;        // from crsf_frame_type_e
+    int16_t  pitch;     //( rad/1000 )
+    int16_t  roll;    // (rad / 1000 )
+    int16_t  yaw;     // ( rad / 1000 )
+    uint8_t crc;
+} __attribute__((packed)) ;
+
+
 void setup_DMA_PIO(); 
 void fillCRSFFrame();
 void setupCRSF();
@@ -105,6 +124,7 @@ bool dataAvailable(uint8_t idx);
 void fillFrameBattery(uint8_t idx);
 void fillFrameVario(uint8_t idx);
 void fillFrameGps(uint8_t idx);
+void fillFrameAttitude(uint8_t idx);
 void fillOneFrame(uint8_t idx);
 
 
