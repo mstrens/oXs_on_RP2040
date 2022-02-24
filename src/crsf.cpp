@@ -156,10 +156,10 @@ void fillFrameVario(uint8_t idx){
 void fillFrameAttitude(uint8_t idx){
     attitudeFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
     attitudeFrame.frame_size = CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
-    attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE ;
-    attitudeFrame.pitch = vario1.climbRate.value ;
-    attitudeFrame.pitch = vario1.absoluteAlt.value ;
-    attitudeFrame.pitch = 0;
+    attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE;
+    attitudeFrame.pitch = vario1.climbRate.value;
+    attitudeFrame.pitch = vario1.absoluteAlt.value;
+    attitudeFrame.pitch = vario1.relativeAlt.value;
     attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.climbRate.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
