@@ -8,10 +8,9 @@
 #include "config_basic.h"
 #include "crc.h"
 
-#define VOLTAGE_FRAME_INTERVAL 500 // msec
-#define VARIO_FRAME_INTERVAL 100 
-#define GPS_FRAME_INTERVAL 500
-#define ATTITUDE_FRAME_INTERVAL 100
+//// This is the same as the default UART baud rate on Pico
+const uint SERIAL_BAUD_CRSF = SERIAL_BAUD_ELRS;
+
 
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
@@ -37,8 +36,6 @@ uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (cvia dma)
 uint8_t CRSFBufferLength;
 
 const uint PIN_TX = 8;
-// This is the same as the default UART baud rate on Pico
-const uint SERIAL_BAUD_CRSF = 115200;
 
 PIO pio = pio0; // we use pio 0; DMA is hardcoded to use it
 uint sm = 0;  // we use the state machine 0 ; DMA is harcoded to use it (DREQ) 
@@ -102,10 +99,10 @@ bool dataAvailable(uint8_t idx) {
             return voltage.mVolt[0].available ;
         #endif
         #if defined( VARIO1) && (VARIO1 == MS5611)
-        //case CRSF_FRAMEIDX_VARIO :
-        //    return vario1.climbRate.available ;    
+        case CRSF_FRAMEIDX_VARIO :
+            return vario1.climbRate.available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
-            return vario1.climbRate.available ;    // in this version, attitude frame is used to transmit altitude and vspeed 
+            return vario1.relativeAlt.available ;    // in this version, attitude frame is used to transmit altitude 
         #endif
 
         #if defined(A_GPS_IS_CONNECTED) && (A_GPS_IS_CONNECTED == YES)
@@ -158,12 +155,13 @@ void fillFrameAttitude(uint8_t idx){
     attitudeFrame.frame_size = CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
     attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE;
     attitudeFrame.pitch = vario1.climbRate.value;
-    attitudeFrame.pitch = vario1.absoluteAlt.value;
-    attitudeFrame.pitch = vario1.relativeAlt.value;
+    attitudeFrame.roll = vario1.absoluteAlt.value / 100; //in m
+    attitudeFrame.yaw = vario1.relativeAlt.value /100; //in m
     attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    vario1.climbRate.available = false ;
+    vario1.relativeAlt.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    printf("filling dma buffer with vario and altitude data\n");
+    //printf("filling dma buffer with vario and altitude data\n");
+    printf("alt abs %" PRIi16 "\n", attitudeFrame.roll);
     CRSFBufferLength = sizeof(attitudeFrame);
     memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
@@ -201,9 +199,9 @@ void fillOneFrame(uint8_t idx){
             return ;
         #endif
         #if defined( VARIO1) && (VARIO1 == MS5611)
-        //case CRSF_FRAMEIDX_VARIO :
-        //    fillFrameVario(idx);
-        //    return ;
+        case CRSF_FRAMEIDX_VARIO :
+            fillFrameVario(idx);
+            return ;
         case CRSF_FRAMEIDX_ATTITUDE :
             fillFrameAttitude(idx);
             return ;
