@@ -69,14 +69,14 @@
 #define ARDUINO_MEASURES_VOLTAGES YES
 
 // ***** 6.2 - Voltage parameters *****
-// Each of following lines contains 6 parameters, the first value is for VOLT_1, the second for VOLT_2, ... up to the sixth for VOLT_6 
-#define PIN_VOLTAGE        26  , 27     , 28   , 29                   //  Fill all 6 values; set to 0 up to 7 for analog pins A0 up to A7 ; set the value to 8 for the voltage(s) not to be measured.
-#define RESISTOR_TO_GROUND  2.95 , 10    , 10  , 10                // set value to 0 when no divider is used for a voltage; can contains decimals 
-#define RESISTOR_TO_VOLTAGE 46.9 , 8.7 , 22 , 27                // set value to 0 when no divider is used for a voltage; can contains decimals 
+// Each of following lines contains 4 parameters, the first value is for VOLT_1, the second for VOLT_2,  
+#define PIN_VOLTAGE        26  , 0     , 0   , 0 //  Fill all 4 values; set to 26 up to 29 ; set the value to 0 for the voltage(s) not to be measured.
+#define RESISTOR_TO_GROUND  0 , 10    , 10  , 10                // set value to 0 when no divider is used for a voltage; can contains decimals 
+#define RESISTOR_TO_VOLTAGE 0 , 8.7 , 22 , 27                // set value to 0 when no divider is used for a voltage; can contains decimals 
 #define SCALE_VOLTAGE       1.00 , 1.0   , 1.0  , 1.0               // optionnal, can be negative, can have decimals
 
 // --------- 9 - GPS ---------------                                               see oXs_config_advanced.h for additionnal parameters (normally no need to change them)
-#define A_GPS_IS_CONNECTED      NO                   // select between YES , NO
+#define A_GPS_IS_CONNECTED      YES                   // select between YES , NO
 #define GPS_REFRESH_RATE 5 // it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
 
 // --------- 10 - Reserved for developer. DEBUG must be activated here when we want to debug one or several functions in some other files. ---------
