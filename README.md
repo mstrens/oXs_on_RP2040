@@ -28,4 +28,7 @@ This board can be connected to:
 
 
 More explanations are given in the file config_basic.h
+<<<<<<< HEAD
 
+=======
+>>>>>>> d6991f51e754125038016290a6230ccd2abae736
