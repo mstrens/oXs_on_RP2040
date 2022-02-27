@@ -25,6 +25,8 @@ void on_uart_rx() {
 
 GPS::GPS( void) {}
 
+
+#if !defined(CASIC_GPS) 
 void GPS::setupGps(void){
     
     uart_init(GPS_UART_ID, 9600);   // setup UART1 at 9600 baud
@@ -37,6 +39,7 @@ void GPS::setupGps(void){
     const static uint8_t initGps1[] = { 
     // send command to GPS to change the setup
     // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
+    /*
         0xB5,0x62,0x06,0x3E, 0x3C, 0x00, // GNSS + number of bytes= 60 dec = 003C in HEx
         0x00, 0x00, 0x20, 0x07,  // GNSS / min / max / enable
         0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01, // GPS / 8 / 16 / Y
@@ -53,7 +56,7 @@ void GPS::setupGps(void){
         0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
         0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
         0x86, 0x2C, //checksum
-
+    */
 // Here other code        
         0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
         0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
@@ -69,12 +72,19 @@ void GPS::setupGps(void){
                             0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
       }  ;   
     uint8_t initGpsIdx = 0 ;
-     busy_wait_us(3000000) ; // wait to be sure that GPS has started
+    busy_wait_us(3000000) ; // wait to be sure that GPS has started
+    uint8_t i1=100;
+    while ( i1-- >1) {
     while (initGpsIdx < sizeof( initGps1)) {
 //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
         uart_putc_raw(GPS_UART_ID , initGps1[initGpsIdx++]);
-         busy_wait_us(1000) ;
+         busy_wait_us(20000) ;
     }
+    initGpsIdx = 0 ;
+    busy_wait_us(1000000);
+    }
+    
+    
     busy_wait_us(100000) ; 
     printf("End of GPS setup");
     // change the baudrate of UART1 to the new rate
@@ -86,7 +96,7 @@ void GPS::setupGps(void){
     uart_set_irq_enables(GPS_UART_ID, true, false);
     // clear the input queue that is filled by the interrupt
     queue_init(&uart1Queue , sizeof(uint8_t) ,256) ;// queue for uart1 with 256 elements of 1
-     busy_wait_us(1000);
+    busy_wait_us(1000);
     uint8_t dummy;
     while (! queue_is_empty (&uart1Queue)) queue_try_remove ( &uart1Queue , &dummy ) ;
 }  // end setupGPS
@@ -95,8 +105,8 @@ void GPS::readGps() { // read and process GPS data. do not send them.
     if ( queue_is_empty (&uart1Queue)) return;
     uint8_t data;
     queue_try_remove ( &uart1Queue , &data ) ;
+    printf(" %X" , data);
     bool parsed = false;
-//    printer->print(_step);  printer->print(" "); printer->println(data , HEX);
     switch (_step) {
         case 0: // Sync char 1 (0xB5)
             if ( 0xB5 == data ) { // UBX sync char 1
@@ -231,7 +241,8 @@ bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fi
         if (!next_fix)
              GPS_fix = false;
         GPS_numSat = _buffer.solution.satellites;  
-        GPS_hdop = _buffer.solution.position_DOP;  
+        GPS_hdop = _buffer.solution.position_DOP;
+        printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_VELNED:   
         GPS_speed_3d  = _buffer.velned.speed_3d;  // cm/s
@@ -254,3 +265,108 @@ bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fi
     }
     return false;
 }
+
+#else // here used for Casic GPS
+//  For casic GPS
+void GPS::setupGps(void){
+    
+    uart_init(GPS_UART_ID, 38400);   // setup UART1 at 38400 baud
+    uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
+    uart_set_fifo_enabled(GPS_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
+    
+    gpio_set_function(4, GPIO_FUNC_UART); // Set the GPIO pin mux to the UART - 4 is TX, 5 is RX
+    gpio_set_function(5, GPIO_FUNC_UART);
+    // And set up and enable the interrupt handlers
+    irq_set_exclusive_handler(UART1_IRQ, on_uart_rx);
+    irq_set_enabled(UART1_IRQ, true);
+    // Now enable the UART to send interrupts - RX only
+    uart_set_irq_enables(GPS_UART_ID, true, false);
+    // clear the input queue that is filled by the interrupt
+    queue_init(&uart1Queue , sizeof(uint8_t) ,256) ;// queue for uart1 with 256 elements of 1
+    busy_wait_us(1000);
+    uint8_t dummy;
+    while (! queue_is_empty (&uart1Queue)) queue_try_remove ( &uart1Queue , &dummy ) ;
+}  // end setupGPS
+
+void GPS::readGps() { // read and process GPS data. do not send them.
+    if ( queue_is_empty (&uart1Queue)) return;
+    uint8_t data;
+    queue_try_remove ( &uart1Queue , &data ) ;
+    printf(" %X" , data);
+    static uint8_t _idx;
+    switch (_step) {
+        case 0: // Sync char 1 (0xBA)
+            if ( 0xBA == data ) _step++ ; // UBX sync char 1
+            break;
+        case 1: // Sync char 2 (0xCE)
+            if ( 0xCE == data) _step++ ; else _step = 0 ;
+            break;
+        case 2: // Payload length (part 1)
+            if ( 0x50 == data) _step++ ; else _step = 0 ;
+            break;
+        case 3: // Payload length (part 2)
+            if ( 0x00 == data) _step++ ; else _step = 0 ;
+            break;   
+        case 4: // Class 
+            if ( 0x01 == data) _step++ ; else _step = 0 ;
+            break;   
+        case 5: // Sub class
+            if ( 0x03 == data) {
+                _step++ ;
+                _idx = 6 ;
+            } else {
+                _step = 0 ;
+            }    
+            break;   
+        case 6 : // payload and checksum    
+            if  (_idx < sizeof(casic_nav_pv_info) ) {
+                _casicBuffer.bytes[_idx++] = data; // save the content of the payload
+//                printer->print(data , HEX);
+              }
+            _idx++ ;  
+            if (_idx == sizeof(casic_nav_pv_info)) {
+                parse_gps();
+                _step = 0;
+//                printer->println(" ");
+            }
+            break;
+
+    }  // end of case
+}
+
+bool GPS::parse_gps(void) // move the data from buffer to the different fields
+{
+    GPS_numSat = _casicBuffer.nav_pv.numSV;
+    if ( _casicBuffer.nav_pv.velValid >= 6) {
+        GPS_speed_2d  = _casicBuffer.nav_pv.speed2D;
+        GPS_speed_2dAvailable  = true;
+    }    
+    if ( _casicBuffer.nav_pv.velValid >= 7) {
+        GPS_speed_3d  = _casicBuffer.nav_pv.speed3D;
+        GPS_speed_3dAvailable  = true;
+    }
+    if ( _casicBuffer.nav_pv.posValid >= 7){ 
+        GPS_lonAvailable = GPS_latAvailable = GPS_altitudeAvailable = GPS_ground_courseAvailable =true;
+        GPS_lon = _casicBuffer.nav_pv.lon * 10000000;           // in degree with 7 decimals
+        GPS_lat = _casicBuffer.nav_pv.lat* 10000000;            // in degree with 7 decimals
+        GPS_altitude = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
+        GPS_ground_course = _casicBuffer.nav_pv.heading ;     // Heading 2D deg with 5 decimals
+        if ( GPS_home_lat == 0 ) { 
+              GPS_home_lat = GPS_lat ;  // save home position
+              GPS_home_lon = GPS_lon ;
+              GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
+        }
+        // Calculate distance
+        float dlat  = (float)(GPS_home_lat - GPS_lat);
+        float dlong  = ((float)(GPS_home_lon - GPS_lon)) * GPS_scale ;
+        GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
+        // calculate bearing
+        int32_t off_x = GPS_lon - GPS_home_lon ;
+        int32_t off_y = (GPS_lat - GPS_home_lat) / GPS_scale ;
+        GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
+        if (GPS_bearing < 0) GPS_bearing += 360;
+        return true;
+    }
+    return false;
+}
+#endif // end of type of GPS

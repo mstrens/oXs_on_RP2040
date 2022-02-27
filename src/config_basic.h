@@ -78,6 +78,7 @@
 // --------- 9 - GPS ---------------                                               see oXs_config_advanced.h for additionnal parameters (normally no need to change them)
 #define A_GPS_IS_CONNECTED      YES                   // select between YES , NO
 #define GPS_REFRESH_RATE 5 // it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
+#define CASIC_GPS      // comment this line when using a Ublox GPS; a casic gps has to be configured before use in order to generate NAV-PV messages at 38400 bauds
 
 // --------- 10 - Reserved for developer. DEBUG must be activated here when we want to debug one or several functions in some other files. ---------
 

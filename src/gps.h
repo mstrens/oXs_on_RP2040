@@ -90,6 +90,38 @@ typedef struct {
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
 } ubx_nav_svinfo;
 
+typedef struct {
+    uint16_t header;              // Header = 0xBA 0XCE
+    uint16_t length;              // length of payload 80 = 0X50
+    uint16_t identifier;        // Bitmask, Chip hardware generation 0:Antaris, 1:u-blox 5, 2:u-blox 6
+    uint32_t runTime;         // 
+    uint8_t  posValid;         // 
+    uint8_t  velValid;
+    uint8_t  system;
+    uint8_t  numSV;            // number of satellite in solution
+    uint8_t  numSVGPS;
+    uint8_t  numSVBDS;
+    uint8_t  numSVGLN;
+    uint8_t  reserve;
+    float    pDop;
+    double   lon;      // degree
+    double   lat;      // degree
+    float    height;   // m
+    float    sepGeoid;
+    float    hAcc;
+    float    vAcc;
+    float    veIN;
+    float    veIE;
+    float    veIU;
+    float    speed3D;   // speed m/s
+    float    speed2D;   // speed m/s
+    float    heading;   // degree
+    float    sAcc;
+    float    cAcc;
+    uint32_t checksum;
+} casic_nav_pv_info;  // structure use by casic GPS
+
+
 // GPS codes that could be used
 #define    PREAMBLE1  0xb5
 #define    PREAMBLE2  0x62
@@ -154,7 +186,7 @@ public:
     bool new_position = false ;
     bool new_speed = false ;
       
-    // Receive buffer
+    // Receive buffer for Ublox
     union {
         ubx_nav_posllh posllh;
         ubx_nav_status status;
@@ -164,14 +196,21 @@ public:
         uint8_t bytes[UBLOX_BUFFER_SIZE];
     } _buffer;
 
+    
+    
+    // Receiver buffer for Casic
+    union {
+        casic_nav_pv_info nav_pv;
+        uint8_t bytes[sizeof(casic_nav_pv_info)];
+    }_casicBuffer;
+
 
 
     explicit GPS(void);
     void setupGps() ;
     void readGps();
-    bool UBLOX_parse_gps(void) ;
-    bool gpsNewFrameUBLOX(uint8_t data) ;
-  
+    bool parse_gps(void) ;
+      
 private:
     uint16_t gpsDataErrors;
 

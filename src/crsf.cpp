@@ -127,7 +127,7 @@ void fillFrameBattery(uint8_t idx){
     voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     voltage.mVolt[0].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
-    printf("filling dma buffer with voltage\n");
+    //printf("filling dma buffer with voltage\n");
     CRSFBufferLength = sizeof(voltageFrame);
     memcpy(&CRSFBuffer[0] , &voltageFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
@@ -144,7 +144,7 @@ void fillFrameVario(uint8_t idx){
     varioFrame.crc = crsf_crc.calc( ((uint8_t *) &varioFrame) + 2 , CRSF_FRAME_VARIO_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.climbRate.available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
-    printf("filling dma buffer with vario data\n");
+    //printf("filling dma buffer with vario data\n");
     CRSFBufferLength = sizeof(varioFrame);
     memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
@@ -161,7 +161,7 @@ void fillFrameAttitude(uint8_t idx){
     vario1.relativeAlt.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
     //printf("filling dma buffer with vario and altitude data\n");
-    printf("alt abs %" PRIi16 "\n", attitudeFrame.roll);
+    //printf("alt abs %" PRIi16 "\n", attitudeFrame.roll);
     CRSFBufferLength = sizeof(attitudeFrame);
     memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
@@ -183,7 +183,7 @@ void fillFrameGps(uint8_t idx){
     gpsFrame.crc = crsf_crc.calc( ((uint8_t *) &gpsFrame) + 2 , CRSF_FRAME_GPS_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     gps.GPS_lonAvailable = false ;
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
-    printf("filling dma buffer for GPS\n");
+    //printf("filling dma buffer for GPS\n");
     CRSFBufferLength = sizeof(gpsFrame);
     memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
