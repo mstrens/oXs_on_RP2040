@@ -90,7 +90,7 @@ typedef struct {
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
 } ubx_nav_svinfo;
 
-typedef struct {
+struct __attribute__((__packed__)) casic_nav_pv_info {
     uint16_t header;              // Header = 0xBA 0XCE
     uint16_t length;              // length of payload 80 = 0X50
     uint16_t identifier;        // Bitmask, Chip hardware generation 0:Antaris, 1:u-blox 5, 2:u-blox 6
@@ -119,7 +119,7 @@ typedef struct {
     float    sAcc;
     float    cAcc;
     uint32_t checksum;
-} casic_nav_pv_info;  // structure use by casic GPS
+} ;  // structure use by casic GPS
 
 
 // GPS codes that could be used
@@ -198,11 +198,10 @@ public:
 
     
     
-    // Receiver buffer for Casic
     union {
         casic_nav_pv_info nav_pv;
         uint8_t bytes[sizeof(casic_nav_pv_info)];
-    }_casicBuffer;
+    } __attribute__((__packed__)) _casicBuffer;
 
 
 

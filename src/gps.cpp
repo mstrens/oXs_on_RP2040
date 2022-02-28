@@ -5,6 +5,7 @@
 #include "pico/util/queue.h"
 #include "gps.h"
 #include <math.h>
+#include "Arduino.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -19,7 +20,8 @@ extern queue_t uart1Queue ;
 void on_uart_rx() {
     while (uart_is_readable(GPS_UART_ID)) {
         uint8_t ch = uart_getc(GPS_UART_ID);
-        queue_try_add ( &uart1Queue , &ch);
+        if (!queue_try_add ( &uart1Queue , &ch)) printf("quue try add error");
+        //printf("%x\n", ch);
     }
 }
 
@@ -104,90 +106,91 @@ void GPS::setupGps(void){
 void GPS::readGps() { // read and process GPS data. do not send them.
     if ( queue_is_empty (&uart1Queue)) return;
     uint8_t data;
-    queue_try_remove ( &uart1Queue , &data ) ;
-    printf(" %X" , data);
-    bool parsed = false;
-    switch (_step) {
-        case 0: // Sync char 1 (0xB5)
-            if ( 0xB5 == data ) { // UBX sync char 1
-                _skip_packet = false;
-                _step++;
-            }
-            break;
-        case 1: // Sync char 2 (0x62)
-            if ( 0x62 != data) { // UBX sync char 1
-                _step = 0;
+    if (queue_try_remove ( &uart1Queue , &data ) ){
+        //printf(" %X" , data);
+        bool parsed = false;
+        switch (_step) {
+            case 0: // Sync char 1 (0xB5)
+                if ( 0xB5 == data ) { // UBX sync char 1
+                    _skip_packet = false;
+                    _step++;
+                }
                 break;
-            }
-            _step++;
-            break;
-        case 2: // Class
-            _step++;
-            _class = data;  // normally we should check that the class is the expected (otherwise, frame should be skipped)
-            _ck_b = _ck_a = data;   // reset the checksum accumulators
-            if ( 0x01 != data ) { // we handle only message type = 0x01 = NAVigation message.
-                _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
-            }            
-            break;
-        case 3: // Id
-            _step++;
-            _ck_b += (_ck_a += data);       // checksum byte
-            _msg_id = data;
-            break;
-        case 4: // Payload length (part 1)
-            _step++;
-            _ck_b += (_ck_a += data);       // checksum byte
-            _payload_length = data; // payload length low byte
-            break;
-        case 5: // Payload length (part 2)
-            _step++;
-            _ck_b += (_ck_a += data);       // checksum byte
-            _payload_length += (uint16_t)(data << 8);
-            if (_payload_length > UBLOX_PAYLOAD_SIZE) {
-                _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
-            }
-            _payload_counter = 0;   // prepare to receive payload
-            if (_payload_length == 0) {
-                _step = 7;
-            }
-            break;
-        case 6:
-            _ck_b += (_ck_a += data);       // checksum byte
-            if  (_payload_counter < UBLOX_BUFFER_SIZE)  {
-                _buffer.bytes[_payload_counter] = data; // save the content of the payload
-//                printer->print(data , HEX);
-              }
-            _payload_counter++ ;  
-            if (_payload_counter >= _payload_length) {
+            case 1: // Sync char 2 (0x62)
+                if ( 0x62 != data) { // UBX sync char 1
+                    _step = 0;
+                    break;
+                }
                 _step++;
-//                printer->println(" ");
-            }
-            break;
-        case 7:
-            _step++;
-            if (_ck_a != data) {
-                _skip_packet = true;          // bad checksum
-                gpsDataErrors++;
-            }
-            break;
-        case 8:
-            _step = 0;
-            if (_ck_b != data) {
-                gpsDataErrors++;
-                break;              // bad checksum
-            }
+                break;
+            case 2: // Class
+                _step++;
+                _class = data;  // normally we should check that the class is the expected (otherwise, frame should be skipped)
+                _ck_b = _ck_a = data;   // reset the checksum accumulators
+                if ( 0x01 != data ) { // we handle only message type = 0x01 = NAVigation message.
+                    _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
+                }            
+                break;
+            case 3: // Id
+                _step++;
+                _ck_b += (_ck_a += data);       // checksum byte
+                _msg_id = data;
+                break;
+            case 4: // Payload length (part 1)
+                _step++;
+                _ck_b += (_ck_a += data);       // checksum byte
+                _payload_length = data; // payload length low byte
+                break;
+            case 5: // Payload length (part 2)
+                _step++;
+                _ck_b += (_ck_a += data);       // checksum byte
+                _payload_length += (uint16_t)(data << 8);
+                if (_payload_length > UBLOX_PAYLOAD_SIZE) {
+                    _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
+                }
+                _payload_counter = 0;   // prepare to receive payload
+                if (_payload_length == 0) {
+                    _step = 7;
+                }
+                break;
+            case 6:
+                _ck_b += (_ck_a += data);       // checksum byte
+                if  (_payload_counter < UBLOX_BUFFER_SIZE)  {
+                    _buffer.bytes[_payload_counter] = data; // save the content of the payload
+    //                printer->print(data , HEX);
+                }
+                _payload_counter++ ;  
+                if (_payload_counter >= _payload_length) {
+                    _step++;
+    //                printer->println(" ");
+                }
+                break;
+            case 7:
+                _step++;
+                if (_ck_a != data) {
+                    _skip_packet = true;          // bad checksum
+                    gpsDataErrors++;
+                }
+                break;
+            case 8:
+                _step = 0;
+                if (_ck_b != data) {
+                    gpsDataErrors++;
+                    break;              // bad checksum
+                }
 
-            GPS_packetCount++;
-//            printer->print("pac : ");  printer->print(GPS_packetCount); printer->print(",err: "); printer->print(gpsDataErrors); printer->print(",skip: "); printer->println(_skip_packet) ;
+                GPS_packetCount++;
+    //            printer->print("pac : ");  printer->print(GPS_packetCount); printer->print(",err: "); printer->print(gpsDataErrors); printer->print(",skip: "); printer->println(_skip_packet) ;
 
-            if (_skip_packet) {
-                break;   // do not parse the packet to be skipped
-            }
-                         // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
-            if (UBLOX_parse_gps() && (_class == 0x01) ) {
-                parsed = true; 
-            }
-    }  // end of case
+                if (_skip_packet) {
+                    break;   // do not parse the packet to be skipped
+                }
+                            // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
+                if (UBLOX_parse_gps() && (_class == 0x01) ) {
+                    parsed = true; 
+                }
+        }  // end of case
+    }    
 }
 
 bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fields
@@ -268,7 +271,7 @@ bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fi
 
 #else // here used for Casic GPS
 //  For casic GPS
-void GPS::setupGps(void){
+void GPS::setupGps(void){    // for casic gps
     
     uart_init(GPS_UART_ID, 38400);   // setup UART1 at 38400 baud
     uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
@@ -282,60 +285,69 @@ void GPS::setupGps(void){
     // Now enable the UART to send interrupts - RX only
     uart_set_irq_enables(GPS_UART_ID, true, false);
     // clear the input queue that is filled by the interrupt
-    queue_init(&uart1Queue , sizeof(uint8_t) ,256) ;// queue for uart1 with 256 elements of 1
+    queue_init(&uart1Queue , 1 ,256) ;// queue for uart1 with 256 elements of 1
     busy_wait_us(1000);
     uint8_t dummy;
     while (! queue_is_empty (&uart1Queue)) queue_try_remove ( &uart1Queue , &dummy ) ;
 }  // end setupGPS
 
-void GPS::readGps() { // read and process GPS data. do not send them.
+void GPS::readGps() { // read and process GPS data. do not send them.// for casic gps
     if ( queue_is_empty (&uart1Queue)) return;
     uint8_t data;
-    queue_try_remove ( &uart1Queue , &data ) ;
-    printf(" %X" , data);
     static uint8_t _idx;
-    switch (_step) {
-        case 0: // Sync char 1 (0xBA)
-            if ( 0xBA == data ) _step++ ; // UBX sync char 1
-            break;
-        case 1: // Sync char 2 (0xCE)
-            if ( 0xCE == data) _step++ ; else _step = 0 ;
-            break;
-        case 2: // Payload length (part 1)
-            if ( 0x50 == data) _step++ ; else _step = 0 ;
-            break;
-        case 3: // Payload length (part 2)
-            if ( 0x00 == data) _step++ ; else _step = 0 ;
-            break;   
-        case 4: // Class 
-            if ( 0x01 == data) _step++ ; else _step = 0 ;
-            break;   
-        case 5: // Sub class
-            if ( 0x03 == data) {
-                _step++ ;
-                _idx = 6 ;
-            } else {
-                _step = 0 ;
-            }    
-            break;   
-        case 6 : // payload and checksum    
-            if  (_idx < sizeof(casic_nav_pv_info) ) {
-                _casicBuffer.bytes[_idx++] = data; // save the content of the payload
-//                printer->print(data , HEX);
-              }
-            _idx++ ;  
-            if (_idx == sizeof(casic_nav_pv_info)) {
-                parse_gps();
-                _step = 0;
-//                printer->println(" ");
-            }
-            break;
-
-    }  // end of case
+    if (queue_try_remove ( &uart1Queue , &data ) ) {
+        if (data == 0xBA) printf("\n"); // new line when sync byte is received
+        //printf(" %x " , data );
+        switch (_step) {
+            case 0: // Sync char 1 (0xBA)
+                if ( 0xBA == data ) _step++ ; // Casic sync char 1
+                break;
+            case 1: // Sync char 2 (0xCE)
+                if ( 0xCE == data) _step++ ; else _step = 0 ;
+                break;
+            case 2: // Payload length (part 1)
+                if ( 0x50 == data) _step++ ; else _step = 0 ;
+                break;
+            case 3: // Payload length (part 2)
+                if ( 0x00 == data) _step++ ; else _step = 0 ;
+                break;   
+            case 4: // Class 
+                if ( 0x01 == data) _step++ ; else _step = 0 ;
+                break;   
+            case 5: // Sub class
+                if ( 0x03 == data) {
+                    _step++ ;
+                    _idx = 6 ;
+                } else {
+                    _step = 0 ;
+                }    
+                break;   
+            case 6 : // payload and checksum    
+                //printf(" size of casic_nav_pv_info %i", (int) sizeof(casic_nav_pv_info) );
+                if  (_idx < sizeof(casic_nav_pv_info) ) {
+                     _casicBuffer.bytes[_idx++] = data; // save the content of the payload
+    //                printer->print(data , HEX);
+                    //if (_idx == 11) printf("pos %x\n",_casicBuffer.bytes[_idx -1]);
+                }
+                if (_idx == sizeof(casic_nav_pv_info)) {
+                    parse_gps();
+                    _step = 0;
+    //                printer->println(" ");
+                }
+                break;
+        
+        }  // end of case
+    }
 }
 
 bool GPS::parse_gps(void) // move the data from buffer to the different fields
 {
+    
+    
+    //printf("sat : %x  posValid %x  height %f\n", _casicBuffer.nav_pv.numSV,  _casicBuffer.nav_pv.velValid , _casicBuffer.nav_pv.height);
+    //printf("lon: %f   ", _casicBuffer.nav_pv.lon);
+    //printf("lat: %f   ", _casicBuffer.nav_pv.lat);
+    //printf("height %f \n",  _casicBuffer.nav_pv.height);
     GPS_numSat = _casicBuffer.nav_pv.numSV;
     if ( _casicBuffer.nav_pv.velValid >= 6) {
         GPS_speed_2d  = _casicBuffer.nav_pv.speed2D;
