@@ -88,7 +88,7 @@ void GPS::setupGps(void){
     
     
     busy_wait_us(100000) ; 
-    printf("End of GPS setup");
+    //printf("End of GPS setup");
     // change the baudrate of UART1 to the new rate
     uart_set_baudrate(GPS_UART_ID , 38400);
     // And set up and enable the interrupt handlers
@@ -245,7 +245,7 @@ bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fi
              GPS_fix = false;
         GPS_numSat = _buffer.solution.satellites;  
         GPS_hdop = _buffer.solution.position_DOP;
-        printf("nbr sat : %X \n", GPS_numSat) ; 
+        //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_VELNED:   
         GPS_speed_3d  = _buffer.velned.speed_3d;  // cm/s
@@ -296,7 +296,7 @@ void GPS::readGps() { // read and process GPS data. do not send them.// for casi
     uint8_t data;
     static uint8_t _idx;
     if (queue_try_remove ( &uart1Queue , &data ) ) {
-        if (data == 0xBA) printf("\n"); // new line when sync byte is received
+        //if (data == 0xBA) printf("\n"); // new line when sync byte is received
         //printf(" %x " , data );
         switch (_step) {
             case 0: // Sync char 1 (0xBA)
@@ -342,12 +342,15 @@ void GPS::readGps() { // read and process GPS data. do not send them.// for casi
 
 bool GPS::parse_gps(void) // move the data from buffer to the different fields
 {
-    
-    
     //printf("sat : %x  posValid %x  height %f\n", _casicBuffer.nav_pv.numSV,  _casicBuffer.nav_pv.velValid , _casicBuffer.nav_pv.height);
     //printf("lon: %f   ", _casicBuffer.nav_pv.lon);
     //printf("lat: %f   ", _casicBuffer.nav_pv.lat);
     //printf("height %f \n",  _casicBuffer.nav_pv.height);
+    //if ( _casicBuffer.nav_pv.posValid >= 7){
+    //    printf("x");
+    //} else {
+    //    printf(".");
+    //}
     GPS_numSat = _casicBuffer.nav_pv.numSV;
     if ( _casicBuffer.nav_pv.velValid >= 6) {
         GPS_speed_2d  = _casicBuffer.nav_pv.speed2D;
@@ -361,7 +364,12 @@ bool GPS::parse_gps(void) // move the data from buffer to the different fields
         GPS_lonAvailable = GPS_latAvailable = GPS_altitudeAvailable = GPS_ground_courseAvailable =true;
         GPS_lon = _casicBuffer.nav_pv.lon * 10000000;           // in degree with 7 decimals
         GPS_lat = _casicBuffer.nav_pv.lat* 10000000;            // in degree with 7 decimals
-        GPS_altitude = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
+        if (_casicBuffer.nav_pv.height > 0) {
+            GPS_altitude = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
+        } else {
+            GPS_altitude = 0 ;
+        }
+
         GPS_ground_course = _casicBuffer.nav_pv.heading ;     // Heading 2D deg with 5 decimals
         if ( GPS_home_lat == 0 ) { 
               GPS_home_lat = GPS_lat ;  // save home position

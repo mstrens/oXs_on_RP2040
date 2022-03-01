@@ -178,12 +178,12 @@ void fillFrameGps(uint8_t idx){
     gpsFrame.longitude = gps.GPS_lon ;    // (degree / 10`000`000 )
     gpsFrame.groundspeed = gps.GPS_speed_3d ;  // ( km/h / 10 )
     gpsFrame.heading = gps.GPS_ground_course / 1000;      //( degree / 100  instead of 5 decimals)
-    gpsFrame.altitude = gps.GPS_altitude ;     //( meter ­1000m offset )
+    gpsFrame.altitude = gps.GPS_altitude /1000;     //( mm to m )
     gpsFrame.numSat = gps.GPS_numSat;       //( counter )
     gpsFrame.crc = crsf_crc.calc( ((uint8_t *) &gpsFrame) + 2 , CRSF_FRAME_GPS_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     gps.GPS_lonAvailable = false ;
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
-    //printf("filling dma buffer for GPS\n");
+    //printf("filling dma buffer for GPS height:%" PRIu16 "\n",gpsFrame.altitude);
     CRSFBufferLength = sizeof(gpsFrame);
     memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);

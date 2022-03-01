@@ -45,7 +45,7 @@ bool MS5611::begin()
   } 
   rxdata = MS5611_CMD_RESET ;
   if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) beginOK = false; // ask for a reset
-  delay(4) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
+  delay(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
   
   // read factory calibrations from EEPROM.
   for (uint8_t reg = 1; reg < 7; reg++)
@@ -53,6 +53,7 @@ bool MS5611::begin()
       uint8_t readBuffer[2];
       rxdata = MS5611_CMD_READ_PROM + reg * 2 ; // this is the address to be read
       if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) beginOK = false ; // command to get access to one register '0xA0 + 2* offset
+      delay(1);
       if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC) {
         beginOK = false ; // read the 2 bytes
         _calibrationData[reg] = 0;
@@ -166,8 +167,11 @@ void MS5611::calculateAltitude(){
       //      61645	4000	0.127811861
       //      57733	4500	0.134843581
       //      54025	5000	
+  //printf("D1: %" PRIi32 "   ", _D1);
+  //printf("D2: %" PRIi32 "   ", _D2);
+  //printf("temp: %" PRIi32 "   ", TEMP);
   //float rp = rawPressure / 1000000;
-  //printf("raw pressure : %f\n",rp);
+  //printf("raw pressure : %f",rp);
   if ( rawPressure > 954610000) {
     altitude = ( 1013250000 - rawPressure ) * 0.08526603 ; // = 500 / (101325 - 95461)  // returned value 1234567 means 123,4567 m (temp is fixed to 15 degree celcius)
   } else if ( rawPressure > 898760000) {
@@ -188,7 +192,7 @@ void MS5611::calculateAltitude(){
     altitude = 40000000 + ( 616450000 - rawPressure ) *  0.127811861 ;
   } else {    altitude = 45000000 + ( 577330000 - rawPressure ) *  0.134843581 ;
   }
-  //printf("altitude :  %" PRId32 "\n"   ,  altitude/10000);
+  //printf("  altitude :  %" PRId32 "\n"   ,  altitude/10000);
   //printf("calib: %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16  " %" PRIu16 "\n" , 
   //  _calibrationData[1] , _calibrationData[2] ,_calibrationData[3] ,_calibrationData[4] , _calibrationData[5], _calibrationData[6]);
   altIntervalMicros = _lastTempRequest - _prevAltMicros;
