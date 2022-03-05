@@ -186,14 +186,14 @@ void GPS::readGps() { // read and process GPS data. do not send them.
                     break;   // do not parse the packet to be skipped
                 }
                             // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
-                if (UBLOX_parse_gps() && (_class == 0x01) ) {
+                if (parse_gps() && (_class == 0x01) ) {
                     parsed = true; 
                 }
         }  // end of case
     }    
 }
 
-bool GPS::UBLOX_parse_gps(void) // move the data from buffer to the different fields
+bool GPS::parse_gps(void) // move the data from buffer to the different fields
 {
     // do we have new position information?
     new_position = false ;
