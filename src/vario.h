@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "Arduino.h"
-#include "config_basic.h"
+
+#include "config.h"
 #include "MS5611.h"
 
 //typedef struct {
@@ -14,8 +14,8 @@
 class VARIO
 {
 public:
-  float    altitude; // in cm *100
-  uint32_t altIntervalMicros; // enlapstime between 2 calculations of altitude
+  //float    altitude; // in cm *100
+  uint32_t altIntervalMicros = 0; // enlapstime between 2 calculations of altitude
   explicit VARIO(void); 
   // common for several varios
   bool sensitivityAvailable ;  //used to decide if sensivityPpm can be sent or not
@@ -36,5 +36,5 @@ public:
 
 private:
   int32_t prevAlt[20] ;   // table contains the 20 latest altitude
-  byte idxPrevAlt ;       // index of last entry in table
+  uint8_t idxPrevAlt ;       // index of last entry in table
 };

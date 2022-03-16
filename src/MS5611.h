@@ -1,15 +1,7 @@
 #pragma once
-//
-//    FILE: MS5611.h
-//  AUTHOR: Rob Tillaart
-//          Erni - testing/fixes
-// VERSION: 0.3.8
-// PURPOSE: Arduino library for MS5611 temperature and pressure sensor
-//     URL: https://github.com/RobTillaart/MS5611
 
 
-#include "Arduino.h"
-#include "Wire.h"
+#include "stdint.h"
 
 //  BREAKOUT  MS5611  aka  GY63 - see datasheet
 //
@@ -50,6 +42,7 @@ enum state_t
 class MS5611
 {
 public:
+  bool    baroInstalled = false; 
   int32_t altitude  ; // in cm * 100 
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
@@ -87,6 +80,6 @@ private:
 //  TwoWire * _wire;
 };
 
-
+void setupI2c() ;
 // -- END OF FILE --
 

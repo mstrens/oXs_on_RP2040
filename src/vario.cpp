@@ -1,4 +1,17 @@
+#include "pico/stdlib.h"  // this generates lot of warnings
+//#include <stdlib.h>
 #include "vario.h"
+#include "MS5611.h"
+#include "stdio.h"
+#include <inttypes.h>
+#include "tools.h"
+//#include <stdlib.h>     /* abs */
+
+uint32_t abs(int32_t value){
+  if (value > 0) return value;
+  return -value;
+}
+
 
 VARIO::VARIO(){}
 
@@ -16,6 +29,7 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   uint32_t nextAverageAltMillis;
   int sensitivityMin = SENSITIVITY_MIN ; // set the min smoothing to the default value
   
+  if ( !baro->baroInstalled) return ; // skip when baro is not installed
     // smooth altitude
   if (firstCalc) {
     firstCalc = false;
@@ -56,6 +70,7 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
     lastAltMillis = altMillis;
     absoluteAlt.value = altitude / 100; // altitude is in m *10000 and AbsoluteAlt must be in m * 100
     absoluteAlt.available=true;  // Altitude is considered as available only after several loop in order to reduce number of transmission on Sport.
+    //printf("abs alt= %" PRIu32 "\n", absoluteAlt.value );
     sensitivityAvailable = true ;
     if (altOffset == 0) altOffset = absoluteAlt.value ;
     relativeAlt.value = absoluteAlt.value - altOffset ;

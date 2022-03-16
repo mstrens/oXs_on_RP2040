@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Arduino.h"
 #include "hardware/adc.h"
 
-#include "config_basic.h"
+#include "config.h"
 //#include "config_advanced.h"
 //#include "config_macros.h"
 
@@ -19,10 +18,9 @@ public:
     void begin();
     void getVoltages(void) ;
 private:
-    byte pin[MAX_NBR_VOLTAGES]  =  { PIN_VOLTAGE };            // Arduino pin number to use to read each voltage (See hardware setting in oXs_config.h)  
- //   int offset[MAX_NBR_VOLTAGES] = { OFFSET_VOLTAGE };               // offset to apply while converting ADC to millivolt (See setting in oXs_config.h)  
+    uint8_t pin[MAX_NBR_VOLTAGES]  =  { 26, 27, 28, 29 };            // pin number to use to read each voltage (See hardware setting in oXs_config.h)  
+    float offset[MAX_NBR_VOLTAGES] = { 0.0 } ;               // offset to apply while converting ADC to millivolt (See setting in oXs_config.h)  
     float mVoltPerStep[MAX_NBR_VOLTAGES] ;       // rate to apply while converting ADC to millivolt (See setting in oXs_config.h)  
-    bool atLeastOneVolt = false;
     int32_t sumVoltage[MAX_NBR_VOLTAGES] = { 0,0,0,0};       // used to calculate average voltage
 
 
@@ -36,7 +34,7 @@ struct VOLTAGEDATA {
 //  int32_t mVolt[6] ;             // in mV 
 //  bool mVoltAvailable[6] ;
   
-  byte mVoltPin[6] ;            // Arduino pin number to use to read each voltage (See hardware setting in oXs_config.h)  
+  byte mVoltPin[6] ;            // pin number to use to read each voltage (See hardware setting in oXs_config.h)  
   int offset[6] ;               // offset to apply while converting ADC to millivolt (See setting in oXs_config.h)  
   float mVoltPerStep[6] ;       // rate to apply while converting ADC to millivolt (See setting in oXs_config.h)  
 

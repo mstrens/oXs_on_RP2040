@@ -1,9 +1,7 @@
 #pragma once
 
-//#include <Arduino.h>
-#include "config_basic.h"
-//#include "oXs_config_advanced.h"
-//#include "oXs_config_macros.h"
+
+#include "config.h"
 
 // from the UBlox6 document, the largest payout we receive i the NAV-SVINFO and the payload size
 // is calculated as 8 + 12*numCh.  numCh in the case of a Glonass receiver is 28.
@@ -155,6 +153,7 @@ public:
     // **********************
     // GPS data being read
     // **********************
+    bool gpsInstalled = false;
     int32_t GPS_lon;               // longitude in degree with 7 decimals, (neg for S)
     bool    GPS_lonAvailable = false ; 
     int32_t GPS_lat;               // latitude   in degree with 7 decimals, (neg for ?)
@@ -207,9 +206,15 @@ public:
 
     explicit GPS(void);
     void setupGps() ;
+    void setupGpsUblox() ;
+    void setupGpsCasic() ;
     void readGps();
-    bool parse_gps(void) ;
-      
+    void readGpsUblox();
+    void readGpsCasic();
+    bool parseGps(void) ;
+    bool parseGpsUblox(void) ;
+    bool parseGpsCasic(void) ;
+    
 private:
     uint16_t gpsDataErrors;
 

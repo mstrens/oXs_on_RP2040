@@ -1,0 +1,304 @@
+
+#include "param.h"
+#include "pico/stdlib.h"
+#include "config.h"
+#include "stdio.h"
+#include "MS5611.h"
+#include <string.h>
+#include <ctype.h>
+#include "gps.h"
+#include "hardware/flash.h"
+#include <inttypes.h>
+#include "stdlib.h"
+#include  "hardware/sync.h"
+
+#define CMD_BUFFER_LENTGH 80
+uint8_t cmdBuffer[CMD_BUFFER_LENTGH];
+uint8_t cmdBufferPos = 0;
+
+extern GPS gps;
+extern sbusFrame_s sbusFrame;
+extern uint32_t lastCrsfRcChannels;
+
+CONFIG config;
+
+void handleUSBCmd(void){
+    int c;
+    while (1) {
+        c = getchar_timeout_us(5);
+        //printf("%X\n", (uint8_t) c);
+        
+        if ( c== PICO_ERROR_TIMEOUT) return;
+        //printf("%X\n", (uint8_t) c);
+        
+        if (cmdBufferPos >= (CMD_BUFFER_LENTGH -1) ){  // discard previous char when buffer is full
+            cmdBufferPos = 0;
+        }
+        if ( c != '\n') {
+            cmdBuffer[cmdBufferPos++] = c & 0xFF; // save the char
+           // printf("%c\n", (uint8_t) c);
+        } else {
+            cmdBuffer[cmdBufferPos] = 0x00 ; // put the char end of string
+            cmdBufferPos = 0;                // reset the position
+            processCmd();                    // process the cmd line
+        }
+    }
+}
+
+extern MS5611 baro1 ;
+void processCmd(){
+    bool updateConfig = false;
+    char *ptr;
+    uint32_t ui;
+    double db;    
+    char * pkey = NULL;
+    char * pvalue = NULL;
+    if (cmdBuffer[0] != 0x0){
+        char * equalPos = strchr( (char*)cmdBuffer, '=');
+        
+        if (equalPos != NULL){ // there is = so search for value
+            *equalPos = 0x0;
+            equalPos++;
+            pvalue = skipWhiteSpace(equalPos);
+            removeTrailingWhiteSpace(pvalue);
+        }    
+        pkey =  skipWhiteSpace((char*)cmdBuffer);
+        removeTrailingWhiteSpace(pkey);
+    }
+    upperStr(pkey);
+    upperStr(pvalue);
+    
+    printf("\nCmd to execute: ");   
+    if (pkey) printf("  %s", pkey);
+    if (pvalue) printf("=%s", pvalue);
+    printf("\n");
+    // change baudrate
+    if ( strcmp("BAUD", pkey) == 0 ) { // if the key is BAUD
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : baudrate must be a unsigned integer");
+        } else {
+            config.crsfBaudrate = ui;
+            printf("baud = %" PRIu32 "\n" , config.crsfBaudrate);
+            updateConfig = true;
+        }
+    }
+    // change scale
+    if (( strcmp("SCALE1", pkey) == 0 ) || ( strcmp("SCALE2", pkey) == 0 )\
+         || ( strcmp("SCALE3", pkey) == 0 )  || ( strcmp("SCALE4", pkey) == 0 ) ){ 
+        db = strtod(pvalue,&ptr);
+        if (*ptr != 0x0) {
+            printf("Error : value is not a valid float");
+        } else {
+            updateConfig = true;
+            if (*(pkey+5) == '1' ) {config.scaleVolt1 = db;}
+            else if (*(pkey+5) == '2' ) {config.scaleVolt2 = db;}
+            else if (*(pkey+5) == '3' ) {config.scaleVolt3 = db;}
+            else if (*(pkey+5) == '4' ) {config.scaleVolt4 = db;}
+            else {
+                printf("Error : x must be 1...4 in SCALEx\n");
+                updateConfig = false;
+            }
+        }
+    }
+    // change offset
+    if (( strcmp("OFFSET1", pkey) == 0 ) || ( strcmp("OFFSET2", pkey) == 0 )\
+         || ( strcmp("OFFSET3", pkey) == 0 )  || ( strcmp("OFFSET4", pkey) == 0 ) ){ 
+        db = strtod(pvalue,&ptr);
+        if (*ptr != 0x0) {
+            printf("Error : value is not a valid float");
+        } else {
+            updateConfig = true;
+            if (*(pkey+6) == '1' ) {config.offset1 = db;}
+            else if (*(pkey+6) == '2' ) {config.offset2 = db;}
+            else if (*(pkey+6) == '3' ) {config.offset3 = db;}
+            else if (*(pkey+6) == '4' ) {config.offset4 = db;}
+            else {
+                printf("Error : x must be 1...4 in OFFSETx\n");
+                updateConfig = false;
+            }
+        }
+    }
+    // change GPS
+    if ( strcmp("GPS", pkey) == 0 ) {
+        if (strcmp("U", pvalue) == 0) {
+            config.gpsType = 'U';
+            updateConfig = true;
+        } else if (strcmp("C", pvalue) == 0) {
+            config.gpsType = 'C';
+            updateConfig = true;
+        } else  {
+            printf("Error : GPS type must be U or C\n");
+        }
+    }
+    // change failsafe mode
+    if ( strcmp("FAILSAFE", pkey) == 0 ) {
+        if (strcmp("H", pvalue) == 0) {
+            config.failsafeType = 'H';
+            updateConfig = true;
+        } else  {
+            printf("Error : FAILSAFE mode must be H\n");
+        }
+    }
+    // set failsafe to the current values
+    if ( strcmp("SETFAILSAFE", pkey) == 0 ) { // if the key is Failsafe
+        if ( lastCrsfRcChannels ) {
+            config.failsafeType = 'C'; // remove 'H' for HOLD
+            memcpy( &config.failsafeChannels , &sbusFrame.rcChannelsData, sizeof(config.failsafeChannels));
+            updateConfig = true;
+        } else {
+            printf("Error : No RC channels have been received yet. FAILSAFE values are unknown\n");
+        }    
+    }
+    if (updateConfig) saveConfig();
+    if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
+    if ( strcmp("G", pkey) == 0 ) printGpsFrame();      // print GPS frame
+    if ( strcmp("B", pkey) == 0 ) printBatteryFrame();   // print battery frame 
+    printConfig();                                       // print the current config
+    printf("\n >> \n ");
+}
+
+
+void printConfig(){
+    uint8_t version[] =   VERSION ;
+    printf("\nVersion = %s \n", version)  ;
+    printf("\nCRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
+    printf("Voltage parameters:\n")  ;
+    printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
+    printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
+    if (baro1.baroInstalled) {
+        printf("Baro sensor is detected\n")  ;
+        printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
+        printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
+    }else {
+        printf("Baro sensor is not detected\n")  ;
+    }   
+    if (config.gpsType == 'U'){
+            printf("Foreseen GPS type is Ublox  :")  ;
+        } else if (config.gpsType == 'C'){
+            printf("Foreseen GPS type is CADIS  :")  ;
+        } else {
+            printf("Foreseen GPS type is unknown  :")  ;
+        }
+    if (gps.gpsInstalled) {
+        printf("GPS is detected\n")  ;
+    } else {
+        printf("GPS is not detected\n")  ;
+    }
+    if ( config.failsafeType == 'H'){
+        printf("Failsafe type is HOLD\n")  ;
+    } else {
+        printf("Failsafe uses predefined values\n")  ;
+    }
+    printf("\nCommands can be entered to change the config parameters\n");
+    printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
+    printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+    printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
+    printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
+    printf("-To select the failsafe mode HOLD, enter FAILSAFE=H\n")  ;
+    printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
+    printf("   Note: some changes require a reset to be applied"); 
+}
+
+
+
+#define FLASH_TARGET_OFFSET (256 * 1024)
+const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
+
+void saveConfig() {
+    uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
+    memcpy(&buffer[0], &config, sizeof(config));
+    // Note that a whole number of sectors must be erased at a time.
+    // irq must be disable during flashing
+    uint32_t irqStatus = save_and_disable_interrupts();
+    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
+    flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
+    restore_interrupts(irqStatus);
+    
+    printf(" New config has been saved\n");
+    
+}
+
+void upperStr( char *p){
+    if (p == NULL ) return;
+    while ( *p != 0){
+        *p = toupper(*p);
+        p++;
+    }    
+}
+
+char * skipWhiteSpace(char * str)
+{
+	char *cp = str;
+	if (cp)
+		while (isspace(*cp))
+			++cp;
+	return cp;
+}
+
+void removeTrailingWhiteSpace( char * str)
+{
+	if (str == nullptr)
+		return;
+	char *cp = str + strlen(str) - 1;
+	while (cp >= str && isspace(*cp))
+		*cp-- = '\0';
+}
+
+void setupConfig(){   // The config is uploaded at power on
+    if (*flash_target_contents == 0x1 ) {
+        memcpy( &config , flash_target_contents, sizeof(config));
+    } else {
+        config.version = 1;
+        config.crsfBaudrate = 420000;
+        config.scaleVolt1 = 1.0;
+        config.scaleVolt2 = 1.0;
+        config.scaleVolt3 = 1.0;
+        config.scaleVolt4 = 1.0;
+        config.offset1 = 0.0;
+        config.offset2 = 0.0;
+        config.offset3 = 0.0;
+        config.offset4 = 0.0;
+        config.gpsType = 'U' ;
+        config.failsafeType = 'H';
+        config.failsafeChannels.ch0 = 1<<10 ; // set default failsafe value to 1/2 of 11 bits
+        config.failsafeChannels.ch1 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch2 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch3 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch4 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch6 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch6 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch7 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch8 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch9 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch10 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch11 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch12 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch13 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch14 = config.failsafeChannels.ch0 ;
+        config.failsafeChannels.ch15 = config.failsafeChannels.ch0 ;
+    }
+    printf("\nConfig:\n");
+    printf("     GPS= %u\n", config.gpsType) ;
+    printf("     scaleVolt1= %f\n", config.scaleVolt1 ) ; 
+    printf("     scaleVolt2= %f\n", config.scaleVolt2 ) ;
+    printf("     scaleVolt3= %f\n", config.scaleVolt3 ) ;
+    printf("     scaleVolt4= %f\n", config.scaleVolt4 ) ;
+    printf("     failsafe1...4= %f , %f , %f , %f\n", (double) config.failsafeChannels.ch0\
+                                                    , (double) config.failsafeChannels.ch1\
+                                                    , (double) config.failsafeChannels.ch2\
+                                                    , (double) config.failsafeChannels.ch3);
+    printf("     failsafe5...8= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch4\
+                                                    , (float) config.failsafeChannels.ch5\
+                                                    , (float) config.failsafeChannels.ch6\
+                                                    , (float) config.failsafeChannels.ch7);
+    printf("     failsafe9...12= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch8\
+                                                    , (float) config.failsafeChannels.ch9\
+                                                    , (float) config.failsafeChannels.ch10\
+                                                    , (float) config.failsafeChannels.ch11);
+    printf("     failsafe13...16= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch12\
+                                                    , (float) config.failsafeChannels.ch13\
+                                                    , (float) config.failsafeChannels.ch14\
+                                                    , (float) config.failsafeChannels.ch15);
+     
+} 

@@ -1,15 +1,11 @@
-//
-//    FILE: MS5611.cpp
-//  AUTHOR: Rob Tillaart
-//          Erni - testing/fixes
-// VERSION: 0.3.8
-// PURPOSE: MS5611 Temperature & Humidity library for Arduino
-//     URL: https://github.com/RobTillaart/MS5611
-//
 
 
 #include "MS5611.h"
-
+#include "pico/stdlib.h"
+#include "hardware/i2c.h"
+#include "stdio.h"
+#include <inttypes.h>
+#include "tools.h"
 
 // datasheet page 10
 #define MS5611_CMD_READ_ADC       0x00
@@ -17,6 +13,21 @@
 #define MS5611_CMD_RESET          0x1E
 #define MS5611_CMD_CONVERT_D1     0x40
 #define MS5611_CMD_CONVERT_D2     0x50
+
+
+#define PICO_I2C1_SDA_PIN 14  
+#define PICO_I2C1_SCL_PIN 15  
+
+
+void setupI2c(){
+    i2c_init( i2c1, 400 * 1000);
+    gpio_set_function(PICO_I2C1_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(PICO_I2C1_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(PICO_I2C1_SDA_PIN);
+    gpio_pull_up(PICO_I2C1_SCL_PIN); 
+}
+
+
 
 
 /////////////////////////////////////////////////////
@@ -35,17 +46,19 @@ MS5611::MS5611(uint8_t deviceAddress)
   
 }
 
-bool MS5611::begin()
+
+bool MS5611::begin()  // return true when baro exist
 {
   uint8_t rxdata;
   bool beginOK = true;
-  if ( i2c_read_blocking(i2c1, _address, &rxdata, 1, false) == PICO_ERROR_GENERIC ) beginOK = false;
-  if ( ! beginOK){
-     printf("Error : it seems that MS5611 is not present");
+  if ( i2c_read_blocking(i2c1, _address, &rxdata, 1, false) == PICO_ERROR_GENERIC ) {
+    printf("Error : it seems that MS5611 is not present\n");
+    return false ;
   } 
+  baroInstalled = true;
   rxdata = MS5611_CMD_RESET ;
   if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) beginOK = false; // ask for a reset
-  delay(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
+  sleep_ms(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
   
   // read factory calibrations from EEPROM.
   for (uint8_t reg = 1; reg < 7; reg++)
@@ -53,7 +66,7 @@ bool MS5611::begin()
       uint8_t readBuffer[2];
       rxdata = MS5611_CMD_READ_PROM + reg * 2 ; // this is the address to be read
       if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) beginOK = false ; // command to get access to one register '0xA0 + 2* offset
-      delay(1);
+      sleep_ms(1);
       if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC) {
         beginOK = false ; // read the 2 bytes
         _calibrationData[reg] = 0;
@@ -62,7 +75,7 @@ bool MS5611::begin()
       }     
   }
   if ( ! beginOK) {
-    printf("Error when MS5611 is initialized");
+    printf("Error when MS5611 is initialized\n");
   } 
   return beginOK;
 }
@@ -95,6 +108,7 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
   return adcValue ;
 }
 
+
 // -- END OF FILE --
 // Try to get a new pressure 
 // MS5611 requires some delay between asking for a conversion and getting the result
@@ -106,6 +120,7 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
 // when a value is calculated, then altitude, rawPressure and temperature are calculated.
 int MS5611::getAltitude() // Try to get a new pressure ; 
 {
+  if ( ! baroInstalled) return -1;     // do not process if there is no baro; -1 = no new data
   if ( (micros() - _lastConversionRequest) < 9100 ) // it take about 9000 usec for a conversion
     return -1;
   switch (_state) 
