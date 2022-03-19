@@ -147,7 +147,7 @@ struct sbusFrame_s{
     uint8_t endByte;
 };
 
-void setup_DMA_PIO(); 
+void setupCrsfTxPio(); 
 void fillCRSFFrame();
 void setupCRSF();
 bool dataAvailable(uint8_t idx);
@@ -159,6 +159,7 @@ void fillOneFrame(uint8_t idx);
 
 void pioRxHandlerIrq();
 void setupCrsfRxPio (void);
+void handleCrsfRx(void);
 
 void printAttitudeFrame();
 void printGpsFrame();

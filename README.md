@@ -12,9 +12,14 @@ It can provide
     
     * GPS data (longitude, latitude, speed, altitude,...) (optional)
 
+It can also generate:
+
+    * 8 PWM signals to drive servos or ESC
+
+    * a Sbus signal to drive Sbus servos or Sbus/PWM converters
 
 
-This project requires a board with a RP2040 processor (like the rapsberry pi pico).
+This project requires a board with a RP2040 processor like the rapsberry pi pico.
 
 A better alternative is the RP2040-Zero (same processor but smaller board): https://www.waveshare.com/rp2040-zero.htm
 
@@ -27,8 +32,17 @@ This board can be connected to:
 * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
 
 
-More explanations are given in the file config_basic.h
-<<<<<<< HEAD
+This project does not require to compile the program nor a USB/SERIAL converter.
+A compiled version of the firmware is available. It can be used to flash the RP2040 using just a USB cable.
 
-=======
->>>>>>> d6991f51e754125038016290a6230ccd2abae736
+To flash it : 
+    * Press the "Boot" button when the USB cable in isserted in the PC. This will enter the "bootloader" mode.
+    * The PC will then show a new drive named RPI-RP2.
+    * Just drag and drop the uf2 file to this drive.
+    * It will be automatically uploaded and the RP2040 will restart in "normal mode".
+    * The drive RPI-RP2 will disapear and the PC will show a serial (COM) port.
+    * Some options of the firmware can then be configured from the PC using a serial terminal emulator (arduino IDE, putty, ...)
+    * Set the baudrate of the serial port to 115200.
+    * Using the serial terminal, send "Enter" and the firmware will print the current config and the list of available commands.
+         
+More explanations are given in the config.h file.

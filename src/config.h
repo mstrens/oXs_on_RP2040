@@ -40,6 +40,7 @@
 //       Connect SDA to pin 14 (I2C1)
 //
 // When a GPS is used:
+
 //    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
 //    Connect the RX pin from GPS to pin 12 (UART0-TX) 
 //    Connect the TX pin from GPS to pin 13 (UART0-RX)

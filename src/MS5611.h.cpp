@@ -14,6 +14,8 @@
 #define MS5611_CMD_CONVERT_D1     0x40
 #define MS5611_CMD_CONVERT_D2     0x50
 
+//#define PICO_I2C1_SDA_PIN 2   // pin 2 = SDA
+//#define PICO_I2C1_SCL_PIN 3   // pin 3 = SCL
 
 #define PICO_I2C1_SDA_PIN 14  
 #define PICO_I2C1_SCL_PIN 15  
@@ -26,6 +28,7 @@ void setupI2c(){
     gpio_pull_up(PICO_I2C1_SDA_PIN);
     gpio_pull_up(PICO_I2C1_SCL_PIN); 
 }
+
 
 
 
@@ -49,16 +52,18 @@ MS5611::MS5611(uint8_t deviceAddress)
 
 bool MS5611::begin()  // return true when baro exist
 {
-  uint8_t rxdata;
-  bool beginOK = true;
-  if ( i2c_read_blocking(i2c1, _address, &rxdata, 1, false) == PICO_ERROR_GENERIC ) {
-    printf("Error : it seems that MS5611 is not present\n");
-    return false ;
-  } 
+  bool beginOK = true; 
   baroInstalled = true;
+  uint8_t rxdata;
+  //i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) ;
   rxdata = MS5611_CMD_RESET ;
-  if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) beginOK = false; // ask for a reset
+  //printf("before baro reset\n");
+  if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) {// ask for a reset
+    beginOK = false;
+    baroInstalled = false;
+  }  
   sleep_ms(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
+  //printf("before reading baro config\n");
   
   // read factory calibrations from EEPROM.
   for (uint8_t reg = 1; reg < 7; reg++)
@@ -77,6 +82,8 @@ bool MS5611::begin()  // return true when baro exist
   if ( ! beginOK) {
     printf("Error when MS5611 is initialized\n");
   } 
+  //printf("end of baro init\n");
+  
   return beginOK;
 }
 
@@ -185,8 +192,7 @@ void MS5611::calculateAltitude(){
   //printf("D1: %" PRIi32 "   ", _D1);
   //printf("D2: %" PRIi32 "   ", _D2);
   //printf("temp: %" PRIi32 "   ", TEMP);
-  //float rp = rawPressure / 1000000;
-  //printf("raw pressure : %f",rp);
+  //float rp = rawPressure / 1000000.0;  printf("raw pressure : %f\n",rp);
   if ( rawPressure > 954610000) {
     altitude = ( 1013250000 - rawPressure ) * 0.08526603 ; // = 500 / (101325 - 95461)  // returned value 1234567 means 123,4567 m (temp is fixed to 15 degree celcius)
   } else if ( rawPressure > 898760000) {

@@ -22,6 +22,9 @@ extern uint32_t lastCrsfRcChannels;
 
 CONFIG config;
 
+extern MS5611 baro1 ;
+
+
 void handleUSBCmd(void){
     int c;
     while (1) {
@@ -45,7 +48,6 @@ void handleUSBCmd(void){
     }
 }
 
-extern MS5611 baro1 ;
 void processCmd(){
     bool updateConfig = false;
     char *ptr;
@@ -189,13 +191,30 @@ void printConfig(){
         printf("Failsafe type is HOLD\n")  ;
     } else {
         printf("Failsafe uses predefined values\n")  ;
+    printf("     Chan 1...4  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch0\
+                                                    , (uint32_t) config.failsafeChannels.ch1\
+                                                    , (uint32_t) config.failsafeChannels.ch2\
+                                                    , (uint32_t) config.failsafeChannels.ch3);
+    printf("     Chan 5...8  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch4\
+                                                    , (uint32_t) config.failsafeChannels.ch5\
+                                                    , (uint32_t) config.failsafeChannels.ch6\
+                                                    , (uint32_t) config.failsafeChannels.ch7);
+    printf("     Chan 9...12 = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch8\
+                                                    , (uint32_t) config.failsafeChannels.ch9\
+                                                    , (uint32_t) config.failsafeChannels.ch10\
+                                                    , (uint32_t) config.failsafeChannels.ch11);
+    printf("     Chan 13...16= %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch12\
+                                                    , (uint32_t) config.failsafeChannels.ch13\
+                                                    , (uint32_t) config.failsafeChannels.ch14\
+                                                    , (uint32_t) config.failsafeChannels.ch15);
+
     }
     printf("\nCommands can be entered to change the config parameters\n");
     printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
     printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
     printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
     printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
-    printf("-To select the failsafe mode HOLD, enter FAILSAFE=H\n")  ;
+    printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
     printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
     printf("   Note: some changes require a reset to be applied"); 
 }
@@ -278,27 +297,5 @@ void setupConfig(){   // The config is uploaded at power on
         config.failsafeChannels.ch14 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch15 = config.failsafeChannels.ch0 ;
     }
-    printf("\nConfig:\n");
-    printf("     GPS= %u\n", config.gpsType) ;
-    printf("     scaleVolt1= %f\n", config.scaleVolt1 ) ; 
-    printf("     scaleVolt2= %f\n", config.scaleVolt2 ) ;
-    printf("     scaleVolt3= %f\n", config.scaleVolt3 ) ;
-    printf("     scaleVolt4= %f\n", config.scaleVolt4 ) ;
-    printf("     failsafe1...4= %f , %f , %f , %f\n", (double) config.failsafeChannels.ch0\
-                                                    , (double) config.failsafeChannels.ch1\
-                                                    , (double) config.failsafeChannels.ch2\
-                                                    , (double) config.failsafeChannels.ch3);
-    printf("     failsafe5...8= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch4\
-                                                    , (float) config.failsafeChannels.ch5\
-                                                    , (float) config.failsafeChannels.ch6\
-                                                    , (float) config.failsafeChannels.ch7);
-    printf("     failsafe9...12= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch8\
-                                                    , (float) config.failsafeChannels.ch9\
-                                                    , (float) config.failsafeChannels.ch10\
-                                                    , (float) config.failsafeChannels.ch11);
-    printf("     failsafe13...16= %f , %f , %f , %f\n", (float) config.failsafeChannels.ch12\
-                                                    , (float) config.failsafeChannels.ch13\
-                                                    , (float) config.failsafeChannels.ch14\
-                                                    , (float) config.failsafeChannels.ch15);
-     
+    printConfig();
 } 

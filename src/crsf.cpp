@@ -56,7 +56,7 @@ dma_channel_config c;
 
 
 // Set up a PIO state machine to serialise our bits
-void setup_DMA_PIO(){
+void setupCrsfTxPio(){
     // setup the PIO for TX UART
     uint offsetTx = pio_add_program(pio, &uart_tx_program);
     uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, config.crsfBaudrate);
@@ -83,6 +83,8 @@ void setup_DMA_PIO(){
 GENERIC_CRC8 crsf_crc(CRSF_CRC_POLY);
 
 void setupCRSF(){
+    setupCrsfTxPio();
+    setupCrsfRxPio();    
 }
 
 
@@ -219,6 +221,7 @@ void pioRxHandlerIrq(){    // when a byte is received on the Sport, read the pio
   irq_clear (PIO0_IRQ_0 );
   while (  ! pio_sm_is_rx_fifo_empty (pio ,smRx)){ // when some data have been received
      uint8_t c = pio_sm_get (pio , smRx) >> 24;         // read the data
+     //printf(".");
      queue_try_add (&crsfRxQueue, &c);          // push to the queue
     //sportRxMillis = millis();                    // save the timestamp.
   }
@@ -267,6 +270,7 @@ void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
     uint8_t crc = 0; 
     while (! queue_is_empty(&crsfRxQueue)) {
         queue_try_remove (&crsfRxQueue,&data);
+        //printf(" %x ",data);
         switch ( crsfRxState ) {
             case NO_FRAME:
                 if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsfRxState = WAIT_PAYLOAD_LENGTH;
@@ -298,12 +302,17 @@ void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
             break;
             case  WAIT_CRC:
                 crc = crsf_crc.calc(CRSF_FRAMETYPE_RC_CHANNELS_PACKED); // CRC calculation includes the Type of message
-                crc = crsf_crc.calc(&bufferRcChannels[0] ,  RC_PAYLOAD_LENGTH + 1, crc);
+                crc = crsf_crc.calc(&bufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
+                //printf("in= %x <> calc= %x\n ", data , crc);
                 if ( crc == data){
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastCrsfRcChannels = millis();
+                    //printf("Good RC received\n");
+                } else {
+                    //printf("bad CRC received\n");
                 }
+                crsfRxState = NO_FRAME;
             break;
         }
     }        
