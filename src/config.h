@@ -57,10 +57,10 @@
 // Following #define allow to set up the interval between 2 frames of the same type
 // This allows e.g. to transmit vertical speed (in 'vario' frame) more often than GPS data
 // The values are in milli seconds
-#define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
-#define VARIO_FRAME_INTERVAL 100   // This frame contains only Vertical speed
+#define VOLTAGE_FRAME_INTERVAL 100 // This version transmit only one voltage; it could be change in the future
+#define VARIO_FRAME_INTERVAL 500   // This frame contains only Vertical speed
 #define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
-#define ATTITUDE_FRAME_INTERVAL 300 // This should normally contains pitch, roll and yaw. Still it is reused to transmit absolute altitude and relative altitude
+#define ATTITUDE_FRAME_INTERVAL 100 // This should normally contains pitch, roll and yaw. Still it is reused to transmit absolute altitude and relative altitude
  
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 50

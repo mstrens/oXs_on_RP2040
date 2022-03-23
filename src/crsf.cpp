@@ -59,8 +59,8 @@ dma_channel_config c;
 void setupCrsfTxPio(){
     // setup the PIO for TX UART
     uint offsetTx = pio_add_program(pio, &uart_tx_program);
-    uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, config.crsfBaudrate);
-
+    uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, 420000) ;//config.crsfBaudrate);
+    printf("baud rate %f", (float) config.crsfBaudrate);
     // Configure a channel to write the same word (32 bits) repeatedly to PIO0
     // SM0's TX FIFO, paced by the data request signal from that peripheral.
     dma_chan = dma_claim_unused_channel(true);
@@ -96,8 +96,8 @@ void fillCRSFFrame(){
          crsf_last_frame_idx++;
          if (crsf_last_frame_idx >= FRAME_TYPES_MAX) crsf_last_frame_idx ;
          if ( (_millis >= crsfFrameNextMillis[crsf_last_frame_idx]) && (dataAvailable(crsf_last_frame_idx))) {
-             fillOneFrame(crsf_last_frame_idx);
-             continue;
+            fillOneFrame(crsf_last_frame_idx) ; // if one frame has been filled, break because dma is busy
+            break;  
          }
     }
 }
@@ -114,16 +114,16 @@ bool dataAvailable(uint8_t idx) {
             return gps.GPS_lonAvailable ;    
     }
     return false;
-    // to continue with other frames/data
+    // to be continue with other frames/data if ELRS support them.
 }
 
 void fillFrameBattery(uint8_t idx){
-    voltageFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
+    voltageFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ;
     voltageFrame.frame_size = CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
     voltageFrame.type = CRSF_FRAMETYPE_BATTERY_SENSOR ;
     if ( voltage.mVolt[0].value > 0 ) {
         voltageFrame.mVolt = voltage.mVolt[0].value ;
-    } else  voltageFrame.mVolt ;
+    } else  voltageFrame.mVolt = 0 ;
     if ( voltage.mVolt[1].value > 0 ) {
         voltageFrame.current = voltage.mVolt[1].value ;
     } else voltageFrame.current = 0;
@@ -133,51 +133,60 @@ void fillFrameBattery(uint8_t idx){
     if ( voltage.mVolt[3].value > 0 ) {
         voltageFrame.remain =  voltage.mVolt[3].value /10 ;  // it is only a uint8_t; to use for a voltage we divide by 10
     } else voltageFrame.remain = 0;
-    voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     voltage.mVolt[0].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
     //printf("filling dma buffer with voltage\n");
     CRSFBufferLength = sizeof(voltageFrame);
     memcpy(&CRSFBuffer[0] , &voltageFrame , CRSFBufferLength);
+    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
+    //    printf( " %X ", CRSFBuffer[i]);
+    //}
+    //printf("\n");
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
 }
 
 void fillFrameVario(uint8_t idx){
-    if (! baro1.baroInstalled) return ; // skip when vario is not installed    
-    varioFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
+    //if (! baro1.baroInstalled) return ; // skip when vario is not installed ; not required because data will not be available and so fucntion should not be called    
+    varioFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ;
     varioFrame.frame_size = CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
     varioFrame.type = CRSF_FRAMETYPE_VARIO ;
-    varioFrame.vSpeed = vario1.climbRate.value ;
-    varioFrame.crc = crsf_crc.calc( ((uint8_t *) &varioFrame) + 2 , CRSF_FRAME_VARIO_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    varioFrame.vSpeed = vario1.climbRate.value ;  
+    varioFrame.crc = crsf_crc.calc( ((uint8_t *) &varioFrame) + 2 , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.climbRate.available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
-    //printf("filling dma buffer with vario data\n");
     CRSFBufferLength = sizeof(varioFrame);
     memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
+    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
+    //    printf( " %X ", CRSFBuffer[i]);
+    //}
+    //printf("\n");
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
 }
 void fillFrameAttitude(uint8_t idx){
-    attitudeFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
+    attitudeFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ; //CRSF_ADDRESS_SYNCHRO ; 
     attitudeFrame.frame_size = CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
     attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE;
     attitudeFrame.pitch = vario1.climbRate.value;
     attitudeFrame.roll = vario1.absoluteAlt.value / 100; //in m
     attitudeFrame.yaw = vario1.relativeAlt.value /100; //in m
-    attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.relativeAlt.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    //printf("filling dma buffer with vario and altitude data\n");
-    //printf("alt abs %" PRIi16 "\n", attitudeFrame.roll);
     CRSFBufferLength = sizeof(attitudeFrame);
     memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
+    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
+    //    printf( " %X ", CRSFBuffer[i]);
+    //}
+    //printf("\n");
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
-    dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
+    dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;
 }
 
 void fillFrameGps(uint8_t idx){
-    gpsFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER;
+    gpsFrame.device_addr = CRSF_ADDRESS_SYNCHRO;
     gpsFrame.frame_size = CRSF_FRAME_GPS_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
     gpsFrame.type = CRSF_FRAMETYPE_GPS ;
     gpsFrame.latitude = gps.GPS_lat ;
@@ -186,7 +195,7 @@ void fillFrameGps(uint8_t idx){
     gpsFrame.heading = gps.GPS_ground_course / 1000;      //( degree / 100  instead of 5 decimals)
     gpsFrame.altitude = gps.GPS_altitude /1000;     //( mm to m )
     gpsFrame.numSat = gps.GPS_numSat;       //( counter )
-    gpsFrame.crc = crsf_crc.calc( ((uint8_t *) &gpsFrame) + 2 , CRSF_FRAME_GPS_PAYLOAD_SIZE- 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    gpsFrame.crc = crsf_crc.calc( ((uint8_t *) &gpsFrame) + 2 , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     gps.GPS_lonAvailable = false ;
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
     //printf("filling dma buffer for GPS height:%" PRIu16 "\n",gpsFrame.altitude);
@@ -200,16 +209,16 @@ void fillOneFrame(uint8_t idx){
     switch (idx) {
         case  CRSF_FRAMEIDX_BATTERY_SENSOR : 
             fillFrameBattery(idx);
-            return ;
+            break ;
         case CRSF_FRAMEIDX_VARIO :
             fillFrameVario(idx);
-            return ;
+            break ;
         case CRSF_FRAMEIDX_ATTITUDE :
             fillFrameAttitude(idx);
-            return ;
+            break;
         case CRSF_FRAMEIDX_GPS :
             fillFrameGps(idx);
-            return ;                
+            break;                
     } // end switch
 }
 

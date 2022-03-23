@@ -4,7 +4,9 @@
 #include "voltage.h"
 #include "gps.h"
 
+
 #define CRSF_ADDRESS_CRSF_RECEIVER 0xEC // address of the receiver (used for telemetry)
+#define CRSF_ADDRESS_SYNCHRO 0XC8
 
 typedef enum
 {
@@ -40,11 +42,11 @@ typedef enum
 
 
 
-#define CRSF_FRAME_GPS_PAYLOAD_SIZE 8  // to change
+#define CRSF_FRAME_GPS_PAYLOAD_SIZE 15
 #define CRSF_FRAME_VARIO_PAYLOAD_SIZE 2 
 #define CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE 8
-#define CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE 8  // to change
-#define CRSF_FRAME_FLIGHT_MODE_PAYLOAD_SIZE 8  // to change
+#define CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE 6  
+//#define CRSF_FRAME_FLIGHT_MODE_PAYLOAD_SIZE 48  // to check
 
 typedef enum
 {

@@ -191,19 +191,19 @@ void printConfig(){
         printf("Failsafe type is HOLD\n")  ;
     } else {
         printf("Failsafe uses predefined values\n")  ;
-    printf("     Chan 1...4  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch0\
+    printf("     Chan 1...4  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch0\
                                                     , (uint32_t) config.failsafeChannels.ch1\
                                                     , (uint32_t) config.failsafeChannels.ch2\
                                                     , (uint32_t) config.failsafeChannels.ch3);
-    printf("     Chan 5...8  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch4\
+    printf("     Chan 5...8  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch4\
                                                     , (uint32_t) config.failsafeChannels.ch5\
                                                     , (uint32_t) config.failsafeChannels.ch6\
                                                     , (uint32_t) config.failsafeChannels.ch7);
-    printf("     Chan 9...12 = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch8\
+    printf("     Chan 9...12 = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch8\
                                                     , (uint32_t) config.failsafeChannels.ch9\
                                                     , (uint32_t) config.failsafeChannels.ch10\
                                                     , (uint32_t) config.failsafeChannels.ch11);
-    printf("     Chan 13...16= %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %"PRIu32"\n", (uint32_t) config.failsafeChannels.ch12\
+    printf("     Chan 13...16= %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch12\
                                                     , (uint32_t) config.failsafeChannels.ch13\
                                                     , (uint32_t) config.failsafeChannels.ch14\
                                                     , (uint32_t) config.failsafeChannels.ch15);

@@ -29,7 +29,7 @@ GPS gps;
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 
 void getSensors(void){
-  //voltage.getVoltages();
+  voltage.getVoltages();
   baro1.getAltitude();
   vario1.calculateAltVspeed(&baro1);    
   //gps.readGps();
@@ -43,8 +43,8 @@ void setup() {
   stdio_init_all();
   #ifdef DEBUG
   uint16_t counter = 50;   
-  //while ( (!tud_cdc_connected()) && (counter--)) { sleep_ms(100);  }
-  while ( (!tud_cdc_connected()) ) { sleep_ms(100);  }
+  while ( (!tud_cdc_connected()) && (counter--)) { sleep_ms(100);  }
+  //while ( (!tud_cdc_connected()) ) { sleep_ms(100);  }
   #endif
   //printf("before setup config\n");
   
