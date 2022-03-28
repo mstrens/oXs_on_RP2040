@@ -59,8 +59,7 @@ dma_channel_config c;
 void setupCrsfTxPio(){
     // setup the PIO for TX UART
     uint offsetTx = pio_add_program(pio, &uart_tx_program);
-    uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, 420000) ;//config.crsfBaudrate);
-    printf("baud rate %f", (float) config.crsfBaudrate);
+    uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, config.crsfBaudrate);
     // Configure a channel to write the same word (32 bits) repeatedly to PIO0
     // SM0's TX FIFO, paced by the data request signal from that peripheral.
     dma_chan = dma_claim_unused_channel(true);
@@ -117,28 +116,70 @@ bool dataAvailable(uint8_t idx) {
     // to be continue with other frames/data if ELRS support them.
 }
 
+void fillBufferU8( uint8_t val){
+    CRSFBuffer[CRSFBufferLength++] = val;
+}
+
+void fillBufferU16( uint16_t val){
+    CRSFBuffer[CRSFBufferLength++] = val >> 8 ;
+    CRSFBuffer[CRSFBufferLength++] = val & 0xFF ;
+}
+
+void fillBufferI16( int16_t val){
+    CRSFBuffer[CRSFBufferLength++] = val >> 8 ;
+    CRSFBuffer[CRSFBufferLength++] = val & 0xFF ;
+}
+
+void fillBufferU24( uint32_t val){
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 16 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 8 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) (val & 0xFF);
+}
+
+void fillBufferI24( int32_t val){
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 16 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 8 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) (val & 0xFF);
+}
+
+void fillBufferI32( int32_t val){
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 24 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 16 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) ((val >> 8 )  & 0xFF) ;
+    CRSFBuffer[CRSFBufferLength++] = (uint8_t) (val & 0xFF);
+}
+
+
 void fillFrameBattery(uint8_t idx){
-    voltageFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ;
-    voltageFrame.frame_size = CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
-    voltageFrame.type = CRSF_FRAMETYPE_BATTERY_SENSOR ;
+    CRSFBufferLength = 0;
+    fillBufferU8(CRSF_ADDRESS_CRSF_RECEIVER) ;
+    fillBufferU8(CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 2); // + 2 because we add type and crc byte 
+    fillBufferU8(CRSF_FRAMETYPE_BATTERY_SENSOR) ;
+    //voltage.mVolt[0].value = 100;  // only for testing with dummy values
+    //voltage.mVolt[1].value = 1000;
+    //voltage.mVolt[2].value = 1000;
+    //voltage.mVolt[3].value = 100;
     if ( voltage.mVolt[0].value > 0 ) {
-        voltageFrame.mVolt = voltage.mVolt[0].value ;
-    } else  voltageFrame.mVolt = 0 ;
+        fillBufferU16( (uint16_t) voltage.mVolt[0].value) ;
+    } else  fillBufferU16(0) ;
     if ( voltage.mVolt[1].value > 0 ) {
-        voltageFrame.current = voltage.mVolt[1].value ;
-    } else voltageFrame.current = 0;
+        fillBufferU16((uint16_t)voltage.mVolt[1].value) ;
+    } else fillBufferU16(0);
     if ( voltage.mVolt[2].value > 0 ) {
-        voltageFrame.capacity = voltage.mVolt[2].value;
-    } else voltageFrame.capacity = 0;
+        fillBufferU24( (uint32_t) voltage.mVolt[2].value);
+    } else fillBufferU24(0);
     if ( voltage.mVolt[3].value > 0 ) {
-        voltageFrame.remain =  voltage.mVolt[3].value /10 ;  // it is only a uint8_t; to use for a voltage we divide by 10
-    } else voltageFrame.remain = 0;
-    voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+        fillBufferU8( (uint8_t) (voltage.mVolt[3].value /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
+    } else fillBufferU8(0);
+    //voltageFrame.mVolt = 0X0A01;   // !!!!!!!!!!!!!! to remove
+    //voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    fillBufferU8(crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    
     voltage.mVolt[0].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
     //printf("filling dma buffer with voltage\n");
-    CRSFBufferLength = sizeof(voltageFrame);
-    memcpy(&CRSFBuffer[0] , &voltageFrame , CRSFBufferLength);
+    //CRSFBufferLength = sizeof(voltageFrame);
+    //memcpy(&CRSFBuffer[0] , &voltageFrame , CRSFBufferLength);
     //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
     //    printf( " %X ", CRSFBuffer[i]);
     //}
@@ -149,15 +190,16 @@ void fillFrameBattery(uint8_t idx){
 
 void fillFrameVario(uint8_t idx){
     //if (! baro1.baroInstalled) return ; // skip when vario is not installed ; not required because data will not be available and so fucntion should not be called    
-    varioFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ;
-    varioFrame.frame_size = CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
-    varioFrame.type = CRSF_FRAMETYPE_VARIO ;
-    varioFrame.vSpeed = vario1.climbRate.value ;  
-    varioFrame.crc = crsf_crc.calc( ((uint8_t *) &varioFrame) + 2 , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    CRSFBufferLength = 0;
+    fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
+    fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
+    fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
+    fillBufferI16( (int16_t) 2560 ); //vario1.climbRate.value ;  // cm/sec
+    fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.climbRate.available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
-    CRSFBufferLength = sizeof(varioFrame);
-    memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
+    //CRSFBufferLength = sizeof(varioFrame);
+    //memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
     //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
     //    printf( " %X ", CRSFBuffer[i]);
     //}
@@ -166,17 +208,21 @@ void fillFrameVario(uint8_t idx){
     dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
 }
 void fillFrameAttitude(uint8_t idx){
-    attitudeFrame.device_addr = CRSF_ADDRESS_CRSF_RECEIVER ; //CRSF_ADDRESS_SYNCHRO ; 
-    attitudeFrame.frame_size = CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
-    attitudeFrame.type = CRSF_FRAMETYPE_ATTITUDE;
-    attitudeFrame.pitch = vario1.climbRate.value;
-    attitudeFrame.roll = vario1.absoluteAlt.value / 100; //in m
-    attitudeFrame.yaw = vario1.relativeAlt.value /100; //in m
-    attitudeFrame.crc = crsf_crc.calc( ((uint8_t *) &attitudeFrame) + 2 , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    CRSFBufferLength = 0;
+    fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
+    fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
+    fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
+    vario1.climbRate.value = 1234;
+    vario1.absoluteAlt.value = 4567;
+    vario1.relativeAlt.value = 6789;
+    fillBufferI16( (int16_t)vario1.climbRate.value );
+    fillBufferI16( (int16_t) (vario1.absoluteAlt.value  )) ; //in m
+    fillBufferI16( (int16_t) (vario1.relativeAlt.value  )); //in m
+    fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.relativeAlt.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    CRSFBufferLength = sizeof(attitudeFrame);
-    memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
+    //CRSFBufferLength = sizeof(attitudeFrame);
+    //memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
     //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
     //    printf( " %X ", CRSFBuffer[i]);
     //}
@@ -186,21 +232,23 @@ void fillFrameAttitude(uint8_t idx){
 }
 
 void fillFrameGps(uint8_t idx){
-    gpsFrame.device_addr = CRSF_ADDRESS_SYNCHRO;
-    gpsFrame.frame_size = CRSF_FRAME_GPS_PAYLOAD_SIZE + 2; // + 2 because we add type and crc byte 
-    gpsFrame.type = CRSF_FRAMETYPE_GPS ;
-    gpsFrame.latitude = gps.GPS_lat ;
-    gpsFrame.longitude = gps.GPS_lon ;    // (degree / 10`000`000 )
-    gpsFrame.groundspeed = gps.GPS_speed_3d ;  // ( km/h / 10 )
-    gpsFrame.heading = gps.GPS_ground_course / 1000;      //( degree / 100  instead of 5 decimals)
-    gpsFrame.altitude = gps.GPS_altitude /1000;     //( mm to m )
-    gpsFrame.numSat = gps.GPS_numSat;       //( counter )
-    gpsFrame.crc = crsf_crc.calc( ((uint8_t *) &gpsFrame) + 2 , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    CRSFBufferLength = 0;
+    fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
+    fillBufferU8( CRSF_FRAME_GPS_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
+    fillBufferU8( CRSF_FRAMETYPE_GPS );
+    fillBufferI32( gps.GPS_lat );
+    fillBufferI32( gps.GPS_lon );    // (degree / 10`000`000 )
+    fillBufferU16( gps.GPS_speed_3d );  // ( km/h / 10 )
+    fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
+    fillBufferU16( (uint16_t) (1000 + gps.GPS_altitude / 1000 )) ;     //( m )
+    fillBufferU8( (uint8_t) gps.GPS_numSat );       //( counter )
+    fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1) )  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     gps.GPS_lonAvailable = false ;
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
-    //printf("filling dma buffer for GPS height:%" PRIu16 "\n",gpsFrame.altitude);
-    CRSFBufferLength = sizeof(gpsFrame);
-    memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
+    //printf("GPS height:%" PRIu32 "\n",gps.GPS_altitude);
+    //CRSFBufferLength = sizeof(gpsFrame);
+    //
+    //memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
     dma_channel_set_read_addr (dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (dma_chan, CRSFBufferLength, true) ;    
 }
@@ -230,7 +278,6 @@ void pioRxHandlerIrq(){    // when a byte is received on the Sport, read the pio
   irq_clear (PIO0_IRQ_0 );
   while (  ! pio_sm_is_rx_fifo_empty (pio ,smRx)){ // when some data have been received
      uint8_t c = pio_sm_get (pio , smRx) >> 24;         // read the data
-     //printf(".");
      queue_try_add (&crsfRxQueue, &c);          // push to the queue
     //sportRxMillis = millis();                    // save the timestamp.
   }
@@ -312,7 +359,6 @@ void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
             case  WAIT_CRC:
                 crc = crsf_crc.calc(CRSF_FRAMETYPE_RC_CHANNELS_PACKED); // CRC calculation includes the Type of message
                 crc = crsf_crc.calc(&bufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
-                //printf("in= %x <> calc= %x\n ", data , crc);
                 if ( crc == data){
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;

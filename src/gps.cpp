@@ -25,7 +25,7 @@ void on_uart_rx() {
         uint8_t ch = uart_getc(GPS_UART_ID);
         int count = queue_get_level( &uart0Queue );
         //printf(" level = %i\n", count);
-        //printf( "val = %X\n", ch);
+        //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
         if (!queue_try_add ( &uart0Queue , &ch)) printf("queue try add error\n");
         //printf("%x\n", ch);
     }
@@ -290,8 +290,8 @@ void GPS::setupGpsCasic(void){    // for casic gps
     uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
     uart_set_fifo_enabled(GPS_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
     
-    gpio_set_function(4, GPIO_FUNC_UART); // Set the GPIO pin mux to the UART - 4 is TX, 5 is RX
-    gpio_set_function(5, GPIO_FUNC_UART);
+    gpio_set_function(GPS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
+    gpio_set_function(GPS_RX_PIN , GPIO_FUNC_UART);
     // And set up and enable the interrupt handlers
     irq_set_exclusive_handler(UART0_IRQ, on_uart_rx);
     irq_set_enabled(UART0_IRQ, true);

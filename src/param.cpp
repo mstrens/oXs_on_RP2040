@@ -185,7 +185,7 @@ void printConfig(){
     if (gps.gpsInstalled) {
         printf("GPS is detected\n")  ;
     } else {
-        printf("GPS is not detected\n")  ;
+        printf("GPS is not (yet) detected\n")  ;
     }
     if ( config.failsafeType == 'H'){
         printf("Failsafe type is HOLD\n")  ;
