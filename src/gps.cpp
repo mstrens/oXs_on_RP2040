@@ -255,7 +255,8 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         GPS_fix_type = _buffer.solution.fix_type;
         if (!next_fix)
              GPS_fix = false;
-        GPS_numSat = _buffer.solution.satellites;  
+        GPS_numSat = _buffer.solution.satellites; 
+        if ( _buffer.solution.fix_type == FIX_3D ) GPS_numSat += 100; // we add 100 when we have a 3d fix (for Ublox)
         GPS_hdop = _buffer.solution.position_DOP;
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;

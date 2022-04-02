@@ -107,10 +107,10 @@ bool dataAvailable(uint8_t idx) {
             return voltage.mVolt[0].available ;
         case CRSF_FRAMEIDX_VARIO :
             return vario1.climbRate.available ;    
-        case CRSF_FRAMEIDX_ATTITUDE :
-            return vario1.relativeAlt.available ;    // in this version, attitude frame is used to transmit altitude         
+        //case CRSF_FRAMEIDX_ATTITUDE :
+        //    return vario1.relativeAlt.available ;    // in this version, attitude frame is used to transmit altitude         
         case CRSF_FRAMEIDX_GPS :
-            return gps.GPS_lonAvailable ;    
+            return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled  
     }
     return false;
     // to be continue with other frames/data if ELRS support them.
@@ -194,7 +194,7 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
     fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
-    fillBufferI16( (int16_t) 2560 ); //vario1.climbRate.value ;  // cm/sec
+    fillBufferI16( (int16_t) vario1.climbRate.value ) ;  // cm/sec
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.climbRate.available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
@@ -215,9 +215,9 @@ void fillFrameAttitude(uint8_t idx){
     vario1.climbRate.value = 1234;
     vario1.absoluteAlt.value = 4567;
     vario1.relativeAlt.value = 6789;
-    fillBufferI16( (int16_t)vario1.climbRate.value );
+    fillBufferI16( (int16_t) vario1.climbRate.value );
     fillBufferI16( (int16_t) (vario1.absoluteAlt.value  )) ; //in m
-    fillBufferI16( (int16_t) (vario1.relativeAlt.value  )); //in m
+    fillBufferI16( (int16_t) (vario1.relativeAlt.value  )); //in m int16 allows values from -32000 up to +32000
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     vario1.relativeAlt.available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
@@ -236,12 +236,29 @@ void fillFrameGps(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
     fillBufferU8( CRSF_FRAME_GPS_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_GPS );
-    fillBufferI32( gps.GPS_lat );
-    fillBufferI32( gps.GPS_lon );    // (degree / 10`000`000 )
-    fillBufferU16( gps.GPS_speed_3d );  // ( km/h / 10 )
-    fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
-    fillBufferU16( (uint16_t) (1000 + gps.GPS_altitude / 1000 )) ;     //( m )
-    fillBufferU8( (uint8_t) gps.GPS_numSat );       //( counter )
+    if (gps.gpsInstalled) {
+        fillBufferI32( gps.GPS_lat );
+        fillBufferI32( gps.GPS_lon );    // (degree / 10`000`000 )
+        fillBufferU16( gps.GPS_speed_3d );  // ( km/h / 10 )
+        fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
+        if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
+            fillBufferU16( (uint16_t) (1000 + vario1.relativeAlt.value / 100 )) ;     //( from cm to m And an offset of 1000 )
+        } else {
+            fillBufferU16( (uint16_t) (1000 + gps.GPS_altitude / 1000 )) ;     //( m )
+        }
+        fillBufferU8( (uint8_t) gps.GPS_numSat );       //( counter )
+    } else {
+        fillBufferI32( 0u );
+        fillBufferI32( 0u );    // (degree / 10`000`000 )
+        fillBufferU16( (uint16_t) 0 );  // ( km/h / 10 )
+        fillBufferU16( (uint16_t) 0 );      //( degree / 100  instead of 5 decimals)
+        if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
+            fillBufferU16( (uint16_t) (1000 + vario1.relativeAlt.value / 100 )) ;     //( from cm to m And an offset of 1000 )
+        } else {
+            fillBufferU16( (uint16_t) 1000 ) ;     //( m )
+        }
+        fillBufferU8( (uint8_t) 0 );       //( counter )
+    }
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1) )  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     gps.GPS_lonAvailable = false ;
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;

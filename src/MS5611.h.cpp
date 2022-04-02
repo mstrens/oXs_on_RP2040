@@ -14,9 +14,6 @@
 #define MS5611_CMD_CONVERT_D1     0x40
 #define MS5611_CMD_CONVERT_D2     0x50
 
-//#define PICO_I2C1_SDA_PIN 2   // pin 2 = SDA
-//#define PICO_I2C1_SCL_PIN 3   // pin 3 = SCL
-
 #define PICO_I2C1_SDA_PIN 14  
 #define PICO_I2C1_SCL_PIN 15  
 

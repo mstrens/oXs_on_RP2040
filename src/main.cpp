@@ -12,11 +12,14 @@
 #include "sbus_pwm.h"
 #include "hardware/watchdog.h"
 
-// to do 
-// PWM : support 8 channels when 1 has been tested
-// PWM and Sbus : support failsafe
+// SBUS uses pin GPIO 0 (PIO TX)
+// PWM uses pins 1 up to 8
+// CRSF uses GPIO 9 (pio RX) and GPIO 10 (pio TX)
+// GPS uses gpio 12 (UART0-TX) and gpio 12 (UART0-RX)
+// I2C uses pins : PICO_I2C1_SDA_PIN 14   and  PICO_I2C1_SCL_PIN 15  
+// Analog read uses pins 26 up to 29
 
-#define DEBUG
+//#define DEBUG
 
 VOLTAGE voltage ;    // class to handle voltages
 
