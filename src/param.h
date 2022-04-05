@@ -15,7 +15,7 @@ struct CONFIG{
     float offset2 = 0.0;
     float offset3= 0.0;
     float offset4 = 0.0;
-    uint8_t gpsType = 0 ;
+    uint8_t gpsType = 'U' ;
     uint8_t failsafeType = 'H';
     crsf_channels_s failsafeChannels ;
 };
