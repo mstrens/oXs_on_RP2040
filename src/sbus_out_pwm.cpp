@@ -1,5 +1,5 @@
 
-#include "sbus_pwm.h"
+#include "sbus_out_pwm.h"
 #include "hardware/pio.h"
 #include "hardware/dma.h"
 #include "uart_sbus_tx.pio.h"
@@ -21,7 +21,7 @@ dma_channel_config cSbus;
 
 extern sbusFrame_s sbusFrame;
 uint16_t sbusFrame16Bits[25];
-extern uint32_t lastCrsfRcChannels;
+extern uint32_t lastRcChannels;
 extern CONFIG config;
 
 
@@ -35,7 +35,7 @@ static const bool ParityTable256[256] =
 
 
 // Set up a PIO state machine to serialise our bits
-void setupSbusPio(){
+void setupSbusOutPio(){
     // setup the PIO for TX UART
     uint offsetTx = pio_add_program(pioTxSbus, &uart_sbus_tx_program);
     uart_sbus_tx_program_init(pioTxSbus, smTxSbus, offsetTx, PIN_TX_SBUS, SERIAL_BAUD_SBUS);
@@ -64,13 +64,13 @@ void setupSbusPio(){
 
 void fillSbusFrame(){
     static uint32_t lastSbusSentMillis = 0;
-    if (!lastCrsfRcChannels) return;  // do not generate a sbus fram when whe never get a RC chanels frame form crsf
+    if (!lastRcChannels) return;  // do not generate a sbus fram when whe never get a RC chanels frame form crsf
     // we should also check that dma is not busy anymore
     
     if ( (millis() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
         lastSbusSentMillis = millis();   
         sbusFrame.synchro = 0x0F ; 
-        if ( ( millis()- lastCrsfRcChannels) > 500 ) { // if we do not get a RC channels frame
+        if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, we apply failsafe
             sbusFrame.flag = 0x10; // indicates a failsafe
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         } else {
@@ -125,10 +125,10 @@ void setupPwm(){
 
 void updatePWM(){
     static uint32_t lastPwmMillis = 0 ;
-    if ( ! lastCrsfRcChannels) return ;
+    if ( ! lastRcChannels) return ;
     if ( (millis() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
         lastPwmMillis = millis();
-        if ( ( millis()- lastCrsfRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
+        if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
         for( uint8_t i = 0 ; i < 8 ; i++){

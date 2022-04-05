@@ -6,6 +6,7 @@
 #include "gps.h"
 #include <math.h>
 #include "param.h"
+#include "tools.h"
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -16,17 +17,18 @@
 #define GPS_TX_PIN 12 
 #define GPS_RX_PIN 13
 
-extern queue_t uart0Queue ;
+extern queue_t gpsQueue ;
 extern CONFIG config;
+extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
 // RX interrupt handler
 void on_uart_rx() {
     while (uart_is_readable(GPS_UART_ID)) {
         uint8_t ch = uart_getc(GPS_UART_ID);
-        int count = queue_get_level( &uart0Queue );
+        int count = queue_get_level( &gpsQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &uart0Queue , &ch)) printf("queue try add error\n");
+        if (!queue_try_add ( &gpsQueue , &ch)) printf("queue try add error\n");
         //printf("%x\n", ch);
     }
 }
@@ -38,7 +40,7 @@ void GPS::setupGps(void){
     if ( config.gpsType == 'C') setupGpsCasic();
 }
 void GPS::readGps(){
-    if ( queue_is_empty (&uart0Queue)) return;
+    if ( queue_is_empty (&gpsQueue)) return;
     if ( config.gpsType == 'U') readGpsUblox();
     if ( config.gpsType == 'C') readGpsCasic();
 }
@@ -100,7 +102,7 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
                 
         //printf("End of GPS setup\n"); sleep_ms(1000);
         // clear the input queue that is filled by the interrupt
-        queue_init(&uart0Queue , sizeof(uint8_t) ,256) ;// queue for uart0 with 256 elements of 1
+        queue_init(&gpsQueue , sizeof(uint8_t) ,256) ;// queue for uart0 with 256 elements of 1
         
         // change the baudrate of UART0 to the new rate
         uart_set_baudrate(GPS_UART_ID , 38400);
@@ -111,13 +113,13 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
         uart_set_irq_enables(GPS_UART_ID, true, false);
         busy_wait_us(1000);
         uint8_t dummy;
-        while (! queue_is_empty (&uart0Queue)) queue_try_remove ( &uart0Queue , &dummy ) ;
+        while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
 }  // end setupGPSUblox;
 
     
 void GPS::readGpsUblox(){
     uint8_t data;
-    if (queue_try_remove ( &uart0Queue , &data ) ){
+    if (queue_try_remove ( &gpsQueue , &data ) ){
         //printf(" %X" , data);
         bool parsed = false;
         switch (_step) {
@@ -215,9 +217,9 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
     case MSG_POSLLH:
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsInstalled = true;
-        GPS_lon = _buffer.posllh.longitude;           // in degree with 7 decimals
-        GPS_lat = _buffer.posllh.latitude;            // in degree with 7 decimals
-        GPS_altitude = _buffer.posllh.altitude_msl ;  //alt in mm
+        fields[LONGITUDE].value = _buffer.posllh.longitude;           // in degree with 7 decimals
+        fields[LATITUDE].value = _buffer.posllh.latitude;            // in degree with 7 decimals
+        fields[ALTITUDE].value = _buffer.posllh.altitude_msl ;  //alt in mm
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
             if ( GPS_home_lat == 0 ) { 
@@ -234,15 +236,12 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             int32_t off_y = (GPS_lat - GPS_home_lat) / GPS_scale ;
             GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
             if (GPS_bearing < 0) GPS_bearing += 360;
-#if defined( A_LOCATOR_IS_CONNECTED)  && ( A_LOCATOR_IS_CONNECTED == YES)
-            GPS_last_fix_millis = millis() ;  // used by lora locator
-            GPS_last_fix_lon = GPS_lon ;      // used by lora locator
-            GPS_last_fix_lat = GPS_lat ;      // used by lora locator
-#endif
         } else {
             GPS_fix = false;
         }
-        GPS_lonAvailable = GPS_latAvailable = GPS_altitudeAvailable = GPS_fix; 
+        fields[LONGITUDE].available = GPS_fix;           // in degree with 7 decimals
+        fields[LATITUDE].available = GPS_fix;
+        fields[ALTITUDE].available = GPS_fix; 
         new_position = true;
         break;
 //    case MSG_STATUS:                              // !!!!!!!!! I do not see real need of this message because same (and more) data are in SOL, so this message is not activated in init
@@ -255,18 +254,19 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         GPS_fix_type = _buffer.solution.fix_type;
         if (!next_fix)
              GPS_fix = false;
-        GPS_numSat = _buffer.solution.satellites; 
-        if ( _buffer.solution.fix_type == FIX_3D ) GPS_numSat += 100; // we add 100 when we have a 3d fix (for Ublox)
+        fields[NUMSAT].value = _buffer.solution.satellites; 
+        fields[NUMSAT].available = true;
+        if ( _buffer.solution.fix_type == FIX_3D ) fields[NUMSAT].value += 100; // we add 100 when we have a 3d fix (for Ublox)
         GPS_hdop = _buffer.solution.position_DOP;
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_VELNED:   
-        GPS_speed_3d  = _buffer.velned.speed_3d;  // cm/s
-        GPS_speed_3dAvailable = GPS_fix ;
+        fields[GROUNDSPEED].value  = _buffer.velned.speed_3d;  // cm/s
+        fields[GROUNDSPEED].available = GPS_fix ;
         GPS_speed_2d = _buffer.velned.speed_2d;    // cm/s
         GPS_speed_2dAvailable = GPS_fix ;
-        GPS_ground_course = _buffer.velned.heading_2d ;     // Heading 2D deg with 5 decimals
-        GPS_ground_courseAvailable = GPS_fix ;
+        fields[HEADING].value = _buffer.velned.heading_2d ;     // Heading 2D deg with 5 decimals
+        fields[HEADING].available = GPS_fix ;
         new_speed = true;
         break;
     default:
@@ -285,7 +285,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
 //  For casic GPS
 void GPS::setupGpsCasic(void){    // for casic gps
     // clear the input queue that is filled by the interrupt
-    queue_init(&uart0Queue , 1 ,256) ;// queue for uart0 with 256 elements of 1
+    queue_init(&gpsQueue , 1 ,256) ;// queue for uart0 with 256 elements of 1
     
     uart_init(GPS_UART_ID, 38400);   // setup UART0 at 38400 baud
     uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
@@ -300,14 +300,14 @@ void GPS::setupGpsCasic(void){    // for casic gps
     uart_set_irq_enables(GPS_UART_ID, true, false);
     busy_wait_us(1000);
     uint8_t dummy;
-    while (! queue_is_empty (&uart0Queue)) queue_try_remove ( &uart0Queue , &dummy ) ;
+    while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
 }  // end setupGPS
    
 
 void GPS::readGpsCasic() { // read and process GPS data. do not send them.// for casic gps
     uint8_t data;
     static uint8_t _idx;
-    if (queue_try_remove ( &uart0Queue , &data ) ) {
+    if (queue_try_remove ( &gpsQueue , &data ) ) {
         //if (data == 0xBA) printf("\n"); // new line when sync byte is received
         //printf(" %x " , data );
         switch (_step) {
@@ -364,26 +364,30 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     //    printf(".");
     //}
     gpsInstalled = true;
-    GPS_numSat = _casicBuffer.nav_pv.numSV;
+    
+    
+    fields[NUMSAT].value = _casicBuffer.nav_pv.numSV;
+    fields[NUMSAT].available = true;
     if ( _casicBuffer.nav_pv.velValid >= 6) {
         GPS_speed_2d  = _casicBuffer.nav_pv.speed2D;
         GPS_speed_2dAvailable  = true;
     }    
     if ( _casicBuffer.nav_pv.velValid >= 7) {
-        GPS_speed_3d  = _casicBuffer.nav_pv.speed3D;
-        GPS_speed_3dAvailable  = true;
-    }
-    if ( _casicBuffer.nav_pv.posValid >= 7){ 
-        GPS_lonAvailable = GPS_latAvailable = GPS_altitudeAvailable = GPS_ground_courseAvailable =true;
-        GPS_lon = _casicBuffer.nav_pv.lon * 10000000;           // in degree with 7 decimals
-        GPS_lat = _casicBuffer.nav_pv.lat* 10000000;            // in degree with 7 decimals
+        fields[NUMSAT].value += 100; // add 100 if 3d fix available
+        fields[GROUNDSPEED].value  = _casicBuffer.nav_pv.speed3D;
+        fields[LONGITUDE].value = _casicBuffer.nav_pv.lon * 10000000;           // in degree with 7 decimals
+        fields[LATITUDE].value = _casicBuffer.nav_pv.lat* 10000000;            // in degree with 7 decimals
         if (_casicBuffer.nav_pv.height > 0) {
-            GPS_altitude = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
+            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
         } else {
-            GPS_altitude = 0 ;
+            fields[ALTITUDE].value = 0 ;
         }
-
-        GPS_ground_course = _casicBuffer.nav_pv.heading ;     // Heading 2D deg with 5 decimals
+        fields[HEADING].value = _casicBuffer.nav_pv.heading ;     // Heading 2D deg with 5 decimals
+        fields[GROUNDSPEED].available  = true;
+        fields[LONGITUDE].available = true;           // in degree with 7 decimals
+        fields[LATITUDE].available = true;
+        fields[ALTITUDE].available = true; 
+        fields[HEADING].available = true;
         if ( GPS_home_lat == 0 ) { 
               GPS_home_lat = GPS_lat ;  // save home position
               GPS_home_lon = GPS_lon ;
@@ -399,6 +403,17 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
         GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
         if (GPS_bearing < 0) GPS_bearing += 360;
         return true;
+    } else {
+        fields[GROUNDSPEED].value  = 0;
+        fields[LONGITUDE].value = 0;           // in degree with 7 decimals
+        fields[LATITUDE].value = 0;            // in degree with 7 decimals
+        fields[ALTITUDE].value = 0 ;
+        fields[HEADING].value = 0 ;     // Heading 2D deg with 5 decimals
+        fields[GROUNDSPEED].available  = false;
+        fields[LONGITUDE].available = false;           // in degree with 7 decimals
+        fields[LATITUDE].available = false;
+        fields[ALTITUDE].available = false; 
+        fields[HEADING].available = false;
     }
     return false;
 }

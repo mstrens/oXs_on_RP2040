@@ -6,6 +6,8 @@
 #include "param.h"
 
 extern CONFIG config;
+extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+
 
 VOLTAGE::VOLTAGE() {}
 
@@ -40,8 +42,8 @@ void VOLTAGE::getVoltages(void){
         if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < MAX_NBR_VOLTAGES ; cntInit++) {
-                mVolt[cntInit].value = (sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE * mVoltPerStep[cntInit]) - offset[cntInit];
-                mVolt[cntInit].available = true ;
+                fields[cntInit + MVOLT].value = (sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE * mVoltPerStep[cntInit]) - offset[cntInit];
+                fields[cntInit + MVOLT].available = true ;
                 sumVoltage[cntInit] = 0 ;
                 //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);  
             }    

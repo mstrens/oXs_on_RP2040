@@ -44,7 +44,7 @@ static inline void uart_sbus_tx_program_init(PIO pio, uint sm, uint offset, uint
     pio_sm_set_pindirs_with_mask(pio, sm, 1u << pin_tx, 1u << pin_tx);
     pio_gpio_init(pio, pin_tx);
     gpio_set_outover(pin_tx,  GPIO_OVERRIDE_INVERT) ; // added by ms to manage inverted UART from Sbus
-    //gpio_pull_down(pin_tx); // changed by MS
+    gpio_pull_down(pin_tx); // changed by MS
     pio_sm_config c = uart_sbus_tx_program_get_default_config(offset);
     // OUT shifts to right, no autopull
     sm_config_set_out_shift(&c, true, false, 32);

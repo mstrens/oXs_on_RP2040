@@ -26,10 +26,6 @@ void setupI2c(){
     gpio_pull_up(PICO_I2C1_SCL_PIN); 
 }
 
-
-
-
-
 /////////////////////////////////////////////////////
 //
 // PUBLIC
@@ -45,7 +41,6 @@ MS5611::MS5611(uint8_t deviceAddress)
   _D2Prev            = 0;
   
 }
-
 
 bool MS5611::begin()  // return true when baro exist
 {

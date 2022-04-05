@@ -3,13 +3,16 @@
 #include <stdint.h>
 #define VERSION "0.0.1"
 // ------- General ------------------
-// This project is foreseen to generate telemetry data to a ELRS receiver when a flight controller is not used
-// It can provide
+// This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
+// 
+// This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals
+// For telemetry, it can provide
 //    - up to 4 analog voltages measurement (with scaling and offset)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
-// It can also provide 8 PWM RC channels (channels 1...4 and 6...9) and a SBUS signal with all ELRS channels  
+// It can also provide 8 PWM RC channels (channels 1...4 and 6...9) form a CRSF or a Sbus signal.
+// It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provide by the Frsky Receiver itself)  
 //
 // -------  Hardware -----------------
 // This project requires a board with a RP2040 processor (like the rapsberry pi pico).
@@ -21,14 +24,19 @@
 //              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
 //             this can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
 //    - some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
-//       note : a voltage can be used to measure a current using some external devices 
-// ----------Wiring --------------------
-// ELRS receiver, MS5611 and GPS must share the same Gnd
-// Connect a 5V source to the Vcc pin of RP2040 board
-// Connect gpio 9 from RP2040 (= PIO RX signal) to the TX pin from ELRS receiver (this wire transmit the RC channels)
-// Connect gpio 10 from RP2040 (= PIO TX signal) to the RX pin from ELRS receiver (this wire transmits the telemetry data)
+//       note : a voltage can be used to measure e.g. a current when some external devices are use to generate an analog voltage 
 //
-// SBus signal is available on gpio 0
+// ----------Wiring --------------------
+// FRSKY/ELRS receiver, MS5611 and GPS must share the same Gnd
+// Connect a 5V source to the Vcc pin of RP2040 board
+// When used with a ELRS receiver:
+//    - Connect gpio 9 from RP2040 (= PIO RX signal) to the TX pin from ELRS receiver (this wire transmit the RC channels)
+//    - Connect gpio 10 from RP2040 (= PIO TX signal) to the RX pin from ELRS receiver (this wire transmits the telemetry data)
+// When used with a FRSKY receiver:
+//    - Connect gpio 9 from RP2040 (= UART0 RX signal) to the Sbus pin from Frsky receiver (this wire transmit the RC channels)
+//    - Connect gpio 10 from RP2040 (= PIO TX signal) via a 1k resistor to the Sport pin from Frsky receiver (this wire transmits the telemetry data)
+//
+// SBus signal (output based on CRSF) is available on gpio 0
 // PWM signals (channels 1...4 and 6...9) are avaialble on gpio 1...8
 //     note : channel 5 is used for arming in ELRS but has no real sense for fixed wing. 
 //
@@ -71,20 +79,23 @@
 // This speed (=baud rate) must be the same as the baudrate defined on the receiver
 // Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels signal to the flight controller and to get the telemetry data.
 // Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly
-// E.g. when ELRS receiver generates a Sbus signal instead of a CRSF, then the baud rate is (normally) 1000000
 //
-// The number of data that ELRS can send back per second to the transmitter is quite limitted
+// The number of data that ELRS can send back per second to the transmitter is quite limitted (and depends on your ELRS setup)
 // There are 4 types of frame being generated (voltage, gps, vario and attitude)
-// Following #define allow to set up the interval between 2 frames of the same type
+// Following #define allow to set up the interval between 2 frames of the same group.
+// This is also valid for data sent via the Sport protocol.
 // This allows e.g. to transmit vertical speed (in 'vario' frame) more often than GPS data
 // The values are in milli seconds
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
 #define VARIO_FRAME_INTERVAL 200   // This frame contains only Vertical speed
 #define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
-#define ATTITUDE_FRAME_INTERVAL 200 // This should normally contains pitch, roll and yaw. Still it is reused to transmit absolute altitude and relative altitude
+#define ATTITUDE_FRAME_INTERVAL 200 // This should normally contains pitch, roll and yaw. It is currently not used in this project.
+// Note: ELRS has only one field for Altitude and is normally part of the GPS frame.  
+//       When a baro sensor is used, it provides an altitude that is more accurate than the GPS altitude.
+//       So for ELRS protocol, priority is given to the baro altitude when it is available.
+//       In ELRS, when there is a baro sensor but no GPS, all GPS data are transmitted but only the Altitude is meaningful  
 
-
-// Here some additional parameters that can't be changed by the serial terminal 
+// Here some additional parameters that can't be changed via the serial terminal 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 50
 #define SENSITIVITY_MAX 300
@@ -106,9 +117,9 @@ typedef struct {
 
 
 
-#define YES 1
-#define NO  0
+//#define YES 1
+//#define NO  0
 
-#define DEBUG
+//#define DEBUG
 
 

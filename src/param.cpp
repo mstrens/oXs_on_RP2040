@@ -18,7 +18,7 @@ uint8_t cmdBufferPos = 0;
 
 extern GPS gps;
 extern sbusFrame_s sbusFrame;
-extern uint32_t lastCrsfRcChannels;
+extern uint32_t lastRcChannels;
 
 CONFIG config;
 
@@ -49,6 +49,7 @@ void handleUSBCmd(void){
 }
 
 void processCmd(){
+    printf("processing cmd\n");
     bool updateConfig = false;
     char *ptr;
     uint32_t ui;
@@ -69,7 +70,6 @@ void processCmd(){
     }
     upperStr(pkey);
     upperStr(pvalue);
-    
     printf("\nCmd to execute: ");   
     if (pkey) printf("  %s", pkey);
     if (pvalue) printf("=%s", pvalue);
@@ -85,6 +85,20 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    // change protocol
+    if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
+        if (strcmp("S", pvalue) == 0) {
+            config.protocol = 'S';
+            updateConfig = true;
+        } else if (strcmp("C", pvalue) == 0) {
+            config.protocol = 'C';
+            updateConfig = true;
+        } else  {
+            printf("Error : protocol must be S (Sport) or C (CRSF=ELRS)\n");
+        }
+    }
+    
+    
     // change scale
     if (( strcmp("SCALE1", pkey) == 0 ) || ( strcmp("SCALE2", pkey) == 0 )\
          || ( strcmp("SCALE3", pkey) == 0 )  || ( strcmp("SCALE4", pkey) == 0 ) ){ 
@@ -144,7 +158,7 @@ void processCmd(){
     }
     // set failsafe to the current values
     if ( strcmp("SETFAILSAFE", pkey) == 0 ) { // if the key is Failsafe
-        if ( lastCrsfRcChannels ) {
+        if ( lastRcChannels ) {
             config.failsafeType = 'C'; // remove 'H' for HOLD
             memcpy( &config.failsafeChannels , &sbusFrame.rcChannelsData, sizeof(config.failsafeChannels));
             updateConfig = true;
@@ -164,7 +178,14 @@ void processCmd(){
 void printConfig(){
     uint8_t version[] =   VERSION ;
     printf("\nVersion = %s \n", version)  ;
-    printf("\nCRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
+    if (config.protocol == 'S'){
+            printf("\nProtocol is Sport (Frsky)\n")  ;
+        } else if (config.protocol == 'C'){
+            printf("\nProtocol is CRSF (=ELRS)\n")  ;
+        } else {
+            printf("\nProtocol is unknow\n")  ;
+        }
+    printf("CRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
     printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
@@ -210,13 +231,14 @@ void printConfig(){
 
     }
     printf("\nCommands can be entered to change the config parameters\n");
+    printf("-To change the protocol, for Sport enter PROTOCOL=S , for CRSF/ELRS entre PROTOCOL=C\n");
     printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
     printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
     printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
     printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
     printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
     printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
-    printf("   Note: some changes require a reset to be applied"); 
+    printf("   Note: some changes require a reset to be applied\n"); 
 }
 
 
@@ -265,10 +287,11 @@ void removeTrailingWhiteSpace( char * str)
 }
 
 void setupConfig(){   // The config is uploaded at power on
-    if (*flash_target_contents == 0x1 ) {
+    if (*flash_target_contents == 0x2 ) {
         memcpy( &config , flash_target_contents, sizeof(config));
     } else {
-        config.version = 1;
+        config.version = 2;
+        config.protocol = 'S'; // default = sport
         config.crsfBaudrate = 420000;
         config.scaleVolt1 = 1.0;
         config.scaleVolt2 = 1.0;
@@ -297,5 +320,5 @@ void setupConfig(){   // The config is uploaded at power on
         config.failsafeChannels.ch14 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch15 = config.failsafeChannels.ch0 ;
     }
-    printConfig();
+    
 } 

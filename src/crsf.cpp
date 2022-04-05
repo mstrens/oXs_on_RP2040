@@ -3,8 +3,8 @@
 #include "hardware/pio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
-#include "uart_tx.pio.h"
-#include "uart_rx.pio.h"
+#include "uart_crsf_tx.pio.h"
+#include "uart_crsf_rx.pio.h"
 #include "crsf.h"
 #include "config.h"
 #include "crc.h"
@@ -24,6 +24,8 @@
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
 uint8_t crsf_last_frame_idx = 0 ;  
+
+extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
 voltageFrameStruct voltageFrame;
 extern VOLTAGE voltage ;
@@ -104,9 +106,9 @@ void fillCRSFFrame(){
 bool dataAvailable(uint8_t idx) {
     switch (idx) {
         case  CRSF_FRAMEIDX_BATTERY_SENSOR : 
-            return voltage.mVolt[0].available ;
+            return fields[MVOLT].available ;
         case CRSF_FRAMEIDX_VARIO :
-            return vario1.climbRate.available ;    
+            return fields[VSPEED].available ;    
         //case CRSF_FRAMEIDX_ATTITUDE :
         //    return vario1.relativeAlt.available ;    // in this version, attitude frame is used to transmit altitude         
         case CRSF_FRAMEIDX_GPS :
@@ -159,23 +161,23 @@ void fillFrameBattery(uint8_t idx){
     //voltage.mVolt[1].value = 1000;
     //voltage.mVolt[2].value = 1000;
     //voltage.mVolt[3].value = 100;
-    if ( voltage.mVolt[0].value > 0 ) {
-        fillBufferU16( (uint16_t) voltage.mVolt[0].value) ;
+    if ( fields[MVOLT].value > 0 ) {
+        fillBufferU16( (uint16_t) fields[MVOLT].value ) ;
     } else  fillBufferU16(0) ;
-    if ( voltage.mVolt[1].value > 0 ) {
-        fillBufferU16((uint16_t)voltage.mVolt[1].value) ;
+    if ( fields[CURRENT].value > 0 ) {
+        fillBufferU16((uint16_t)fields[CURRENT].value) ;
     } else fillBufferU16(0);
-    if ( voltage.mVolt[2].value > 0 ) {
-        fillBufferU24( (uint32_t) voltage.mVolt[2].value);
+    if ( fields[CAPACITY].value > 0 ) {
+        fillBufferU24( (uint32_t) fields[CAPACITY].value);
     } else fillBufferU24(0);
-    if ( voltage.mVolt[3].value > 0 ) {
-        fillBufferU8( (uint8_t) (voltage.mVolt[3].value /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
+    if ( fields[REMAIN].value > 0 ) {
+        fillBufferU8( (uint8_t) (fields[REMAIN].value /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
     } else fillBufferU8(0);
     //voltageFrame.mVolt = 0X0A01;   // !!!!!!!!!!!!!! to remove
     //voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fillBufferU8(crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     
-    voltage.mVolt[0].available = false ;
+    fields[MVOLT].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
     //printf("filling dma buffer with voltage\n");
     //CRSFBufferLength = sizeof(voltageFrame);
@@ -194,9 +196,9 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
     fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
-    fillBufferI16( (int16_t) vario1.climbRate.value ) ;  // cm/sec
+    fillBufferI16( (int16_t) fields[VSPEED].value ) ;  // cm/sec
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    vario1.climbRate.available = false ;
+    fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
     //CRSFBufferLength = sizeof(varioFrame);
     //memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
@@ -212,14 +214,14 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-    vario1.climbRate.value = 1234;
-    vario1.absoluteAlt.value = 4567;
-    vario1.relativeAlt.value = 6789;
-    fillBufferI16( (int16_t) vario1.climbRate.value );
+    //fields[VSPEED].value = 1234;
+    //vario1.absoluteAlt.value = 4567;
+    //fields}RELATIVEALT].value = 6789;
+    fillBufferI16( (int16_t) fields[VSPEED].value );
     fillBufferI16( (int16_t) (vario1.absoluteAlt.value  )) ; //in m
-    fillBufferI16( (int16_t) (vario1.relativeAlt.value  )); //in m int16 allows values from -32000 up to +32000
+    fillBufferI16( (int16_t) (fields[RELATIVEALT].value  )); //in m int16 allows values from -32000 up to +32000
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    vario1.relativeAlt.available = false ;
+    fields[RELATIVEALT].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
     //CRSFBufferLength = sizeof(attitudeFrame);
     //memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
@@ -242,7 +244,7 @@ void fillFrameGps(uint8_t idx){
         fillBufferU16( gps.GPS_speed_3d );  // ( km/h / 10 )
         fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
         if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
-            fillBufferU16( (uint16_t) (1000 + vario1.relativeAlt.value / 100 )) ;     //( from cm to m And an offset of 1000 )
+            fillBufferU16( (uint16_t) (1000 + fields[RELATIVEALT].value / 100 )) ;     //( from cm to m And an offset of 1000 )
         } else {
             fillBufferU16( (uint16_t) (1000 + gps.GPS_altitude / 1000 )) ;     //( m )
         }
@@ -253,7 +255,7 @@ void fillFrameGps(uint8_t idx){
         fillBufferU16( (uint16_t) 0 );  // ( km/h / 10 )
         fillBufferU16( (uint16_t) 0 );      //( degree / 100  instead of 5 decimals)
         if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
-            fillBufferU16( (uint16_t) (1000 + vario1.relativeAlt.value / 100 )) ;     //( from cm to m And an offset of 1000 )
+            fillBufferU16( (uint16_t) (1000 + fields[RELATIVEALT].value / 100 )) ;     //( from cm to m And an offset of 1000 )
         } else {
             fillBufferU16( (uint16_t) 1000 ) ;     //( m )
         }
@@ -334,7 +336,7 @@ enum CRSFState{
     WAIT_CRC
 } ;
 
-uint32_t lastCrsfRcChannels = 0;
+uint32_t lastRcChannels = 0;   // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
     static uint8_t crsfRxState = NO_FRAME;
     static uint8_t counter = 0;
@@ -379,7 +381,7 @@ void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
                 if ( crc == data){
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
-                    lastCrsfRcChannels = millis();
+                    lastRcChannels = millis();
                     //printf("Good RC received\n");
                 } else {
                     //printf("bad CRC received\n");

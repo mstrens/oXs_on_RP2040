@@ -7,11 +7,13 @@
 #include "tools.h"
 //#include <stdlib.h>     /* abs */
 
+extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+
+
 uint32_t abs(int32_t value){
   if (value > 0) return value;
   return -value;
 }
-
 
 VARIO::VARIO(){}
 
@@ -58,10 +60,10 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
   
   // update climbRate only if the difference is big enough
-  if ( abs((int32_t)  climbRateFloat - climbRate.value) > VARIOHYSTERESIS ) {
-      climbRate.value = (int32_t)  climbRateFloat  ;
+  if ( abs((int32_t)  climbRateFloat - fields[VSPEED].value) > VARIOHYSTERESIS ) {
+      fields[VSPEED].value = (int32_t)  climbRateFloat  ;
   }    
-  climbRate.available=true; // allows SPORT protocol to transmit the value
+  fields[VSPEED].available=true; // allows SPORT protocol to transmit the value
   switchClimbRateAvailable = true ; // inform readsensors() that a switchable vspeed is available
   
   // AltitudeAvailable is set to true only once every 100 msec in order to give priority to climb rate on SPORT
@@ -73,9 +75,9 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
     //printf("abs alt= %" PRIu32 "\n", absoluteAlt.value );
     sensitivityAvailable = true ;
     if (altOffset == 0) altOffset = absoluteAlt.value ;
-    relativeAlt.value = absoluteAlt.value - altOffset ;
-    relativeAlt.available = true ;
-    if ( relativeAlt.value > relativeAltMax.value ) relativeAltMax.value = relativeAlt.value ;
+    fields[RELATIVEALT].value = absoluteAlt.value - altOffset ;
+    fields[RELATIVEALT].available = true ;
+    if ( fields[RELATIVEALT].value > relativeAltMax.value ) relativeAltMax.value = fields[RELATIVEALT].value ;
     relativeAltMax.available = true ;
     if ( altMillis > nextAverageAltMillis ){ // calculation of the difference of altitude (in m) between the 10 last sec
         nextAverageAltMillis = altMillis + 500 ; // calculate only once every 500 msec

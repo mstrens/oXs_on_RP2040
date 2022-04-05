@@ -23,12 +23,12 @@ public:
   int sensitivity ; 
   oneMeasurement_t absoluteAlt;     // in cm  
   bool altitudeAvailableForDte   ;  // use to say to readsensors() that an altitude is available and that dte can be calculated.
-  oneMeasurement_t relativeAlt;     // in cm  
+  //oneMeasurement_t relativeAlt;     // in cm  
   oneMeasurement_t relativeAltMax;     // in cm  
   int32_t altOffset ;
   oneMeasurement_t vSpeed10Sec; // Altitude gain/loose between 10 sec (is calculated and send every 500 msec)
   
-  oneMeasurement_t climbRate;       // in cm /sec = vertical speed
+  //oneMeasurement_t climbRate;       // in cm /sec = vertical speed
   
   bool switchClimbRateAvailable ; // use to say to the readsensors loop that that a climbrate is available (to select the one being send)  
   
