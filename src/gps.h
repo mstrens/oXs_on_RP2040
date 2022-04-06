@@ -221,7 +221,7 @@ private:
     uint8_t _ck_a;// Packet checksum accumulators
     uint8_t _ck_b;// Packet checksum accumulators
     bool _skip_packet = false ;
-    uint8_t _step;
+    uint8_t _step ;
     uint8_t _class;
     uint16_t _payload_length;
     uint16_t _payload_counter;

@@ -95,7 +95,7 @@ void fillCRSFFrame(){
     uint32_t _millis = millis();
     for (uint8_t i = 0 ; i< FRAME_TYPES_MAX ; i++ ){
          crsf_last_frame_idx++;
-         if (crsf_last_frame_idx >= FRAME_TYPES_MAX) crsf_last_frame_idx ;
+         if (crsf_last_frame_idx >= FRAME_TYPES_MAX) crsf_last_frame_idx = 0;
          if ( (_millis >= crsfFrameNextMillis[crsf_last_frame_idx]) && (dataAvailable(crsf_last_frame_idx))) {
             fillOneFrame(crsf_last_frame_idx) ; // if one frame has been filled, break because dma is busy
             break;  
@@ -109,8 +109,8 @@ bool dataAvailable(uint8_t idx) {
             return fields[MVOLT].available ;
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
-        //case CRSF_FRAMEIDX_ATTITUDE :
-        //    return vario1.relativeAlt.available ;    // in this version, attitude frame is used to transmit altitude         
+        case CRSF_FRAMEIDX_ATTITUDE :
+            return fields[RELATIVEALT].available ;    // in this version, attitude frame is used to transmit altitude         
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled  
     }
@@ -214,12 +214,15 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-    //fields[VSPEED].value = 1234;
-    //vario1.absoluteAlt.value = 4567;
-    //fields}RELATIVEALT].value = 6789;
-    fillBufferI16( (int16_t) fields[VSPEED].value );
-    fillBufferI16( (int16_t) (vario1.absoluteAlt.value  )) ; //in m
-    fillBufferI16( (int16_t) (fields[RELATIVEALT].value  )); //in m int16 allows values from -32000 up to +32000
+#define DEBUG_ATTITUDE 
+#ifdef DEBUG_ATTITUDE
+    fillBufferI16( (int16_t) 12345); //int16 allows values from -32000 up to +32000
+    fillBufferI16( (int16_t) -12345) ; //int16 allows values from -32000 up to +32000
+#else    
+    fillBufferI16( (int16_t) (fields[RELATIVEALT].value  )); //int16 allows values from -32000 up to +32000
+    fillBufferI16( (int16_t) (fields[RELATIVEALT].value / 10 )) ; //int16 allows values from -32000 up to +32000
+#endif
+    fillBufferI16( (int16_t) (fields[RELATIVEALT].value  )); // in cm ; int16 allows values from -32000 up to +32000
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RELATIVEALT].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
@@ -239,30 +242,31 @@ void fillFrameGps(uint8_t idx){
     fillBufferU8( CRSF_FRAME_GPS_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_GPS );
     if (gps.gpsInstalled) {
-        fillBufferI32( gps.GPS_lat );
-        fillBufferI32( gps.GPS_lon );    // (degree / 10`000`000 )
-        fillBufferU16( gps.GPS_speed_3d );  // ( km/h / 10 )
+        fillBufferI32( fields[LATITUDE].value ); // in degree with 7 decimals
+        fillBufferI32( fields[LONGITUDE].value );    // in degree with 7 decimals // (degree / 10`000`000 )
+        fillBufferU16( gps.GPS_speed_3d * 0.36);  // convert from cm/sec to ( km/h / 10 )
         fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
         if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
             fillBufferU16( (uint16_t) (1000 + fields[RELATIVEALT].value / 100 )) ;     //( from cm to m And an offset of 1000 )
         } else {
-            fillBufferU16( (uint16_t) (1000 + gps.GPS_altitude / 1000 )) ;     //( m )
+            fillBufferU16( (uint16_t) (1000 + fields[ALTITUDE].value / 1000 )) ;     //( from mm to m and an offset of 1000 m )
         }
-        fillBufferU8( (uint8_t) gps.GPS_numSat );       //( counter )
+        fillBufferU8( (uint8_t) fields[NUMSAT].value );       //( counter including +100 when 3D fix )
+        fields[NUMSAT].available = false;
     } else {
-        fillBufferI32( 0u );
-        fillBufferI32( 0u );    // (degree / 10`000`000 )
-        fillBufferU16( (uint16_t) 0 );  // ( km/h / 10 )
-        fillBufferU16( (uint16_t) 0 );      //( degree / 100  instead of 5 decimals)
+        fillBufferI32( 0u );    // lat
+        fillBufferI32( 0u );    // long
+        fillBufferU16( (uint16_t) 0 );  // speed
+        fillBufferU16( (uint16_t) 0 );      // ground course
         if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
             fillBufferU16( (uint16_t) (1000 + fields[RELATIVEALT].value / 100 )) ;     //( from cm to m And an offset of 1000 )
         } else {
-            fillBufferU16( (uint16_t) 1000 ) ;     //( m )
+            fillBufferU16( (uint16_t) 1000 ) ;     //( m ; it is just the offset)
         }
-        fillBufferU8( (uint8_t) 0 );       //( counter )
+        fillBufferU8( (uint8_t) 0 );       //( counter for numsat)
     }
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1) )  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    gps.GPS_lonAvailable = false ;
+    
     crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
     //printf("GPS height:%" PRIu32 "\n",gps.GPS_altitude);
     //CRSFBufferLength = sizeof(gpsFrame);

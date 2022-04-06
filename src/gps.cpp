@@ -25,7 +25,7 @@ extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and param
 void on_uart_rx() {
     while (uart_is_readable(GPS_UART_ID)) {
         uint8_t ch = uart_getc(GPS_UART_ID);
-        int count = queue_get_level( &gpsQueue );
+        //int count = queue_get_level( &gpsQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
         if (!queue_try_add ( &gpsQueue , &ch)) printf("queue try add error\n");
@@ -78,6 +78,7 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            
     #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
             0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
     #elif defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 10)
@@ -88,16 +89,13 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
             0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
                                 0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
         }  ;   
+        busy_wait_us(500000) ; // wait to be sure that GPS has started (otherwise first bytes are lost)
         uint8_t initGpsIdx = 0 ;
-        busy_wait_us(3000) ; // wait to be sure that GPS has started
-        uint8_t i1=100;
-        
         while (initGpsIdx < sizeof( initGps1)) {
     //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
+            if (initGps1[initGpsIdx] == 0XB5) busy_wait_us(5000) ;
             uart_putc_raw(GPS_UART_ID , initGps1[initGpsIdx++]);
-            busy_wait_us(2000) ;
         }
-        initGpsIdx = 0 ;
         busy_wait_us(10000);
                 
         //printf("End of GPS setup\n"); sleep_ms(1000);
@@ -114,6 +112,7 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
         busy_wait_us(1000);
         uint8_t dummy;
         while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
+        _step = 0 ; 
 }  // end setupGPSUblox;
 
     
@@ -212,28 +211,28 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
     new_position = false ;
     new_speed = false ;
     static bool next_fix = false ;
-  
+    //printf(" %X\n", _msg_id);
     switch (_msg_id) {
     case MSG_POSLLH:
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsInstalled = true;
         fields[LONGITUDE].value = _buffer.posllh.longitude;           // in degree with 7 decimals
         fields[LATITUDE].value = _buffer.posllh.latitude;            // in degree with 7 decimals
-        fields[ALTITUDE].value = _buffer.posllh.altitude_msl ;  //alt in mm
+        fields[ALTITUDE].value = _buffer.posllh.altitude_msl ;       //alt in mm
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
             if ( GPS_home_lat == 0 ) { 
-              GPS_home_lat = _buffer.posllh.latitude ;  // save home position
-              GPS_home_lon = _buffer.posllh.longitude ;
+              GPS_home_lat = fields[LATITUDE].value ;  // save home position
+              GPS_home_lon = fields[LONGITUDE].value ;
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
             }
             // Calculate distance
-            float dlat  = (float)(GPS_home_lat - GPS_lat);
-            float dlong  = ((float)(GPS_home_lon - GPS_lon)) * GPS_scale ;
+            float dlat  = (float)(GPS_home_lat - fields[LATITUDE].value);
+            float dlong  = ((float)(GPS_home_lon - fields[LONGITUDE].value)) * GPS_scale ;
             GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
             // calculate bearing
-            int32_t off_x = GPS_lon - GPS_home_lon ;
-            int32_t off_y = (GPS_lat - GPS_home_lat) / GPS_scale ;
+            int32_t off_x = fields[LONGITUDE].value - GPS_home_lon ;
+            int32_t off_y = (fields[LATITUDE].value - GPS_home_lat) / GPS_scale ;
             GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
             if (GPS_bearing < 0) GPS_bearing += 360;
         } else {
@@ -301,6 +300,7 @@ void GPS::setupGpsCasic(void){    // for casic gps
     busy_wait_us(1000);
     uint8_t dummy;
     while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
+    _step = 0;
 }  // end setupGPS
    
 
@@ -364,8 +364,6 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     //    printf(".");
     //}
     gpsInstalled = true;
-    
-    
     fields[NUMSAT].value = _casicBuffer.nav_pv.numSV;
     fields[NUMSAT].available = true;
     if ( _casicBuffer.nav_pv.velValid >= 6) {
@@ -374,43 +372,43 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     }    
     if ( _casicBuffer.nav_pv.velValid >= 7) {
         fields[NUMSAT].value += 100; // add 100 if 3d fix available
-        fields[GROUNDSPEED].value  = _casicBuffer.nav_pv.speed3D;
-        fields[LONGITUDE].value = _casicBuffer.nav_pv.lon * 10000000;           // in degree with 7 decimals
-        fields[LATITUDE].value = _casicBuffer.nav_pv.lat* 10000000;            // in degree with 7 decimals
+        fields[GROUNDSPEED].value  = _casicBuffer.nav_pv.speed3D * 100; // in ublox = cm/sec, in CASIC float M/sec
+        fields[LONGITUDE].value = _casicBuffer.nav_pv.lon * 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree 
+        fields[LATITUDE].value = _casicBuffer.nav_pv.lat* 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree
         if (_casicBuffer.nav_pv.height > 0) {
-            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 1000 ;  //alt in mm
+            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 1000 ;  //in Ublox = mm , in CASIC float m
         } else {
             fields[ALTITUDE].value = 0 ;
         }
-        fields[HEADING].value = _casicBuffer.nav_pv.heading ;     // Heading 2D deg with 5 decimals
+        fields[HEADING].value = _casicBuffer.nav_pv.heading * 100000 ;     // in Ublox = deg with 5 decimals,  in CASIC = float degree
         fields[GROUNDSPEED].available  = true;
-        fields[LONGITUDE].available = true;           // in degree with 7 decimals
+        fields[LONGITUDE].available = true;           
         fields[LATITUDE].available = true;
         fields[ALTITUDE].available = true; 
         fields[HEADING].available = true;
         if ( GPS_home_lat == 0 ) { 
-              GPS_home_lat = GPS_lat ;  // save home position
-              GPS_home_lon = GPS_lon ;
+              GPS_home_lat = fields[LATITUDE].value ;  // save home position
+              GPS_home_lon = fields[LONGITUDE].value ;
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
         }
         // Calculate distance
-        float dlat  = (float)(GPS_home_lat - GPS_lat);
-        float dlong  = ((float)(GPS_home_lon - GPS_lon)) * GPS_scale ;
+        float dlat  = (float)(GPS_home_lat - fields[LATITUDE].value);
+        float dlong  = ((float)(GPS_home_lon - fields[LONGITUDE].value)) * GPS_scale ;
         GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
         // calculate bearing
-        int32_t off_x = GPS_lon - GPS_home_lon ;
-        int32_t off_y = (GPS_lat - GPS_home_lat) / GPS_scale ;
+        int32_t off_x = fields[LONGITUDE].value - GPS_home_lon ;
+        int32_t off_y = (fields[LATITUDE].value - GPS_home_lat) / GPS_scale ;
         GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
         if (GPS_bearing < 0) GPS_bearing += 360;
         return true;
     } else {
-        fields[GROUNDSPEED].value  = 0;
+        fields[GROUNDSPEED].value  = 0;        // in cm/sec
         fields[LONGITUDE].value = 0;           // in degree with 7 decimals
         fields[LATITUDE].value = 0;            // in degree with 7 decimals
-        fields[ALTITUDE].value = 0 ;
+        fields[ALTITUDE].value = 0 ;    // in mm
         fields[HEADING].value = 0 ;     // Heading 2D deg with 5 decimals
         fields[GROUNDSPEED].available  = false;
-        fields[LONGITUDE].available = false;           // in degree with 7 decimals
+        fields[LONGITUDE].available = false;           
         fields[LATITUDE].available = false;
         fields[ALTITUDE].available = false; 
         fields[HEADING].available = false;
