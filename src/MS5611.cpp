@@ -120,7 +120,7 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
 int MS5611::getAltitude() // Try to get a new pressure ; 
 {
   if ( ! baroInstalled) return -1;     // do not process if there is no baro; -1 = no new data
-  if ( (micros() - _lastConversionRequest) < 9100 ) // it take about 9000 usec for a conversion
+  if ( (micros() - _lastConversionRequest) < 9500 ) // it take about 9000 usec for a conversion
     return -1;
   switch (_state) 
   {
@@ -143,7 +143,6 @@ int MS5611::getAltitude() // Try to get a new pressure ;
     _D2 = readADC(); // read temperature, return 0 in case of error; _result =0 if OK.
     if (_result) return _result;
     command(0x48); // ask for pressure conversion in high resolution
-
     if (_result) return _result;
     _state = WAIT_FOR_PRESSURE ;
     _lastConversionRequest = micros() ;      
@@ -158,7 +157,8 @@ void MS5611::calculateAltitude(){
   if (_D2Prev == 0)
   {
     _D2Prev = _D2;
-    _prevAltMicros = _lastTempRequest ;  
+    _prevAltMicros = _lastTempRequest ;
+    //printf("D2= %" PRIu32 "\n",_D2) ;  
   }
     
   int64_t dT = ((_D2+ _D2Prev) >> 1 ) - ((long)_calibrationData[5] << 8);

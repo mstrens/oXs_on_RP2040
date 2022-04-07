@@ -18,26 +18,22 @@ uint32_t abs(int32_t value){
 VARIO::VARIO(){}
 
 void VARIO::calculateAltVspeed(MS5611  *baro){
-  static bool firstCalc = true; 
-  static int32_t altitudeLowPass = 0;
-  static int32_t altitudeHighPass = 0;
-  static int32_t altitude = 0;
-  static int32_t intervalSmooth = 20000; // we expect an interval of 20msec between 2 conversions
-  static float   climbRateFloat = 0; 
-  float climbRate2AltFloat;
-  float abs_deltaClimbRate;
-  uint32_t altMillis ;
-  uint32_t lastAltMillis = 0;
-  uint32_t nextAverageAltMillis;
-  int sensitivityMin = SENSITIVITY_MIN ; // set the min smoothing to the default value
-  
   if ( !baro->baroInstalled) return ; // skip when baro is not installed
     // smooth altitude
   if (firstCalc) {
-    firstCalc = false;
-    altitudeLowPass = altitudeHighPass = altitude = (int32_t) baro->altitude ;
-    intervalSmooth = 20000 ; // perhaps not required
+    if (firstCalcCounter--){  // skip the first reading in order to get a better value as first Altitude
+        return;
+    } else {
+        firstCalc = false;
+        altitudeLowPass = altitudeHighPass = altitude =  baro->altitude ; // all in cm *100 and in int32
+        intervalSmooth = 20000 ; // perhaps not required
+    }
   }
+  // check the delay between 2 calculations
+  //static uint32_t prevMillis = 0;
+  //printf( "time %" PRIu32 "\n", millis()-prevMillis);
+  //prevMillis = millis();
+  
   altitude += 0.04 * (baro->altitude - altitude) ;
   absoluteAlt.value = altitude ;
   absoluteAlt.available = true ;
@@ -46,8 +42,9 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   altitudeLowPass += 0.085 * ( baro->altitude - altitudeLowPass) ;
   altitudeHighPass += 0.1 * ( baro->altitude - altitudeHighPass) ;
   intervalSmooth += 0.1 * (baro->altIntervalMicros - intervalSmooth) ; //delay between 2 measures  only if there is no overflow of pressureMicos
-  climbRate2AltFloat = ((altitudeHighPass - altitudeLowPass )  * 5666.685 ) / intervalSmooth; 
-
+  //printf("inter= %" PRIu32 "\n", baro->altIntervalMicros);
+  climbRate2AltFloat = ( (float) (altitudeHighPass - altitudeLowPass )  * 5666.685 ) / (float) intervalSmooth; // climbRate is in cm/sec 
+  //printf("altDif= %" PRIi32 "  interval=%" PRIu32 "  climb= %f\n", (altitudeHighPass - altitudeLowPass ) , intervalSmooth , climbRate2AltFloat);
   abs_deltaClimbRate =  abs(climbRate2AltFloat - climbRateFloat) ;
   if ( sensitivityPpm  > 0) sensitivityMin =   sensitivityPpm ; 
   if ( (abs_deltaClimbRate <= SENSITIVITY_MIN_AT) || (sensitivityMin >= SENSITIVITY_MAX) ) {
@@ -76,6 +73,7 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
     sensitivityAvailable = true ;
     if (altOffset == 0) altOffset = absoluteAlt.value ;
     fields[RELATIVEALT].value = absoluteAlt.value - altOffset ;
+    //printf("relAlt=%f  vpseed =%f  interval=%f\n", fields[RELATIVEALT].value / 100.0 , climbRateFloat , baro->altIntervalMicros*1.0);
     fields[RELATIVEALT].available = true ;
     if ( fields[RELATIVEALT].value > relativeAltMax.value ) relativeAltMax.value = fields[RELATIVEALT].value ;
     relativeAltMax.available = true ;

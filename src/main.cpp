@@ -48,8 +48,9 @@ extern CONFIG config;
 
 void getSensors(void){
   voltage.getVoltages();
-  baro1.getAltitude();
-  vario1.calculateAltVspeed(&baro1);    
+  if ( baro1.getAltitude() == 0) { // if an altitude is calculated
+    vario1.calculateAltVspeed(&baro1); // Then calculate Vspeed ... 
+  }      
   gps.readGps();
 }
 

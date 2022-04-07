@@ -14,6 +14,20 @@
 class VARIO
 {
 public:
+  bool firstCalc = true; 
+  int32_t altitudeLowPass ;
+  int32_t altitudeHighPass;
+  int32_t altitude ;
+  int32_t intervalSmooth ; // we expect an interval of 20msec between 2 conversions
+  float   climbRateFloat ; 
+  float climbRate2AltFloat;
+  float abs_deltaClimbRate;
+  uint32_t altMillis ;
+  uint32_t lastAltMillis = 0;
+  uint32_t nextAverageAltMillis;
+  int sensitivityMin = SENSITIVITY_MIN ; // set the min smoothing to the default value
+  uint8_t firstCalcCounter = 100;
+
   //float    altitude; // in cm *100
   uint32_t altIntervalMicros = 0; // enlapstime between 2 calculations of altitude
   explicit VARIO(void); 
@@ -35,6 +49,8 @@ public:
   void calculateAltVspeed(MS5611 * baro);
 
 private:
+  
+  
   int32_t prevAlt[20] ;   // table contains the 20 latest altitude
   uint8_t idxPrevAlt ;       // index of last entry in table
 };

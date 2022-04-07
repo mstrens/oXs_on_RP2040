@@ -247,7 +247,7 @@ void fillFrameGps(uint8_t idx){
         fillBufferU16( gps.GPS_speed_3d * 0.36);  // convert from cm/sec to ( km/h / 10 )
         fillBufferU16( (uint16_t) (gps.GPS_ground_course / 1000 ));      //( degree / 100  instead of 5 decimals)
         if ( baro1.baroInstalled ){ // when a vario exist, priority for altitude is given to baro
-            fillBufferU16( (uint16_t) (1000 + fields[RELATIVEALT].value / 100 )) ;     //( from cm to m And an offset of 1000 )
+            fillBufferU16( (uint16_t) (1000 + (fields[RELATIVEALT].value / 100) )) ;     //( from cm to m And an offset of 1000 )
         } else {
             fillBufferU16( (uint16_t) (1000 + fields[ALTITUDE].value / 1000 )) ;     //( from mm to m and an offset of 1000 m )
         }
