@@ -185,23 +185,10 @@ public:
     bool new_position = false ;
     bool new_speed = false ;
       
-    // Receive buffer for Ublox
-    union {
-        ubx_nav_posllh posllh;
-        ubx_nav_status status;
-        ubx_nav_solution solution;
-        ubx_nav_velned velned;
-        ubx_nav_svinfo svinfo;
-        uint8_t bytes[UBLOX_BUFFER_SIZE];
-    } _buffer;
-
     
     
-    union {
-        casic_nav_pv_info nav_pv;
-        uint8_t bytes[sizeof(casic_nav_pv_info)];
-    } __attribute__((__packed__)) _casicBuffer;
-
+    
+    
 
 
     explicit GPS(void);

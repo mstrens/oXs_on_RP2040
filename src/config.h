@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.0.3"
+#define VERSION "0.0.4"
 // ------- General ------------------
 // This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
 // 
@@ -87,8 +87,8 @@
 // This allows e.g. to transmit vertical speed (in 'vario' frame) more often than GPS data
 // The values are in milli seconds
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
-#define VARIO_FRAME_INTERVAL 200   // This frame contains only Vertical speed
-#define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
+#define VARIO_FRAME_INTERVAL 50   // This frame contains only Vertical speed
+#define GPS_FRAME_INTERVAL 2000     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
 #define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw. It is currently not used in this project.
 // Note: ELRS has only one field for Altitude and is normally part of the GPS frame.  
 //       When a baro sensor is used, it provides an altitude that is more accurate than the GPS altitude.

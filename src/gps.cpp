@@ -7,6 +7,7 @@
 #include <math.h>
 #include "param.h"
 #include "tools.h"
+#include <inttypes.h>
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -20,6 +21,23 @@
 extern queue_t gpsQueue ;
 extern CONFIG config;
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+
+
+// Receive buffer for Ublox
+    union {
+        ubx_nav_posllh posllh;
+        ubx_nav_status status;
+        ubx_nav_solution solution;
+        ubx_nav_velned velned;
+        ubx_nav_svinfo svinfo;
+        uint8_t bytes[UBLOX_BUFFER_SIZE];
+    } __attribute__((__packed__))  _buffer;
+
+union {
+        casic_nav_pv_info nav_pv;
+        uint8_t bytes[sizeof(casic_nav_pv_info)];
+    } __attribute__((__packed__)) _casicBuffer;
+
 
 // RX interrupt handler
 void on_uart_rx() {
@@ -78,6 +96,9 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
             
     #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
             0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
@@ -89,7 +110,7 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox
             0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
                                 0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
         }  ;   
-        busy_wait_us(500000) ; // wait to be sure that GPS has started (otherwise first bytes are lost)
+        busy_wait_us(750000) ; // wait to be sure that GPS has started (otherwise first bytes are lost)
         uint8_t initGpsIdx = 0 ;
         while (initGpsIdx < sizeof( initGps1)) {
     //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
@@ -205,8 +226,11 @@ void GPS::readGpsUblox(){
     }    
 }
 
+
 bool GPS::parseGpsUblox(void) // move the data from buffer to the different fields
 {
+    uint8_t * pvelned =  (uint8_t *) &_buffer.velned; // only for debug
+        
     // do we have new position information?
     new_position = false ;
     new_speed = false ;
@@ -218,7 +242,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         gpsInstalled = true;
         fields[LONGITUDE].value = _buffer.posllh.longitude;           // in degree with 7 decimals
         fields[LATITUDE].value = _buffer.posllh.latitude;            // in degree with 7 decimals
-        fields[ALTITUDE].value = _buffer.posllh.altitude_msl ;       //alt in mm
+        fields[ALTITUDE].value = _buffer.posllh.altitude_msl / 10;       //alt in mm in converted in cm (sport uses cm)
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
             if ( GPS_home_lat == 0 ) { 
@@ -264,9 +288,18 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         fields[GROUNDSPEED].available = GPS_fix ;
         GPS_speed_2d = _buffer.velned.speed_2d;    // cm/s
         GPS_speed_2dAvailable = GPS_fix ;
-        fields[HEADING].value = _buffer.velned.heading_2d ;     // Heading 2D deg with 5 decimals
+        fields[HEADING].value = _buffer.velned.heading_2d /1000;     // Heading 2D deg with 5 decimals is reduced to 2 décimals
         fields[HEADING].available = GPS_fix ;
         new_speed = true;
+        //printf("spd= %f   Head= %f\n", _buffer.velned.speed_3d , _buffer.velned.heading_2d);
+        //for (uint8_t i=0 ; i<36; i++){
+        //    printf(" %X", _buffer.bytes[i]);
+        //}
+        //printf("  spd= %" PRIu32 "\n", _buffer.velned.heading_2d );
+        //for (uint8_t i = 0 ; i < 36 ; i++){
+        //    printf(".%X",    *(pvelned + i ) );
+        //}    
+        //printf("  fld= %" PRIi32 "\n" , fields[HEADING].value);
         break;
     default:
         return false;
@@ -376,11 +409,11 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
         fields[LONGITUDE].value = _casicBuffer.nav_pv.lon * 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree 
         fields[LATITUDE].value = _casicBuffer.nav_pv.lat* 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree
         if (_casicBuffer.nav_pv.height > 0) {
-            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 1000 ;  //in Ublox = mm , in CASIC float m
+            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 100 ;  // in cm : in Ublox = mm , in CASIC float m
         } else {
             fields[ALTITUDE].value = 0 ;
         }
-        fields[HEADING].value = _casicBuffer.nav_pv.heading * 100000 ;     // in Ublox = deg with 5 decimals,  in CASIC = float degree
+        fields[HEADING].value = _casicBuffer.nav_pv.heading * 100 ;    // in Ublox = deg with 5 decimals,  in CASIC = float degree
         fields[GROUNDSPEED].available  = true;
         fields[LONGITUDE].available = true;           
         fields[LATITUDE].available = true;

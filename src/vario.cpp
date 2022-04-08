@@ -44,7 +44,6 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   intervalSmooth += 0.1 * (baro->altIntervalMicros - intervalSmooth) ; //delay between 2 measures  only if there is no overflow of pressureMicos
   //printf("inter= %" PRIu32 "\n", baro->altIntervalMicros);
   climbRate2AltFloat = ( (float) (altitudeHighPass - altitudeLowPass )  * 5666.685 ) / (float) intervalSmooth; // climbRate is in cm/sec 
-  //printf("altDif= %" PRIi32 "  interval=%" PRIu32 "  climb= %f\n", (altitudeHighPass - altitudeLowPass ) , intervalSmooth , climbRate2AltFloat);
   abs_deltaClimbRate =  abs(climbRate2AltFloat - climbRateFloat) ;
   if ( sensitivityPpm  > 0) sensitivityMin =   sensitivityPpm ; 
   if ( (abs_deltaClimbRate <= SENSITIVITY_MIN_AT) || (sensitivityMin >= SENSITIVITY_MAX) ) {
@@ -56,11 +55,19 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   }
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
   
+
   // update climbRate only if the difference is big enough
-  if ( abs((int32_t)  climbRateFloat - fields[VSPEED].value) > VARIOHYSTERESIS ) {
+  if ( abs(((int32_t)  climbRateFloat) - fields[VSPEED].value) > (int32_t) VARIOHYSTERESIS ) {
       fields[VSPEED].value = (int32_t)  climbRateFloat  ;
   }    
+  //printf("climbf=%f  climbI%" PRIi32 "\n",
+  //  climbRateFloat , (int32_t) climbRateFloat);
+  
   fields[VSPEED].available=true; // allows SPORT protocol to transmit the value
+  
+  //printf("altDif= %" PRIi32 "  interval=%" PRIu32 "  climb2= %f  climbS= %f   vspeed=%" PRIi32 "\n",
+  //   (altitudeHighPass - altitudeLowPass ) , intervalSmooth , climbRate2AltFloat, climbRateFloat , fields[VSPEED].value);
+  
   switchClimbRateAvailable = true ; // inform readsensors() that a switchable vspeed is available
   
   // AltitudeAvailable is set to true only once every 100 msec in order to give priority to climb rate on SPORT
@@ -73,7 +80,7 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
     sensitivityAvailable = true ;
     if (altOffset == 0) altOffset = absoluteAlt.value ;
     fields[RELATIVEALT].value = absoluteAlt.value - altOffset ;
-    //printf("relAlt=%f  vpseed =%f  interval=%f\n", fields[RELATIVEALT].value / 100.0 , climbRateFloat , baro->altIntervalMicros*1.0);
+    //printf("relAlt=%f  vpseed =%f  interval=%f\n", fields[RELATIVEALT].value / 100.0 , (float) fields[VSPEED].value, baro->altIntervalMicros*1.0);
     fields[RELATIVEALT].available = true ;
     if ( fields[RELATIVEALT].value > relativeAltMax.value ) relativeAltMax.value = fields[RELATIVEALT].value ;
     relativeAltMax.available = true ;
