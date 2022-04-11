@@ -9,6 +9,7 @@
 #include <tusb.h>
 #include <crsf.h>
 #include <param.h>
+#include "hardware/pio.h"
 #include "sbus_out_pwm.h"
 #include "sbus_in.h"
 #include "hardware/watchdog.h"
@@ -19,8 +20,10 @@
 // Look at file config.h for more details
 //
 // This project can be interfaced with a ELRS (it uses CRSF protocol) or a FRSKY receiver (it uses Sbus for Rc channels and Sport for telemetry )
-// Sbus as output is based only on CRSF and uses pin GPIO 0 (PIO TX), pio0, sm 2 and one dma 
+// Sbus as output is based only on CRSF and uses pin GPIO 0 (PIO TX), pio0, sm 2 and one dma
+// The same pin GPIO0 can be used by pio1 sm1 to generate a PWM signal when Sbus out is not activated   
 // PWM uses pins 1 up to 8
+// PWM can also be generated on GPIO11 with pio1 sm0
 // CRSF uses GPIO 9 (pio RX on pio0 sm 1 + one IRQ PIO0_IRQ_0 + one queue)  and GPIO 10 (pio TX on pio0 sm 0 + one dma)
 // Sbus as input (for Frsky) uses pin GPIO 9.
 // Sport (for Frsky) uses pin GPIO 10 
@@ -31,6 +34,12 @@
 // GPS uses gpio 12 (UART0-TX) and gpio 13 (UART0-RX) + one IRQ UART0_IRQ + one queue (gpsQueue)
 // I2C uses pins : GPIO 14 = PICO_I2C1_SDA_PIN  and  GPIO 15 = PICO_I2C1_SCL_PIN =  
 // Analog read uses GPIO pins 26 up to 29
+
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX
+//        0   1             CRSF Rx  or for Sport Rx
+//        0   2            sbus out             
+//        1   0 is used for one PWM          
+//        1   1 is used for one PWM
 
 //#define DEBUG
 
@@ -72,12 +81,15 @@ void setup() {
   gps.setupGps();  //use UART 0 on pins 12 13
   if ( config.protocol == 'C'){
     setupCRSF();  // setup the 2 pio (for TX and RX) and the DMA (for TX) and the irq handler (for Rx); use pin 9 (Rx) and 10(TX)
-    setupSbusOutPio();
+    if (config.gpio0 == 0) { // configure the pio for SBUS only if Sbus is activated in config.
+      setupSbusOutPio();
+    }  
   } else if (config.protocol == 'S') {
     setupSport();
     setupSbusIn();
   } 
-  setupPwm(); 
+  setupPwm();
+  setupPioPwm(); 
   printConfig();
   watchdog_enable(500, 1); // require an update once every 500 msec
 }
@@ -96,8 +108,11 @@ void loop() {
     handleSbusIn();
   } 
   watchdog_update();
-  fillSbusFrame();
+  if (config.gpio0 == 0) { // cgenerate SBUS only if Sbus is activated in config.
+    fillSbusFrame();
+  }
   updatePWM();
+  updatePioPwm();
   handleUSBCmd();
   tud_task();
 }

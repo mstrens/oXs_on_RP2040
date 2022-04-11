@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.0.4"
+#define VERSION "0.0.5"
 // ------- General ------------------
 // This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
 // 
@@ -11,7 +11,7 @@
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
-// It can also provide 8 PWM RC channels (channels 1...4 and 6...9) form a CRSF or a Sbus signal.
+// It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
 // It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provide by the Frsky Receiver itself)  
 //
 // -------  Hardware -----------------
@@ -36,9 +36,12 @@
 //    - Connect gpio 9 from RP2040 (= UART0 RX signal) to the Sbus pin from Frsky receiver (this wire transmit the RC channels)
 //    - Connect gpio 10 from RP2040 (= PIO TX signal) via a 1k resistor to the Sport pin from Frsky receiver (this wire transmits the telemetry data)
 //
-// SBus signal (output based on CRSF) is available on gpio 0
-// PWM signals (channels 1...4 and 6...9) are avaialble on gpio 1...8
-//     note : channel 5 is used for arming in ELRS but has no real sense for fixed wing. 
+// 9 PWM signals can be generated on gpio 1...8 and gpio 11.
+// One more PWM can be generated on gpio 0 when this pin is not used to generate a Sbus signal 
+// The config parameters allow:
+//    - to select the RC channels generated on gpio 1, 5 and 11.
+//          Gpio 2..4 (and gpio 6...9) will then generate the following RC channels. 
+//    - to select if gpio 0 has to generate a Sbus signal or a PWM RC channel.
 //
 // Voltages 1...4 are measured on gpio 26...29 
 //       Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 

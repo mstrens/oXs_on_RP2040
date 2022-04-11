@@ -4,7 +4,7 @@
 #include "crsf.h"
 
 struct CONFIG{
-    uint8_t version = 2;
+    uint8_t version = 3;
     uint8_t protocol = 'S' ; // S = Sport, C = crossfire
     uint32_t crsfBaudrate = 420000;
     float scaleVolt1 = 1.0;
@@ -16,6 +16,10 @@ struct CONFIG{
     float offset3= 0.0;
     float offset4 = 0.0;
     uint8_t gpsType = 'U' ;
+    uint8_t gpio0 = 0; // 0 mean SBUS, 1 up to 16  = a RC channel
+    uint8_t gpio1 = 1;
+    uint8_t gpio5 = 6;
+    uint8_t gpio11 = 11;
     uint8_t failsafeType = 'H';
     crsf_channels_s failsafeChannels ;
 };

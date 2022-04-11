@@ -3,6 +3,7 @@
 #include "crsf.h"
 
 
+// functions used for the 8 PWM signals generated without the pio.
 void setupSbusOutPio();
 void setupSbusInPio();
 void fillSbusFrame();
@@ -12,3 +13,7 @@ void handleSbusRx();
 
 uint16_t  fmap(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max);
 
+// functions used by the PIO for 2 additionnal PWM 
+void pio_pwm_set_period(PIO pio, uint sm, uint32_t period);
+void setupPioPwm();
+void updatePioPwm();

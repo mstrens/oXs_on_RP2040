@@ -147,6 +147,64 @@ void processCmd(){
             printf("Error : GPS type must be U or C\n");
         }
     }
+    
+    // change gpio0
+    if ( strcmp("GPIO0", pkey) == 0 ) {
+        if (strcmp("SBUS", pvalue) == 0) {
+            config.gpio0 = 0 ;
+            printf("gpio0 = Sbus\n" );
+            updateConfig = true;
+        } else {
+            ui = strtoul(pvalue, &ptr, 10);
+            if ( *ptr != 0x0 || (ui == 0) || ui > 16){
+                printf("Error : GPIO0 must be SBUS or an integer between 1 and 16");
+            } else {
+                config.gpio0 = ui;
+                printf("GPIO0 = %" PRIu8 "\n" , config.gpio0);
+                updateConfig = true;
+            }
+        }    
+    }
+    
+    // change gpio1
+    if ( strcmp("GPIO1", pkey) == 0 ) {
+            ui = strtoul(pvalue, &ptr, 10);
+            if ( *ptr != 0x0 || (ui == 0) || ui > 13){
+                printf("Error : GPIO1 must be an integer between 1 and 13");
+            } else {
+                config.gpio1 = ui;
+                printf("GPIO1 = %" PRIu8 "\n" , config.gpio1);
+                updateConfig = true;
+            }
+    }
+    
+    
+    // change gpio5
+    if ( strcmp("GPIO5", pkey) == 0 ) {
+            ui = strtoul(pvalue, &ptr, 10);
+            if ( *ptr != 0x0 || (ui == 0) || ui > 13){
+                printf("Error : GPIO5 must be an integer between 1 and 13");
+            } else {
+                config.gpio5 = ui;
+                printf("GPIO5 = %" PRIu8 "\n" , config.gpio5);
+                updateConfig = true;
+            }
+    }
+
+    
+    // change gpio11
+    if ( strcmp("GPIO11", pkey) == 0 ) {
+            ui = strtoul(pvalue, &ptr, 10);
+            if ( *ptr != 0x0 || (ui == 0) || ui > 16){
+                printf("Error : GPIO11 must be an integer between 1 and 16");
+            } else {
+                config.gpio11 = ui;
+                printf("GPIO11 = %" PRIu8 "\n" , config.gpio11);
+                updateConfig = true;
+            }
+    }
+    
+    
     // change failsafe mode
     if ( strcmp("FAILSAFE", pkey) == 0 ) {
         if (strcmp("H", pvalue) == 0) {
@@ -208,6 +266,28 @@ void printConfig(){
     } else {
         printf("GPS is not (yet) detected\n")  ;
     }
+    if (config.gpio0 == 0){
+        printf("GPIO0 is used to output a Sbus signal\n");
+    } else if ( config.gpio0 < 17 ){
+        printf("GPIO0 generates channel %" PRIu8 "\n", config.gpio0);
+    } else {
+        printf("GPIO0 : Error in configuration\n");
+    }
+    if (config.gpio1 > 0 && config.gpio1 < 17){
+        printf("GPIO1 (and GPIO2, 3, 4) generates channel %" PRIu8 " (and next)\n", config.gpio1);
+    } else {
+        printf("GPIO1 : Error in configuration\n");
+    }
+    if (config.gpio5 > 0 && config.gpio5 < 17){
+        printf("GPIO5 (and GPIO6, 7, 8) generates channel %" PRIu8 " (and next)\n", config.gpio5);
+    } else {
+        printf("GPIO5 : Error in configuration\n");
+    }
+    if (config.gpio11 > 0 && config.gpio11 < 17){
+        printf("GPIO11 generates channel %" PRIu8 " \n", config.gpio11);
+    } else {
+        printf("GPIO11 : Error in configuration\n");
+    }
     if ( config.failsafeType == 'H'){
         printf("Failsafe type is HOLD\n")  ;
     } else {
@@ -236,11 +316,15 @@ void printConfig(){
     printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
     printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
     printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
+    printf("-To select the signal generated on:\n");
+    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
+    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
+    printf("     GPIO5 : enter GPIO5=xx where xx = 01 up to 13 (GPIO6...8 will generate channel xx+1...3)\n");
+    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
     printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
     printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
     printf("   Note: some changes require a reset to be applied\n"); 
 }
-
 
 
 #define FLASH_TARGET_OFFSET (256 * 1024)
