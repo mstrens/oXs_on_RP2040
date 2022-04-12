@@ -21,11 +21,17 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   if ( !baro->baroInstalled) return ; // skip when baro is not installed
     // smooth altitude
   if (firstCalc) {
-    if (firstCalcCounter--){  // skip the first reading in order to get a better value as first Altitude
+    //if (firstCalcCounter == 100) printf("start alt at millis %" PRIu32 "\n", millis() );
+    if (firstCalcCounter > 10){  // skip the first reading in order to get a better value as first Altitude
+        firstCalcCounter--;
         return;
+    } else if (firstCalcCounter--) {
+      altitude += baro->altitude;    // at power on, we will calculate the average
+      return; 
     } else {
+        //printf("first alt at millis %" PRIu32 "\n", millis() );
         firstCalc = false;
-        altitudeLowPass = altitudeHighPass = altitude =  baro->altitude ; // all in cm *100 and in int32
+        altitudeLowPass = altitudeHighPass = altitude =  altitude / 10 ; // all in cm *100 and in int32
         intervalSmooth = 20000 ; // perhaps not required
     }
   }
@@ -33,8 +39,15 @@ void VARIO::calculateAltVspeed(MS5611  *baro){
   //static uint32_t prevMillis = 0;
   //printf( "time %" PRIu32 "\n", millis()-prevMillis);
   //prevMillis = millis();
-  
-  altitude += 0.04 * (baro->altitude - altitude) ;
+  // to debug
+  //static uint8_t cnt = 50;
+  //if (cnt) {
+  //  printf("baroALt=%f  alt=%f  dif=%f  new=%f\n",
+  //   (float) baro->altitude , (float) altitude, (float) (baro->altitude -altitude),
+  //   altitude +   (baro->altitude - altitude) * 0.04);
+  //  cnt--;
+  //}  
+  altitude += 0.04 * ( baro->altitude - altitude) ;
   absoluteAlt.value = altitude ;
   absoluteAlt.available = true ;
   altitudeAvailableForDte = true; // it was altitudeAt20MsecAvailable = true ; // inform openxsens.ino that calculation of dTE can be performed

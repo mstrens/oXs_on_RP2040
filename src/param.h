@@ -4,7 +4,7 @@
 #include "crsf.h"
 
 struct CONFIG{
-    uint8_t version = 3;
+    uint8_t version = 4;
     uint8_t protocol = 'S' ; // S = Sport, C = crossfire
     uint32_t crsfBaudrate = 420000;
     float scaleVolt1 = 1.0;

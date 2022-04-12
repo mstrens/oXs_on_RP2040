@@ -269,22 +269,22 @@ void printConfig(){
     if (config.gpio0 == 0){
         printf("GPIO0 is used to output a Sbus signal\n");
     } else if ( config.gpio0 < 17 ){
-        printf("GPIO0 generates channel %" PRIu8 "\n", config.gpio0);
+        printf("GPIO0 generates channel %u\n", (unsigned int) config.gpio0);
     } else {
         printf("GPIO0 : Error in configuration\n");
     }
     if (config.gpio1 > 0 && config.gpio1 < 17){
-        printf("GPIO1 (and GPIO2, 3, 4) generates channel %" PRIu8 " (and next)\n", config.gpio1);
+        printf("GPIO1 (and GPIO2, 3, 4) generates channel %u (and next)\n", (unsigned int) config.gpio1);
     } else {
         printf("GPIO1 : Error in configuration\n");
     }
     if (config.gpio5 > 0 && config.gpio5 < 17){
-        printf("GPIO5 (and GPIO6, 7, 8) generates channel %" PRIu8 " (and next)\n", config.gpio5);
+        printf("GPIO5 (and GPIO6, 7, 8) generates channel %u (and next)\n", (unsigned int) config.gpio5);
     } else {
         printf("GPIO5 : Error in configuration\n");
     }
     if (config.gpio11 > 0 && config.gpio11 < 17){
-        printf("GPIO11 generates channel %" PRIu8 " \n", config.gpio11);
+        printf("GPIO11 generates channel %u \n", (unsigned int) config.gpio11);
     } else {
         printf("GPIO11 : Error in configuration\n");
     }
@@ -371,10 +371,10 @@ void removeTrailingWhiteSpace( char * str)
 }
 
 void setupConfig(){   // The config is uploaded at power on
-    if (*flash_target_contents == 0x2 ) {
+    if (*flash_target_contents == 0x4 ) {
         memcpy( &config , flash_target_contents, sizeof(config));
     } else {
-        config.version = 2;
+        config.version = 4;
         config.protocol = 'S'; // default = sport
         config.crsfBaudrate = 420000;
         config.scaleVolt1 = 1.0;
@@ -386,6 +386,10 @@ void setupConfig(){   // The config is uploaded at power on
         config.offset3 = 0.0;
         config.offset4 = 0.0;
         config.gpsType = 'U' ;
+        config.gpio0 = 0;
+        config.gpio1 = 1;
+        config.gpio5 = 6;
+        config.gpio11 = 11;
         config.failsafeType = 'H';
         config.failsafeChannels.ch0 = 1<<10 ; // set default failsafe value to 1/2 of 11 bits
         config.failsafeChannels.ch1 = config.failsafeChannels.ch0 ;
