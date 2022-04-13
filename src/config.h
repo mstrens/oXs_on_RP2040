@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.0.7"
+#define VERSION "0.0.8"
 // ------- General ------------------
 // This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
 // 

@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include "stdlib.h"
 #include  "hardware/sync.h"
+#include "hardware/watchdog.h"
 
 #define CMD_BUFFER_LENTGH 80
 uint8_t cmdBuffer[CMD_BUFFER_LENTGH];
@@ -160,7 +161,7 @@ void processCmd(){
                 printf("Error : GPIO0 must be SBUS or an integer between 1 and 16");
             } else {
                 config.gpio0 = ui;
-                printf("GPIO0 = %" PRIu8 "\n" , config.gpio0);
+                printf("GPIO0 = %u\n" , (unsigned int) config.gpio0);
                 updateConfig = true;
             }
         }    
@@ -173,7 +174,7 @@ void processCmd(){
                 printf("Error : GPIO1 must be an integer between 1 and 13");
             } else {
                 config.gpio1 = ui;
-                printf("GPIO1 = %" PRIu8 "\n" , config.gpio1);
+                printf("GPIO1 = %u\n" , (unsigned int) config.gpio1);
                 updateConfig = true;
             }
     }
@@ -186,7 +187,7 @@ void processCmd(){
                 printf("Error : GPIO5 must be an integer between 1 and 13");
             } else {
                 config.gpio5 = ui;
-                printf("GPIO5 = %" PRIu8 "\n" , config.gpio5);
+                printf("GPIO5 = %u\n" , (unsigned int) config.gpio5);
                 updateConfig = true;
             }
     }
@@ -199,7 +200,7 @@ void processCmd(){
                 printf("Error : GPIO11 must be an integer between 1 and 16");
             } else {
                 config.gpio11 = ui;
-                printf("GPIO11 = %" PRIu8 "\n" , config.gpio11);
+                printf("GPIO11 = %u\n" , (unsigned int) config.gpio11);
                 updateConfig = true;
             }
     }
@@ -339,9 +340,8 @@ void saveConfig() {
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
-    
-    printf(" New config has been saved\n");
-    
+    printf("New config has been saved\n");
+    watchdog_reboot(0, 0, 10000);
 }
 
 void upperStr( char *p){
@@ -371,10 +371,10 @@ void removeTrailingWhiteSpace( char * str)
 }
 
 void setupConfig(){   // The config is uploaded at power on
-    if (*flash_target_contents == 0x4 ) {
+    if (*flash_target_contents == CONFIG_VERSION ) {
         memcpy( &config , flash_target_contents, sizeof(config));
     } else {
-        config.version = 4;
+        config.version = CONFIG_VERSION;
         config.protocol = 'S'; // default = sport
         config.crsfBaudrate = 420000;
         config.scaleVolt1 = 1.0;

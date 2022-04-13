@@ -179,7 +179,8 @@ PIO pioPWM = pio1;
 int smPWM0 = 0;
 int smPWM1 = 1;
 
-uint8_t pwmPioPin0 = 11;
+uint8_t pwmPioPin0 = 0;
+uint8_t pwmPioPin11 = 11;
 
 #define PWM_INTERVAl 20000
 
@@ -196,7 +197,7 @@ void pio_pwm_set_period(PIO pio, uint sm, uint32_t period) {
 void setupPioPwm(){
     uint offset = pio_add_program(pioPWM, &pwm_program);
     if ( config.gpio11 > 0 && config.gpio11 < 17) {
-        pwm_program_init(pioPWM, smPWM0, offset, pwmPioPin0);  // frequency is set in order to get about 1usec per cycle
+        pwm_program_init(pioPWM, smPWM0, offset, pwmPioPin11);  // frequency is set in order to get about 1usec per cycle
         pio_pwm_set_period(pioPWM, smPWM0, PWM_INTERVAl - 4 ); // for 20 msec PWM cycle, we use a value of 20000 
     }
     if ( config.gpio0 > 0 && config.gpio0 < 17) {

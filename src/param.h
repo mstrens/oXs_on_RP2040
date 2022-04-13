@@ -3,8 +3,9 @@
 #include "pico/stdlib.h"
 #include "crsf.h"
 
+#define CONFIG_VERSION 4
 struct CONFIG{
-    uint8_t version = 4;
+    uint8_t version = CONFIG_VERSION;
     uint8_t protocol = 'S' ; // S = Sport, C = crossfire
     uint32_t crsfBaudrate = 420000;
     float scaleVolt1 = 1.0;
