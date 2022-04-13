@@ -7,9 +7,7 @@ This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to
  For telemetry, it can provide
  
  * up to 4 analog voltages measurement (with scaling and offset)
- 
  * the altitude and the vertical speed when connected to a pressure sensor (optional)
- 
  * GPS data (longitude, latitude, speed, altitude,...) (optional)
 
 It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
@@ -23,17 +21,14 @@ This project requires a board with a RP2040 processor (like the rapsberry pi pic
 A better alternative is the RP2040-Zero (same processor but smaller board)
 
 This board can be connected to:
-
 * a pressure sensor (GY63 or GY86 board based on MS5611) to get altitude and vertical speed
-
 * a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
 
-       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware
+       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware  
        
-       a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
+       a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds  
        
-       this can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
-
+       This can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
 * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
 
       note : a voltage can be used to measure e.g. a current when some external devices are use to generate an analog voltage 
@@ -41,28 +36,17 @@ This board can be connected to:
 ## --------- Wiring --------------------
 
 * FRSKY/ELRS receiver, MS5611 and GPS must share the same Gnd
-
 * Connect a 5V source to the Vcc pin of RP2040 board  
-
-
 * When used with a ELRS receiver:
-
    * Connect gpio 9 from RP2040 (= PIO RX signal) to the TX pin from ELRS receiver (this wire transmit the RC channels)
-
    * Connect gpio 10 from RP2040 (= PIO TX signal) to the RX pin from ELRS receiver (this wire transmits the telemetry data)
-
-
 * When used with a FRSKY receiver:
-
    * Connect gpio 9 from RP2040 (= UART0 RX signal) to the Sbus pin from Frsky receiver (this wire transmit the RC channels)
-
    * Connect gpio 10 from RP2040 (= PIO TX signal) via a 1k resistor to the Sport pin from Frsky receiver (this wire transmits the telemetry data)  
-     
     
 * 9 PWM signals can be generated on gpio 1...8 and gpio 11.
-
 * One more PWM can be generated on gpio 0 when this pin is not used to generate a Sbus signal 
-  
+
 * The config parameters allow:
 
    * to select the RC channels generated on gpio 1, 5 and 11. Gpio 2..4 (and gpio 6...9) will then generate the following RC channels. 
