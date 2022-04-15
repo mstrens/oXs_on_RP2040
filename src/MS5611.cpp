@@ -160,13 +160,29 @@ void MS5611::calculateAltitude(){
     _prevAltMicros = _lastTempRequest ;
     //printf("D2= %" PRIu32 "\n",_D2) ;  
   }
-    
+
+  //      _D2 = 0X825AF8;
+  //      _D2Prev = _D2;
+  //      _D1 = 0X80777E;  
   int64_t dT = ((_D2+ _D2Prev) >> 1 ) - ((long)_calibrationData[5] << 8);
   int32_t TEMP = (2000 + (((int64_t)dT * (int64_t)_calibrationData[6]) >> 23)) / (float) 1.0 ;
   temperature = TEMP;
+  _D2Prev = _D2 ;
   int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((_calibrationData[4] * dT) >> 7);
   int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((_calibrationData[3] * dT) >> 8);
   int64_t rawPressure= (((((((int64_t) _D1) * (int64_t) SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
+
+  //static bool first = true ;
+  //if (first ) { 
+  //      printf("dT=%X%X\n" , (uint32_t)((dT >> 32) & 0xFFFFFFFF) , (uint32_t)(dT & 0xFFFFFFFF) );
+  //      printf("temp=%X%X\n" , (uint32_t)((temperature >> 32) & 0xFFFFFFFF) , (uint32_t)(temperature & 0xFFFFFFFF) ); 
+  //      printf("OFF=%X%X\n" , (uint32_t)((OFF >> 32) & 0xFFFFFFFF) , (uint32_t)(OFF & 0xFFFFFFFF) );
+  //      printf("SENS=%x%x\n" , (uint32_t)((SENS >> 32) & 0xFFFFFFFF),(uint32_t)(SENS & 0xFFFFFFFF) );
+  //      printf("pressure=%X%X\n" , (uint32_t)((rawPressure >> 32) & 0xFFFFFFFF) , (uint32_t)(rawPressure & 0xFFFFFFFF) );
+  //      first = false;
+  //}
+
+
         // altitude = 44330 * (1.0 - pow(pressure /sealevelPressure,0.1903));
       // other alternative (faster) = 1013.25 = 0 m , 954.61 = 500m , etc...
       //      Pressure	Alt (m)	Ratio
