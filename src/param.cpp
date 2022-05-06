@@ -4,6 +4,7 @@
 #include "config.h"
 #include "stdio.h"
 #include "MS5611.h"
+#include "SPL06.h"
 #include <string.h>
 #include <ctype.h>
 #include "gps.h"
@@ -24,6 +25,7 @@ extern uint32_t lastRcChannels;
 CONFIG config;
 
 extern MS5611 baro1 ;
+extern SPL06  baro2 ;
 
 
 void handleUSBCmd(void){
@@ -94,8 +96,11 @@ void processCmd(){
         } else if (strcmp("C", pvalue) == 0) {
             config.protocol = 'C';
             updateConfig = true;
+        } else if (strcmp("J", pvalue) == 0) {
+            config.protocol = 'J';
+            updateConfig = true;
         } else  {
-            printf("Error : protocol must be S (Sport) or C (CRSF=ELRS)\n");
+            printf("Error : protocol must be S (Sport) ,  C (CRSF=ELRS) or J (Jeti)\n");
         }
     }
     
@@ -241,6 +246,8 @@ void printConfig(){
             printf("\nProtocol is Sport (Frsky)\n")  ;
         } else if (config.protocol == 'C'){
             printf("\nProtocol is CRSF (=ELRS)\n")  ;
+        } else if (config.protocol == 'J'){
+            printf("\nProtocol is Jeti (Ex)\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
@@ -249,10 +256,14 @@ void printConfig(){
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
     if (baro1.baroInstalled) {
-        printf("Baro sensor is detected\n")  ;
+        printf("Baro sensor is detected using MS5611\n")  ;
         printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
-    }else {
+    } else if (baro2.baroInstalled) {
+        printf("Baro sensor is detected using SPL06\n")  ;
+        printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
+        printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
+    } else {
         printf("Baro sensor is not detected\n")  ;
     }   
     if (config.gpsType == 'U'){
@@ -312,9 +323,10 @@ void printConfig(){
 
     }
     printf("\nCommands can be entered to change the config parameters\n");
-    printf("-To change the protocol, for Sport enter PROTOCOL=S , for CRSF/ELRS entre PROTOCOL=C\n");
+    printf("-To change the protocol, for Sport enter PROTOCOL=S, for CRSF/ELRS enter PROTOCOL=C, for Jeti enter PROTOCOL=J\n");
     printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
     printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+    printf("     Enter SCALEx=0 to avoid sending value x to the Transmitter (for Frsky or Jeti)\n")  ;
     printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
     printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
     printf("-To select the signal generated on:\n");

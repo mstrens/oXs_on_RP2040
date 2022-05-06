@@ -19,10 +19,14 @@ void VOLTAGE::begin(void ) {
     mVolt[cntInit].available = false ;
   } // end for
   // 330 because the max volt is 3.3V and we expect 2 decimals - to check if this is correct
-  mVoltPerStep[0] = 330 / 4095.0  * config.scaleVolt1;
-  mVoltPerStep[1] = 330 / 4095.0  * config.scaleVolt2;
-  mVoltPerStep[2] = 330 / 4095.0  * config.scaleVolt3;
-  mVoltPerStep[3] = 330 / 4095.0  * config.scaleVolt4;  
+  mVoltPerStep[0] = 0;  // 0 means that the value must not be transmitted (set scale = 0 to avoid sending the data)
+  mVoltPerStep[1] = 0;
+  mVoltPerStep[2] = 0;
+  mVoltPerStep[3] = 0;
+  if ( config.scaleVolt1 != 0) mVoltPerStep[0] = 330 / 4095.0  * config.scaleVolt1;
+  if ( config.scaleVolt2 != 0) mVoltPerStep[1] = 330 / 4095.0  * config.scaleVolt2;
+  if ( config.scaleVolt3 != 0) mVoltPerStep[2] = 330 / 4095.0  * config.scaleVolt3;
+  if ( config.scaleVolt4 != 0) mVoltPerStep[3] = 330 / 4095.0  * config.scaleVolt4;  
   offset[0] = config.offset1; 
   offset[1] = config.offset2;
   offset[2] = config.offset3;
@@ -43,7 +47,7 @@ void VOLTAGE::getVoltages(void){
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < MAX_NBR_VOLTAGES ; cntInit++) {
                 fields[cntInit + MVOLT].value = (sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE * mVoltPerStep[cntInit]) - offset[cntInit];
-                fields[cntInit + MVOLT].available = true ;
+                if (mVoltPerStep[cntInit] !=0) fields[cntInit + MVOLT].available = true ;
                 sumVoltage[cntInit] = 0 ;
                 //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);  
             }    

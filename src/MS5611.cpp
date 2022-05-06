@@ -14,17 +14,6 @@
 #define MS5611_CMD_CONVERT_D1     0x40
 #define MS5611_CMD_CONVERT_D2     0x50
 
-#define PICO_I2C1_SDA_PIN 14  
-#define PICO_I2C1_SCL_PIN 15  
-
-
-void setupI2c(){
-    i2c_init( i2c1, 400 * 1000);
-    gpio_set_function(PICO_I2C1_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(PICO_I2C1_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(PICO_I2C1_SDA_PIN);
-    gpio_pull_up(PICO_I2C1_SCL_PIN); 
-}
 
 /////////////////////////////////////////////////////
 //
@@ -42,41 +31,63 @@ MS5611::MS5611(uint8_t deviceAddress)
   
 }
 
-bool MS5611::begin()  // return true when baro exist
+int8_t MS5611::ms56xx_crc(uint16_t *prom)
 {
-  bool beginOK = true; 
-  baroInstalled = true;
+    int32_t i, j;
+    uint32_t res = 0;
+    uint8_t crc = prom[7] & 0xF;
+    prom[7] &= 0xFF00;
+
+    bool blankEeprom = true;
+
+    for (i = 0; i < 16; i++) {
+        if (prom[i >> 1]) {
+            blankEeprom = false;
+        }
+        if (i & 1)
+            res ^= ((prom[i >> 1]) & 0x00FF);
+        else
+            res ^= (prom[i >> 1] >> 8);
+        for (j = 8; j > 0; j--) {
+            if (res & 0x8000)
+                res ^= 0x1800;
+            res <<= 1;
+        }
+    }
+    prom[7] |= crc;
+    if (!blankEeprom && crc == ((res >> 12) & 0xF))
+        return 0;
+
+    return -1;
+}
+
+
+void MS5611::begin()  // return true when baro exist
+{
+  baroInstalled = false;
   uint8_t rxdata;
   //i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) ;
   rxdata = MS5611_CMD_RESET ;
   //printf("before baro reset\n");
   if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) {// ask for a reset
-    beginOK = false;
-    baroInstalled = false;
+    return;
   }  
   sleep_ms(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
   //printf("before reading baro config\n");
   
   // read factory calibrations from EEPROM.
-  for (uint8_t reg = 1; reg < 7; reg++)
+  for (uint8_t reg = 0; reg < 8; reg++)
   {
       uint8_t readBuffer[2];
       rxdata = MS5611_CMD_READ_PROM + reg * 2 ; // this is the address to be read
-      if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) beginOK = false ; // command to get access to one register '0xA0 + 2* offset
+      if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
       sleep_ms(1);
-      if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC) {
-        beginOK = false ; // read the 2 bytes
-        _calibrationData[reg] = 0;
-      } else {
-        _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );
-      }     
+      if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC)  return ;
+      _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );     
   }
-  if ( ! beginOK) {
-    printf("Error when MS5611 is initialized\n");
-  } 
-  //printf("end of baro init\n");
-  
-  return beginOK;
+  if (ms56xx_crc(_calibrationData) != 0) return;  // Check the crc
+
+  baroInstalled = true; // if we reach this point, baro is installed (and calibration is loaded)
 }
 
 

@@ -6,7 +6,7 @@
 #define CONFIG_VERSION 4
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
-    uint8_t protocol = 'S' ; // S = Sport, C = crossfire
+    uint8_t protocol = 'S' ; // S = Sport, C = crossfire, J = Jeti
     uint32_t crsfBaudrate = 420000;
     float scaleVolt1 = 1.0;
     float scaleVolt2 = 1.0;

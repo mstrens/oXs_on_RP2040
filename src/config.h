@@ -120,9 +120,5 @@ typedef struct {
 
 
 
-//#define YES 1
-//#define NO  0
-
-//#define DEBUG
 
 

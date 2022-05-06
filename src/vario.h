@@ -46,7 +46,7 @@ public:
   
   bool switchClimbRateAvailable ; // use to say to the readsensors loop that that a climbrate is available (to select the one being send)  
   
-  void calculateAltVspeed(MS5611 * baro);
+  void calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalMicros);
 
 private:
   

@@ -10,6 +10,7 @@ uint32_t micros() {
     return  to_us_since_boot(get_absolute_time ());
 }
 
+
 field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
 void setupListOfFields(){
@@ -48,3 +49,10 @@ void setupListOfFields(){
         fields[i].fieldId= listFieldsID[i];
     }
 }
+
+#define PICO_I2C1_SDA_PIN 14  
+#define PICO_I2C1_SCL_PIN 15  
+
+
+
+

@@ -50,14 +50,14 @@ public:
   int32_t altIntervalMicros; // enlapstime between 2 calculations of altitude
   explicit MS5611(uint8_t deviceAddress);
 
-  bool     begin();
+  void     begin();
   int      getAltitude(); // return 0 if a new value is calculated; -1 if no calculation was performed; other in case of I2C error
 
 private:
   uint32_t readADC();
   void     command(const uint8_t command);
   void     calculateAltitude();
-
+  int8_t   ms56xx_crc(uint16_t *prom);
   uint8_t  _address;
   //uint8_t  _samplingRate;
   
@@ -66,7 +66,7 @@ private:
   //float    _pressureOffset;
   //float    _temperatureOffset;
   int      _result;
-  uint16_t _calibrationData[7];
+  uint16_t _calibrationData[8];
   uint32_t _lastRead;
   uint32_t _prevAltMicros;
   state_t  _state;
@@ -75,11 +75,8 @@ private:
   uint32_t _lastConversionRequest;
   uint32_t _lastTempRequest;
   uint32_t _D2Prev;
-  
-
-//  TwoWire * _wire;
 };
 
-void setupI2c() ;
+
 // -- END OF FILE --
 

@@ -10,6 +10,7 @@
 #include "crc.h"
 #include "pico/util/queue.h"
 #include "MS5611.h"
+#include "SPL06.h"
 #include "tools.h"
 #include "stdio.h"
 #include <string.h> // memcpy
@@ -28,12 +29,13 @@ uint8_t crsf_last_frame_idx = 0 ;
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
 voltageFrameStruct voltageFrame;
-extern VOLTAGE voltage ;
+//extern VOLTAGE voltage ;
   
 varioFrameStruct varioFrame;
 attitudeFrameStruct attitudeFrame;
-extern MS5611 baro1; 
-extern VARIO vario1 ;
+//extern MS5611 baro1; 
+//extern SPL06 baro2;
+//extern VARIO vario1 ;
 
 gpsFrameStruct gpsFrame;
 extern GPS gps ;

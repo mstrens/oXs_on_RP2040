@@ -27,7 +27,6 @@ uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
 extern CONFIG config;
 
-
 static const bool ParityTable256[256] = 
 {
 #   define P2(n) n, n^1, n^1, n

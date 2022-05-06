@@ -4,6 +4,7 @@
 //#include "stdio.h"
 
 #define SPORT_TYPES_MAX 25
+
 struct field {
     int32_t value;
     bool available;
@@ -112,3 +113,4 @@ uint32_t millis() ;
 uint32_t micros();
 
 void setupListOfFields();
+
