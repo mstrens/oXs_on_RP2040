@@ -101,20 +101,29 @@ void mergeSeveralSensors(void){
 
 void setup() {
   stdio_init_all();
+  watchdog_enable(1500, 0); // require an update once every 500 msec
   setupLed();
-  setRgbColor(20,0,0);
+  setRgbColor(10,0,0);
   #ifdef DEBUG
   uint16_t counter = 50; 
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
-  while ( (!tud_cdc_connected()) && (counter--)) { sleep_ms(100);  }
+  while ( (!tud_cdc_connected()) && (counter--)) { 
+    sleep_ms(100); 
+    watchdog_update();
+    }
   #endif
-  setRgbColor(0,0,20);  
+  setRgbColor(0,0,10);  
+  watchdog_update();
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
+  watchdog_update();
   setupListOfFields(); // initialise the list of fields being used
+  watchdog_update();
   voltage.begin();
   setupI2c();      // setup I2C
   baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
+  watchdog_update();
   baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
+  watchdog_update();
   /*
   if ( baro1.baroInstalled){
     printf("MS5611 detected\n");
@@ -128,6 +137,7 @@ void setup() {
   }
   */
   gps.setupGps();  //use UART 0 on pins 12 13
+  watchdog_update();
   if ( config.protocol == 'C'){
     setupCRSF();  // setup the 2 pio (for TX and RX) and the DMA (for TX) and the irq handler (for Rx); use pin 9 (Rx) and 10(TX)
     if (config.gpio0 == 0) { // configure the pio for SBUS only if Sbus is activated in config.
@@ -139,12 +149,14 @@ void setup() {
   } else if (config.protocol == 'J') {
     setupJeti();
   }
-  
+  watchdog_update();
   setupPwm();
-  setupPioPwm(); 
+  setupPioPwm();
+  watchdog_update();
   printConfig();
-  watchdog_enable(500, 1); // require an update once every 500 msec
-  setRgbColor(0,20,0);
+  watchdog_update();
+  setRgbColor(0,10,0);
+  watchdog_enable(500, 0); // require an update once every 500 msec
 }
 
 void loop() {
