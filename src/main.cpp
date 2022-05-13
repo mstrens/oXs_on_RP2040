@@ -105,7 +105,7 @@ void setup() {
   setupLed();
   setRgbColor(10,0,0);
   #ifdef DEBUG
-  uint16_t counter = 50; 
+  uint16_t counter = 15; 
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
     sleep_ms(100); 

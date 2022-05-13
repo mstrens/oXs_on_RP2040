@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.0.9"
+#define VERSION "0.1.0"
 // ------- General ------------------
 // This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
 // 
@@ -100,7 +100,7 @@
 
 // Here some additional parameters that can't be changed via the serial terminal 
 // -------- Parameters for the vario -----
-#define SENSITIVITY_MIN 50
+#define SENSITIVITY_MIN 100
 #define SENSITIVITY_MAX 300
 #define SENSITIVITY_MIN_AT 100
 #define SENSITIVITY_MAX_AT 1000
@@ -118,7 +118,7 @@ typedef struct {
   int32_t value ;
 } oneMeasurement_t;
 
-
-
+// I activate this when I buid a device for Sport with voltage measured on VOLT2 instead of VOLT1 (easier to solder the resistor)
+//#define SKIP_VOLT1_3_4
 
 

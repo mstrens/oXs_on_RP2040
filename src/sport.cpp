@@ -26,6 +26,7 @@
 #include "hardware/dma.h"
 #include "sport.h"
 #include "tools.h"
+#include "config.h"
 
 // to do: 
 // if we can reply to several device id, we should keep a table with the last field index used for this deviceid
@@ -152,6 +153,11 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
     for (uint8_t i = 0 ; i< SPORT_TYPES_MAX ; i++ ){
          last_sport_idx++;
          if (last_sport_idx >= SPORT_TYPES_MAX) last_sport_idx = 0 ;
+#ifdef SKIP_VOLT1_3_4
+         if ((last_sport_idx == MVOLT) || (last_sport_idx == CAPACITY) || (last_sport_idx == REMAIN) )  continue;
+#endif
+
+      
          if ( (_millis >= fields[last_sport_idx].nextMillis) && (fields[last_sport_idx].available)  ) {
              sendOneSport(last_sport_idx);
              fields[last_sport_idx].available = false; // flag as sent
@@ -162,7 +168,7 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
 }
 
 void sendOneSport(uint8_t idx){  // fill one frame and send it
-    printf("send idx %f\n", (float) idx);
+    //printf("send idx %f\n", (float) idx);
     // the frame contains 1 byte = type, 2 bytes = value id, 4 byte( or more) for value, 1 byte CRC
     uint8_t counter = 0;
     //uint8_t value[4] = { 0, 1, 2, 3};
