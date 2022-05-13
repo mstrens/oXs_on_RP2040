@@ -1,8 +1,8 @@
 # expressLRS_oXs
 
-This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly).
+This project can be interfaced with an ELRS, a FRSKY or a Jeti receiver (protocol has to be selected accordingly).
  
- This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals
+ This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
  
  For telemetry, it can provide
  
@@ -10,7 +10,7 @@ This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to
  * the altitude and the vertical speed when connected to a pressure sensor (optional)
  * GPS data (longitude, latitude, speed, altitude,...) (optional)
 
-It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
+It can also provide 10 PWM RC channels from a CRSF (ELRS) or a Sbus (Frsky) signal.
 
 It can also provide a Sbus signal (only from CRSF/ELRS signal; for Frsky Sbus is provided by the Frsky Receiver itself.  
 
@@ -21,7 +21,9 @@ This project requires a board with a RP2040 processor (like the rapsberry pi pic
 A better alternative is the RP2040-Zero (same processor but smaller board)
 
 This board can be connected to:
-* a pressure sensor (GY63 or GY86 board based on MS5611) to get altitude and vertical speed
+* a pressure sensor to get altitude and vertical speed. It can be
+   * a GY63 or a GY86 board based on MS5611
+   * a SPL06-001 sensor
 * a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
 
        note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware  
@@ -57,9 +59,9 @@ This board can be connected to:
 
    Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
 
-* When a MS5611 (baro sensor) is used:
+* When a baro sensor is used:
 
-   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 
+   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06  
 
    Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
 
@@ -84,7 +86,7 @@ Developers can compile and flash this software with those tools.
 
 Still if you just want to use it, there is no need to install/use those tools.
 
-On github, in uf2 folder, there is already a compile version of this software that can be directly uploaded and configured afterwards
+On github, in uf2 folder, there is already a compiled version of this software that can be directly uploaded and configured afterwards
 
 To upload this compiled version, the process is the folowing:
 * download the file in folder uf2 on your pc
