@@ -12,7 +12,7 @@ This project can be interfaced with an ELRS, a FRSKY or a Jeti receiver (protoco
 
 It can also provide 10 PWM RC channels from a CRSF (ELRS) or a Sbus (Frsky) signal.
 
-It can also provide a Sbus signal (only from CRSF/ELRS signal; for Frsky Sbus is provided by the Frsky Receiver itself.  
+It can also provide a Sbus signal (only from CRSF/ELRS signal); for Frsky Sbus is provided by the Frsky Receiver itself.  
 
 ## -------  Hardware -----------------
 
