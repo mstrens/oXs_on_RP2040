@@ -6,7 +6,7 @@
 //#include "config_advanced.h"
 //#include "config_macros.h"
 
-#define MAX_NBR_VOLTAGES 4 // number of pins available for ADC
+#define MAX_NBR_VOLTAGES 3 // number of pins available for ADC
 #define VOLTAGEINTERVAL 10 // minimum interval between 2 reads (msec)
 #define SUM_COUNT_MAX_VOLTAGE 10 // number of ADC conversions to calculate averages
 
@@ -18,10 +18,10 @@ public:
     void begin();
     void getVoltages(void) ;
 private:
-    uint8_t pin[MAX_NBR_VOLTAGES]  =  { 26, 27, 28, 29 };            // pin number to use to read each voltage (See hardware setting in oXs_config.h)  
+    uint8_t pin[MAX_NBR_VOLTAGES]  =  { 26, 27, 28 };            // pin number to use to read each voltage (See hardware setting in oXs_config.h)  
     float offset[MAX_NBR_VOLTAGES] = { 0.0 } ;               // offset to apply while converting ADC to millivolt (See setting in oXs_config.h)  
     float mVoltPerStep[MAX_NBR_VOLTAGES] ;       // rate to apply while converting ADC to millivolt (See setting in oXs_config.h)  
-    int32_t sumVoltage[MAX_NBR_VOLTAGES] = { 0,0,0,0};       // used to calculate average voltage
+    int32_t sumVoltage[MAX_NBR_VOLTAGES] = { 0,0,0};       // used to calculate average voltage
 
 
 };

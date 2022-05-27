@@ -13,6 +13,7 @@ typedef enum
     CRSF_FRAMETYPE_GPS = 0x02,
     CRSF_FRAMETYPE_VARIO = 0x07,
     CRSF_FRAMETYPE_BATTERY_SENSOR = 0x08,
+    CRSF_FRAMETYPE_BARO_ALTITUDE = 0x09,
     CRSF_FRAMETYPE_LINK_STATISTICS = 0x14,
     CRSF_FRAMETYPE_OPENTX_SYNC = 0x10,
     CRSF_FRAMETYPE_RADIO_ID = 0x3A,
@@ -43,7 +44,8 @@ typedef enum
 
 
 #define CRSF_FRAME_GPS_PAYLOAD_SIZE 15
-#define CRSF_FRAME_VARIO_PAYLOAD_SIZE 2 
+#define CRSF_FRAME_VARIO_PAYLOAD_SIZE 2
+#define CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE 2
 #define CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE 8
 #define CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE 6  
 //#define CRSF_FRAME_FLIGHT_MODE_PAYLOAD_SIZE 48  // to check
@@ -55,6 +57,7 @@ typedef enum
     CRSF_FRAMEIDX_BATTERY_SENSOR = 0x02,
     CRSF_FRAMEIDX_ATTITUDE = 0x03,
     CRSF_FRAMEIDX_FLIGHT_MODE = 0x04,
+    CRSF_FRAMEIDX_BARO_ALTITUDE = 0x05,
 } crsf_frame_idx_e;
 
 typedef enum
@@ -118,6 +121,15 @@ struct attitudeFrameStruct
     uint8_t crc;
 } __attribute__((packed)) ;
 
+struct baroAltitudeFrameStruct
+{
+    uint8_t device_addr; // should be 0xEC (=receiver)
+    uint8_t frame_size;  // counts size after this byte, so it must be the payload size + 2 (type and crc)
+    uint8_t type;        // from crsf_frame_type_e
+    int16_t altitude ;     // in dm with an offset of 10000 dm
+    uint8_t crc;
+} __attribute__((packed)) ;
+
 
 /**
  * Crossfire packed channel structure, each channel is 11 bits
@@ -158,6 +170,7 @@ void fillFrameBattery(uint8_t idx);
 void fillFrameVario(uint8_t idx);
 void fillFrameGps(uint8_t idx);
 void fillFrameAttitude(uint8_t idx);
+void fillFrameBaroAltitude(uint8_t idx);
 void fillOneFrame(uint8_t idx);
 
 void pioRxHandlerIrq();

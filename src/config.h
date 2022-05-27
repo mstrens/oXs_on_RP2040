@@ -1,18 +1,19 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 // ------- General ------------------
-// This project can be interfaced with an ELRS or a FRSKY receiver (protocol has to be selected accordingly)
+// This project can be interfaced with an ELRS, a JETI or a FRSKY receiver (protocol has to be selected accordingly)
 // 
 // This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals
 // For telemetry, it can provide
-//    - up to 4 analog voltages measurement (with scaling and offset)
+//    - up to 3 analog voltages measurement (with scaling and offset)
+//    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
 // It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
-// It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provide by the Frsky Receiver itself)  
+// It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provided by the Frsky Receiver itself)  
 //
 // -------  Hardware -----------------
 // This project requires a board with a RP2040 processor (like the rapsberry pi pico).
@@ -43,8 +44,12 @@
 //          Gpio 2..4 (and gpio 6...9) will then generate the following RC channels. 
 //    - to select if gpio 0 has to generate a Sbus signal or a PWM RC channel.
 //
-// Voltages 1...4 are measured on gpio 26...29 
+// Voltages 1, 2, 3 are measured on gpio 26...28 
 //       Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
+//
+// RPM (Hz) is measured on gpio 29
+//       Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
+//       All pulsed are counted (no debouncing); so use a hardware low pass filter (resistor/capitor) to avoid dummy pulses reading
 //
 // When a MS5611 (baro sensor) is used:
 //       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 
@@ -84,19 +89,19 @@
 // Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly
 //
 // The number of data that ELRS can send back per second to the transmitter is quite limitted (and depends on your ELRS setup)
-// There are 4 types of frame being generated (voltage, gps, vario and attitude)
+// There are 5 types of frame being generated (voltage, gps, vario, attitude and baro_altitude)
 // Following #define allow to set up the interval between 2 frames of the same group.
-// This is also valid for data sent via the Sport protocol.
 // This allows e.g. to transmit vertical speed (in 'vario' frame) more often than GPS data
 // The values are in milli seconds
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
 #define VARIO_FRAME_INTERVAL 50   // This frame contains only Vertical speed
-#define GPS_FRAME_INTERVAL 2000     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
+#define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
 #define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw. It is currently not used in this project.
-// Note: ELRS has only one field for Altitude and is normally part of the GPS frame.  
-//       When a baro sensor is used, it provides an altitude that is more accurate than the GPS altitude.
-//       So for ELRS protocol, priority is given to the baro altitude when it is available.
-//       In ELRS, when there is a baro sensor but no GPS, all GPS data are transmitted but only the Altitude is meaningful  
+#define BARO_ALTITUDE_FRAME_INTERVAL 500 // This frame contains only barometric relative altitude
+// Note: ELRS has no field to transmit RPM; so RPM is sent in "attitude" frame as pitch, roll and yaw.  
+//       Those fiels can have a max value of about 16000 and some digits are considered as decimals and lost by openTx.
+//       Therefore RPM value (hetz) is transmitted 3 times (once in Hetz, once in 10 X Hetz and once in 100 X Hetz)
+//       So the user can decide which value best fit his need
 
 // Here some additional parameters that can't be changed via the serial terminal 
 // -------- Parameters for the vario -----
@@ -118,7 +123,7 @@ typedef struct {
   int32_t value ;
 } oneMeasurement_t;
 
-// I activate this when I buid a device for Sport with voltage measured on VOLT2 instead of VOLT1 (easier to solder the resistor)
+// I activate this when I buid a device for Sport with voltage measured on VOLT2 instead of VOLT1 (because it is easier to solder the resistor to Grnd)
 //#define SKIP_VOLT1_3_4
 
 

@@ -20,6 +20,11 @@
 #include "param.h"
 #include "tools.h"
 #include "ws2812.h"
+#include "rpm.h"
+
+// to do : add current and rpm telemetry fields to jeti protocol
+//         support ex bus jeti protocol on top of ex jeti protocol
+//         support Frsky Fport on top of sbus+sport protocol  
 
 // Look at file config.h for more details
 //
@@ -42,14 +47,18 @@
 // I2C uses pins:
 //      - GPIO 14 = PICO_I2C1_SDA_PIN
 //      - GPIO 15 = PICO_I2C1_SCL_PIN  
-// Analog read uses GPIO pins 26 up to 29
+// Analog read uses GPIO pins 26 up to 28 (so 3 max)
+// RPM uses GPIO pin 29
 
 // So pio 0 sm0 is used for CRSF Tx  or for Sport TX
 //        0   1             CRSF Rx  or for Sport Rx
 //        0   2            sbus out             
 //        1   0 is used for one PWM          
 //        1   1 is used for one PWM
+//        1   2 is used for RPM
 //        1   3 is used for RGB led
+
+ 
 
 //#define DEBUG
 
@@ -92,6 +101,7 @@ void getSensors(void){
     }
   }  
   gps.readGps();
+  readRpm();
 }
 
 void mergeSeveralSensors(void){
@@ -153,6 +163,7 @@ void setup() {
   setupPwm();
   setupPioPwm();
   watchdog_update();
+  setupRpm(); // this function perform the setup of pio Rpm
   printConfig();
   watchdog_update();
   setRgbColor(0,10,0);

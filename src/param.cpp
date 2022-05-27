@@ -252,7 +252,7 @@ void printConfig(){
             printf("\nProtocol is unknow\n")  ;
         }
     printf("CRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
-    printf("Voltage parameters:\n")  ;
+    printf("Voltage/RPM parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
     if (baro1.baroInstalled) {
@@ -325,8 +325,8 @@ void printConfig(){
     printf("\nCommands can be entered to change the config parameters\n");
     printf("-To change the protocol, for Sport enter PROTOCOL=S, for CRSF/ELRS enter PROTOCOL=C, for Jeti enter PROTOCOL=J\n");
     printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
-    printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
-    printf("     Enter SCALEx=0 to avoid sending value x to the Transmitter (for Frsky or Jeti)\n")  ;
+    printf("-To change voltage/rpm scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+    printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
     printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
     printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
     printf("-To select the signal generated on:\n");

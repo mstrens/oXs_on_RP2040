@@ -1,0 +1,30 @@
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+
+; Side-set is not used
+
+.program rpm
+;.side_set 1 opt
+loop:
+    wait 0 pin 0 [9]        ; wait for rising edge of input signal
+    wait 1 pin 0 [9]
+    jmp y-- loop      ; Jump back to the beginning and decrement Y.
+
+% c-sdk {
+#include "hardware/gpio.h"
+#include "hardware/clocks.h"
+
+static inline void rpm_program_init(PIO pio, uint sm, uint offset, uint pin) {
+   pio_gpio_init(pio, pin);
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
+   pio_sm_config c = rpm_program_get_default_config(offset);
+   sm_config_set_in_pins(&c, pin); // pin is used for Wait instruction
+   float div = (float)clock_get_hz(clk_sys) / (1000000 / 10 ); //divide by 10 because we add a delay of 9 in WAIT instruction 
+   sm_config_set_clkdiv(&c, div);
+   pio_sm_init(pio, sm, offset, &c);  // sm is left disabled at the end
+   pio_sm_set_enabled(pio, sm, true); // start the state machine
+}
+%}

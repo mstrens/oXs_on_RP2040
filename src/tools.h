@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 //#include "stdio.h"
 
-#define SPORT_TYPES_MAX 25
+#define SPORT_TYPES_MAX NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
@@ -104,7 +104,7 @@ enum fieldIdx {
       YAW ,
     UPLINK_RSSI_1 , UPLINK_RSSI_2 , UPLINK_LINK_QUALITY , UPLINK_SNR , ACTIVE_ANTENNA, RF_MODE ,
     UPLINK_TX_POWER , DOWNLINK_RSSI , DOWNLINK_LINK_QUALITY , DOWNLINK_SNR ,
-    RELATIVEALT , 
+    RELATIVEALT , RPM , NUMBER_MAX_IDX , 
 };
 
 

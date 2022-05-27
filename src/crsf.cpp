@@ -33,6 +33,7 @@ voltageFrameStruct voltageFrame;
   
 varioFrameStruct varioFrame;
 attitudeFrameStruct attitudeFrame;
+baroAltitudeFrameStruct baroAltitudeFrame;
 //extern MS5611 baro1; 
 //extern SPL06 baro2;
 //extern VARIO vario1 ;
@@ -112,10 +113,12 @@ bool dataAvailable(uint8_t idx) {
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
-            return fields[RELATIVEALT].available ;    // in this version, attitude frame is used to transmit altitude         
+            return fields[RPM].available ;    // in this version, attitude frame is used to transmit RPM         
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
-            //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled  
+            //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled 
+        case CRSF_FRAMEIDX_BARO_ALTITUDE :
+            return fields[RELATIVEALT].available ;        
     }
     return false;
     // to be continue with other frames/data if ELRS support them.
@@ -212,22 +215,39 @@ void fillFrameVario(uint8_t idx){
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
+
+void fillFrameBaroAltitude(uint8_t idx){
+    //if (! baro1.baroInstalled) return ; // skip when vario is not installed ; not required because data will not be available and so fucntion should not be called    
+    CRSFBufferLength = 0;
+    fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );
+    fillBufferU8( CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
+    fillBufferU8( CRSF_FRAMETYPE_BARO_ALTITUDE ) ;
+    fillBufferI16( (int16_t) ( (fields[RELATIVEALT].value / 10 ) + 10000) ) ;  // from cm to dm and a 10000 dm offset
+    // in theory, when Alt in dm should be more than about 32000-10000, then value should be negative and in m instead of in dm (and no offset)
+    // So when alt is more than 2000m; we can discard this situation
+    fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+    fields[RELATIVEALT].available = false ;
+    crsfFrameNextMillis[idx] = millis() + BARO_ALTITUDE_FRAME_INTERVAL;
+    //CRSFBufferLength = sizeof(baroAltitudeFrame);
+    //memcpy(&CRSFBuffer[0] , &baroAltitudeFrame , CRSFBufferLength);
+    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
+    //    printf( " %X ", CRSFBuffer[i]);
+    //}
+    //printf("\n");
+    dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
+    dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
+}
+
 void fillFrameAttitude(uint8_t idx){
     CRSFBufferLength = 0;
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-#define DEBUG_ATTITUDE 
-#ifdef DEBUG_ATTITUDE
-    fillBufferI16( (int16_t) 12345); //int16 allows values from -32000 up to +32000
-    fillBufferI16( (int16_t) -12345) ; //int16 allows values from -32000 up to +32000
-#else    
-    fillBufferI16( (int16_t) (fields[RELATIVEALT].value  )); //int16 allows values from -32000 up to +32000
-    fillBufferI16( (int16_t) (fields[RELATIVEALT].value / 10 )) ; //int16 allows values from -32000 up to +32000
-#endif
-    fillBufferI16( (int16_t) (fields[RELATIVEALT].value /10  )); // converted from cm to dm ; int16 allows values from -32000 up to +32000
+    fillBufferI16( (int16_t) (fields[RPM].value  )); //int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+    fillBufferI16( (int16_t) (0)) ; //not used in this version 
+    fillBufferI16( (int16_t) (0)); // not used in this version
     fillBufferU8( crsf_crc.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    fields[RELATIVEALT].available = false ;
+    fields[RPM].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
     //CRSFBufferLength = sizeof(attitudeFrame);
     //memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
@@ -298,7 +318,11 @@ void fillOneFrame(uint8_t idx){
             break;
         case CRSF_FRAMEIDX_GPS :
             fillFrameGps(idx);
-            break;                
+            break;
+        case CRSF_FRAMEIDX_BARO_ALTITUDE :
+            fillFrameBaroAltitude(idx);
+            break ;
+                           
     } // end switch
 }
 
