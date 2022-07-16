@@ -50,14 +50,15 @@
 // Analog read uses GPIO pins 26 up to 28 (so 3 max)
 // RPM uses GPIO pin 29
 
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX
 //        0   1             CRSF Rx  or for Sport Rx
 //        0   2            sbus out             
 //        1   0 is used for one PWM          
 //        1   1 is used for one PWM
 //        1   2 is used for RPM
 //        1   3 is used for RGB led
-
+// So UART0 is used for GPS
+//    UART1 is used for SBUS IN
  
 
 //#define DEBUG
