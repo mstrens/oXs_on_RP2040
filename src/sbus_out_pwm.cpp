@@ -1,5 +1,3 @@
-
-
 #include "hardware/pio.h"
 #include "sbus_out_pwm.h"
 #include "hardware/dma.h"
@@ -12,6 +10,7 @@
 #include "stdio.h"
 
 #include "pwm.pio.h"
+
 
 
 PIO pioTxSbus = pio0; // we use pio 0; DMA is hardcoded to use it
@@ -101,26 +100,33 @@ void fillSbusFrame(){
 #define PIN_PWM6 6
 #define PIN_PWM7 7
 #define PIN_PWM8 8
-uint8_t pwmPins[8] = { PIN_PWM1 , PIN_PWM2 , PIN_PWM3 , PIN_PWM4 , PIN_PWM5, PIN_PWM6 , PIN_PWM7 , PIN_PWM8 };
+//uint8_t pwmPins[8] = { PIN_PWM1 , PIN_PWM2 , PIN_PWM3 , PIN_PWM4 , PIN_PWM5, PIN_PWM6 , PIN_PWM7 , PIN_PWM8 };
     
 #define TOP 20000
 #define DIVIDER 133
 
+bool pwmIsUsed;
+
 void setupPwm(){
-    // Tell the LED pin that the PWM is in charge of its value.
-    for( uint8_t i = 0 ; i < 8 ; i++){
-        gpio_set_function(pwmPins[i] , GPIO_FUNC_PWM);
-        // Figure out which slice we just connected to the LED pin
-        uint slice_num = pwm_gpio_to_slice_num(pwmPins[i]);        
+    pwmIsUsed = false;
+    for (uint8_t i=0 ; i<16 ; i++){
+        if ( config.pinChannels[i] != 255) pwmIsUsed = true;
+    }
+    if ( pwmIsUsed == false) return ; // skip when PWM is not used
+    for( uint8_t i = 0 ; i < 16 ; i++){
+        if ( config.pinChannels[i] == 255 ) continue ; // skip i when pin is not defined for this channel
+        gpio_set_function( config.pinChannels[i] , GPIO_FUNC_PWM);
+        // Figure out which slice we just connected to the pin
+        uint slice_num = pwm_gpio_to_slice_num(config.pinChannels[i]);        
         // Get some sensible defaults for the slice configuration. By default, the
         // counter is allowed to wrap over its maximum range (0 to 2**16-1)
-        pwm_config config = pwm_get_default_config();
+        pwm_config configPwm = pwm_get_default_config();
         // Set divider, reduces counter clock to sysclock/this value
-        pwm_config_set_wrap (&config , TOP) ; // set top value for wrapping
-        pwm_config_set_clkdiv_int (&config , DIVIDER);
+        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
+        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
         // Load the configuration into our PWM slice, and set it running.
-        pwm_init(slice_num, &config, true);
-        pwm_set_gpio_level ( pwmPins[i] , 0) ; // start PWM with 0% duty cycle
+        pwm_init(slice_num, &configPwm, true);
+        pwm_set_gpio_level ( (uint) config.pinChannels[i] , 0) ; // start PWM with 0% duty cycle
     }    
 }
 
@@ -129,7 +135,8 @@ uint16_t rcSbusOutChannels[16];
 void updatePWM(){
     static uint32_t lastPwmMillis = 0 ;
     uint16_t pwmValue;
-    if ( ! lastRcChannels) return ;
+    if ( pwmIsUsed == false) return ; // skip when PWM is not used
+    if ( ! lastRcChannels) return ;   // skip if we do not have last channels
     if ( (millis() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
         lastPwmMillis = millis();
         if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
@@ -151,16 +158,12 @@ void updatePWM(){
         rcSbusOutChannels[13] = (uint16_t) sbusFrame.rcChannelsData.ch13 ;
         rcSbusOutChannels[14] = (uint16_t) sbusFrame.rcChannelsData.ch14 ;
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
-        for( uint8_t i = 0 ; i < 4 ; i++){    
-            pwmValue = fmap( rcSbusOutChannels[i + config.gpio1 - 1] , 172, 1811, 988, 2012 );
-            //printf("pwm= %" PRIu16 "\n", pwmValue);
-            pwm_set_gpio_level (pwmPins[i], pwmValue) ;
-        }
-        for( uint8_t i = 0 ; i < 4 ; i++){    
-            pwmValue = fmap( rcSbusOutChannels[i + config.gpio5 - 1] , 172, 1811, 988, 2012 );
-            //printf("pwm= %" PRIu16 "\n", pwmValue);
-            pwm_set_gpio_level (pwmPins[i + 4], pwmValue) ;
-        }    
+        for( uint8_t i = 0 ; i < 16 ; i++){    
+            if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 
+            pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
+            //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
+            pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
+        }   
     }
     
 }
@@ -172,7 +175,7 @@ uint16_t  fmap(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, u
 
 
 
-
+/*
 
 PIO pioPWM = pio1;
 int smPWM0 = 0;
@@ -228,3 +231,4 @@ void updatePioPwm(){
         } 
     }
 }
+*/

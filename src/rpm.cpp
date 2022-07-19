@@ -26,6 +26,7 @@ float rpmScaling;
 
 
 void setupRpm(){
+    if (config.pinRpm == 255) return; // skip when pin is not defined
     setupRpmPio( );
     rpmScaling = 1000000.0 * config.scaleVolt4; // 1000000 = nbr of microsec in a sec
 }
@@ -38,6 +39,7 @@ void setupRpmPio(){
 
 }
 void readRpm(){
+    if (config.pinRpm == 255) return; // skip when pin is not defined
     if (rpmScaling != 0.0){
         currentRpmUsec = micros();
         if ( ( currentRpmUsec - previousRpmUsec ) > RPM_COUNTER_INTERVAL_USEC ) {

@@ -5,7 +5,7 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "uart_crsf_tx.pio.h"
-//#include "uart_crsf_rx.pio.h"
+#include "uart_crsf_rx.pio.h"
 #include "crsf.h"
 #include "config.h"
 #include "crc.h"
@@ -17,6 +17,10 @@
 #include <string.h> // memcpy
 #include "param.h"
 #include <inttypes.h>
+
+
+//// This is the same as the default UART baud rate on Pico
+//const uint SERIAL_BAUD_CRSF = config.crsfBaudrate;
 
 
 #define FRAME_TYPES_MAX 5
@@ -43,16 +47,14 @@ extern CONFIG config;
 uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (via dma)
 uint8_t CRSFBufferLength;
 
-#define PRIM_CRSF_UART_ID uart1
+const uint PIN_TX = 10;
+const uint PIN_RX = 9;
 
-//const uint PIN_TX = 10;
-//const uint PIN_RX = 9;
+queue_t crsfRxQueue ; // queue uses to push the data from the uart pio rx to the main loop
 
-queue_t primCrsfRxQueue ; // queue uses to push the data from the uart rx to the main loop
-
-PIO crsfPio = pio0; // we use pio 0; DMA is hardcoded to use it
-uint crsfSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
-//uint smRx = 1;  // we use the state machine 1 for Rx; 
+PIO pio = pio0; // we use pio 0; DMA is hardcoded to use it
+uint smTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
+uint smRx = 1;  // we use the state machine 1 for Rx; 
 
 int crsf_dma_chan;
 dma_channel_config c;
@@ -62,8 +64,8 @@ dma_channel_config c;
 // Set up a PIO state machine to serialise our bits
 void setupCrsfTxPio(){
     // setup the PIO for TX UART
-    uint crsfOffsetTx = pio_add_program(crsfPio, &uart_tx_program);
-    uart_tx_program_init(crsfPio, crsfSmTx, crsfOffsetTx, config.pinPrimIn, config.crsfBaudrate);
+    uint offsetTx = pio_add_program(pio, &uart_tx_program);
+    uart_tx_program_init(pio, smTx, offsetTx, PIN_TX, config.crsfBaudrate);
     // Configure a channel to write the same word (32 bits) repeatedly to PIO0
     // SM0's TX FIFO, paced by the data request signal from that peripheral.
     crsf_dma_chan = dma_claim_unused_channel(true);
@@ -85,44 +87,14 @@ void setupCrsfTxPio(){
 
 GENERIC_CRC8 crsf_crc(CRSF_CRC_POLY);
 
-// primary RX interrupt handler
-void on_prim_crsf_uart_rx() {
-    while (uart_is_readable(PRIM_CRSF_UART_ID)) {
-        uint8_t ch = uart_getc(PRIM_CRSF_UART_ID);
-        //int count = queue_get_level( &primCrsfRxQueue );
-        //printf(" level = %i\n", count);
-        //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &primCrsfRxQueue , &ch)) printf("queue try add error\n");
-        //printf("%x\n", ch);
-    }
-}
-
-
 void setupCRSF(){
-    if (config.pinPrimIn != 255) { // configure only if pinPrimIn is defined 
-        queue_init(&primCrsfRxQueue , 1 ,256) ;// queue for prim crsf uart with 256 elements of 1
-        uart_init(PRIM_CRSF_UART_ID, config.crsfBaudrate);   // setup UART baud rate
-        uart_set_hw_flow(PRIM_CRSF_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-        uart_set_fifo_enabled(PRIM_CRSF_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
-        gpio_set_function( config.pinPrimIn , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART0
-        //gpio_set_inover(SBUS_RX_PIN , GPIO_OVERRIDE_INVERT);
-        //uart_set_format (PRIM_CRSF_UART_ID, 8, 1 ,UART_PARITY_NONE ) ;
-        // And set up and enable the interrupt handlers
-        irq_set_exclusive_handler(UART1_IRQ, on_prim_crsf_uart_rx);
-        irq_set_enabled(UART1_IRQ, true);
-        // Now enable the UART to send interrupts - RX only
-        uart_set_irq_enables(PRIM_CRSF_UART_ID, true, false);
-        uint8_t dummy;
-        while (! queue_is_empty (&primCrsfRxQueue)) queue_try_remove ( &primCrsfRxQueue , &dummy ) ;
-        
-        if (config.pinTlm != 255) setupCrsfTxPio(); // configure pio0 for TX (just like Sport or Jeti)
-    }    
+    setupCrsfTxPio();
+    setupCrsfRxPio();    
 }
 
 
 void fillCRSFFrame(){
     static uint8_t crsf_last_frame_idx = 0 ;
-    if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     if ( dma_channel_is_busy(crsf_dma_chan) )return ; // skip if the DMA is still sending data
     uint32_t _millis = millis();
     for (uint8_t i = 0 ; i< FRAME_TYPES_MAX ; i++ ){
@@ -357,7 +329,7 @@ void fillOneFrame(uint8_t idx){
 
 // here the code to read the CRSF frames from the receiver (in order to get the RC channels data)
 
-/*
+
 void pioRxHandlerIrq(){    // when a byte is received on the Sport, read the pio Sport fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
   irq_clear (PIO0_IRQ_0 );
@@ -367,7 +339,19 @@ void pioRxHandlerIrq(){    // when a byte is received on the Sport, read the pio
     //sportRxMillis = millis();                    // save the timestamp.
   }
 }
-*/
+
+void setupCrsfRxPio (void){
+    // configure the queue to get the data from crsf in the irq handle
+    queue_init (&crsfRxQueue, sizeof(uint8_t), 250);
+
+    // set an irq on pio to handle a received byte
+    irq_set_exclusive_handler( PIO0_IRQ_0 , pioRxHandlerIrq) ;
+    irq_set_enabled (PIO0_IRQ_0 , true) ;
+
+    uint offsetRx = pio_add_program(pio, &uart_rx_program);
+    uart_rx_program_init(pio, smRx, offsetRx, PIN_RX, config.crsfBaudrate);
+}
+
 
 // a CRSF RC channel frame contains
 // 1 byte with CRSF_ADDRESS_FLIGHT_CONTROLLER = 0xC8,
@@ -397,8 +381,8 @@ void handleCrsfRx(void){   // called by main loop : receive the CRSF frame
     static uint8_t bufferRcChannels[RC_PAYLOAD_LENGTH];
     uint8_t data;
     uint8_t crc = 0; 
-    while (! queue_is_empty(&primCrsfRxQueue)) {
-        queue_try_remove (&primCrsfRxQueue,&data);
+    while (! queue_is_empty(&crsfRxQueue)) {
+        queue_try_remove (&crsfRxQueue,&data);
         //printf(" %x ",data);
         switch ( crsfRxState ) {
             case NO_FRAME:

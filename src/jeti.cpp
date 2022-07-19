@@ -1,13 +1,16 @@
+#include <stdio.h>
+
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "hardware/dma.h"
 #include "uart_jeti_tx.pio.h"
 #include "MS5611.h"
 #include "SPL06.h"
-
 #include "jeti.h"
 #include "tools.h"
 #include "gps.h"
+#include "param.h"
+#include <inttypes.h> // used by PRIu32
 
 #ifdef DEBUG
 // ************************* Several parameters to help debugging
@@ -28,7 +31,7 @@ extern MS5611 baro1;
 extern SPL06 baro2;
 
 extern GPS gps;
-
+extern CONFIG config;
 
 uint8_t listOfJetiFields[16] ; // list of oXs Field Id to transmit
 uint8_t listOfJetiFieldsIdx ; // current fields being handled (for data); there is another idx for text field
@@ -69,7 +72,7 @@ static const bool jetiParityTable256[256] =
 //    we wait about 20 ms to let the jeti receiver send some data that will be discarded
 
 
-#define JETI_PIO_TX_PIN 10  // pin being used by the UART pio
+//#define JETI_PIO_TX_PIN 10  // pin being used by the UART pio
 
 PIO jetiPio = pio0;
 uint jetiSmTx = 0; // to send the telemetry to jeti RX
@@ -101,9 +104,7 @@ void setupJeti() {
     );
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     jetiOffsetTx = pio_add_program(jetiPio, &uart_jeti_tx_program);
-    uart_jeti_tx_program_init(jetiPio, jetiSmTx, jetiOffsetTx, JETI_PIO_TX_PIN, 9700 );  
-
-
+    uart_jeti_tx_program_init(jetiPio, jetiSmTx, jetiOffsetTx, config.pinTlm, 9700 );  
     degreeChar[0] = 0xB0 ; // for the symbol °, fill with 0xB0 followed by 0x00 as showed in jetiprotocol example and in datasheet (code A02 for european set of char))
     degreeChar[1] = 0x00 ;
     initListOfJetiFields() ;  
@@ -304,7 +305,7 @@ void startJetiTransmit() {
         ptr++; 
     }
     // start the state machine
-    jeti_uart_tx_program_start(jetiPio, jetiSmTx,  JETI_PIO_TX_PIN) ; 
+    jeti_uart_tx_program_start(jetiPio, jetiSmTx,  config.pinTlm) ; 
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (jeti_dma_chan, &jetiTxBuffer[0], false);
     dma_channel_set_trans_count (jeti_dma_chan, jetiMaxData, true) ;
@@ -372,21 +373,25 @@ void handleJetiTx()    // when there is more than 20mses since sending last fram
                             // then a separator (0xFE), 2 * 16 char of text and a trailer (0xFF)
                             // the TEXT part contains or the name of the device or the name and unit of each field
 {
+  if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
   static  uint8_t jetiSendDataFrameCount ;
+  //printf("Jeti State %x time %" PRIu32 "\n", jetiState , millis() -jetiStartReceiving);
   if (jetiState == JETI_SENDING){
       if ( dma_channel_is_busy(jeti_dma_chan) )return ; // skip if the DMA is still sending data
       jetiState = JETI_RECEIVING ;
       jetiStartReceiving = millis();
       return;  
   } else if (jetiState == JETI_RECEIVING){
-      if ( ( millis() -  jetiStartReceiving ) <= 20 ) return; //skip if there is less than 20 msec since end of transmit
-      jetiState == JETI_IDLE;
+      if ( ( millis() -  jetiStartReceiving ) <= 35 ) return; //skip if there is less than 20 msec since end of transmit
+                                                 // 35 because dma become free about 15 msec before the end                 
+      jetiState = JETI_IDLE;
   }    
   if (jetiState == JETI_IDLE ) {
     if (jetiSendDataFrameCount  >= 5 ) { //Send a text frame instead of a data frame once every 5 data frames 
         jetiSendDataFrameCount = 0 ;
         fillJetiBufferWithText() ;                // fill the buffer (including number of bytes and type but not crc)
     }  else  {  
+        //printf(".+. \n");
         jetiSendDataFrameCount++ ;                          // count the number of data frame sent (in order to send a text frame after 5 frames. 
         countOfFieldsChecked = numberOfJetiFields ;             //countOfFieldsChecked is used in order to loop only once thru all data to be sent
         jetiMaxData = 8 ;                                   //  Jeti buffer contains 8 bytes in a header ; this header is already filled.
@@ -433,6 +438,7 @@ void handleJetiTx()    // when there is more than 20mses since sending last fram
 #endif        
     startJetiTransmit();  // convert the buffer format, setTx pin as output and start state machine and dma
     jetiState = JETI_SENDING;
+    //printf("send Jeti\n");
   }    
 }
 

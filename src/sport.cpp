@@ -16,7 +16,6 @@
 
 //#include <Arduino.h>
 #include <stdio.h>
-
 #include "pico/stdlib.h"
 //#include "pico/multicore.h"
 #include "hardware/pio.h"
@@ -27,6 +26,7 @@
 #include "sport.h"
 #include "tools.h"
 #include "config.h"
+#include "param.h"
 
 // to do: 
 // if we can reply to several device id, we should keep a table with the last field index used for this deviceid
@@ -48,6 +48,7 @@
 #define SPORTSYNCREQUEST 0x7E
 #define SPORTDEVICEID    0xE4
 
+extern CONFIG config;
 queue_t sportRxQueue ;
 
 // one pio with 2 state machine is used to manage the inverted hal duplex uart for Sport
@@ -126,6 +127,7 @@ void sportPioRxHandlerIrq(){    // when a byte is received on the Sport, read th
 void handleSportRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     static uint8_t previous = 0;
     uint8_t data;
+    if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     if ( restoreSportPioToReceiveMillis) {            // put sm back in recive mode after some delay
         if (millis() > restoreSportPioToReceiveMillis){
             sport_uart_tx_program_stop(sportPio, sportSmTx, SPORT_PIO_RX_PIN );

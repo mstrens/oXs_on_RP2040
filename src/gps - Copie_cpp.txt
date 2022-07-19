@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-//#include "hardware/uart.h"
+#include "hardware/uart.h"
 #include "hardware/irq.h"
 #include "pico/util/queue.h"
-#include "uart_gps_rx.pio.h"
-#include "uart_gps_tx.pio.h"
 #include "gps.h"
 #include <math.h>
 #include "param.h"
@@ -17,14 +15,12 @@
 #define DEG_TO_RAD_FOR_GPS 0.017453292519943295769236907684886f
 #define GPS_UART_ID uart0
 
-//#define GPS_TX_PIN 12 
-//#define GPS_RX_PIN 13
+#define GPS_TX_PIN 12 
+#define GPS_RX_PIN 13
 
-//extern queue_t gpsQueue ;
+extern queue_t gpsQueue ;
 extern CONFIG config;
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
-
-queue_t gpsRxQueue ; // queue uses to push the data from the uart pio rx to the main loop
 
 
 // Receive buffer for Ublox
@@ -50,7 +46,7 @@ void on_uart_rx() {
         //int count = queue_get_level( &gpsQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &gpsRxQueue , &ch)) printf("queue try add error\n");
+        if (!queue_try_add ( &gpsQueue , &ch)) printf("queue try add error\n");
         //printf("%x\n", ch);
     }
 }
@@ -58,100 +54,23 @@ void on_uart_rx() {
 GPS::GPS( void) {}
 
 void GPS::setupGps(void){
-    if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( config.gpsType == 'U') setupGpsUblox(); // send cmd to gps to configure it
-    gpsInitRx(); // this part is common for both types of gps
+    if ( config.gpsType == 'U') setupGpsUblox();
+    if ( config.gpsType == 'C') setupGpsCasic();
 }
 void GPS::readGps(){
-    if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( queue_is_empty (&gpsRxQueue)) return;
+    if ( queue_is_empty (&gpsQueue)) return;
     if ( config.gpsType == 'U') readGpsUblox();
-    if ( config.gpsType == 'C') readGpsCasic();    
+    if ( config.gpsType == 'C') readGpsCasic();
 }
 
-//uint8_t gpsBuffer[50]; // buffer that contains the frame to be sent (via dma)
-//uint8_t gpsBufferLength;
-
-
-PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
-uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
-uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
-
-//int gps_dma_chan;
-//dma_channel_config c;
-
-void gpsPioRxHandlerIrq(){    // when a byte is received on the PIO GPS, read the pio fifo and push the data to a queue (to be processed in the main loop)
-  // clear the irq flag
-  irq_clear (PIO1_IRQ_0 );
-  while (  ! pio_sm_is_rx_fifo_empty (gpsPio ,gpsSmRx)){ // when some data have been received
-     uint8_t c = pio_sm_get (gpsPio , gpsSmRx) >> 24;         // read the data
-     queue_try_add (&gpsRxQueue, &c);          // push to the queue
-  }
-}
-
-void GPS::gpsInitRx(){
-    // configure the queue to get the data from gps in the irq handle
-    queue_init (&gpsRxQueue, sizeof(uint8_t), 250);
-
-    // set an irq on pio to handle a received byte
-    irq_set_exclusive_handler( PIO1_IRQ_0 , gpsPioRxHandlerIrq) ;
-    irq_set_enabled (PIO1_IRQ_0 , true) ;
-
-    uint gpsOffsetRx = pio_add_program(gpsPio, &uart_rx_program);
-    uart_rx_program_init(gpsPio, gpsSmRx, gpsOffsetRx, config.pinGpsTx, 38400);
-
-    /*
-        //printf("End of GPS setup\n"); sleep_ms(1000);
-        // clear the input queue that is filled by the interrupt
-        queue_init(&gpsQueue , sizeof(uint8_t) ,256) ;// queue for uart0 with 256 elements of 1
-        
-        // change the baudrate of UART0 to the new rate
-        uart_set_baudrate(GPS_UART_ID , 38400);
-        // And set up and enable the interrupt handlers
-        irq_set_exclusive_handler(UART0_IRQ, on_uart_rx);
-        irq_set_enabled(UART0_IRQ, true);
-        // Now enable the UART to send interrupts - RX only
-        uart_set_irq_enables(GPS_UART_ID, true, false);
-    */
-        busy_wait_us(1000);
-        uint8_t dummy;
-        while (! queue_is_empty (&gpsRxQueue)) queue_try_remove ( &gpsRxQueue , &dummy ) ;
-        _step = 0 ;
-}
-
-void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending the configuration cmd)            
-    // setup the PIO for TX UART
-    uint gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program);
-    uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
-    /*
-            //!!!!!!!!!!!! this part used pio0 and should be change for pio1
-            // Configure a dma channel to write the same word (8 bits) repeatedly to PIO0
-            // SM0's TX FIFO, paced by the data request signal from that peripheral.
-            gps_dma_chan = dma_claim_unused_channel(true);
-            c = dma_channel_get_default_config(gps_dma_chan);
-            channel_config_set_read_increment(&c, true);
-            channel_config_set_write_increment(&c, false);
-            channel_config_set_dreq(&c, DREQ_PIO0_TX0);
-            channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
-            dma_channel_configure(
-                gps_dma_chan,
-                &c,
-                &pio0_hw->txf[0], // Write address (only need to set this once)
-                &gpsBuffer[0],   // we use always the same buffer             
-                0 , // do not yet provide the number of bytes (DMA cycles)
-                false             // Don't start yet
-            );
-            // do not set interrupt on DMA. The main loop will check if DMA is busy before sending
-    */
-
-    /*
+void GPS::setupGpsUblox(void){    // here the setup for a Ublox            
         uart_init(GPS_UART_ID, 9600);   // setup UART0 at 9600 baud
         uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
         uart_set_fifo_enabled(GPS_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
         
         gpio_set_function(GPS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART0
         gpio_set_function(GPS_RX_PIN , GPIO_FUNC_UART);
-    */
+
         const static uint8_t initGps1[] = { 
         // send command to GPS to change the setup
         // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
@@ -196,16 +115,31 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
         while (initGpsIdx < sizeof( initGps1)) {
     //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
             if (initGps1[initGpsIdx] == 0XB5) busy_wait_us(5000) ;
-            if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx++] );   
-            //uart_putc_raw(GPS_UART_ID , initGps1[initGpsIdx++]);
+            uart_putc_raw(GPS_UART_ID , initGps1[initGpsIdx++]);
         }
-        busy_wait_us(10000); 
+        busy_wait_us(10000);
+                
+        //printf("End of GPS setup\n"); sleep_ms(1000);
+        // clear the input queue that is filled by the interrupt
+        queue_init(&gpsQueue , sizeof(uint8_t) ,256) ;// queue for uart0 with 256 elements of 1
+        
+        // change the baudrate of UART0 to the new rate
+        uart_set_baudrate(GPS_UART_ID , 38400);
+        // And set up and enable the interrupt handlers
+        irq_set_exclusive_handler(UART0_IRQ, on_uart_rx);
+        irq_set_enabled(UART0_IRQ, true);
+        // Now enable the UART to send interrupts - RX only
+        uart_set_irq_enables(GPS_UART_ID, true, false);
+        busy_wait_us(1000);
+        uint8_t dummy;
+        while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
+        _step = 0 ; 
 }  // end setupGPSUblox;
 
     
 void GPS::readGpsUblox(){
     uint8_t data;
-    if (queue_try_remove ( &gpsRxQueue , &data ) ){
+    if (queue_try_remove ( &gpsQueue , &data ) ){
         //printf(" %X" , data);
         bool parsed = false;
         switch (_step) {
@@ -380,7 +314,6 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
     return false;
 }
 
-/*
 //  For casic GPS
 void GPS::setupGpsCasic(void){    // for casic gps
     // clear the input queue that is filled by the interrupt
@@ -402,14 +335,14 @@ void GPS::setupGpsCasic(void){    // for casic gps
     while (! queue_is_empty (&gpsQueue)) queue_try_remove ( &gpsQueue , &dummy ) ;
     _step = 0;
 }  // end setupGPS
-*/   
+   
 
 void GPS::readGpsCasic() { // read and process GPS data. do not send them.// for casic gps
     uint8_t data;
     static uint8_t _idx;
-    if (queue_try_remove ( &gpsRxQueue , &data ) ) {
-    //    if (data == 0xBA) printf("\n"); // new line when sync byte is received
-    //    printf(" %x " , data );
+    if (queue_try_remove ( &gpsQueue , &data ) ) {
+        //if (data == 0xBA) printf("\n"); // new line when sync byte is received
+        //printf(" %x " , data );
         switch (_step) {
             case 0: // Sync char 1 (0xBA)
                 if ( 0xBA == data ) _step++ ; // Casic sync char 1

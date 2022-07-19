@@ -67,7 +67,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   }
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
   
-  //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",\
+  //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",
   //   (float)  altitude , (float) altitudeLowPass , (float)  altitudeHighPass, (float) altitudeLowPass -  (float)  altitudeHighPass,   (float) climbRateFloat);
   // update climbRate only if the difference is big enough
   if ( abs(((int32_t)  climbRateFloat) - fields[VSPEED].value) > (int32_t) VARIOHYSTERESIS ) {

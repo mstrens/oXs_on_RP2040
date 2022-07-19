@@ -7,7 +7,9 @@
 #include <inttypes.h>
 #include "tools.h"
 #include "pico/double.h"
+#include "param.h"
 
+extern CONFIG config;
 
 /////////////////////////////////////////////////////
 //
@@ -24,7 +26,7 @@ void SPL06::begin()  // baroInstalles = true when baro exist
   uint8_t writeCmd[2];
   uint8_t readValue;
   uint8_t regToRead; 
-
+  if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
   writeCmd[0] = SPL06_RST_REG ;  // reset the device
   writeCmd[1] = 0X89 ; // OX89 means clear fifo and soft reset
   sleep_ms(40);
