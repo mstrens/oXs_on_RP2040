@@ -1,6 +1,6 @@
 #pragma once
 
-#include "crsf.h"
+//#include "crsf.h"
 
 
 // functions used for the 8 PWM signals generated without the pio.

@@ -9,7 +9,8 @@
 #include <voltage.h>
 #include <gps.h>
 #include <tusb.h>
-#include <crsf.h>
+#include <crsf_in.h>
+#include <crsf_out.h>
 #include <param.h>
 #include "hardware/pio.h"
 #include "sbus_out_pwm.h"
@@ -175,16 +176,20 @@ void setup() {
       gps.setupGps();  //use a Pio
       watchdog_update();
       if ( config.protocol == 'C'){
-        setupCRSF();  // setup one/two uart and 1 pio/sm (for TX ) and the DMA (for TX) and the irq handler (for Rx); 
+        setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
+        setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
+        setupCrsfOut(); //  setup 1 pio/sm (for TX ) and the DMA (for TX) 
         if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
         }  
       } else if (config.protocol == 'S') {
         setupSport();
         setupSbusIn();
+        setupSbus2In();
       } else if (config.protocol == 'J') {
         setupJeti();
         setupSbusIn();
+        setupSbus2In();
       }
       watchdog_update();
       setupPwm();
@@ -207,14 +212,19 @@ void loop() {
       watchdog_update();
       if ( config.protocol == 'C'){
         fillCRSFFrame();
-        handleCrsfRx();
+        handleCrsfIn();
+        handleCrsf2In();
         fillSbusFrame();
       } else if (config.protocol == 'S') {
         handleSportRxTx();
         handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
       } else if (config.protocol == 'J') {
         handleJetiTx();
         handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
       } 
       watchdog_update();
       updatePWM();

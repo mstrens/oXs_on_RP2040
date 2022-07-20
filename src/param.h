@@ -1,7 +1,7 @@
 #pragma once
 #include <ctype.h>
 #include "pico/stdlib.h"
-#include "crsf.h"
+#include "crsf_frames.h"
 
 #define CONFIG_VERSION 5
 struct CONFIG{

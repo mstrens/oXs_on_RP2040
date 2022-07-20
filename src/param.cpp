@@ -13,6 +13,7 @@
 #include "stdlib.h"
 #include  "hardware/sync.h"
 #include "hardware/watchdog.h"
+#include "crsf_out.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15

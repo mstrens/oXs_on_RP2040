@@ -161,22 +161,3 @@ struct sbusFrame_s{
     uint8_t endByte;
 };
 
-
-void setupCrsfTxPio(); 
-void fillCRSFFrame();
-void setupCRSF();
-bool dataAvailable(uint8_t idx);
-void fillFrameBattery(uint8_t idx);
-void fillFrameVario(uint8_t idx);
-void fillFrameGps(uint8_t idx);
-void fillFrameAttitude(uint8_t idx);
-void fillFrameBaroAltitude(uint8_t idx);
-void fillOneFrame(uint8_t idx);
-
-void pioRxHandlerIrq();
-void setupCrsfRxPio (void);
-void handleCrsfRx(void);
-
-void printAttitudeFrame();
-void printGpsFrame();
-void printBatteryFrame();
