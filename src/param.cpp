@@ -20,7 +20,7 @@
 // GPS_TX = 0/29
 // GPS_RX = 0/29
 // PRI = 5, 9, 21, 25  (UART1)
-// SEC = 1, 12, 17,28 (UART0) 
+// SEC = 1, 13, 17,29 (UART0) 
 // SBUS_OUT = 0/29
 // TLM = 0/29
 // VOLT1= 26/29 ... VOLT4 = 26/29
@@ -92,7 +92,7 @@ void processCmd(){
         printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=1)\n");
         printf("    Function                  Code        Valid pins number\n");   
         printf("    Primary channels input    PRI       5, 9, 21, 25\n");
-        printf("    Secondary channels input  SEC       1, 12, 17, 28\n");
+        printf("    Secondary channels input  SEC       1, 13, 17, 29\n");
         printf("    Telemetry                 TLM       0, 1, 2, ..., 29\n");
         printf("    GPS Rx                    GPS_RX    0, 1, 2, ..., 29\n");
         printf("    GPS Tx                    GPS_TX    0, 1, 2, ..., 29\n");
@@ -155,8 +155,8 @@ void processCmd(){
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : pin must be an unsigned integer\n");
-        } else if ( !(ui == 1 or ui == 17 or ui == 12 or ui ==28 or ui ==255)) {
-            printf("Error : pin must 1, 17, 12, 28 or 255");
+        } else if ( !(ui == 1 or ui == 17 or ui == 13 or ui ==29 or ui ==255)) {
+            printf("Error : pin must 1, 13, 17, 29 or 255");
         } else {    
             config.pinSecIn = ui;
             printf("Pin for secondary channels input = %u\n" , config.pinSecIn);
