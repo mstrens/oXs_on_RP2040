@@ -5,6 +5,7 @@
 #include "hardware/i2c.h"
 #include "MS5611.h"
 #include "SPL06.h"
+#include "BMP280.h"
 #include <vario.h>
 #include <voltage.h>
 #include <gps.h>
@@ -26,9 +27,6 @@
 // to do : use uart0 for Sbus in or  CRSF Rx primary (can be on pin 17, )
 //       : use uart1 for Sbus in or  CRSF Rx secondary
 //       : use PIO for GPS TX and RX
-//       : implement 16 PWM on gpio 0...15
-//       : allow user to configure pins in some way; done but still remove previous GPIO config
-//       : allow user to reassing channels orders (done )
 //       : check that Sbus out is defined only if PrimIn is defined (done)
 //       : check that PrimIn is defined when SecIn is defined (done)
 //       : message to say Sbus out is not generated for Sport or Jety protocol 
@@ -87,7 +85,8 @@
 VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
-SPL06 baro2( (uint8_t) 0x76  );    // class to handle MS5611; adress = 0x77 or 0x76
+SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
+BMP280 baro3( (uint8_t) 0x77) ;    // class to handle BMP280; adress = 0x77 or 0x76
 
 VARIO vario1;
 
@@ -125,14 +124,17 @@ void getSensors(void){
     if ( baro2.getAltitude() == 0) { // if an altitude is calculated
       vario1.calculateAltVspeed(baro2.altitude , baro2.altIntervalMicros); // Then calculate Vspeed ... 
     }
-  }  
+  } else if (baro3.baroInstalled) {
+    if ( baro3.getAltitude() == 0) { // if an altitude is calculated
+      vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
+    }
+  } 
   gps.readGps();
   readRpm();
 }
 
 void mergeSeveralSensors(void){
 }
-
 
 
 void setup() {
@@ -160,6 +162,8 @@ void setup() {
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
       watchdog_update();
       baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
+      watchdog_update();
+      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       watchdog_update();
       /*
       if ( baro1.baroInstalled){

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.2.3"
+#define VERSION "0.2.4"
 // ------- General ------------------
 // This project can be interfaced with an ELRS, a JETI or a FRSKY receiver (protocol has to be selected accordingly)
 // 
@@ -13,7 +13,7 @@
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
 // It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
-// It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provided by the Frsky Receiver itself)  
+// It can also provide SBUS signal  
 //
 // -------  Hardware -----------------
 // This project requires a board with a RP2040 processor (like the rapsberry pi pico).
@@ -28,34 +28,29 @@
 //       note : a voltage can be used to measure e.g. a current when some external devices are use to generate an analog voltage 
 //
 // ----------Wiring --------------------
-// FRSKY/ELRS receiver, MS5611 and GPS must share the same Gnd
+// FRSKY/ELRS/JETI receiver, MS5611 and GPS must share the same Gnd
 // Connect a 5V source to the Vcc pin of RP2040 board
 // When used with a ELRS receiver:
-//    - Connect gpio 9 from RP2040 (= PIO RX signal) to the TX pin from ELRS receiver (this wire transmit the RC channels)
-//    - Connect gpio 10 from RP2040 (= PIO TX signal) to the RX pin from ELRS receiver (this wire transmits the telemetry data)
-// When used with a FRSKY receiver:
-//    - Connect gpio 9 from RP2040 (= UART0 RX signal) to the Sbus pin from Frsky receiver (this wire transmit the RC channels)
-//    - Connect gpio 10 from RP2040 (= PIO TX signal) via a 1k resistor to the Sport pin from Frsky receiver (this wire transmits the telemetry data)
+//    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
+//    - Connect TLM pin to the RX pin from ELRS receiver that is supposed to transmit telemetry data (this wire transmits the telemetry data)
+// When used with a FRSKY/JETI receiver:
+//    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin from Frsky/Jeti receiver (this wire transmit the RC channels)
+//    - Connect TLM pin via a 1k resistor to the Sport pin from Frsky receiver or EX pin from Jeti receiver (this wire transmits the telemetry data)
 //
-// 9 PWM signals can be generated on gpio 1...8 and gpio 11.
-// One more PWM can be generated on gpio 0 when this pin is not used to generate a Sbus signal 
-// The config parameters allow:
-//    - to select the RC channels generated on gpio 1, 5 and 11.
-//          Gpio 2..4 (and gpio 6...9) will then generate the following RC channels. 
-//    - to select if gpio 0 has to generate a Sbus signal or a PWM RC channel.
+// Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 //
-// Voltages 1, 2, 3 are measured on gpio 26...28 
+// Voltages 1, 2, 3, 4 can be measured on gpio 26...28 
 //       Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
 //
-// RPM (Hz) is measured on gpio 29
+// One RPM (Hz) can be measured
 //       Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
 //       All pulsed are counted (no debouncing); so use a hardware low pass filter (resistor/capitor) to avoid dummy pulses reading
 //
-// When a MS5611 (baro sensor) is used:
-//       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 
+// When a MS5611/SPL06/BMP280 (baro sensor) is used:
+//       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor 
 //            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
-//       Connect SCL to gpio 15 (I2C1)
-//       Connect SDA to gpio 14 (I2C1)
+//       Connect SCL from baro sensor to the pin selected as SCL in parameter
+//       Connect SDA from baro sensor to the pin selected as SCL in parameter
 //
 // When a GPS is used:
 //    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
@@ -78,7 +73,7 @@
 //        - the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
 //        - you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
 //        - while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-//        - when the RP2040 start (or pressing the reset button), it will display the current configuration and the commands to change it.
+//        - when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
 //        - if you want to change some parameters, fill in the command and press the enter.
 //        - the RP2040 should then display the new (saved) config.  
 //

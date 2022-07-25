@@ -5,6 +5,7 @@
 #include "stdio.h"
 #include "MS5611.h"
 #include "SPL06.h"
+#include "BMP280.h"
 #include <string.h>
 #include <ctype.h>
 #include "gps.h"
@@ -52,7 +53,7 @@ extern bool configIsValid;
 
 extern MS5611 baro1 ;
 extern SPL06  baro2 ;
-
+extern BMP280 baro3 ; 
 
 void handleUSBCmd(void){
     int c;
@@ -472,6 +473,7 @@ void checkConfig(){
     // each pin can be used only once
     // if SDA is defined SCL must be defined too, and the opposite
     // if GPS_TX is defined GPS_RX must be defined too and the opposite
+    bool atLeastOnePwmPin = false;
     for (uint8_t i = 0 ; i<30; i++) pinCount[i] = 0; // reset the counter
     configIsValid = true;
     addPinToCount(config.pinGpsTx); 
@@ -484,6 +486,8 @@ void checkConfig(){
     addPinToCount(config.pinScl);
     addPinToCount(config.pinRpm);
     for (uint8_t i = 0 ; i<16 ; i++) {addPinToCount(config.pinChannels[i]);}
+    for (uint8_t i = 0 ; i<16 ; i++) {
+        if (config.pinChannels[i] != 255) atLeastOnePwmPin = true ;}
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
     for (uint8_t i = 0 ; i<30; i++) {
         if (pinCount[i] > 1) {
@@ -501,17 +505,22 @@ void checkConfig(){
         printf("Error in parameters: GPS_TX and GPS_RX must both be defined or unused\n");
         configIsValid=false;
     }
-    if ( (config.pinSbusOut != 255 and config.pinPrimIn==255) ) { //check that when Sbus out is defined, PrimIn is defined too
-        printf("Error in parameters: pin is defined for Sbus Out but not for Primary channels input (PRI)\n");
+    if ( (config.pinSbusOut != 255 and config.pinPrimIn==255 and config.pinSecIn==255) ) { //check that when Sbus out is defined, PrimIn is defined too
+        printf("Error in parameters: a pin is defined for Sbus Out but not for Primary nor Secondary channels input (PRI or SEC)\n");
         configIsValid=false;
     }
-    if ( (config.pinSecIn != 255 and config.pinPrimIn ==255) ) { //check that Prim is defined ff pinSec is defined
-        printf("Error in parameters: pin is defined for secondary channels input but not for Primary channels input (PRI)\n");
+    if ( (atLeastOnePwmPin and config.pinPrimIn==255 and config.pinSecIn==255) ) { //check that when pwm is defined, PrimIn is defined too
+        printf("Error in parameters: at least one PWM pin is defined but no pin for Primary nor Secondary channels input (PRI or SEC)\n");
         configIsValid=false;
     }
-    if ( (config.pinSbusOut != 255 and ( config.protocol == 'S' or config.protocol == 'J') ) ) { //check that Prim is defined ff pinSec is defined
-        printf("Warning: Sbus signal will not be generated for Sport or Jeti protocol\n");
-    }
+    
+    //if ( (config.pinSecIn != 255 and config.pinPrimIn ==255) ) { //check that Prim is defined ff pinSec is defined
+    //    printf("Error in parameters: pin is defined for secondary channels input but not for Primary channels input (PRI)\n");
+    //    configIsValid=false;
+    //}
+    //if ( (config.pinSbusOut != 255 and ( config.protocol == 'S' or config.protocol == 'J') ) ) { //check that Prim is defined ff pinSec is defined
+    //    printf("Warning: Sbus signal will not be generated for Sport or Jeti protocol\n");
+    //}
     
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
@@ -558,6 +567,10 @@ void printConfig(){
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else if (baro2.baroInstalled) {
         printf("Baro sensor is detected using SPL06\n")  ;
+        printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
+        printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
+    } else if (baro3.baroInstalled) {
+        printf("Baro sensor is detected using BMP280\n")  ;
         printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else {

@@ -3,25 +3,6 @@
 
 #include "stdint.h"
 
-//  BREAKOUT  MS5611  aka  GY63 - see datasheet
-//
-//  SPI    I2C
-//              +--------+
-//  VCC    VCC  | o      |
-//  GND    GND  | o      |
-//         SCL  | o      |
-//  SDI    SDA  | o      |
-//  CSO         | o      |
-//  SDO         | o L    |   L = led
-//          PS  | o    O |   O = opening  PS = protocol select
-//              +--------+
-//
-//  PS to VCC  ==>  I2C  (GY-63 board has internal pull up, so not needed)
-//  PS to GND  ==>  SPI
-//  CS to VCC  ==>  0x76
-//  CS to GND  ==>  0x77
-
-
 
 #ifndef SPL06_DEFAULT_ADDRESS
 #define SPL06_DEFAULT_ADDRESS                0x77 // or 0X76
@@ -114,12 +95,11 @@ public:
   int32_t altitude  ; // in cm * 100 
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
-  
   int32_t altIntervalMicros; // enlapstime between 2 calculations of altitude
+  
   explicit SPL06(uint8_t deviceAddress);
-
-    void     begin();
-    int      getAltitude(); // return 0 if a new value is calculated; -1 if no calculation was performed; other in case of I2C error
+  void     begin();
+  int      getAltitude(); // return 0 if a new value is calculated; -1 if no calculation was performed; other in case of I2C error
 
 private:
     void     calculateAltitude();
@@ -128,21 +108,18 @@ private:
     void     requestTemperature();
     void     getTemperature();
     void     printCalibration();
-  uint8_t  _address;
-  int      _result;
-  SPL06_state_t  _state;
-  //uint32_t _lastRead;
-  uint32_t _prevAltMicros;
-  uint32_t _lastConversionRequest;
-  uint32_t _lastTempRequest;
-  //uint32_t _D2Prev;
-
-  spl06_coeffs_t spl06_cal;
-  
-  // uncompensated pressure and temperature
-  int32_t spl06_pressure_raw = 0;
-  int32_t spl06_temperature_raw = 0;
-  
+    uint8_t  _address;
+    int      _result;
+    SPL06_state_t  _state;
+    //uint32_t _lastRead;
+    uint32_t _prevAltMicros;
+    uint32_t _lastConversionRequest;
+    uint32_t _lastTempRequest;
+    //uint32_t _D2Prev;
+    spl06_coeffs_t spl06_cal;
+    // uncompensated pressure and temperature
+    int32_t spl06_pressure_raw = 0;
+    int32_t spl06_temperature_raw = 0;
 };
 
 void setupI2c() ;
