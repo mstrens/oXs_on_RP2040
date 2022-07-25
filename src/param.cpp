@@ -287,8 +287,8 @@ void processCmd(){
             } else if ( (!(ui>=26 and ui<=29)) or ui ==255) {
                 printf("Error : pin must be in range 26 / 29 or 255\n");
             } else {    
-                config.pinChannels[ui2-1] = ui;
-                printf("Pin for voltage %" PRIu32 " = %u\n" , ui2, config.pinChannels[ui2-1] );
+                config.pinVolt[ui2-1] = ui;
+                printf("Pin for voltage %" PRIu32 " = %u\n" , ui2, config.pinVolt[ui2-1] );
                 updateConfig = true;
             }    
         }
