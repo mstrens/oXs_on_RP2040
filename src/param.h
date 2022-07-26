@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 #include "crsf_frames.h"
 
-#define CONFIG_VERSION 5
+#define CONFIG_VERSION 6
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
     uint8_t pinChannels[16] = {0XFF};
@@ -29,6 +29,7 @@ struct CONFIG{
     float offset3= 0.0;
     float offset4 = 0.0;
     uint8_t gpsType = 'U' ;
+    float rpmMultiplicator = 1;
     //uint8_t gpio0 = 0; // 0 mean SBUS, 1 up to 16  = a RC channel
     //uint8_t gpio1 = 1;
     //uint8_t gpio5 = 6;

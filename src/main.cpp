@@ -24,13 +24,6 @@
 #include "ws2812.h"
 #include "rpm.h"
 
-// to do : use uart0 for Sbus in or  CRSF Rx primary (can be on pin 17, )
-//       : use uart1 for Sbus in or  CRSF Rx secondary
-//       : use PIO for GPS TX and RX
-//       : check that Sbus out is defined only if PrimIn is defined (done)
-//       : check that PrimIn is defined when SecIn is defined (done)
-//       : message to say Sbus out is not generated for Sport or Jety protocol 
-
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
 //         support Frsky Fport on top of sbus+sport protocol  

@@ -107,10 +107,11 @@ void processCmd(){
 
         printf("-To change the protocol, for Sport enter PROTOCOL=S, for CRSF/ELRS enter PROTOCOL=C, for Jeti enter PROTOCOL=J\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
-        printf("-To change voltage/rpm scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+        printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
         printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
+        printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -371,6 +372,18 @@ void processCmd(){
             printf("Error : GPS type must be U or C\n");
         }
     }
+    // change RPM multipicator
+    if ( strcmp("RPM_MULT", pkey) == 0 ) {
+        db = strtod(pvalue,&ptr);
+        if (*ptr != 0x0) {
+            printf("Error : value is not a valid float\n");
+        } else {
+            config.rpmMultiplicator = db;
+            updateConfig = true;
+        }
+    }
+    
+
     
     // change gpio0
     /*
@@ -707,6 +720,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.offset3 = 0.0;
         config.offset4 = 0.0;
         config.gpsType = 'U' ;
+        config.rpmMultiplicator = 1.0;
         //config.gpio0 = 0;
         //config.gpio1 = 1;
         //config.gpio5 = 6;
