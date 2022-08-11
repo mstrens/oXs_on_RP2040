@@ -29,7 +29,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
-// PROTOCOL = E, F, J
+// PROTOCOL = C, F, J
 // for RP2040_zero, pin 16 = LED
 // When no config is found in memory, a default config is loaded (defined in config.h)
 // When a pin is not used, value = 0xFF
@@ -47,6 +47,7 @@ extern sbusFrame_s sbusFrame;
 extern uint32_t lastRcChannels;
 
 CONFIG config;
+uint8_t debugTlm = 'N';
 uint8_t pinCount[30] = {0};
 extern bool configIsValid; 
 
@@ -105,6 +106,7 @@ void processCmd(){
         printf("    Voltage 1, ..., 4         V1 / V4   26, 27, 28, 29\n");
         printf("- To disable a function, use pin number = 255\n\n");
 
+        printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, for Sport enter PROTOCOL=S, for CRSF/ELRS enter PROTOCOL=C, for Jeti enter PROTOCOL=J\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
@@ -307,6 +309,20 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    
+    // change debugtlm
+    if ( strcmp("DEBUGTLM", pkey) == 0 ) { // if the key is DEBUGTLM
+        if (strcmp("Y", pvalue) == 0) {
+            debugTlm = 'Y';
+        } else if (strcmp("N", pvalue) == 0) {
+            debugTlm = 'N';
+            updateConfig = true;
+        } else  {
+            printf("Error : DEBUGTLM must be Y or N\n");
+        }
+    }
+    
+    
     // change protocol
     if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
         if (strcmp("S", pvalue) == 0) {

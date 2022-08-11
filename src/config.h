@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.2.6"
+#define VERSION "0.2.7"
 // ------- General ------------------
 // This project can be interfaced with one or 2 ELRS, JETI or FRSKY receiver(s) (protocol has to be selected accordingly)
 // 
@@ -51,16 +51,18 @@
 // When a MS5611/SPL06/BMP280 (baro sensor) is used:
 //       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor 
 //            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
-//       Connect SCL from baro sensor to the pin selected as SCL in parameter
-//       Connect SDA from baro sensor to the pin selected as SDA in parameter
+//       Connect SCL from baro sensor to the pin selected as SCL in parameter for RP2040
+//       Connect SDA from baro sensor to the pin selected as SDA in parameter for RP2040
 //
 // When a GPS is used:
 //    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
 //    Connect the RX pin from GPS to the RX pin selected in parameter for RP2040  
 //    Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
+//    So take care that here TX is NOT connected to RX (as usual in Serial connection)  
 //       
 // The affectation of the pins has to be defined by the user.
-// here are the command codes and the pins that can be used are:
+// Here are the command codes and the pins that can be used are:
+// Note: pin 16 is reserved for an internal LED on RP2040-zero as so should not be used.
 // C1 = 0/15  ... C16 = 0/15     (for PWM output)
 // GPS_TX = 0/29                 (for GPS)
 // GPS_RX = 0/29                 (for GPS)

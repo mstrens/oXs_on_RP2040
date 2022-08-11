@@ -17,7 +17,6 @@
 #include "param.h"
 #include <inttypes.h>
 
-#define DEBUGTLM
 
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
@@ -35,6 +34,7 @@ gpsFrameStruct gpsFrame;
 extern GPS gps ;
 
 extern CONFIG config;
+extern uint8_t debugTlm;
 
 uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (via dma)
 uint8_t CRSFBufferLength;
@@ -168,11 +168,11 @@ void fillFrameBattery(uint8_t idx){
     
     fields[MVOLT].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
-    #ifdef DEBUGTLM
-    printf("Bat: ");
-    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
-    printf("\n");
-    #endif
+    if ( debugTlm == 'Y' ){
+        printf("Bat: ");
+        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        printf("\n");
+    }
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -187,11 +187,11 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
-    #ifdef DEBUGTLM
-    printf("Vario: ");
-    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
-    printf("\n");
-    #endif
+    if ( debugTlm == 'Y' ){
+        printf("Vario: ");
+        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        printf("\n");
+    }
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -208,11 +208,11 @@ void fillFrameBaroAltitude(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RELATIVEALT].available = false ;
     crsfFrameNextMillis[idx] = millis() + BARO_ALTITUDE_FRAME_INTERVAL;
-    #ifdef DEBUGTLM
-    printf("Alt: ");
-    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
-    printf("\n");
-    #endif
+    if ( debugTlm == 'Y' ){
+        printf("Alt: ");
+        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        printf("\n");
+    }
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -228,11 +228,11 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    #ifdef DEBUGTLM
-    printf("Attitude: ");
-    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
-    printf("\n");
-    #endif
+    if ( debugTlm == 'Y' ){
+        printf("Attitude: ");
+        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        printf("\n");
+    }
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }
@@ -278,12 +278,11 @@ void fillFrameGps(uint8_t idx){
     //CRSFBufferLength = sizeof(gpsFrame);
     //
     //memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
-    #ifdef DEBUGTLM
-    printf("Gps: ");
-    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
-    printf("\n");
-    #endif
-    
+    if ( debugTlm == 'Y' ){
+        printf("Gps: ");
+        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        printf("\n");
+    }    
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
