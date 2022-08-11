@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.2.5"
+#define VERSION "0.2.6"
 // ------- General ------------------
 // This project can be interfaced with one or 2 ELRS, JETI or FRSKY receiver(s) (protocol has to be selected accordingly)
 // 
@@ -52,7 +52,7 @@
 //       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor 
 //            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
 //       Connect SCL from baro sensor to the pin selected as SCL in parameter
-//       Connect SDA from baro sensor to the pin selected as SCL in parameter
+//       Connect SDA from baro sensor to the pin selected as SDA in parameter
 //
 // When a GPS is used:
 //    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS

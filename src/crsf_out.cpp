@@ -17,6 +17,7 @@
 #include "param.h"
 #include <inttypes.h>
 
+#define DEBUGTLM
 
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
@@ -81,16 +82,17 @@ void fillCRSFFrame(){
          crsf_last_frame_idx++;
          if (crsf_last_frame_idx >= FRAME_TYPES_MAX) crsf_last_frame_idx = 0;
          if ( (_millis >= crsfFrameNextMillis[crsf_last_frame_idx]) && (dataAvailable(crsf_last_frame_idx))) {
-            fillOneFrame(crsf_last_frame_idx) ; // if one frame has been filled, break because dma is busy
+            fillOneFrame(crsf_last_frame_idx) ; // if one frame has been filled
             break;  
          }
     }
 }
 
+
 bool dataAvailable(uint8_t idx) {
     switch (idx) {
         case  CRSF_FRAMEIDX_BATTERY_SENSOR : 
-            return fields[MVOLT].available ;
+            return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available || fields[REMAIN].available ;
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
@@ -166,13 +168,11 @@ void fillFrameBattery(uint8_t idx){
     
     fields[MVOLT].available = false ;
     crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
-    //printf("filling dma buffer with voltage\n");
-    //CRSFBufferLength = sizeof(voltageFrame);
-    //memcpy(&CRSFBuffer[0] , &voltageFrame , CRSFBufferLength);
-    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
-    //    printf( " %X ", CRSFBuffer[i]);
-    //}
-    //printf("\n");
+    #ifdef DEBUGTLM
+    printf("Bat: ");
+    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
+    printf("\n");
+    #endif
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -187,12 +187,11 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
-    //CRSFBufferLength = sizeof(varioFrame);
-    //memcpy(&CRSFBuffer[0] , &varioFrame , CRSFBufferLength);
-    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
-    //    printf( " %X ", CRSFBuffer[i]);
-    //}
-    //printf("\n");
+    #ifdef DEBUGTLM
+    printf("Vario: ");
+    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
+    printf("\n");
+    #endif
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -209,12 +208,11 @@ void fillFrameBaroAltitude(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RELATIVEALT].available = false ;
     crsfFrameNextMillis[idx] = millis() + BARO_ALTITUDE_FRAME_INTERVAL;
-    //CRSFBufferLength = sizeof(baroAltitudeFrame);
-    //memcpy(&CRSFBuffer[0] , &baroAltitudeFrame , CRSFBufferLength);
-    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
-    //    printf( " %X ", CRSFBuffer[i]);
-    //}
-    //printf("\n");
+    #ifdef DEBUGTLM
+    printf("Alt: ");
+    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
+    printf("\n");
+    #endif
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
@@ -230,12 +228,11 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    //CRSFBufferLength = sizeof(attitudeFrame);
-    //memcpy(&CRSFBuffer[0] , &attitudeFrame , CRSFBufferLength);
-    //for (uint8_t i = 0; i< CRSFBufferLength ; i++) {
-    //    printf( " %X ", CRSFBuffer[i]);
-    //}
-    //printf("alt dm= %f\n", (float) ((int16_t) (fields[RELATIVEALT].value /10  ))) ;
+    #ifdef DEBUGTLM
+    printf("Attitude: ");
+    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
+    printf("\n");
+    #endif
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }
@@ -281,6 +278,12 @@ void fillFrameGps(uint8_t idx){
     //CRSFBufferLength = sizeof(gpsFrame);
     //
     //memcpy(&CRSFBuffer[0] , &gpsFrame , CRSFBufferLength);
+    #ifdef DEBUGTLM
+    printf("Gps: ");
+    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %X ", CRSFBuffer[i]);
+    printf("\n");
+    #endif
+    
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;    
 }
