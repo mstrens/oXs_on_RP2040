@@ -15,7 +15,7 @@ extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and param
 PIO pioRpm = pio1; // we use pio 1; 
 uint smRpm = 2;  // we use the state machine 2 for rpm 
 
-#define PIN_RPM 29
+//#define PIN_RPM 29
 #define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec  
 
 uint32_t currentRpmUsec;

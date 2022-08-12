@@ -1,21 +1,23 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.2.7"
+#define VERSION "0.2.8"
 // ------- General ------------------
 // This project can be interfaced with one or 2 ELRS, JETI or FRSKY receiver(s) (protocol has to be selected accordingly)
 // 
-// This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals
+// This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and/or Sbus signals
 // For telemetry, it can provide
 //    - up to 4 analog voltages measurement (with scaling and offset) (optional)
 //    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
-// It can also provide up to 16 PWM RC channels from a CRSF/ELRS or a Sbus signal (e.g Frsky or Jeti).
-// It can also provide SBUS signal 
+// It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from a Sbus signal (e.g Frsky or Jeti).
+// It can also provide SBUS signal. 
 //
 // When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels (= diversity)
+//
+// Each functions (telemetry/PWM/SBUS) can be used alone or combined with the others.
 // -------  Hardware -----------------
 // This project requires a board with a RP2040 processor (like the rapsberry pi pico).
 // A better alternative is the RP2040-Zero (same processor but smaller board)

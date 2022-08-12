@@ -48,6 +48,8 @@ extern uint32_t lastRcChannels;
 
 CONFIG config;
 uint8_t debugTlm = 'N';
+uint8_t debugSbusOut = 'N';
+
 uint8_t pinCount[30] = {0};
 extern bool configIsValid; 
 
@@ -88,7 +90,7 @@ void processCmd(){
     double db;    
     char * pkey = NULL;
     char * pvalue = NULL;
-    printf("buffer0= %X\n", cmdBuffer[0]);
+    //printf("buffer0= %X\n", cmdBuffer[0]);
     if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the instruction
         printf("\nCommands can be entered to change the config parameters\n");
         printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=1)\n");
@@ -310,18 +312,29 @@ void processCmd(){
         }
     }
     
-    // change debugtlm
+    // change debugTlm
     if ( strcmp("DEBUGTLM", pkey) == 0 ) { // if the key is DEBUGTLM
         if (strcmp("Y", pvalue) == 0) {
             debugTlm = 'Y';
         } else if (strcmp("N", pvalue) == 0) {
             debugTlm = 'N';
-            updateConfig = true;
+            //updateConfig = true; // this is not saved
         } else  {
             printf("Error : DEBUGTLM must be Y or N\n");
         }
     }
     
+    // change debugSbusOut
+    if ( strcmp("DEBUGSBUSOUT", pkey) == 0 ) { // if the key is DEBUGSBUSOUT
+        if (strcmp("Y", pvalue) == 0) {
+            debugSbusOut = 'Y';
+        } else if (strcmp("N", pvalue) == 0) {
+            debugSbusOut = 'N';
+            //updateConfig = true; // this is not saved
+        } else  {
+            printf("Error : DEBUGSBUSOUT must be Y or N\n");
+        }
+    }
     
     // change protocol
     if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
@@ -478,12 +491,12 @@ void processCmd(){
             printf("Error : No RC channels have been received yet. FAILSAFE values are unknown\n");
         }    
     }
-    if (updateConfig) saveConfig();
+    if (updateConfig) saveConfig();  // this force a reboot!!!!!!!!!!
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
     if ( strcmp("G", pkey) == 0 ) printGpsFrame();      // print GPS frame
     if ( strcmp("B", pkey) == 0 ) printBatteryFrame();   // print battery frame 
     printConfig();                                       // print the current config
-    printf("\n >> \n ");
+    printf("\n >> \n");
 }
 
 
@@ -674,12 +687,15 @@ void saveConfig() {
     memcpy(&buffer[0], &config, sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing
+    watchdog_enable(3000 , true);
     uint32_t irqStatus = save_and_disable_interrupts();
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
     printf("New config has been saved\n");
-    watchdog_reboot(0, 0, 10000);
+    //printConfig();
+    printf("Device will reboot\n\n");
+    watchdog_reboot(0, 0, 100); 
 }
 
 void upperStr( char *p){

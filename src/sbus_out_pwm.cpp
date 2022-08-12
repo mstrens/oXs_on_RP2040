@@ -11,12 +11,14 @@
 
 #include "pwm.pio.h"
 
+// Sbus is 100000 baud, even parity, 8 bits , 2 stops,  inverted
+// in order to use the PIO we calculate in the main program the parity bit and the second stop bit
 
 
 PIO pioTxSbus = pio0; // we use pio 0; DMA is hardcoded to use it
 uint smTxSbus = 2;  // we use the state machine 2 for Sbus Tx; DMA is harcoded to use it (DREQ) 
 
-#define PIN_TX_SBUS 0
+//#define PIN_TX_SBUS 0
 #define SERIAL_BAUD_SBUS 100000
 int dma_sbus_chan;
 dma_channel_config cSbus;
@@ -25,6 +27,7 @@ extern sbusFrame_s sbusFrame;
 uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
 extern CONFIG config;
+extern uint8_t debugSbusOut;
 
 static const bool ParityTable256[256] = 
 {
@@ -39,7 +42,7 @@ static const bool ParityTable256[256] =
 void setupSbusOutPio(){
         // setup the PIO for TX UART
         uint offsetTx = pio_add_program(pioTxSbus, &uart_sbus_tx_program);
-        uart_sbus_tx_program_init(pioTxSbus, smTxSbus, offsetTx, PIN_TX_SBUS, SERIAL_BAUD_SBUS);
+        uart_sbus_tx_program_init(pioTxSbus, smTxSbus, offsetTx, config.pinSbusOut , SERIAL_BAUD_SBUS);
 
         // Configure a channel to write the same word (32 bits) repeatedly to PIO0
         // SM0's TX FIFO, paced by the data request signal from that peripheral.
@@ -64,7 +67,7 @@ void setupSbusOutPio(){
 
 void fillSbusFrame(){
     static uint32_t lastSbusSentMillis = 0;
-    if (!lastRcChannels) return;  // do not generate a sbus fram when whe never get a RC chanels frame form crsf
+    if (!lastRcChannels) return;  // do not generate a sbus frame when we never get a RC chanels frame form crsf
     // we should also check that dma is not busy anymore
     
     if ( (millis() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
@@ -86,6 +89,11 @@ void fillSbusFrame(){
             //printf("%x , %x , %X, %X , %f \n", c , p, sbusFrame16Bits[i] >> 2 , sbusFrame16Bits[i] & 0x3 , (float) sizeof(sbusFrame));
             ptr++; 
         }
+        if ( debugSbusOut == 'Y' ){
+            printf("SbusOut: ");
+            for (uint8_t i = 0; i< sizeof(sbusFrame) ; i++) printf( " %03X ", sbusFrame16Bits[i]);
+            printf("\n");
+        }    
         dma_channel_set_read_addr (dma_sbus_chan, sbusFrame16Bits, false);
         dma_channel_set_trans_count (dma_sbus_chan, sizeof(sbusFrame), true) ; 
            

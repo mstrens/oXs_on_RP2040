@@ -32,6 +32,7 @@ extern SPL06 baro2;
 
 extern GPS gps;
 extern CONFIG config;
+extern uint8_t debugTlm;
 
 uint8_t listOfJetiFields[16] ; // list of oXs Field Id to transmit
 uint8_t listOfJetiFieldsIdx ; // current fields being handled (for data); there is another idx for text field
@@ -291,6 +292,13 @@ uint8_t updateJetiCrc (uint8_t crc, uint8_t crc_seed)
 }
 
 void startJetiTransmit() {
+    if ( debugTlm == 'Y'){
+      printf("Jeti= ");
+      for (uint8_t j = 0 ; j < jetiMaxData ; j++ ){
+        printf(" %02X" , jetiData[j]);
+      }
+      printf("/n");
+    }
     // copy from jetiData (8 bits) to jetiTxBuffer (16 bits); we add a bit 9 (0 for only 2 bytes), a bit 10 = odd parity and a bit 11= stopbit
     uint8_t * ptr = (uint8_t *) &jetiData[0] ;
     for (uint8_t i = 0; i< jetiMaxData ; i++){ 

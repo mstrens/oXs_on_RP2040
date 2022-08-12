@@ -52,7 +52,7 @@ void setupCrsfOut(){
     if (config.pinTlm == 255) return ; // Skip when no telemetry is foreseen 
     // setup the PIO for TX UART
     uint crsfOffsetTx = pio_add_program(crsfPio, &uart_tx_program);
-    uart_tx_program_init(crsfPio, crsfSmTx, crsfOffsetTx, config.pinPrimIn, config.crsfBaudrate);
+    uart_tx_program_init(crsfPio, crsfSmTx, crsfOffsetTx, config.pinTlm, config.crsfBaudrate);
     // Configure a channel to write the same word (32 bits) repeatedly to PIO0
     // SM0's TX FIFO, paced by the data request signal from that peripheral.
     crsf_dma_chan = dma_claim_unused_channel(true);

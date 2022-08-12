@@ -4,6 +4,7 @@
 #include "hardware/pio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
+#include "hardware/timer.h"
 #include "uart_crsf_tx.pio.h"
 #include "crsf_in.h"
 #include "config.h"
@@ -22,6 +23,8 @@ extern CONFIG config;
 #define CRSF_UART_ID uart1 // used by primary receiver
 #define CRSF2_UART_ID uart0 // used by secondary receiver
 
+//#define DEBUGPRIM    // print a line when a frame is received from Primary ELRS receiver
+//#define DEBUGSEC     // print a line when a frame is received from secondary ELRS receiver 
 
 queue_t crsfRxQueue ; // primary queue uses to push the data from the uart rx to the main loop
 queue_t crsf2RxQueue ; // secondary queue uses to push the data from the uart rx to the main loop
@@ -35,8 +38,8 @@ void on_crsf_uart_rx() {
         //int count = queue_get_level( &primCrsfRxQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &crsfRxQueue , &ch)) printf("queue try add error\n");
-        //printf("%x\n", ch);
+        if (!queue_try_add ( &crsfRxQueue , &ch)) printf("crsfRxQueue try add error\n");
+        //printf("%02x\n", ch);
     }
 }
 
@@ -47,7 +50,7 @@ void on_crsf2_uart_rx() {
         //int count = queue_get_level( &primCrsfRxQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &crsf2RxQueue , &ch)) printf("queue try add error\n");
+        if (!queue_try_add ( &crsf2RxQueue , &ch)) printf("crsf2RxQueue try add error\n");
         //printf("%x\n", ch);
     }
 }
@@ -60,7 +63,7 @@ void setupCrsfIn(){
     uart_init(CRSF_UART_ID, config.crsfBaudrate);   // setup UART baud rate
     uart_set_hw_flow(CRSF_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
     uart_set_fifo_enabled(CRSF_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
-    gpio_set_function( config.pinPrimIn , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART0
+    gpio_set_function( config.pinPrimIn , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART
     //gpio_set_inover(SBUS_RX_PIN , GPIO_OVERRIDE_INVERT);
     //uart_set_format (PRIM_CRSF_UART_ID, 8, 1 ,UART_PARITY_NONE ) ;
     // And set up and enable the interrupt handlers
@@ -68,7 +71,10 @@ void setupCrsfIn(){
     irq_set_enabled(UART1_IRQ, true);
     // Now enable the UART to send interrupts - RX only
     uart_set_irq_enables(CRSF_UART_ID, true, false);
-    while (! queue_is_empty (&crsfRxQueue)) queue_try_remove ( &crsfRxQueue , &dummy ) ;    
+    while (! queue_is_empty (&crsfRxQueue)) queue_try_remove ( &crsfRxQueue , &dummy ) ;
+    #ifdef DEBUGPRIM
+    printf("Prim is initialized\n");
+    #endif   
 }
 
 void setupCrsf2In(){
@@ -87,6 +93,9 @@ void setupCrsf2In(){
     // Now enable the UART to send interrupts - RX only
     uart_set_irq_enables(CRSF2_UART_ID, true, false);
     while (! queue_is_empty (&crsf2RxQueue)) queue_try_remove ( &crsf2RxQueue , &dummy ) ;    
+    #ifdef DEBUGSEC
+    printf("Sec is initialized\n");
+    #endif   
 }
 
 // here the code to read the CRSF frames from the receiver (in order to get the RC channels data)
@@ -123,7 +132,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
     
     while (! queue_is_empty(&crsfRxQueue)) {
         queue_try_remove (&crsfRxQueue,&data);
-        //printf(" %x ",data);
+        //printf(" %02x ",data);
         switch ( crsfRxState ) {
             case NO_FRAME:
                 if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsfRxState = WAIT_PAYLOAD_LENGTH;
@@ -160,6 +169,13 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
+                    #ifdef DEBUGPRIM
+                    printf("Prim= ");
+                    for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
+                        printf(" %02X ", bufferRcChannels[i]);
+                    }
+                    printf("\n");    
+                    #endif
                     //printf("Good RC received\n");
                 } else {
                     //printf("bad CRC received\n");
@@ -180,7 +196,8 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
     
     while (! queue_is_empty(&crsf2RxQueue)) {
         queue_try_remove (&crsf2RxQueue,&data);
-        //printf(" %x ",data);
+        //printf("q=  %02x \n",data);
+        busy_wait_us(5000);
         switch ( crsfRxState ) {
             case NO_FRAME:
                 if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsfRxState = WAIT_PAYLOAD_LENGTH;
@@ -217,6 +234,13 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
+                    #ifdef DEBUGSEC
+                    printf("Sec = ");
+                    for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
+                        printf(" %02X ", bufferRcChannels[i]);
+                    }
+                    printf("\n");    
+                    #endif
                     //printf("Good RC received\n");
                 } else {
                     //printf("bad CRC received\n");

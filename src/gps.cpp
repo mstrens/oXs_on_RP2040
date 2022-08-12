@@ -50,7 +50,7 @@ void on_uart_rx() {
         //int count = queue_get_level( &gpsQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &gpsRxQueue , &ch)) printf("queue try add error\n");
+        if (!queue_try_add ( &gpsRxQueue , &ch)) printf("gpsRxQueue try add error\n");
         //printf("%x\n", ch);
     }
 }

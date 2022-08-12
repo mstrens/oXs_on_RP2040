@@ -73,7 +73,7 @@
 // LED = 16
 
 
-//#define DEBUG
+#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 VOLTAGE voltage ;    // class to handle voltages
 
@@ -129,20 +129,26 @@ void getSensors(void){
 void mergeSeveralSensors(void){
 }
 
-
 void setup() {
   stdio_init_all();
-  watchdog_enable(1500, 0); // require an update once every 500 msec
   setupLed();
-  setRgbColor(10,0,0); // start with red color
+  setRgbColor(10,0,10); // start with 2 color
   #ifdef DEBUG
-  uint16_t counter = 15; 
-  //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
+  uint16_t counter = 0;                      // after an upload, watchdog_cause_reboot is true.
+  if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
-    sleep_ms(100); 
-    watchdog_update();
+    sleep_ms(200); 
+    toggleRgb();
+    //watchdog_update();
     }
   #endif
+  sleep_ms(200);
+  if (watchdog_caused_reboot()) {
+        printf("Rebooted by Watchdog!\n");
+    } else {
+        printf("Clean boot\n");
+    }
+  watchdog_enable(1500, 0); // require an update once every 1500 msec
   setRgbColor(0,0,10);  // switch to blue if we are connected
   watchdog_update();
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
@@ -158,27 +164,13 @@ void setup() {
       watchdog_update();
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       watchdog_update();
-      /*
-      if ( baro1.baroInstalled){
-        printf("MS5611 detected\n");
-      } else {
-        printf("MS5611 not detected\n");
-      }
-      if ( baro2.baroInstalled){
-        printf("SPL06 detected\n");
-      } else {
-        printf("SPL06 detected\n");
-      }
-      */
+      
       gps.setupGps();  //use a Pio
       watchdog_update();
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
-        setupCrsfOut(); //  setup 1 pio/sm (for TX ) and the DMA (for TX) 
-        if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
-          setupSbusOutPio();
-        }  
+        setupCrsfOut(); //  setup 1 pio/sm (for TX ) and the DMA (for TX)   
       } else if (config.protocol == 'S') {
         setupSport();
         setupSbusIn();
@@ -189,19 +181,23 @@ void setup() {
         setupSbus2In();
       }
       watchdog_update();
+      if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
+          setupSbusOutPio();
+        }
       setupPwm();
-      //setupPioPwm();
       watchdog_update();
       setupRpm(); // this function perform the setup of pio Rpm
       printConfig();
       watchdog_update();
       setRgbColor(0,10,0);
       watchdog_enable(500, 0); // require an update once every 500 msec
+  } else {
+    printConfig(); // config is not valid
   }
 }
 
+
 void loop() {
-  //printf(".\n");
   watchdog_update();
   if (configIsValid){
       getSensors();
@@ -225,11 +221,13 @@ void loop() {
       } 
       watchdog_update();
       updatePWM();
-      //updatePioPwm();
+            //updatePioPwm();
       watchdog_update();
   }
-  handleUSBCmd();
-  tud_task();
+  //if (tud_cdc_connected()) {
+  handleUSBCmd();  // process the commands received from the USB
+  tud_task();      // I suppose that this function has to be called periodicaly
+  //}  
   if ( configIsValidPrev != configIsValid) {
     configIsValidPrev = configIsValid;
     if (configIsValid) {

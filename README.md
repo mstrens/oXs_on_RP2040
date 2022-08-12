@@ -1,6 +1,6 @@
 # expressLRS_oXs
 
-This project can be interfaced with an ELRS, a FRSKY or a Jeti receiver (protocol has to be selected accordingly).
+This project can be interfaced with 1 or 2 ELRS, FRSKY or Jeti receiver(s) (protocol has to be selected accordingly).
  
  This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
  
@@ -13,7 +13,7 @@ This project can be interfaced with an ELRS, a FRSKY or a Jeti receiver (protoco
 
 It can also provide up to 16 PWM RC channels from a CRSF (ELRS) or a Sbus (Frsky/Jeti) signal.
 
-It can also provide a Sbus signal (only from CRSF/ELRS signal); for Frsky/Jeti Sbus is provided by the Receiver itself.  
+When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels (= diversity).  
 
 ## -------  Hardware -----------------
 
@@ -45,11 +45,13 @@ This board can be connected to:
 
    * the pins used to generate PWM channels (Gpio0 up to Gpio15) 
 
-   * a pin (within Gpio5 ,21 , 9 or25) that get the Rc channels and is connected to receiver ELRS Tx or SBus pin.
+   * a pin (within Gpio5 ,9, 21 or 25) that get the Rc channels and is connected to one receiver ELRS Tx or SBus pin.
+
+   * a pin (within Gpio1, 13 , 17 or29) that get the Rc channels and is connected to a second receiver ELRS Tx or SBus pin.
 
    * a pin used to generate a Sbus signal (gpio 0...29)
 
-   * a pin used to transmit telemetry data (gpio 26...29) (connected to ELRS Rx/Sport/Jeti Ex)
+   * a pin used to transmit telemetry data (gpio 0...29) (connected to ELRS Rx/Sport/Jeti Ex)
 
    * the max 4 pins used to measure voltages (gpio 26...29)
     
@@ -71,7 +73,9 @@ This board can be connected to:
 * When a GPS is used:
 
    * Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
-        
+
+* For more details, look at file named config.h
+
 ## --------- Software -------------------
 This software has been developped using the RP2040 SDK provided by Rapsberry.
 
