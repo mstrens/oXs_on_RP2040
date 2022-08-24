@@ -115,7 +115,9 @@ void setupJeti() {
 void initListOfJetiFields() {  // fill an array with the list of fields (field ID) that are defined -   Note : this list is not yet complete (e.g; GPS, ...)
     listOfJetiFields[0] = OXS_ID ;
     listOfJetiFieldsIdx = 1 ; // 0 is not used for a value, because - for text- it contains the name of the sensor (e.g. openXsensor)
-    listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
+    if ( config.pinVolt[0] != 255) {
+        listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
+    }    
     // here we could add other voltage parameter (current, ...)
     if ( baro1.baroInstalled || baro2.baroInstalled) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
