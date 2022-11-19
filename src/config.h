@@ -132,7 +132,7 @@
 #define VARIOHYSTERESIS 5
 
 // --------- Parameters for GPS ---------------
-#define GPS_REFRESH_RATE 5 // For Ublox GPS, it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
+#define GPS_REFRESH_RATE 10 // For Ublox GPS, it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
 //                        note :a casic gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
 //                        this can be done using a FTDI and program GnssToolkit3.exe (to download from internet)
 
