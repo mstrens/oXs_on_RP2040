@@ -200,7 +200,7 @@ int BMP280::getAltitude() {
             var2 = (((int32_t)(p>>2)) * ((int32_t)_bmp280_coeffs.dig_P8))>>13;
             rawPressure = (uint32_t)((int32_t)p + ((var1 + var2 + _bmp280_coeffs.dig_P7) >> 4)) ;  // in pascal
           }  
-          altitude = 443300000.0 * (1.0 - pow(rawPressure / 101325.0, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
+          altitude = 443300000.0 * (1.0 - pow( ( (double) rawPressure)  / 101325.0, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
         altIntervalMicros = _lastConversionRequest - _prevAltMicros;
         _prevAltMicros = _lastConversionRequest ;
         #ifdef DEBUG_BMP280  
