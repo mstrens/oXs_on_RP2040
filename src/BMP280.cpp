@@ -14,6 +14,7 @@ extern CONFIG config;
 //#define DEBUGDATA
 //#define DEBUGVARIOI2C
 #endif
+#define DEBUG_BMP280
 
 extern unsigned long micros( void ) ;
 extern unsigned long millis( void ) ;
@@ -119,8 +120,8 @@ void BMP280::begin() {
     _bmp280_coeffs.dig_P8  = _calibrationData[11];
     _bmp280_coeffs.dig_P9  = _calibrationData[12];
 
-#ifdef DEBUG  
-    printf("setup vario BMP280 done.\n"));  
+#ifdef DEBUG_BMP280  
+    printf("setup vario BMP280 done.\n");  
 #endif
     baroInstalled = true; // at this point all is OK.
 }  //end of begin
@@ -202,7 +203,7 @@ int BMP280::getAltitude() {
           altitude = 443300000.0 * (1.0 - pow(rawPressure / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
         altIntervalMicros = _lastConversionRequest - _prevAltMicros;
         _prevAltMicros = _lastConversionRequest ;
-        #ifdef DEBUG  
+        #ifdef DEBUG_BMP280  
             printf("temp=%d   Press=%d   Alt=%d\n",temperature,rawPressure,altitude);  
         #endif
 
