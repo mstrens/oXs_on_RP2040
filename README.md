@@ -25,7 +25,7 @@ This board can be connected to:
 * a pressure sensor to get altitude and vertical speed. It can be
    * a GY63 or a GY86 board based on MS5611
    * a SPL06-001 sensor
-   * aBMP280 sensor
+   * a BMP280 sensor
 * a GPS from UBlox (like the BEITIAN bn220) or one that support CASIC messages
 
        note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware  
