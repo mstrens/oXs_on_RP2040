@@ -1,4 +1,4 @@
-# expressLRS_oXs
+# expressLRS / FRSKY / JETI openXsensor (oXs) on RP2040 board
 
 This project can be interfaced with 1 or 2 ELRS, FRSKY or Jeti receiver(s) (protocol has to be selected accordingly).
  
@@ -39,35 +39,35 @@ This board can be connected to:
 
 ## --------- Wiring --------------------
 
-* FRSKY/ELRS receiver, MS5611 and GPS must share the same Gnd
+* FRSKY/ELRS receiver, baro sensor GPS, ... must share the same Gnd
 * Connect a 5V source to the Vcc pin of RP2040 board (attention max is 5.5Volt)  
-* Select the functions and pins being used
+* Select the functions and pins being used (most are optional)
 * The config parameters allow to select:
 
    * the pins used to generate PWM channels (Gpio0 up to Gpio15) 
 
-   * a pin (within Gpio5 ,9, 21 or 25) that get the Rc channels and is connected to one receiver ELRS Tx or SBus pin.
+   * a pin (within Gpio5 ,9, 21 or 25) that get the Rc channels and is connected to one ELRS receiver or to the SBus pin (FRSKY/JETI...).
 
-   * a pin (within Gpio1, 13 , 17 or29) that get the Rc channels and is connected to a second receiver ELRS Tx or SBus pin.
+   * a pin (within Gpio1, 13 , 17 or29) that get the Rc channels and is connected to a second ELRS receiver or a second SBus receiver.
 
-   * a pin used to generate a Sbus signal (gpio 0...29)
+   * a pin used to generate a Sbus signal (gpio 0...29) (from the ELRS signal(s) or by "merging" the 2 Sbus
 
-   * a pin used to transmit telemetry data (gpio 0...29) (connected to ELRS Rx/Sport/Jeti Ex)
+   * a pin used to transmit telemetry data (gpio 0...29) (connected to ELRS Rx/Frsky Sport/Jeti Ex)
 
-   * the max 4 pins used to measure voltages (gpio 26...29)
+   * the (max 4) pins used to measure voltages (gpio 26...29)
     
    * a pin used to measure RPM (gpio 0...29)
    
-   * the 2 pins used for GPS (gpio 0...29)
+   * the 2 pins used for GPS (gpio 0...29) (one pin for Tx and one for RX)
    
    * the 2 pins connected to baro sensor (SDA=2, 6, 10, 14, 18, 22, 26) (SCL=3, 7, 11, 15, 19, 23, 27)
 
 
-   Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
+   Take care to use a voltage divider (2 resistances) in order to limit the voltage on the pins to 3V max (e.g. when you want to measure higher voltages)
 
 * When a baro sensor is used:
 
-   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06  
+   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06/BMP280  
 
    Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
 
