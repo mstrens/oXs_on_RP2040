@@ -16,7 +16,6 @@
 
 //#include <Arduino.h>
 #include <stdio.h>
-
 #include "pico/stdlib.h"
 //#include "pico/multicore.h"
 #include "hardware/pio.h"
@@ -27,6 +26,7 @@
 #include "sport.h"
 #include "tools.h"
 #include "config.h"
+#include "param.h"
 
 // to do: 
 // if we can reply to several device id, we should keep a table with the last field index used for this deviceid
@@ -44,10 +44,12 @@
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
 
-#define SPORT_PIO_RX_PIN 10  // pin being used by the UART pio
+//#define SPORT_PIO_RX_PIN 10  // pin being used by the UART pio
 #define SPORTSYNCREQUEST 0x7E
 #define SPORTDEVICEID    0xE4
 
+extern CONFIG config;
+extern uint8_t debugTlm;
 queue_t sportRxQueue ;
 
 // one pio with 2 state machine is used to manage the inverted hal duplex uart for Sport
@@ -92,7 +94,7 @@ void setupSport() {
     );
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     sportOffsetTx = pio_add_program(sportPio, &sport_uart_tx_program);
-    sport_uart_tx_program_init(sportPio, sportSmTx, sportOffsetTx, SPORT_PIO_RX_PIN, 57600 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
+    sport_uart_tx_program_init(sportPio, sportSmTx, sportOffsetTx, config.pinTlm, 57600 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
 
 // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO0_IRQ_0 , sportPioRxHandlerIrq) ;
@@ -100,7 +102,7 @@ void setupSport() {
 
 // Set up the state machine we're going to use to receive them.
     sportOffsetRx = pio_add_program(sportPio, &sport_uart_rx_program);
-    sport_uart_rx_program_init(sportPio, sportSmRx, sportOffsetRx, SPORT_PIO_RX_PIN, 57600 , true);  
+    sport_uart_rx_program_init(sportPio, sportSmRx, sportOffsetRx, config.pinTlm, 57600 , true);  
 }
 
 
@@ -126,10 +128,11 @@ void sportPioRxHandlerIrq(){    // when a byte is received on the Sport, read th
 void handleSportRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     static uint8_t previous = 0;
     uint8_t data;
+    if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     if ( restoreSportPioToReceiveMillis) {            // put sm back in recive mode after some delay
         if (millis() > restoreSportPioToReceiveMillis){
-            sport_uart_tx_program_stop(sportPio, sportSmTx, SPORT_PIO_RX_PIN );
-            sport_uart_rx_program_restart(sportPio, sportSmRx, SPORT_PIO_RX_PIN, true);  // true = inverted
+            sport_uart_tx_program_stop(sportPio, sportSmTx, config.pinTlm );
+            sport_uart_rx_program_restart(sportPio, sportSmRx, config.pinTlm, true);  // true = inverted
             restoreSportPioToReceiveMillis = 0 ;
         }
     } else {                             // when we are in receive mode
@@ -227,9 +230,16 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
       sportTxBuffer[sportLength++]= tempBuffer[i];
       }
     }
+    if (debugTlm == 'Y') {
+        printf("Sport= ");
+        for (uint8_t j = 0 ; j < sportLength ; j++ ){
+            printf(" %02X" , sportTxBuffer[j]);
+        }
+        printf("/n");    
+    }
     sleep_us(100) ;
-    sport_uart_rx_program_stop(sportPio, sportSmRx, SPORT_PIO_RX_PIN); // stop receiving
-    sport_uart_tx_program_start(sportPio, sportSmTx, SPORT_PIO_RX_PIN, true); // prepare to transmit
+    sport_uart_rx_program_stop(sportPio, sportSmRx, config.pinTlm); // stop receiving
+    sport_uart_tx_program_start(sportPio, sportSmTx, config.pinTlm, true); // prepare to transmit
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (sport_dma_chan, &sportTxBuffer[0], false);
     dma_channel_set_trans_count (sport_dma_chan, sportLength, true) ;

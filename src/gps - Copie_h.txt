@@ -185,17 +185,16 @@ public:
     bool new_position = false ;
     bool new_speed = false ;
       
-     
+    
+    
+    
     
 
 
     explicit GPS(void);
-    
     void setupGps() ;
-    void gpsInitRx();
-    void pioRxHandlerIrq();
     void setupGpsUblox() ;
-    //void setupGpsCasic() ;
+    void setupGpsCasic() ;
     void readGps();
     void readGpsUblox();
     void readGpsCasic();

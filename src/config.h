@@ -1,25 +1,28 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.1.1"
+#define VERSION "0.2.9"
 // ------- General ------------------
-// This project can be interfaced with an ELRS, a JETI or a FRSKY receiver (protocol has to be selected accordingly)
+// This project can be interfaced with one or 2 ELRS, JETI or FRSKY receiver(s) (protocol has to be selected accordingly)
 // 
-// This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals
+// This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and/or Sbus signals
 // For telemetry, it can provide
-//    - up to 3 analog voltages measurement (with scaling and offset)
+//    - up to 4 analog voltages measurement (with scaling and offset) (optional)
 //    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
 //
-// It can also provide 9 or 10 PWM RC channels (channels 1...4 and 6...9) from a CRSF or a Sbus signal.
-// It can also provide SBUS signal (only from CRSF/ELRS signal; for Frsky Sbus is provided by the Frsky Receiver itself)  
+// It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from a Sbus signal (e.g Frsky or Jeti).
+// It can also provide SBUS signal. 
 //
+// When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels (= diversity)
+//
+// Each functions (telemetry/PWM/SBUS) can be used alone or combined with the others.
 // -------  Hardware -----------------
 // This project requires a board with a RP2040 processor (like the rapsberry pi pico).
 // A better alternative is the RP2040-Zero (same processor but smaller board)
 // This board can be connected to:
-//    - a pressure sensor (GY63 or GY86 board based on MS5611) to get altitude and vertical speed
+//    - a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
 //    - a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
 //       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware
 //              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
@@ -28,46 +31,59 @@
 //       note : a voltage can be used to measure e.g. a current when some external devices are use to generate an analog voltage 
 //
 // ----------Wiring --------------------
-// FRSKY/ELRS receiver, MS5611 and GPS must share the same Gnd
+// FRSKY/ELRS/JETI receiver, MS5611 and GPS must share the same Gnd
 // Connect a 5V source to the Vcc pin of RP2040 board
+// There is no default affectation of the RP2040 pins so user has to specify it with some parameters after flashing the firmware (see below)
 // When used with a ELRS receiver:
-//    - Connect gpio 9 from RP2040 (= PIO RX signal) to the TX pin from ELRS receiver (this wire transmit the RC channels)
-//    - Connect gpio 10 from RP2040 (= PIO TX signal) to the RX pin from ELRS receiver (this wire transmits the telemetry data)
-// When used with a FRSKY receiver:
-//    - Connect gpio 9 from RP2040 (= UART0 RX signal) to the Sbus pin from Frsky receiver (this wire transmit the RC channels)
-//    - Connect gpio 10 from RP2040 (= PIO TX signal) via a 1k resistor to the Sport pin from Frsky receiver (this wire transmits the telemetry data)
+//    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
+//    - Connect TLM pin to the Rx pin from ELRS receiver that is supposed to transmit telemetry data (this wire transmits the telemetry data)
+// When used with a FRSKY/JETI receiver:
+//    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin from Frsky/Jeti receiver (this wire transmit the RC channels)
+//    - Connect TLM pin via a 1k resistor to the Sport pin from Frsky receiver or EX pin from Jeti receiver (this wire transmits the telemetry data)
 //
-// 9 PWM signals can be generated on gpio 1...8 and gpio 11.
-// One more PWM can be generated on gpio 0 when this pin is not used to generate a Sbus signal 
-// The config parameters allow:
-//    - to select the RC channels generated on gpio 1, 5 and 11.
-//          Gpio 2..4 (and gpio 6...9) will then generate the following RC channels. 
-//    - to select if gpio 0 has to generate a Sbus signal or a PWM RC channel.
+// Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 //
-// Voltages 1, 2, 3 are measured on gpio 26...28 
+// Voltages 1, 2, 3, 4 can be measured on gpio 26...29 
 //       Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
 //
-// RPM (Hz) is measured on gpio 29
+// One RPM (Hz) can be measured
 //       Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
 //       All pulsed are counted (no debouncing); so use a hardware low pass filter (resistor/capitor) to avoid dummy pulses reading
 //
-// When a MS5611 (baro sensor) is used:
-//       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 
+// When a MS5611/SPL06/BMP280 (baro sensor) is used:
+//       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor 
 //            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
-//       Connect SCL to gpio 15 (I2C1)
-//       Connect SDA to gpio 14 (I2C1)
+//       Connect SCL from baro sensor to the pin selected as SCL in parameter for RP2040
+//       Connect SDA from baro sensor to the pin selected as SDA in parameter for RP2040
 //
 // When a GPS is used:
 //    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
-//    Connect the RX pin from GPS to gpio 12 (UART0-TX) 
-//    Connect the TX pin from GPS to gpio 13 (UART0-RX)
-//        
+//    Connect the RX pin from GPS to the RX pin selected in parameter for RP2040  
+//    Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
+//    So take care that here TX is NOT connected to RX (as usual in Serial connection)  
+//       
+// The affectation of the pins has to be defined by the user.
+// Here are the command codes and the pins that can be used are:
+// Note: pin 16 is reserved for an internal LED on RP2040-zero as so should not be used.
+// C1 = 0/15  ... C16 = 0/15     (for PWM output)
+// GPS_TX = 0/29                 (for GPS)
+// GPS_RX = 0/29                 (for GPS)
+// PRI = 5 ,9, 21 ,25            (for primary RC channel input)
+// SEC = 1, 13 , 17 ,29          (for secondary RC channel input)
+// SBUS_OUT = 0/29               (for Sbus output)
+// TLM = 0/29                    (for telemetry data)
+// VOLT1= 26/29 ... VOLT4 = 26/29  (for voltage measurements)
+// SDA = 2, 6, 10, 14, 18, 22, 26  (for baro)
+// SCL = 3, 7, 11, 15, 19, 23, 27  (for baro)
+// RPM = 0/29                      (for RPM)
+// LED = 16                        (internal led of RP2040-zero)
+//
 // --------- software -------------------
 //    This software has been developped using the RP2040 SDK provided by Rapsberry.
 //    It uses as IDE platformio and the WIZIO extension (to be found on internet here : https://github.com/Wiz-IO/wizio-pico )
 //    Developers can compile and flash this software with those tools.
 //    Still if you just want to use it, there is no need to install/use those tools.
-//    On github, in uf2 folder, there is already a compile version of this software that can be directly uploaded and configured afterwards
+//    On github, in uf2 folder, there is already a compiled version of this software that can be directly uploaded and configured afterwards
 //    To upload this compiled version, the process is the folowing:
 //        - download the file in folder uf2 on your pc
 //        - insert the USB cable in the RP2040 board
@@ -78,8 +94,8 @@
 //        - the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
 //        - you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
 //        - while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-//        - when the RP2040 start (or pressing the reset button), it will display the current configuration and the commands to change it.
-//        - if you want to change some parameters, fill in the command and press the enter.
+//        - when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
+//        - if you want to change some parameters, fill in the command (code=value) and press the enter.
 //        - the RP2040 should then display the new (saved) config.  
 //
 // Notes:
@@ -93,6 +109,10 @@
 // Following #define allow to set up the interval between 2 frames of the same group.
 // This allows e.g. to transmit vertical speed (in 'vario' frame) more often than GPS data
 // The values are in milli seconds
+
+
+
+
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
 #define VARIO_FRAME_INTERVAL 50   // This frame contains only Vertical speed
 #define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
@@ -112,7 +132,7 @@
 #define VARIOHYSTERESIS 5
 
 // --------- Parameters for GPS ---------------
-#define GPS_REFRESH_RATE 5 // For Ublox GPS, it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
+#define GPS_REFRESH_RATE 10 // For Ublox GPS, it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
 //                        note :a casic gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
 //                        this can be done using a FTDI and program GnssToolkit3.exe (to download from internet)
 

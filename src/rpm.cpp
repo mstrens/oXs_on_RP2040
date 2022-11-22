@@ -15,7 +15,7 @@ extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and param
 PIO pioRpm = pio1; // we use pio 1; 
 uint smRpm = 2;  // we use the state machine 2 for rpm 
 
-#define PIN_RPM 29
+//#define PIN_RPM 29
 #define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec  
 
 uint32_t currentRpmUsec;
@@ -26,18 +26,20 @@ float rpmScaling;
 
 
 void setupRpm(){
+    if (config.pinRpm == 255) return; // skip when pin is not defined
     setupRpmPio( );
-    rpmScaling = 1000000.0 * config.scaleVolt4; // 1000000 = nbr of microsec in a sec
+    rpmScaling = 1000000.0 * config.rpmMultiplicator; // 1000000 = nbr of microsec in a sec
 }
 void setupRpmPio(){
     // setup the PIO for RPM
         uint offsetRpm = pio_add_program(pioRpm, &rpm_program);
-        rpm_program_init(pioRpm, smRpm, offsetRpm, PIN_RPM);
+        rpm_program_init(pioRpm, smRpm, offsetRpm, config.pinRpm);
         previousRpmUsec = micros();
         previousRpmCounter = getRpmCounter();
 
 }
 void readRpm(){
+    if (config.pinRpm == 255) return; // skip when pin is not defined
     if (rpmScaling != 0.0){
         currentRpmUsec = micros();
         if ( ( currentRpmUsec - previousRpmUsec ) > RPM_COUNTER_INTERVAL_USEC ) {

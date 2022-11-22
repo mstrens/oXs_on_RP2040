@@ -7,7 +7,9 @@
 #include <inttypes.h>
 #include "tools.h"
 #include "pico/double.h"
+#include "param.h"
 
+extern CONFIG config;
 
 /////////////////////////////////////////////////////
 //
@@ -18,13 +20,13 @@ SPL06::SPL06(uint8_t deviceAddress)
   _address           = deviceAddress;
 }
 
-void SPL06::begin()  // baroInstalles = true when baro exist
+void SPL06::begin()  // baroInstalled = true when baro exist
 {
   baroInstalled = false;
   uint8_t writeCmd[2];
   uint8_t readValue;
   uint8_t regToRead; 
-
+  if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
   writeCmd[0] = SPL06_RST_REG ;  // reset the device
   writeCmd[1] = 0X89 ; // OX89 means clear fifo and soft reset
   sleep_ms(40);
@@ -37,7 +39,7 @@ void SPL06::begin()  // baroInstalles = true when baro exist
   if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
   if ( i2c_read_blocking (i2c1 , _address , &readValue , 1 , false) == PICO_ERROR_GENERIC) return ; 
   if ( readValue != SPL06_DEFAULT_CHIP_ID) {
-      printf("SPL06 has wrong device id");
+      printf("SPL06 has wrong device id\n");
       return ;
   }
 

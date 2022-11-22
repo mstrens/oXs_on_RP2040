@@ -18,7 +18,7 @@ uint32_t abs(int32_t value){
 VARIO::VARIO(){}
 
 void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalMicros){
-  // smooth altitude
+  static int32_t prev_baro_altitude;
   if (firstCalc) {
     //if (firstCalcCounter == 100) printf("start alt at millis %" PRIu32 "\n", millis() );
     if (firstCalcCounter > 10){  // skip the first reading in order to get a better value as first Altitude
@@ -30,6 +30,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
     } else {
         //printf("first alt at millis %" PRIu32 "\n", millis() );
         firstCalc = false;
+        prev_baro_altitude = baro_altitude;
         altitudeLowPass = altitudeHighPass = altitude =  altitude / 10 ; // all in cm *100 and in int32
         intervalSmooth = 20000 ; // perhaps not required
     }
@@ -46,6 +47,14 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   //   altitude +   (baro_altitude - altitude) * 0.04);
   //  cnt--;
   //}  
+  #define DIFFERENCE_ALTITUDE_MAX 200 // in cm
+  // check that the new value is quite similat to the previous one (avoid glitch)
+  if ( abs(prev_baro_altitude - baro_altitude) > DIFFERENCE_ALTITUDE_MAX) {
+    prev_baro_altitude = baro_altitude;
+    return;
+  }
+  prev_baro_altitude = baro_altitude;
+  // smooth altitude
   altitude += 0.04 * ( baro_altitude - altitude) ;
   absoluteAlt.value = altitude ;
   absoluteAlt.available = true ;
@@ -67,7 +76,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   }
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
   
-  //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",\
+  //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",
   //   (float)  altitude , (float) altitudeLowPass , (float)  altitudeHighPass, (float) altitudeLowPass -  (float)  altitudeHighPass,   (float) climbRateFloat);
   // update climbRate only if the difference is big enough
   if ( abs(((int32_t)  climbRateFloat) - fields[VSPEED].value) > (int32_t) VARIOHYSTERESIS ) {

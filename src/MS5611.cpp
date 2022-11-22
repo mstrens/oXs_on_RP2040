@@ -1,11 +1,10 @@
-
-
 #include "MS5611.h"
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "stdio.h"
 #include <inttypes.h>
 #include "tools.h"
+#include "param.h"
 
 // datasheet page 10
 #define MS5611_CMD_READ_ADC       0x00
@@ -14,6 +13,7 @@
 #define MS5611_CMD_CONVERT_D1     0x40
 #define MS5611_CMD_CONVERT_D2     0x50
 
+extern CONFIG config;
 
 /////////////////////////////////////////////////////
 //
@@ -65,6 +65,7 @@ int8_t MS5611::ms56xx_crc(uint16_t *prom)
 void MS5611::begin()  // return true when baro exist
 {
   baroInstalled = false;
+  if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
   uint8_t rxdata;
   //i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) ;
   rxdata = MS5611_CMD_RESET ;

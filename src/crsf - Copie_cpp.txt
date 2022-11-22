@@ -1,5 +1,6 @@
 #include "pico/stdlib.h"
 #include <stdlib.h>
+#include "hardware/uart.h"
 #include "hardware/pio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
@@ -43,7 +44,7 @@ extern GPS gps ;
 
 extern CONFIG config;
 
-uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (cvia dma)
+uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (via dma)
 uint8_t CRSFBufferLength;
 
 const uint PIN_TX = 10;

@@ -2,5 +2,8 @@
 
 
 void setupSbusIn();
-void storeSbusFrame();
+void setupSbus2In();
 void handleSbusIn();
+void handleSbus2In();
+void storeSbusFrame();
+void storeSbus2Frame();
