@@ -100,7 +100,7 @@ void BMP280::begin() {
         if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
         sleep_ms(1);
         if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC)  return ;
-        _calibrationData[i] = (readBuffer[0]<<8 ) | (readBuffer[1] );     
+        _calibrationData[i] = (readBuffer[1]<<8 ) | (readBuffer[0] );     
 #ifdef DEBUG
         printf("calibration data #%d = %u \n", i , _calibrationData[i]);
 #endif
@@ -163,12 +163,22 @@ int BMP280::getAltitude() {
         //  adc_T |= I2c.receive()  ;
         //  adc_T = adc_T >> 4 ;
         //  varioData.lastCommandMicros = micros() ;
-          
+
+// Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
+// t_fine carries fine temperature as global value
+
+ 
           var1 = ((((adc_T>>3) - ((int32_t)_bmp280_coeffs.dig_T1<<1))) * ((int32_t)_bmp280_coeffs.dig_T2)) >> 11;
           var2 = (((((adc_T>>4) - ((int32_t)_bmp280_coeffs.dig_T1)) * ((adc_T>>4) - ((int32_t)_bmp280_coeffs.dig_T1))) >> 12) * ((int32_t)_bmp280_coeffs.dig_T3)) >> 14;
           t_fine = var1 + var2;
           temperature = (t_fine * 5 + 128) >> 8; 
-          
+
+// Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits).
+// Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa
+// Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
+// t_fine carries fine temperature as global value
+// Returns pressure in Pa as double. Output value of “96386.2” equals 96386.2 Pa = 963.862 hPa
+
           var1 = (((int32_t)t_fine)>>1) - (int32_t)64000;
           var2 = (((var1>>2) * (var1>>2)) >> 11 ) * ((int32_t)_bmp280_coeffs.dig_P6);
           var2 = var2 + ((var1*((int32_t)_bmp280_coeffs.dig_P5))<<1);
@@ -186,7 +196,7 @@ int BMP280::getAltitude() {
             }
             var1 = (((int32_t)_bmp280_coeffs.dig_P9) * ((int32_t)(((p>>3) * (p>>3))>>13)))>>12;
             var2 = (((int32_t)(p>>2)) * ((int32_t)_bmp280_coeffs.dig_P8))>>13;
-            rawPressure = (uint32_t)((int32_t)p + ((var1 + var2 + _bmp280_coeffs.dig_P7) >> 4))*  10000 ;  // in pascal
+            rawPressure = (uint32_t)((int32_t)p + ((var1 + var2 + _bmp280_coeffs.dig_P7) >> 4)) ;  // in pascal
           }  
           altitude = 443300000.0 * (1.0 - pow(rawPressure / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
         altIntervalMicros = _lastConversionRequest - _prevAltMicros;

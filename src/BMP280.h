@@ -5,7 +5,7 @@
 //#include "I2C.h"
 //#include "oXs_ms5611.h"
 
-#define BMP280_ADR 0x77 // I2C address of BMP280 (can also be 0x76)
+//#define BMP280_ADR 0x77 // I2C address of BMP280 (can also be 0x76)
 
 /*=========================================================================
     CALIBRATION DATA for BMP280

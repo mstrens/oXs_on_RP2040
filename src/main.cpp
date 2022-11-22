@@ -79,7 +79,7 @@ VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
 SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
-BMP280 baro3( (uint8_t) 0x77) ;    // class to handle BMP280; adress = 0x77 or 0x76
+BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0x76
 
 VARIO vario1;
 
