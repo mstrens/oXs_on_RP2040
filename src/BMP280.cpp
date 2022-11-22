@@ -172,6 +172,7 @@ int BMP280::getAltitude() {
           var2 = (((((adc_T>>4) - ((int32_t)_bmp280_coeffs.dig_T1)) * ((adc_T>>4) - ((int32_t)_bmp280_coeffs.dig_T1))) >> 12) * ((int32_t)_bmp280_coeffs.dig_T3)) >> 14;
           t_fine = var1 + var2;
           temperature = (t_fine * 5 + 128) >> 8; 
+        
 
 // Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits).
 // Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa
@@ -201,7 +202,11 @@ int BMP280::getAltitude() {
           altitude = 443300000.0 * (1.0 - pow(rawPressure / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
         altIntervalMicros = _lastConversionRequest - _prevAltMicros;
         _prevAltMicros = _lastConversionRequest ;
-    
+        #ifdef DEBUG  
+            printf("temp=%d   Press=%d   Alt=%d\n",temperature,rawPressure,altitude);  
+        #endif
+
+
         return 0 ; // new data available
         
 }  // end getAltitude     
