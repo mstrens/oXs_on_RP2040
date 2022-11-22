@@ -81,6 +81,7 @@ This board can be connected to:
 This software has been developped using the RP2040 SDK provided by Rapsberry.
 
 It uses as IDE platformio and the WIZIO extension (to be found on internet here : https://github.com/Wiz-IO/wizio-pico )
+It can also be compiled with Platformio CLI (which requires lees installation than platformio IDE)
 
 Developers can compile and flash this software with those tools.
 
@@ -96,9 +97,12 @@ To upload this compiled version, the process is the folowing:
 * copy and paste the uf2 file to this new drive
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
+
+Once the firmware is uploaded and running the led (when a RP2040-Zero is used) will blink.
+The firmware must still be configured (to specify the pins, protocol, sensors... being used):
 * you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-* when the RP2040 start (or pressing the reset button), press the enter key and it will display the current configuration and the commands to change it.
+* when the RP2040 starts (or pressing the reset button), press the enter key and it will display the current configuration and the commands to change it.
 * if you want to change some parameters, fill in the command and press the enter.
 * the RP2040 should then display the new (saved) config.  
 
