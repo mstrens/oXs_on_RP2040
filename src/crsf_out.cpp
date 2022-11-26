@@ -160,7 +160,7 @@ void fillFrameBattery(uint8_t idx){
         fillBufferU24( (uint32_t) fields[CAPACITY].value);
     } else fillBufferU24(0);
     if ( fields[REMAIN].value > 0 ) {
-        fillBufferU8( (uint8_t) (fields[REMAIN].value /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
+        fillBufferU8( (uint8_t) ((fields[REMAIN].value+5) /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
     } else fillBufferU8(0);
     //voltageFrame.mVolt = 0X0A01;   // !!!!!!!!!!!!!! to remove
     //voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
