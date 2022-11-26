@@ -290,7 +290,7 @@ void processCmd(){
             ui = strtoul(pvalue, &ptr, 10);
             if ( *ptr != 0x0){
                 printf("Error : pin must be an unsigned integer\n");
-            } else if ( (!(ui>=26 and ui<=29)) or ui ==255) {
+            } else if ( ! ( ((ui>=26 and ui<=29)) or ui ==255) ) {
                 printf("Error : pin must be in range 26 / 29 or 255\n");
             } else {    
                 config.pinVolt[ui2-1] = ui;

@@ -148,6 +148,7 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
     }           
 }
 
+
 void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent for this device ID
     //printf("sendNextSportFrame\n");
     static uint8_t last_sport_idx = 0 ;
