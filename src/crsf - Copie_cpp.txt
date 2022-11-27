@@ -1,3 +1,4 @@
+/*
 #include "pico/stdlib.h"
 #include <stdlib.h>
 #include "hardware/uart.h"
@@ -464,3 +465,4 @@ void printBatteryFrame(){
     printf("  remain= 0x%X\n" , (uint8_t) voltageFrame.remain);
     printf("  crc   = 0x%X\n", voltageFrame.crc);
 }
+*/

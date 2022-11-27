@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include "vario.h"
@@ -180,3 +181,4 @@ void handleCrsfRx(void);
 void printAttitudeFrame();
 void printGpsFrame();
 void printBatteryFrame();
+*/

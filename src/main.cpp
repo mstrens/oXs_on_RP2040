@@ -142,7 +142,7 @@ void setup() {
     //watchdog_update();
     }
   #endif
-  sleep_ms(200);
+  sleep_ms(1000);
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
