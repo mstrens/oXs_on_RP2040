@@ -151,6 +151,7 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
 
 void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent for this device ID
     //printf("sendNextSportFrame\n");
+    waitUs(300);
     static uint8_t last_sport_idx = 0 ;
     if ( dma_channel_is_busy(sport_dma_chan) )return ; // skip if the DMA is still sending data
     uint32_t _millis = millis();

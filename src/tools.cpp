@@ -10,6 +10,11 @@ uint32_t micros() {
     return  to_us_since_boot(get_absolute_time ());
 }
 
+void waitUs(uint32_t delayUs){
+    uint32_t nowUs = micros();
+    while (( micros() - nowUs) < delayUs) {micros();}
+}
+
 
 field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
