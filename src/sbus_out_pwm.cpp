@@ -168,7 +168,8 @@ void updatePWM(){
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
         for( uint8_t i = 0 ; i < 16 ; i++){    
             if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 
-            pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
+            //pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
+            pwmValue = fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
             pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
         }   
