@@ -118,10 +118,11 @@
 #define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
 #define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw. It is currently not used in this project.
 #define BARO_ALTITUDE_FRAME_INTERVAL 500 // This frame contains only barometric relative altitude
-// Note: ELRS has no field to transmit RPM; so RPM is sent in "attitude" frame as pitch, roll and yaw.  
-//       Those fiels can have a max value of about 16000 and some digits are considered as decimals and lost by openTx.
-//       Therefore RPM value (hetz) is transmitted 3 times (once in Hetz, once in 10 X Hetz and once in 100 X Hetz)
-//       So the user can decide which value best fit his need
+
+#define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec
+// Note: ELRS has no field to transmit RPM; so RPM is sent in "attitude" frame as pitch.  
+//       This field has a max value of about 32000 and some digits are considered as decimals and lost by openTx.
+//       So you probably have to apply a rpm multiplier to get a value in a range that fits your need and has enough signicant digits displayed
 
 // Here some additional parameters that can't be changed via the serial terminal 
 // -------- Parameters for the vario -----
