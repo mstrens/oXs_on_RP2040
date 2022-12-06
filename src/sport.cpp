@@ -153,7 +153,10 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
     //printf("sendNextSportFrame\n");
     waitUs(300);
     static uint8_t last_sport_idx = 0 ;
-    if ( dma_channel_is_busy(sport_dma_chan) )return ; // skip if the DMA is still sending data
+    if ( dma_channel_is_busy(sport_dma_chan) ) {
+        //printf("dma is busy\n");
+        return ; // skip if the DMA is still sending data
+    }
     uint32_t _millis = millis();
     for (uint8_t i = 0 ; i< SPORT_TYPES_MAX ; i++ ){
          last_sport_idx++;
@@ -162,8 +165,9 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
          if ((last_sport_idx == MVOLT) || (last_sport_idx == CAPACITY) || (last_sport_idx == REMAIN) )  continue;
 #endif
 
-      
+        //printf("last_sport_idx= %d\n", last_sport_idx);
          if ( (_millis >= fields[last_sport_idx].nextMillis) && (fields[last_sport_idx].available)  ) {
+             //printf("sendOneSport\n");
              sendOneSport(last_sport_idx);
              fields[last_sport_idx].available = false; // flag as sent
              fields[last_sport_idx].nextMillis = millis() + fields[last_sport_idx].interval;

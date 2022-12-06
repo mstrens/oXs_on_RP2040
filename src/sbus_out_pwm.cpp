@@ -67,6 +67,7 @@ void setupSbusOutPio(){
 
 void fillSbusFrame(){
     static uint32_t lastSbusSentMillis = 0;
+    if (config.pinSbusOut == 255) return; // skip when pin is not defined
     if (!lastRcChannels) return;  // do not generate a sbus frame when we never get a RC chanels frame form crsf
     // we should also check that dma is not busy anymore
     
@@ -100,15 +101,6 @@ void fillSbusFrame(){
     }    
 }
 
-#define PIN_PWM1 1
-#define PIN_PWM2 2
-#define PIN_PWM3 3
-#define PIN_PWM4 4
-#define PIN_PWM5 5
-#define PIN_PWM6 6
-#define PIN_PWM7 7
-#define PIN_PWM8 8
-//uint8_t pwmPins[8] = { PIN_PWM1 , PIN_PWM2 , PIN_PWM3 , PIN_PWM4 , PIN_PWM5, PIN_PWM6 , PIN_PWM7 , PIN_PWM8 };
     
 #define TOP 20000
 #define DIVIDER 133

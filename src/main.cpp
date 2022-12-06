@@ -172,13 +172,13 @@ void setup() {
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
         setupCrsfOut(); //  setup 1 pio/sm (for TX ) and the DMA (for TX)   
       } else if (config.protocol == 'S') {
+        setupSbusIn();
+        setupSbus2In();
         setupSport();
-        setupSbusIn();
-        setupSbus2In();
       } else if (config.protocol == 'J') {
-        setupJeti();
         setupSbusIn();
         setupSbus2In();
+        setupJeti();
       }
       watchdog_update();
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).

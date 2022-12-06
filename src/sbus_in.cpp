@@ -27,8 +27,8 @@ extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To g
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
 
-uint8_t runningSbusFrame[24];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
-uint8_t runningSbus2Frame[24];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
+uint8_t runningSbusFrame[25];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
+uint8_t runningSbus2Frame[25];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
 
 //extern rcFrameStruct crsfRcFrame ; // buffer used by crsf.cpp to fill the RC frame sent to ELRS 
 extern uint32_t lastRcChannels ;     // Time stamp of last valid rc channels data
@@ -51,7 +51,7 @@ void on_sbus2_uart_rx() {
     while (uart_is_readable(SBUS2_UART_ID)) {
         //printf(".\n");
         uint8_t ch = uart_getc(SBUS2_UART_ID);
-        int count = queue_get_level( &sbus2Queue );
+        //int count = queue_get_level( &sbus2Queue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
         if (!queue_try_add ( &sbus2Queue , &ch)) printf("sbusQueue try add error\n");

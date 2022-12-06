@@ -600,9 +600,10 @@ void printConfig(){
             printf("\nProtocol is unknow\n")  ;
         }
     printf("CRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
-    printf("Voltage/RPM parameters:\n")  ;
+    printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
+    printf("RPM multiplier = %f\n", config.rpmMultiplicator);
     if (baro1.baroInstalled) {
         printf("Baro sensor is detected using MS5611\n")  ;
         printf("    Sensitivity min = %i (at %i)   , max = %i (at %i)\n", SENSITIVITY_MIN, SENSITIVITY_MIN_AT, SENSITIVITY_MAX, SENSITIVITY_MAX_AT);
