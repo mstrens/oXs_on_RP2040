@@ -125,8 +125,9 @@ void handleSbusIn(){
       break;
       case RECEIVING_SBUS :
         runningSbusFrame[sbusCounter++] = c;
-        if (sbusCounter == 24 ) {
+        if (sbusCounter == 25 ) {  // 25 because SbusCounter is already pointing to next byte 
           if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
+            //printf("fs=%X\n", c);
             sbusState = NO_SBUS_FRAME;
           } else {
             storeSbusFrame();
