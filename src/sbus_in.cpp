@@ -161,7 +161,7 @@ if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
       break;
       case RECEIVING_SBUS :
         runningSbus2Frame[sbus2Counter++] = c;
-        if (sbus2Counter == 24 ) {
+        if (sbus2Counter == 25 ) {
           if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
             sbus2State = NO_SBUS_FRAME;
           } else {

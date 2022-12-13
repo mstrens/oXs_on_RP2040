@@ -124,8 +124,8 @@ enum CRSFState{
 uint32_t lastRcChannels = 0;   // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
     static uint8_t crsfRxState = NO_FRAME;
-    static uint8_t counter = 0;
-    static uint8_t bufferRcChannels[RC_PAYLOAD_LENGTH];
+    static uint8_t crsfCounter = 0;
+    static uint8_t crsfBufferRcChannels[RC_PAYLOAD_LENGTH];
     uint8_t data;
     uint8_t crc = 0; 
     if (config.pinPrimIn == 255) return ; // skip if Prim is not defined 
@@ -149,7 +149,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
             case  WAIT_FRAMETYPE_RC_CHANNELS_PACKED:
                 if (data == CRSF_FRAMETYPE_RC_CHANNELS_PACKED){
                     crsfRxState = RECEIVING_RC_CHANNELS;
-                    counter = 0;
+                    crsfCounter = 0;
                 } else if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) {
                     crsfRxState = WAIT_PAYLOAD_LENGTH;
                 } else {
@@ -157,22 +157,22 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
                 }
             break;
             case  RECEIVING_RC_CHANNELS:
-                bufferRcChannels[counter++] = data;
-                if ( counter == RC_PAYLOAD_LENGTH ) {
+                crsfBufferRcChannels[crsfCounter++] = data;
+                if ( crsfCounter == RC_PAYLOAD_LENGTH ) {
                     crsfRxState = WAIT_CRC ;
                 }                   
             break;
             case  WAIT_CRC:
                 crc = crsf_crc_in.calc(CRSF_FRAMETYPE_RC_CHANNELS_PACKED); // CRC calculation includes the Type of message
-                crc = crsf_crc_in.calc(&bufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
+                crc = crsf_crc_in.calc(&crsfBufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
                 if ( crc == data){
                     // we got a good frame; we can save for later use
-                    memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
+                    memcpy(&sbusFrame.rcChannelsData, crsfBufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
                     #ifdef DEBUGPRIM
                     printf("Prim= ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
-                        printf(" %02X ", bufferRcChannels[i]);
+                        printf(" %02X ", crsfBufferRcChannels[i]);
                     }
                     printf("\n");    
                     #endif
@@ -188,8 +188,8 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
 
 void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
     static uint8_t crsfRxState = NO_FRAME;
-    static uint8_t counter = 0;
-    static uint8_t bufferRcChannels[RC_PAYLOAD_LENGTH];
+    static uint8_t crsf2Counter = 0;
+    static uint8_t crsf2BufferRcChannels[RC_PAYLOAD_LENGTH];
     uint8_t data;
     uint8_t crc = 0; 
     if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
@@ -214,7 +214,7 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
             case  WAIT_FRAMETYPE_RC_CHANNELS_PACKED:
                 if (data == CRSF_FRAMETYPE_RC_CHANNELS_PACKED){
                     crsfRxState = RECEIVING_RC_CHANNELS;
-                    counter = 0;
+                    crsf2Counter = 0;
                 } else if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) {
                     crsfRxState = WAIT_PAYLOAD_LENGTH;
                 } else {
@@ -222,22 +222,22 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                 }
             break;
             case  RECEIVING_RC_CHANNELS:
-                bufferRcChannels[counter++] = data;
-                if ( counter == RC_PAYLOAD_LENGTH ) {
+                crsf2BufferRcChannels[crsf2Counter++] = data;
+                if ( crsf2Counter == RC_PAYLOAD_LENGTH ) {
                     crsfRxState = WAIT_CRC ;
                 }                   
             break;
             case  WAIT_CRC:
                 crc = crsf_crc_in.calc(CRSF_FRAMETYPE_RC_CHANNELS_PACKED); // CRC calculation includes the Type of message
-                crc = crsf_crc_in.calc(&bufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
+                crc = crsf_crc_in.calc(&crsf2BufferRcChannels[0] ,  RC_PAYLOAD_LENGTH , crc);
                 if ( crc == data){
                     // we got a good frame; we can save for later use
-                    memcpy(&sbusFrame.rcChannelsData, bufferRcChannels , RC_PAYLOAD_LENGTH) ;
+                    memcpy(&sbusFrame.rcChannelsData, crsf2BufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
                     #ifdef DEBUGSEC
                     printf("Sec = ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
-                        printf(" %02X ", bufferRcChannels[i]);
+                        printf(" %02X ", crsf2BufferRcChannels[i]);
                     }
                     printf("\n");    
                     #endif
