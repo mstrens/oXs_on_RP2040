@@ -187,7 +187,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
 }
 
 void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
-    static uint8_t crsfRxState = NO_FRAME;
+    static uint8_t crsf2RxState = NO_FRAME;
     static uint8_t crsf2Counter = 0;
     static uint8_t crsf2BufferRcChannels[RC_PAYLOAD_LENGTH];
     uint8_t data;
@@ -198,33 +198,33 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
         queue_try_remove (&crsf2RxQueue,&data);
         //printf("q=  %02x \n",data);
         busy_wait_us(5000);
-        switch ( crsfRxState ) {
+        switch ( crsf2RxState ) {
             case NO_FRAME:
-                if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsfRxState = WAIT_PAYLOAD_LENGTH;
+                if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsf2RxState = WAIT_PAYLOAD_LENGTH;
             break;
             case  WAIT_PAYLOAD_LENGTH:
                 if (data == (RC_PAYLOAD_LENGTH + 2)){
-                    crsfRxState = WAIT_FRAMETYPE_RC_CHANNELS_PACKED;
+                    crsf2RxState = WAIT_FRAMETYPE_RC_CHANNELS_PACKED;
                 } else if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-                    crsfRxState = WAIT_PAYLOAD_LENGTH;
+                    crsf2RxState = WAIT_PAYLOAD_LENGTH;
                 } else {
-                    crsfRxState = NO_FRAME ;
+                    crsf2RxState = NO_FRAME ;
                 }
             break;
             case  WAIT_FRAMETYPE_RC_CHANNELS_PACKED:
                 if (data == CRSF_FRAMETYPE_RC_CHANNELS_PACKED){
-                    crsfRxState = RECEIVING_RC_CHANNELS;
+                    crsf2RxState = RECEIVING_RC_CHANNELS;
                     crsf2Counter = 0;
                 } else if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) {
-                    crsfRxState = WAIT_PAYLOAD_LENGTH;
+                    crsf2RxState = WAIT_PAYLOAD_LENGTH;
                 } else {
-                    crsfRxState = NO_FRAME ;
+                    crsf2RxState = NO_FRAME ;
                 }
             break;
             case  RECEIVING_RC_CHANNELS:
                 crsf2BufferRcChannels[crsf2Counter++] = data;
                 if ( crsf2Counter == RC_PAYLOAD_LENGTH ) {
-                    crsfRxState = WAIT_CRC ;
+                    crsf2RxState = WAIT_CRC ;
                 }                   
             break;
             case  WAIT_CRC:
@@ -245,7 +245,7 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                 } else {
                     //printf("bad CRC received\n");
                 }
-                crsfRxState = NO_FRAME;
+                crsf2RxState = NO_FRAME;
             break;
         }
     }        
