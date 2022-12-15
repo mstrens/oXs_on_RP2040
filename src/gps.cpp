@@ -15,7 +15,7 @@
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
 #define LOCATION_SCALING_FACTOR 0.011131884502145034f
 #define DEG_TO_RAD_FOR_GPS 0.017453292519943295769236907684886f
-#define GPS_UART_ID uart0
+//#define GPS_UART_ID uart0
 
 //#define GPS_TX_PIN 12 
 //#define GPS_RX_PIN 13
@@ -43,6 +43,7 @@ union {
     } __attribute__((__packed__)) _casicBuffer;
 
 
+/*
 // RX interrupt handler
 void on_uart_rx() {
     while (uart_is_readable(GPS_UART_ID)) {
@@ -54,6 +55,7 @@ void on_uart_rx() {
         //printf("%x\n", ch);
     }
 }
+*/
 
 GPS::GPS( void) {}
 

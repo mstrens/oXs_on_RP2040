@@ -197,7 +197,6 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
     while (! queue_is_empty(&crsf2RxQueue)) {
         queue_try_remove (&crsf2RxQueue,&data);
         //printf("q=  %02x \n",data);
-        busy_wait_us(5000);
         switch ( crsf2RxState ) {
             case NO_FRAME:
                 if (data == CRSF_ADDRESS_FLIGHT_CONTROLLER) crsf2RxState = WAIT_PAYLOAD_LENGTH;
@@ -250,3 +249,4 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
         }
     }        
 }
+
