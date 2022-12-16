@@ -575,20 +575,20 @@ void printConfig(){
     uint8_t version[] =   VERSION ;
     printf("\nVersion = %s \n", version)  ;
     printf("    Function              Code      Pin (255=disabled)\n");   
-    printf("Primary channels input    PRI       %4u\n", config.pinPrimIn);
-    printf("Secondary channels input  SEC       %4u\n", config.pinSecIn);
-    printf("Telemetry                 TLM       %4u\n", config.pinTlm );
-    printf("GPS Rx                    GPS_RX    %4u\n", config.pinGpsRx );
-    printf("GPS Tx                    GPS_TX    %4u\n", config.pinGpsTx );
-    printf("Sbus OUT                  SBUS_OUT  %4u\n", config.pinSbusOut );
-    printf("RPM                       RPM       %4u\n", config.pinRpm );
-    printf("SDA (baro sensor)         SDA       %4u\n", config.pinSda );
-    printf("SCL (baro sensor)         SCL       %4u\n", config.pinScl );
-    printf("PWM Channels 1, 2, 3 ,4   C1 / C4   %4u %4u %4u %4u\n", config.pinChannels[0] , config.pinChannels[1] , config.pinChannels[2] , config.pinChannels[3]);
-    printf("PWM Channels 5, 6, 7 ,8   C5 / C8   %4u %4u %4u %4u\n", config.pinChannels[4] , config.pinChannels[5] , config.pinChannels[6] , config.pinChannels[7]);
-    printf("PWM Channels 9,10,11,12   C9 / C12  %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
-    printf("PWM Channels 13,14,15,16  C13/ C16  %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
-    printf("Voltage 1, 2, 3, 4        V1 / V4   %4u %4u %4u %4u\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
+    printf("Primary channels input    PRI     = %4u\n", config.pinPrimIn);
+    printf("Secondary channels input  SEC     = %4u\n", config.pinSecIn);
+    printf("Telemetry                 TLM     = %4u\n", config.pinTlm );
+    printf("GPS Rx                    GPS_RX  = %4u\n", config.pinGpsRx );
+    printf("GPS Tx                    GPS_TX  = %4u\n", config.pinGpsTx );
+    printf("Sbus OUT                  SBUS_OUT= %4u\n", config.pinSbusOut );
+    printf("RPM                       RPM     = %4u\n", config.pinRpm );
+    printf("SDA (baro sensor)         SDA     = %4u\n", config.pinSda );
+    printf("SCL (baro sensor)         SCL     = %4u\n", config.pinScl );
+    printf("PWM Channels 1, 2, 3 ,4   C1 / C4 = %4u %4u %4u %4u\n", config.pinChannels[0] , config.pinChannels[1] , config.pinChannels[2] , config.pinChannels[3]);
+    printf("PWM Channels 5, 6, 7 ,8   C5 / C8 = %4u %4u %4u %4u\n", config.pinChannels[4] , config.pinChannels[5] , config.pinChannels[6] , config.pinChannels[7]);
+    printf("PWM Channels 9,10,11,12   C9 / C12= %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
+    printf("PWM Channels 13,14,15,16  C13/ C16= %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
+    printf("Voltage 1, 2, 3, 4        V1 / V4 = %4u %4u %4u %4u\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
