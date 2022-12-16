@@ -22,9 +22,6 @@
 //#define DEBUGASERIAL
 //#define DEBUGJETI
 #endif
-//#define DEBUG_FORCE_VARIODATA  // this is used to force oXs to send a fixed dummy value for Vspeed and Alt in order to test if an issue result of bmp180 or from Multiplex / Jeti protocol.
-//#define DEBUG_SERIAL_RX          // this is used to generate pulses when oXs decodes a byte sent by the receiver
-//#define DEBUGASERIAL             // this is used to generate pulses when oXs send a byte 
 
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 extern MS5611 baro1;
@@ -123,7 +120,7 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }
-    if ( gps.gpsInstalled ) {
+    if ( config.pinGpsTx != 255 ) {
         listOfJetiFields[listOfJetiFieldsIdx++] = GROUNDSPEED ;
         listOfJetiFields[listOfJetiFieldsIdx++] = HEADING ;
         listOfJetiFields[listOfJetiFieldsIdx++] = ALTITUDE ; 

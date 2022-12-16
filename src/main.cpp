@@ -26,7 +26,11 @@
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
-//         support Frsky Fport on top of sbus+sport protocol  
+//         support Frsky Fport on top of sbus+sport protocol
+//         support hott protocol
+//         for Sbus, better managing of failsafe when PRI and SEC are both used (check on sbus flags)
+//         advance use of LED color (e.g. blink Green = OK; blink yellow = PRI or SEC OK but failsafe on the other, orange=failsafe apply, red=no signal)
+//           
 
 // Look at file config.h for more details
 //
@@ -92,9 +96,6 @@ extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
 
-
-//#define PICO_I2C1_SDA_PIN 14  
-//#define PICO_I2C1_SCL_PIN 15  
 
 uint32_t lastBlinkMillis;
 

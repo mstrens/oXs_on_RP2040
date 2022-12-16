@@ -66,8 +66,6 @@ void setupListOfFields(){
     }
 }
 
-#define PICO_I2C1_SDA_PIN 14  
-#define PICO_I2C1_SCL_PIN 15  
 
 
 

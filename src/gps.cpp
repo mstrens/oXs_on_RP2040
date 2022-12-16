@@ -17,9 +17,6 @@
 #define DEG_TO_RAD_FOR_GPS 0.017453292519943295769236907684886f
 //#define GPS_UART_ID uart0
 
-//#define GPS_TX_PIN 12 
-//#define GPS_RX_PIN 13
-
 //extern queue_t gpsQueue ;
 extern CONFIG config;
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
