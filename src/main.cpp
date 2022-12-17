@@ -95,7 +95,7 @@ GPS gps;
 extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
-
+bool blinking = true ;
 
 uint32_t lastBlinkMillis;
 
@@ -143,14 +143,14 @@ void setup() {
     //watchdog_update();
     }
   #endif
-  sleep_ms(1000);
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
         printf("Clean boot\n");
+        sleep_ms(1000); // wait that GPS is initialized
     }
   watchdog_enable(1500, 0); // require an update once every 1500 msec
-  setRgbColor(0,0,10);  // switch to blue if we are connected
+  setRgbColor(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   watchdog_update();
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
   watchdog_update();
@@ -188,13 +188,12 @@ void setup() {
       setupPwm();
       watchdog_update();
       setupRpm(); // this function perform the setup of pio Rpm
-      printConfig();
-      watchdog_update();
-      setRgbColor(0,10,0);
       watchdog_enable(500, 0); // require an update once every 500 msec
   } else {
-    printConfig(); // config is not valid
+    configIsValid = false;
   }
+  printConfig(); // config is not valid
+  setRgbColor(10,0,0); // set color on red (= no signal)
 }
 
 
@@ -232,15 +231,16 @@ void loop() {
   if ( configIsValidPrev != configIsValid) {
     configIsValidPrev = configIsValid;
     if (configIsValid) {
-        setRgbColor(0,10,0);
+        blinking = true; // setRgbColor(0,10,0); // red , green , blue
     } else {
-        setRgbColor(10,0,0);  
+        blinking = false; // setRgbColor(10,0,0);
+        setRgbOn();  
     }
   }
-  if (( millis() - lastBlinkMillis) > 300 ){
+  if ( blinking && (( millis() - lastBlinkMillis) > 300 ) ){
     toggleRgb();
     lastBlinkMillis = millis();
-  }
+  } 
 }
 
 int main(){

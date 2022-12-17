@@ -8,12 +8,13 @@
 #include <string.h>
 #include <inttypes.h>
 #include "stdio.h"
-
+#include "ws2812.h"
 #include "pwm.pio.h"
 
 // Sbus is 100000 baud, even parity, 8 bits , 2 stops,  inverted
 // in order to use the PIO we calculate in the main program the parity bit and the second stop bit
 
+#define FAILSAFE_DELAY 500 // for CRSF protocol, failsafe applies when we do not get frame for more than this delay (millis sec)
 
 PIO pioTxSbus = pio0; // we use pio 0; DMA is hardcoded to use it
 uint smTxSbus = 2;  // we use the state machine 2 for Sbus Tx; DMA is harcoded to use it (DREQ) 
@@ -26,6 +27,14 @@ dma_channel_config cSbus;
 extern sbusFrame_s sbusFrame;
 uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
+extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+
+extern bool sbusPriMissingFlag;
+extern bool sbusSecMissingFlag;
+extern bool sbusPriFailsafeFlag;
+extern bool sbusSecFailsafeFlag;
+
 extern CONFIG config;
 extern uint8_t debugSbusOut;
 
@@ -37,6 +46,14 @@ static const bool ParityTable256[256] =
     P6(0), P6(1), P6(1), P6(0)
 };
 
+enum LEDState{
+    STATE_OK= 0,
+    STATE_PARTLY_OK,
+    STATE_FAILSAFE,
+    STATE_NO_SIGNAL
+};
+
+uint8_t ledState = STATE_NO_SIGNAL;
 
 // Set up a PIO state machine to serialise our bits
 void setupSbusOutPio(){
@@ -63,18 +80,73 @@ void setupSbusOutPio(){
         // do not set interrupt on DMA. The main loop will check if DMA is busy before sending
 }
 
-
+void setLedState(){
+    uint32_t now = millis();
+    bool priFailsafe = sbusPriFailsafeFlag; // we first try to use the sbus flags
+    bool secFailsafe = sbusSecFailsafeFlag;
+    if (config.protocol == 'C'){   // overwrite when protocol is CRSF because we have to take care of last receiving timestamp
+        priFailsafe = (now - lastPriChannelsMillis) >  FAILSAFE_DELAY;
+        secFailsafe = (now - lastSecChannelsMillis) >  FAILSAFE_DELAY;    
+    } else {                       // even for Sbus, it could be that we have to ovewrite
+        if ( (now - lastPriChannelsMillis) >  FAILSAFE_DELAY ) priFailsafe = true; // if we stop receiving sbus, we force a failsafe
+        if ( (now - lastSecChannelsMillis) >  FAILSAFE_DELAY ) secFailsafe = true; // if we stop receiving sbus, we force a failsafe
+    }
+    if ( config.pinPrimIn == 255) {
+        if (config.pinSecIn == 255) {
+            ledState = STATE_NO_SIGNAL;
+        } else {                   // only SEC defined
+            if ( secFailsafe ) {
+                ledState = STATE_FAILSAFE;
+            } else {
+                ledState = STATE_OK;
+            }
+        }
+    } else {
+        if (config.pinSecIn == 255) {    // only PRI defined
+            if ( priFailsafe ) {
+                ledState = STATE_FAILSAFE;
+            } else {
+                ledState = STATE_OK;
+            }
+        } else {                         // PRI and SEC defined
+            if ( secFailsafe && priFailsafe) {
+                ledState = STATE_FAILSAFE;
+            } else if ( (secFailsafe == false) && (priFailsafe == false) ) {
+                ledState = STATE_OK;
+            } else {
+                ledState = STATE_PARTLY_OK;
+            }
+        }
+    }
+    printf(" %d",ledState);
+    sleep_ms(500);
+    switch (ledState) {
+        case STATE_OK:
+            setRgbColor(0, 10, 0); //green
+            break;
+        case STATE_PARTLY_OK:
+            setRgbColor(5, 5, 10); //yellow
+            break;
+        case STATE_FAILSAFE:
+            setRgbColor(0, 0, 10); //blue
+            break;
+        default:
+            setRgbColor(10, 0, 0); //red
+            break;     
+    }        
+}
 
 void fillSbusFrame(){
     static uint32_t lastSbusSentMillis = 0;
+    if (!lastRcChannels) return;  // do not generate a sbus frame when we never get a RC channels frame form crsf
+    setLedState();                // set the color of the led   
     if (config.pinSbusOut == 255) return; // skip when pin is not defined
-    if (!lastRcChannels) return;  // do not generate a sbus frame when we never get a RC chanels frame form crsf
-    // we should also check that dma is not busy anymore
-    
+    // normally we should test if previous dma has finished sending all previous sbus frame. 
+
     if ( (millis() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
         lastSbusSentMillis = millis();   
         sbusFrame.synchro = 0x0F ; 
-        if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, we apply failsafe
+        if ( ( millis()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, we apply failsafe
             sbusFrame.flag = 0x10; // indicates a failsafe
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         } else {
@@ -139,7 +211,7 @@ void updatePWM(){
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
     if ( (millis() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
         lastPwmMillis = millis();
-        if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
+        if ( ( millis()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
         rcSbusOutChannels[0] = (uint16_t) sbusFrame.rcChannelsData.ch0 ;

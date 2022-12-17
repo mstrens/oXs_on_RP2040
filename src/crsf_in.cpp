@@ -122,6 +122,10 @@ enum CRSFState{
 } ;
 
 uint32_t lastRcChannels = 0;   // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+uint32_t lastPriChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+uint32_t lastSecChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+
+
 void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
     static uint8_t crsfRxState = NO_FRAME;
     static uint8_t crsfCounter = 0;
@@ -169,6 +173,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, crsfBufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
+                    lastPriChannelsMillis = lastRcChannels ;
                     #ifdef DEBUGPRIM
                     printf("Prim= ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
@@ -233,6 +238,7 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, crsf2BufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
+                    lastSecChannelsMillis = lastRcChannels ; 
                     #ifdef DEBUGSEC
                     printf("Sec = ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {

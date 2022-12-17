@@ -32,6 +32,14 @@ uint8_t runningSbus2Frame[25];  // data are accumulated in this buffer and trans
 
 //extern rcFrameStruct crsfRcFrame ; // buffer used by crsf.cpp to fill the RC frame sent to ELRS 
 extern uint32_t lastRcChannels ;     // Time stamp of last valid rc channels data
+extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+
+bool sbusPriMissingFlag = true;
+bool sbusSecMissingFlag = true;
+bool sbusPriFailsafeFlag = true;
+bool sbusSecFailsafeFlag = true;
+
 
 // RX interrupt handler on one uart
 void on_sbus_uart_rx() {
@@ -176,18 +184,31 @@ if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
 
 }
 
-
 void storeSbusFrame(){
-    memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbusFrame[1], 22);
-    lastRcChannels = millis(); 
+    sbusPriMissingFlag = (runningSbusFrame[23] >> 2) & 0X01;
+    sbusPriFailsafeFlag = (runningSbusFrame[23] >> 3) & 0X01;
+    if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   
+        ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
+        ( ( millis() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
+        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbusFrame[1], 22);
+    }
+    lastRcChannels = millis();
+    lastPriChannelsMillis =  lastRcChannels;
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);
     //printf("sbus received\n");
 }  
 
 void storeSbus2Frame(){
-    memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbus2Frame[1], 22);
-    lastRcChannels = millis(); 
+    sbusSecMissingFlag = (runningSbus2Frame[23] >> 2) & 0X01;
+    sbusSecFailsafeFlag = (runningSbus2Frame[23] >> 3) & 0X01;
+    if ((( sbusSecMissingFlag == false) && (sbusSecFailsafeFlag == false))  ||                               // copy when frame is OK   
+        (( sbusSecMissingFlag == true) && (sbusSecFailsafeFlag == false) && (sbusPriFailsafeFlag == true)) || // or previous PRI is failsafe and SEC is only missing
+        (( millis() - lastPriChannelsMillis )  > 50 )) {                                                      // or PRI do not exist           
+        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbus2Frame[1], 22);
+    }
+    lastRcChannels = millis();
+    lastSecChannelsMillis =  lastRcChannels; 
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);
     //printf("sbus received\n");

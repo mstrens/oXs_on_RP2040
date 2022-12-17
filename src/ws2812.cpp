@@ -15,8 +15,8 @@ PIO rgbPio = pio1;
 uint rgbSm  = 3;
 uint8_t rgbPin = 16;  // RP2040 zero uses a rgb neopixel on pin 16
 uint8_t rgbRed;
-uint8_t rgbBlue;
 uint8_t rgbGreen;
+uint8_t rgbBlue;
 bool rgbOn = false;
 
 void setupLed(){

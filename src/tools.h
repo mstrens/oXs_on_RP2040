@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 //#include "stdio.h"
 
-#define SPORT_TYPES_MAX NUMBER_MAX_IDX
+#define SPORT_TYPES_MAX 26 //NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
