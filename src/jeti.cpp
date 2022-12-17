@@ -121,7 +121,7 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }
     
-    if ( config.pinGpsTx == 255 ) {
+    if ( config.pinGpsTx != 255 ) {
         listOfJetiFields[listOfJetiFieldsIdx++] = GROUNDSPEED ;
         listOfJetiFields[listOfJetiFieldsIdx++] = HEADING ;
         listOfJetiFields[listOfJetiFieldsIdx++] = ALTITUDE ; 

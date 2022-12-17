@@ -2,9 +2,9 @@
 
 This project can be interfaced with 1 or 2 ELRS, FRSKY or Jeti receiver(s) (protocol has to be selected accordingly).
  
- This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
+This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
  
- For telemetry, it can provide
+For telemetry, it can provide
  
  * up to 4 analog voltages measurement (with scaling and offset)
  * the altitude and the vertical speed when connected to a pressure sensor (optional)
@@ -98,12 +98,12 @@ To upload this compiled version, the process is the folowing:
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
 
-Once the firmware is uploaded and running the led (when a RP2040-Zero is used) will blink.
+Once the firmware is uploaded and running the led (when a RP2040-Zero is used) will blink or be on (see below).
 The firmware must still be configured (to specify the pins, protocol, sensors... being used):
-* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
+* you can now use a serial terminal (like serial monitor in visual code , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
 * when the RP2040 starts (or pressing the reset button), press the enter key and it will display the current configuration and the commands to change it.
-* if you want to change some parameters, fill in the command and press the enter.
+* if you want to change some parameters, fill in the command (xxxx = yyyyy) and press the enter.
 * the RP2040 should then display the new (saved) config.  
 
 Notes:
@@ -116,3 +116,13 @@ Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels si
 
 Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly
 
+## --------- Led -------------------
+When a RP2040-Zero is used, the firmware will handle a RGB led (internally connected to gpio16).
+* when config is wrong, led is red and ON.
+* when config is valid, led is blinking and the color depends on RC channels being received ot not
+    * Red = Rc frames have nerver been received, Sbus and/or PWM signals are not generated.
+    * Blue = Sbus and/or PWM signals are based on failsafe values. Failsafe values are given by the receiver for Sbus or are configured in oXs for CRSF protocol)
+    * Yellow/oranje = Sbus and/or PWM signals are based on a valid RC channels frame received from PRI or SEC source but the orther source does not provided a valid RC channels frame.
+    * blinking green = Sbus and/or PWM signals are based on valid RC channels frames (from one source; from both sources if both are foressen in the setup)
+
+Please note that other boards does not have a RGB led on gpio16 and so this does not applies.
