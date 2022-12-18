@@ -1,6 +1,12 @@
 #pragma once
 
 //#include "crsf.h"
+enum LEDState{
+    STATE_OK= 0,
+    STATE_PARTLY_OK,
+    STATE_FAILSAFE,
+    STATE_NO_SIGNAL
+};
 
 
 // functions used for the 8 PWM signals generated without the pio.

@@ -95,8 +95,8 @@ bool dataAvailable(uint8_t idx) {
             return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available || fields[REMAIN].available ;
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
-        case CRSF_FRAMEIDX_ATTITUDE :
-            return fields[RPM].available ;    // in this version, attitude frame is used to transmit RPM         
+        //case CRSF_FRAMEIDX_ATTITUDE :
+        //    return fields[RPM].available ;    // in this version, attitude frame is used to transmit RPM         
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
             //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled 
@@ -296,9 +296,9 @@ void fillOneFrame(uint8_t idx){
         case CRSF_FRAMEIDX_VARIO :
             fillFrameVario(idx);
             break ;
-        case CRSF_FRAMEIDX_ATTITUDE :
-            fillFrameAttitude(idx);
-            break;
+        //case CRSF_FRAMEIDX_ATTITUDE :
+        //    fillFrameAttitude(idx);
+        //    break;
         case CRSF_FRAMEIDX_GPS :
             fillFrameGps(idx);
             break;

@@ -239,6 +239,7 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                     memcpy(&sbusFrame.rcChannelsData, crsf2BufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millis();
                     lastSecChannelsMillis = lastRcChannels ; 
+                    //printf("S\n");
                     #ifdef DEBUGSEC
                     printf("Sec = ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {

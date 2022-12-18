@@ -30,6 +30,13 @@ void setRgbColor(uint8_t red , uint8_t green , uint8_t blue){
     rgbRed = red;
     rgbBlue = blue;
     rgbGreen = green;
+}
+
+
+void setRgbColorOn(uint8_t red , uint8_t green , uint8_t blue){
+    rgbRed = red;
+    rgbBlue = blue;
+    rgbGreen = green;
     rgbOn = true;
     pio_sm_put_blocking(rgbPio, rgbSm , ( ((uint32_t) red) <<16) |
              ( ((uint32_t) green) << 24) |

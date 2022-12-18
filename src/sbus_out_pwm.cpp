@@ -46,14 +46,8 @@ static const bool ParityTable256[256] =
     P6(0), P6(1), P6(1), P6(0)
 };
 
-enum LEDState{
-    STATE_OK= 0,
-    STATE_PARTLY_OK,
-    STATE_FAILSAFE,
-    STATE_NO_SIGNAL
-};
 
-uint8_t ledState = STATE_NO_SIGNAL;
+extern uint8_t ledState;
 
 // Set up a PIO state machine to serialise our bits
 void setupSbusOutPio(){
@@ -118,22 +112,7 @@ void setLedState(){
             }
         }
     }
-    printf(" %d",ledState);
-    sleep_ms(500);
-    switch (ledState) {
-        case STATE_OK:
-            setRgbColor(0, 10, 0); //green
-            break;
-        case STATE_PARTLY_OK:
-            setRgbColor(5, 5, 10); //yellow
-            break;
-        case STATE_FAILSAFE:
-            setRgbColor(0, 0, 10); //blue
-            break;
-        default:
-            setRgbColor(10, 0, 0); //red
-            break;     
-    }        
+       
 }
 
 void fillSbusFrame(){

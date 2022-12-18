@@ -6,10 +6,10 @@ This project is foreseen to generate telemetry data (e.g. when a flight controll
  
 For telemetry, it can provide
  
- * up to 4 analog voltages measurement (with scaling and offset)
+ * up to 4 analog voltages measurement (with scaling and offset) (only one -V1- for Jeti protocol)
  * the altitude and the vertical speed when connected to a pressure sensor (optional)
  * GPS data (longitude, latitude, speed, altitude,...) (optional)
- * RPM
+ * RPM (only for Sport protocol)
 
 It can also provide up to 16 PWM RC channels from a CRSF (ELRS) or a Sbus (Frsky/Jeti) signal.
 

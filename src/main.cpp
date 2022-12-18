@@ -77,7 +77,7 @@
 // LED = 16
 
 
-//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 VOLTAGE voltage ;    // class to handle voltages
 
@@ -96,6 +96,8 @@ extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
 bool blinking = true ;
+uint8_t ledState = STATE_NO_SIGNAL;
+uint8_t prevLedState = STATE_NO_SIGNAL;
 
 uint32_t lastBlinkMillis;
 
@@ -133,7 +135,7 @@ void mergeSeveralSensors(void){
 void setup() {
   stdio_init_all();
   setupLed();
-  setRgbColor(10,0,10); // start with 2 color
+  setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
   uint16_t counter = 0;                      // after an upload, watchdog_cause_reboot is true.
   if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
@@ -150,7 +152,7 @@ void setup() {
         sleep_ms(1000); // wait that GPS is initialized
     }
   watchdog_enable(1500, 0); // require an update once every 1500 msec
-  setRgbColor(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
+  setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   watchdog_update();
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
   watchdog_update();
@@ -193,7 +195,7 @@ void setup() {
     configIsValid = false;
   }
   printConfig(); // config is not valid
-  setRgbColor(10,0,0); // set color on red (= no signal)
+  setRgbColorOn(10,0,0); // set color on red (= no signal)
 }
 
 
@@ -231,13 +233,32 @@ void loop() {
   if ( configIsValidPrev != configIsValid) {
     configIsValidPrev = configIsValid;
     if (configIsValid) {
-        blinking = true; // setRgbColor(0,10,0); // red , green , blue
+        blinking = true; // setRgbColorOn(0,10,0); // red , green , blue
     } else {
-        blinking = false; // setRgbColor(10,0,0);
+        blinking = false; // setRgbColorOn(10,0,0);
         setRgbOn();  
     }
   }
-  if ( blinking && (( millis() - lastBlinkMillis) > 300 ) ){
+  
+  if ( ledState != prevLedState){
+    //printf(" %d\n ",ledState);
+    prevLedState = ledState;
+    lastBlinkMillis = millis();
+    switch (ledState) {
+        case STATE_OK:
+            setRgbColorOn(0, 10, 0); //green
+            break;
+        case STATE_PARTLY_OK:
+            setRgbColorOn(10, 5, 0); //yellow
+            break;
+        case STATE_FAILSAFE:
+            setRgbColorOn(0, 0, 10); //blue
+            break;
+        default:
+            setRgbColorOn(10, 0, 0); //red
+            break;     
+    }     
+  } else if ( blinking && (( millis() - lastBlinkMillis) > 300 ) ){
     toggleRgb();
     lastBlinkMillis = millis();
   } 
