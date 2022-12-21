@@ -23,6 +23,7 @@
 #include "tools.h"
 #include "ws2812.h"
 #include "rpm.h"
+#include "EMFButton.h"
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
@@ -77,7 +78,7 @@
 // LED = 16
 
 
-#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 VOLTAGE voltage ;    // class to handle voltages
 
@@ -92,6 +93,9 @@ GPS gps;
 
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 
+EMFButton btn (3, 0); // button object will be associated to the boot button of rp2040; requires a special function to get the state (see tool.cpp)
+                       // parameters are not used with RP2040 boot button 
+extern uint32_t lastRcChannels;
 extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
@@ -130,6 +134,55 @@ void getSensors(void){
 }
 
 void mergeSeveralSensors(void){
+}
+
+void setColorState(){    // set the colors based on the RF link
+    lastBlinkMillis = millis(); // reset the timestamp for blinking
+    switch (ledState) {
+        case STATE_OK:
+            setRgbColorOn(0, 10, 0); //green
+            break;
+        case STATE_PARTLY_OK:
+            setRgbColorOn(10, 5, 0); //yellow
+            break;
+        case STATE_FAILSAFE:
+            setRgbColorOn(0, 0, 10); //blue
+            break;
+        default:
+            setRgbColorOn(10, 0, 0); //red
+            break;     
+    }
+}
+
+enum bootButtonStates_t {NOT_ARMED, ARMED, SAVED};
+bootButtonStates_t bootButtonState =  NOT_ARMED;
+
+void handleBootButton(){ 
+    // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+    static uint32_t bootArmedMillis = 0;
+    btn.tick();
+    if ( ( btn.hasClicks() == 2) && ( (millis() - lastRcChannels ) < 100 ) ) { // double click + a recent frame exist
+        bootArmedMillis = millis();
+        bootButtonState =  ARMED;
+        setRgbColorOn(0, 0, 10); //blue
+        //printf("armed\n");
+    } else if (bootButtonState == ARMED) {
+        if (btn.hasOnlyHeld() && ( (millis() - lastRcChannels ) < 100 )) {     // saved when long hold + recent frame exist
+            bootButtonState =  SAVED;
+            setRgbColorOn(5, 5, 5);
+            bootArmedMillis = millis();
+            cpyChannelsAndSaveConfig();   // copy the channels values and save them into the config.
+            //printf("saving failsafe\n");
+        } else if ( (millis() - bootArmedMillis) > 5000) {
+            bootButtonState =  NOT_ARMED;  // reset if no hold withing the 5 sec
+            setColorState();               // restore colors based on RF link
+            //printf("loosing armed\n");
+        }
+    } else if ((bootButtonState == SAVED) && ((millis() - bootArmedMillis) > 2000) ){
+        bootButtonState =  NOT_ARMED;  // reset after 2 sec
+        setColorState();               // restore colors based on RF link 
+        //printf("done\n");
+    }
 }
 
 void setup() {
@@ -200,6 +253,7 @@ void setup() {
 
 
 void loop() {
+  //debugBootButton();
   watchdog_update();
   if (configIsValid){
       getSensors();
@@ -239,29 +293,20 @@ void loop() {
         setRgbOn();  
     }
   }
-  
-  if ( ledState != prevLedState){
+  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+  if (( bootButtonState == ARMED) || ( bootButtonState == SAVED)){
+    //setRgbColorOn(0, 0, 10); //blue
+  } else if ( ledState != prevLedState){
     //printf(" %d\n ",ledState);
     prevLedState = ledState;
-    lastBlinkMillis = millis();
-    switch (ledState) {
-        case STATE_OK:
-            setRgbColorOn(0, 10, 0); //green
-            break;
-        case STATE_PARTLY_OK:
-            setRgbColorOn(10, 5, 0); //yellow
-            break;
-        case STATE_FAILSAFE:
-            setRgbColorOn(0, 0, 10); //blue
-            break;
-        default:
-            setRgbColorOn(10, 0, 0); //red
-            break;     
-    }     
+    setColorState();     
   } else if ( blinking && (( millis() - lastBlinkMillis) > 300 ) ){
     toggleRgb();
     lastBlinkMillis = millis();
-  } 
+  }
+  //if (get_bootsel_button()) {
+  //  printf("p\n");
+  //} 
 }
 
 int main(){

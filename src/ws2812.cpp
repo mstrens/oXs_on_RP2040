@@ -28,8 +28,8 @@ void setupLed(){
 
 void setRgbColor(uint8_t red , uint8_t green , uint8_t blue){
     rgbRed = red;
-    rgbBlue = blue;
     rgbGreen = green;
+    rgbBlue = blue;
 }
 
 

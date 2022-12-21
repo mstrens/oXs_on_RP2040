@@ -47,7 +47,8 @@ void removeTrailingWhiteSpace( char * str);
 void findKeyAndValue( char * &buffer, char * &key, char * &cvalue);
 void upperStr( char *p);
 void setFailsafe();
-void saveConfig();
+void saveConfig();                 // save the config
+void cpyChannelsAndSaveConfig();   // copy the channels values and save them into the config.
 void addPinToCount(uint8_t pinId);
 void checkConfig();
 void setupConfig();

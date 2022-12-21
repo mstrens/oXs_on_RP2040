@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pico/stdlib.h"
+//#include "Button2.h" moved to Button2.cpp
 //#include "stdio.h"
 
 #define SPORT_TYPES_MAX 26 //NUMBER_MAX_IDX
@@ -113,6 +114,8 @@ uint32_t millis() ;
 uint32_t micros();
 
 void waitUs(uint32_t delayUs);
+
+bool __no_inline_not_in_flash_func(get_bootsel_button)();
 
 void setupListOfFields();
 

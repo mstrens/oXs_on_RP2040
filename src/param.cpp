@@ -491,7 +491,11 @@ void processCmd(){
             printf("Error : No RC channels have been received yet. FAILSAFE values are unknown\n");
         }    
     }
-    if (updateConfig) saveConfig();  // this force a reboot!!!!!!!!!!
+    if (updateConfig) {
+        saveConfig();  
+        printf("Device will reboot\n\n");
+        watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
+    }    
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
     if ( strcmp("G", pkey) == 0 ) printGpsFrame();      // print GPS frame
     if ( strcmp("B", pkey) == 0 ) printBatteryFrame();   // print battery frame 
@@ -694,9 +698,13 @@ void saveConfig() {
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
     printf("New config has been saved\n");
-    //printConfig();
-    printf("Device will reboot\n\n");
-    watchdog_reboot(0, 0, 100); 
+    //printConfig(); 
+}
+
+void cpyChannelsAndSaveConfig() {    // used when pressing boot button to save failsafe value
+    config.failsafeType = 'C'; // remove 'H' for HOLD
+    memcpy( &config.failsafeChannels , &sbusFrame.rcChannelsData, sizeof(config.failsafeChannels));
+    saveConfig();        
 }
 
 void upperStr( char *p){
