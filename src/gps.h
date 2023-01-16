@@ -6,7 +6,7 @@
 // from the UBlox6 document, the largest payout we receive i the NAV-SVINFO and the payload size
 // is calculated as 8 + 12*numCh.  numCh in the case of a Glonass receiver is 28.
 #define UBLOX_PAYLOAD_SIZE 344 // 344 is the absolute max size 
-#define UBLOX_BUFFER_SIZE 50 // but the message that we read should not exceed about 50 bytes
+#define UBLOX_BUFFER_SIZE 100 // but the message that we read should not exceed about 100 bytes (PVT is quite long)
 
 // UBX support
 //typedef struct { // not used I think
@@ -56,6 +56,43 @@ typedef struct {
     uint8_t satellites;
     uint32_t res2;
 } ubx_nav_solution;
+
+typedef struct {
+    uint32_t time;
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t min;
+    uint8_t sec;
+    uint8_t valid;
+    uint32_t time_acc;
+    int32_t nano;
+    uint8_t fix_type;
+    uint8_t fix_status;
+    uint8_t additional_flags;
+    uint8_t satellites;
+    uint32_t longitude;
+    uint32_t latitude;
+    int32_t height;
+    int32_t height_above_sea_level;
+    uint32_t hacc; // horizontal accuracy
+    uint32_t vacc; // vertical accuracy
+    int32_t velocity_noord;
+    int32_t velocity_east;
+    int32_t velocity_down;
+    int32_t gspeed_2d_mm; // speed 2D in mm/sec
+    int32_t head_mot_2d;
+    uint32_t speed_accuracy;
+    uint32_t head_accuracy;
+    uint16_t position_DOP;
+    uint16_t flag3;
+    uint32_t res;
+    int32_t  head_velocity;
+    int16_t magnetic_declination;
+    uint16_t magnetic_accuracy;  
+} ubx_nav_pvt;
+
 
 typedef struct {
     uint32_t time;              // GPS msToW
@@ -130,7 +167,8 @@ struct __attribute__((__packed__)) casic_nav_pv_info {
 #define    MSG_ACK_ACK  0x01
 #define    MSG_POSLLH  0x2
 #define    MSG_STATUS  0x3
-#define    MSG_SOL  0x6
+#define    MSG_SOL  0x6 // not supported in ublox10
+#define    MSG_PVT  0x7 // not supported in ublox6
 #define    MSG_VELNED  0x12
 #define    MSG_SVINFO  0x30
 #define    MSG_CFG_PRT  0x00
@@ -154,21 +192,21 @@ public:
     // GPS data being read
     // **********************
     bool gpsInstalled = false;
-    int32_t GPS_lon;               // longitude in degree with 7 decimals, (neg for S)
-    bool    GPS_lonAvailable = false ; 
-    int32_t GPS_lat;               // latitude   in degree with 7 decimals, (neg for ?)
-    bool    GPS_latAvailable = false ;
+    //int32_t GPS_lon;               // longitude in degree with 7 decimals, (neg for S)
+    //bool    GPS_lonAvailable = false ; 
+    //int32_t GPS_lat;               // latitude   in degree with 7 decimals, (neg for ?)
+    //bool    GPS_latAvailable = false ;
 
-    int32_t GPS_altitude;              // altitude in mm
-    bool    GPS_altitudeAvailable = false ;
-    uint16_t GPS_speed_3d;                 // speed in cm/s
+    //int32_t GPS_altitude;              // altitude in mm
+    //bool    GPS_altitudeAvailable = false ;
+    //uint16_t GPS_speed_3d;                 // speed in cm/s
     bool    GPS_speed_3dAvailable = false;
     uint16_t GPS_speed_2d;                 // speed in cm/s
     bool    GPS_speed_2dAvailable = false ;
-    uint32_t GPS_ground_course ;     // degrees with 5 decimals
-    bool    GPS_ground_courseAvailable = false ;
+    //uint32_t GPS_ground_course ;     // degrees with 5 decimals
+    //bool    GPS_ground_courseAvailable = false ;
 
-    uint8_t GPS_numSat;
+    //uint8_t GPS_numSat;
     uint8_t GPS_fix_type;
     uint16_t GPS_hdop = 9999;           // Compute GPS quality signal
     uint16_t GPS_packetCount = 0;
@@ -185,9 +223,6 @@ public:
     bool new_position = false ;
     bool new_speed = false ;
       
-     
-    
-
 
     explicit GPS(void);
     

@@ -29,6 +29,7 @@ queue_t gpsRxQueue ; // queue uses to push the data from the uart pio rx to the 
         ubx_nav_posllh posllh;
         ubx_nav_status status;
         ubx_nav_solution solution;
+        ubx_nav_pvt pvt;
         ubx_nav_velned velned;
         ubx_nav_svinfo svinfo;
         uint8_t bytes[UBLOX_BUFFER_SIZE];
@@ -76,7 +77,7 @@ PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
 uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
 uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
 
-//int gps_dma_chan;
+//int gps_dma_chan;response
 //dma_channel_config c;
 
 void gpsPioRxHandlerIrq(){    // when a byte is received on the PIO GPS, read the pio fifo and push the data to a queue (to be processed in the main loop)
@@ -176,10 +177,12 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
             0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
-            
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
+
     #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
             0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
     #elif defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 10)
@@ -346,6 +349,17 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         fields[NUMSAT].available = true;
         if ( _buffer.solution.fix_type == FIX_3D ) fields[NUMSAT].value += 100; // we add 100 when we have a 3d fix (for Ublox)
         GPS_hdop = _buffer.solution.position_DOP;
+        //printf("nbr sat : %X \n", GPS_numSat) ; 
+        break;
+    case MSG_PVT:                                // this message does not exist in ublox6 (but SOL does not exist in ublox10)
+        next_fix = (_buffer.pvt.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.pvt.fix_type == FIX_3D);
+        GPS_fix_type = _buffer.pvt.fix_type;
+        if (!next_fix)
+             GPS_fix = false;
+        fields[NUMSAT].value = _buffer.pvt.satellites; 
+        fields[NUMSAT].available = true;
+        if ( _buffer.pvt.fix_type == FIX_3D ) fields[NUMSAT].value += 100; // we add 100 when we have a 3d fix (for Ublox)
+        GPS_hdop = _buffer.pvt.position_DOP;
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_VELNED:   

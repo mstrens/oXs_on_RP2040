@@ -19,6 +19,7 @@
 #include "hardware/watchdog.h"
 #include "sport.h"
 #include "jeti.h"
+#include "hott.h"
 #include "param.h"
 #include "tools.h"
 #include "ws2812.h"
@@ -28,10 +29,9 @@
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
 //         support Frsky Fport on top of sbus+sport protocol
-//         support hott protocol
-//         for Sbus, better managing of failsafe when PRI and SEC are both used (check on sbus flags)
-//         advance use of LED color (e.g. blink Green = OK; blink yellow = PRI or SEC OK but failsafe on the other, orange=failsafe apply, red=no signal)
-//           
+//         reserve Volt 2 for current 
+//         Calculate consumed current and allow to reset it using a button          
+//         add switching 8 gpio from one channel
 
 // Look at file config.h for more details
 //
@@ -53,8 +53,8 @@
 //  When interfaced with 2 receivers, 
 
 
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX
-//        0   1                         for Sport Rx
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX
+//        0   1                         for Sport Rx            or HOTT RX
 //        0   2            sbus out             
 
 //        1   0 is used for gps Tx  (was used for one pwm)        
@@ -235,6 +235,10 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupJeti();
+      } else if (config.protocol == 'H') {
+        setupSbusIn();
+        setupSbus2In();
+        setupHott();
       }
       watchdog_update();
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
@@ -271,6 +275,11 @@ void loop() {
         fillSbusFrame();
       } else if (config.protocol == 'J') {
         handleJetiTx();
+        handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
+      } else if (config.protocol == 'H') {
+        handleHottRxTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();

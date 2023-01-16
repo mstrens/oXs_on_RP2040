@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "hardware/dma.h"
@@ -61,7 +60,7 @@ static const bool jetiParityTable256[256] =
 };
 
 
-// one pio and 1 state machines are used to manage the sport 
+// one pio and 1 state machines are used to manage the jeti bus 
 // the state machine (sm) handle only the TX 
 //    We fill a buffer with the data
 //    we then start the sm configuring the gpio as output

@@ -44,7 +44,6 @@
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
 
-//#define SPORT_PIO_RX_PIN 10  // pin being used by the UART pio
 #define SPORTSYNCREQUEST 0x7E
 #define SPORTDEVICEID    0xE4
 
