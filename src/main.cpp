@@ -25,6 +25,7 @@
 #include "ws2812.h"
 #include "rpm.h"
 #include "EMFButton.h"
+#include "ads1115.h"
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
@@ -78,13 +79,16 @@
 // LED = 16
 
 
-#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+
+#define I2C_ADS_Add 0x48 // default I2C address of ads1115 when addr pin is connected to ground
+
 
 VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
 SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
 BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0x76
+ADS1115 adc1( I2C_ADS_Add ) ;
 
 VARIO vario1;
 
@@ -128,6 +132,9 @@ void getSensors(void){
     if ( baro3.getAltitude() == 0) { // if an altitude is calculated
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
+  }
+  if ( adc1.adsInstalled) {
+    adc1.readSensor();  
   } 
   gps.readGps();
   readRpm();
@@ -220,6 +227,7 @@ void setup() {
       watchdog_update();
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       watchdog_update();
+      adc1.begin() ; 
       
       gps.setupGps();  //use a Pio
       watchdog_update();
