@@ -184,6 +184,7 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
     fillBufferI16( (int16_t) fields[VSPEED].value ) ;  // cm/sec
+    printf("vspeed=%d\n", ((int16_t) fields[VSPEED].value) );
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
@@ -203,6 +204,7 @@ void fillFrameBaroAltitude(uint8_t idx){
     fillBufferU8( CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_BARO_ALTITUDE ) ;
     fillBufferI16( (int16_t) ( (fields[RELATIVEALT].value / 10 ) + 10000) ) ;  // from cm to dm and a 10000 dm offset
+    //printf("alt=%f\n", (float) ( (int16_t) ( (fields[RELATIVEALT].value / 10 ) + 10000) )  );
     // in theory, when Alt in dm should be more than about 32000-10000, then value should be negative and in m instead of in dm (and no offset)
     // So when alt is more than 2000m; we can discard this situation
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  

@@ -78,7 +78,7 @@
 // LED = 16
 
 
-//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 VOLTAGE voltage ;    // class to handle voltages
 
