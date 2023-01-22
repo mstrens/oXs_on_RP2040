@@ -43,7 +43,7 @@ class MS5611
 {
 public:
   bool    baroInstalled = false; 
-  int32_t altitude  ; // in cm * 100 
+  int32_t altitude  ; // in 1/100 of cm 
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
   
@@ -67,14 +67,15 @@ private:
   //float    _temperatureOffset;
   int      _result;
   uint16_t _calibrationData[8];
-  uint32_t _lastRead;
-  uint32_t _prevAltMicros;
-  state_t  _state;
+  uint32_t _lastRead = 0;
+  uint32_t _prevAltMicros = 0;
+  state_t  _state ;
   uint32_t _D1;
   uint32_t _D2;
-  uint32_t _lastConversionRequest;
-  uint32_t _lastTempRequest;
+  uint32_t _lastConversionRequest = 0;
+  uint32_t _lastTempRequest = 0;
   uint32_t _D2Prev;
+  uint32_t testInit;
 };
 
 

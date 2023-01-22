@@ -80,15 +80,15 @@
 
 
 
-#define I2C_ADS_Add 0x48 // default I2C address of ads1115 when addr pin is connected to ground
-
-
 VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
 SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
 BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0x76
-ADS1115 adc1( I2C_ADS_Add ) ;
+
+ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin connected to grnd)
+ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
+
 
 VARIO vario1;
 
@@ -133,9 +133,14 @@ void getSensors(void){
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
   }
+
   if ( adc1.adsInstalled) {
     adc1.readSensor();  
   } 
+  if ( adc2.adsInstalled) {
+    adc2.readSensor();  
+  } 
+  
   gps.readGps();
   readRpm();
 }
@@ -228,6 +233,7 @@ void setup() {
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       watchdog_update();
       adc1.begin() ; 
+      adc2.begin() ; 
       
       gps.setupGps();  //use a Pio
       watchdog_update();

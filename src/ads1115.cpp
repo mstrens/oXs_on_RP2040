@@ -23,27 +23,11 @@
 //extern unsigned long millis( void ) ;
 //extern void delay(unsigned long ms) ;
 
-/*
-const uint8_t ads_Measure[4] = {ADS_MEASURE} ; //  how to configure the multiplexer
-const uint8_t ads_Gain[4] = { ADS_FULL_SCALE_VOLT }; //  how to configure the programmable gain amplifier
-const uint8_t ads_Rate[4] = { ADS_RATE }; // how to configure the time of conversion
-const float ads_Offset[4] = { ADS_OFFSET };
-const float ads_Scale[4] = { ADS_SCALE };
-const uint8_t ads_MaxCount[4] = { ADS_AVERAGING_ON } ; //number of conversion before averaging
-  
-uint32_t ads_MilliAskConv  ; 
-uint8_t ads_Addr;
-uint8_t ads_CurrentIdx ;
-uint8_t I2CErrorCodeAds1115 ; 
-int32_t ads_SumOfConv[4] ; // summarise all conversion in order to calculate average 
-uint8_t ads_Counter[4]  ;
-struct ONE_MEASUREMENT ads_Conv[4] ; //averaged conversion including offset and scale
-uint8_t ads_Last_Conv_Idx ;
-*/
 
-ADS1115::ADS1115(uint8_t addr)
+ADS1115::ADS1115(uint8_t addr, uint8_t idx)
 {  // constructor
-  ads_Addr=addr; 
+  ads_Addr=addr;
+  ads_idx = idx;
 }
 
 
@@ -52,10 +36,10 @@ void ADS1115::begin() {
 #ifdef DEBUG  
   printf("ADS1115 sensor I2C Addr=%X\n", ads_Addr);
 #endif
-    ads_Counter[0] = ads_MaxCount[0] ;
-    ads_Counter[1] = ads_MaxCount[1] ;
-    ads_Counter[2] = ads_MaxCount[2] ;
-    ads_Counter[3] = ads_MaxCount[3] ;
+    ads_Counter[0] = ads_MaxCount[ads_idx][0] ;
+    ads_Counter[1] = ads_MaxCount[ads_idx][1] ;
+    ads_Counter[2] = ads_MaxCount[ads_idx][2] ;
+    ads_Counter[3] = ads_MaxCount[ads_idx][3] ;
 /*  
 #if defined(AN_ADS1115_IS_CONNECTED) && (AN_ADS1115_IS_CONNECTED == YES ) && defined(ADS_MEASURE) && defined(ADS_CURRENT_BASED_ON)
   adsCurrentData.milliAmps.available = false ;
@@ -66,7 +50,7 @@ void ADS1115::begin() {
   ads_requestNextConv() ; // Write next config and ask for conversion
   if (I2CErrorCodeAds1115 == 0) adsInstalled = true;  
 #ifdef DEBUG  
-  if (adsInstalled == 0) {
+  if (adsInstalled ) {
     printf("Set up Ads1115 done and OK.\n");  
   } else {
     printf("Error in Set up of ads1115.\n");  
@@ -79,7 +63,7 @@ void ADS1115::begin() {
 /* readSensor - Read ADS115                                                 */
 /*********************    *******************************************************/
 bool ADS1115::readSensor() {  // return true when there is a new average data to calculate
-    if ( ( millis() - ads_MilliAskConv ) >  (uint32_t) ( (  0x88 >> ads_Rate[ads_CurrentIdx]) + 1) )   { // when delay of conversion expires (NB delay is 137 msec when ads_rate = 0, and goes down up to 3ms then is divided by 2 for each increase ) 
+    if ( ( millis() - ads_MilliAskConv ) >  (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 1) )   { // when delay of conversion expires (NB delay is 137 msec when ads_rate = 0, and goes down up to 3ms then is divided by 2 for each increase ) 
         if( I2CErrorCodeAds1115 == 0 ) { // if there is no error on previous I2C request for a conversion
             uint8_t adsReg = 0X0; // 0X0 = adress of conversion register
             uint8_t data[2]; // buffer to read adc
@@ -92,16 +76,20 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
                     ads_Counter[ads_CurrentIdx]-- ;
                     if ( ads_Counter[ads_CurrentIdx] == 0 ) {
                         float adcToMvoltScaling ;
-                        if (ads_Gain[ads_CurrentIdx]) {
-                        adcToMvoltScaling = (0X2000 >>  ads_Gain[ads_CurrentIdx] ) / 32768.0 ;  // When ads_Gain[] = 1, it means that 32768 = 4096 mvolt; 4096 = 0x1000) , when 2, it is 2048 mvolt, ...
+                        if (ads_Gain[ads_idx][ads_CurrentIdx]) {
+                        adcToMvoltScaling = (0X2000 >>  ads_Gain[ads_idx][ads_CurrentIdx] ) / 32768.0 ;  // When ads_Gain[] = 1, it means that 32768 = 4096 mvolt; 4096 = 0x1000) , when 2, it is 2048 mvolt, ...
                         } else {
                         adcToMvoltScaling =  6144  / 32768.0 ;  // When ads_Gain[] = 0, it means that 32768 = 6144 mvolt
                         }
-                        ads_Value[ads_CurrentIdx] = round( ((float) ads_SumOfConv[ads_CurrentIdx] / (float) ads_MaxCount[ads_CurrentIdx] * adcToMvoltScaling ) * ads_Scale[ads_CurrentIdx] ) + ads_Offset[ads_CurrentIdx];
+                        ads_Value[ads_CurrentIdx] = round( ((float) ads_SumOfConv[ads_CurrentIdx] / (float) ads_MaxCount[ads_idx][ads_CurrentIdx] * adcToMvoltScaling ) * ads_Scale[ads_idx][ads_CurrentIdx] ) + ads_Offset[ads_idx][ads_CurrentIdx];
                         ads_Available[ads_CurrentIdx] = true ;
                         ads_SumOfConv[ads_CurrentIdx] = 0 ;            // reset the sum 
-                        ads_Counter[ads_CurrentIdx] = ads_MaxCount[ads_CurrentIdx] ;   // reset the counter to the number of count before averaging
+                        ads_Counter[ads_CurrentIdx] = ads_MaxCount[ads_idx][ads_CurrentIdx] ;   // reset the counter to the number of count before averaging
                         ads_Last_Conv_Idx = ads_CurrentIdx ;
+                        #define DEBUG_ADC
+                        #ifdef DEBUG_ADC
+                            printf("Adc %i : %d mVolt", ads_idx , ads_Value[ads_CurrentIdx]);
+                        #endif
                     }
                     ads_requestNextConv() ;
                     return true ;
@@ -120,13 +108,13 @@ void ADS1115::ads_requestNextConv(void) {
     do {
       ads_CurrentIdx++ ;
       if( ads_CurrentIdx > 3 ) ads_CurrentIdx = 0 ;
-    } while (  ads_Measure[ads_CurrentIdx] == ADS_OFF ) ;
+    } while (  ads_Measure[ads_idx][ads_CurrentIdx] == ADS_OFF ) ;
 // perhaps this line has to be splitted in 2 in order to let multiplexer, gain and rate to set up before asking for a conversion.
 
     uint8_t dataToWrite[3] ;
     dataToWrite[0] = ADS1115_POINTER_CONFIGURATION;
-    dataToWrite[1] = (( 1 << 7 | ads_Measure[ads_CurrentIdx] << 4 | ads_Gain[ads_CurrentIdx] << 1 | 1  ) ) ;
-    dataToWrite[2] = ( ads_Rate[ads_CurrentIdx] << 5 | 0B11 );
+    dataToWrite[1] = (( 1 << 7 | ads_Measure[ads_idx][ads_CurrentIdx] << 4 | ads_Gain[ads_idx][ads_CurrentIdx] << 1 | 1  ) ) ;
+    dataToWrite[2] = ( ads_Rate[ads_idx][ads_CurrentIdx] << 5 | 0B11 );
         // bit 15 says that a conversion is requested, bit 8 says on shot mode, bits 0 and 1 = 11 says comparator is disabled.
     
     if (i2c_write_blocking (i2c1 , ads_Addr , &dataToWrite[0] , 3 , false) == PICO_ERROR_GENERIC ) I2CErrorCodeAds1115 = -1; // -1 shows an error

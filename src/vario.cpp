@@ -48,11 +48,13 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   //  cnt--;
   //}  
   #define DIFFERENCE_ALTITUDE_MAX 200000 // in cm * 100
-  // check that the new value is quite similat to the previous one (avoid glitch)
+  // check that the new value is quite similar to the previous one (avoid glitch)
+  /*
   if ( abs(prev_baro_altitude - baro_altitude) > DIFFERENCE_ALTITUDE_MAX) {
     prev_baro_altitude = baro_altitude;
     return;
   }
+  */
   prev_baro_altitude = baro_altitude;
   // smooth altitude
   altitude += 0.04 * ( baro_altitude - altitude) ;

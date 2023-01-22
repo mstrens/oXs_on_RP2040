@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include "tools.h"
 #include "param.h"
+#include "hardware/watchdog.h"
 
 // datasheet page 10
 #define MS5611_CMD_READ_ADC       0x00
@@ -81,11 +82,18 @@ void MS5611::begin()  // return true when baro exist
   {
       uint8_t readBuffer[2];
       _calibrationData[reg] = 0;
-      rxdata = MS5611_CMD_READ_PROM + reg * 2 ; // this is the address to be read
-      if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-      sleep_ms(1);
-      if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC)  return ;
-      _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );     
+      rxdata = MS5611_CMD_READ_PROM + (reg <<1) ; // this is the address to be read
+      if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) {
+        //printf("error write calibration\n");
+        return ; // command to get access to one register '0xA0 + 2* offset
+    //  sleep_ms(1);
+      }
+      if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC)  {
+        //printf("error read calibration\n");
+        return ;
+      }  
+      _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );
+      //printf("cal=%x\n",_calibrationData[reg]) ;    
   }
   if (ms56xx_crc(_calibrationData) != 0) return;  // Check the crc
 
@@ -98,7 +106,7 @@ void MS5611::command(const uint8_t command) // send a command. return 0 if succe
   uint8_t cmd = command;
   _result = 0 ;
   if ( i2c_write_blocking (i2c1 , _address, &cmd , 1 , false) == PICO_ERROR_GENERIC) { // i2c_write return the number of byte written or an error code
-//    printf("error write cmd\n");
+     //printf("error write cmd\n");
     _result = -1 ;  // Error
   } 
 }
@@ -115,7 +123,7 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
       adcValue = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
       _result = 0 ; // no error
     } else {
-//        printf("read error\n");
+        printf("read error\n");
     }
   }
   if (_result ) adcValue = 0; //  
@@ -173,25 +181,28 @@ int MS5611::getAltitude() // Try to get a new pressure ;
 }
 
 void MS5611::calculateAltitude(){
-  //printf("cal alt\n");
+  //printf("+\n");
+  //printf("testInit=%d\n", testInit);
   if (_D2Prev == 0)
   {
     _D2Prev = _D2;
     _prevAltMicros = _lastTempRequest ;
-    //printf("D2= %" PRIu32 "\n",_D2) ;  
+     
   }
-
+  //printf("%" PRIu32 " %" PRIu32 "\n",_D1,_D2) ;
+  //printf("%x  %x %x %x %x %x\n",_calibrationData[1], _calibrationData[2], _calibrationData[3], _calibrationData[4] ,_calibrationData[5] ,_calibrationData[6]  ); 
   //      _D2 = 0X825AF8;
   //      _D2Prev = _D2;
   //      _D1 = 0X80777E;  
-  int64_t dT = ((_D2+ _D2Prev) >> 1 ) - ((long)_calibrationData[5] << 8);
-  int32_t TEMP = (2000 + (((int64_t)dT * (int64_t)_calibrationData[6]) >> 23)) / (float) 1.0 ;
+  int64_t dT = ((int64_t)((_D2+ _D2Prev) >> 1 )) - (( (uint64_t)_calibrationData[5]) << 8) ;
+  int32_t TEMP = 2000 + ((dT * ((int64_t)_calibrationData[6])) >> 23)  ;
   temperature = TEMP;
   _D2Prev = _D2 ;
   int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((_calibrationData[4] * dT) >> 7);
   int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((_calibrationData[3] * dT) >> 8);
-  int64_t rawPressure= (((((((int64_t) _D1) * (int64_t) SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
-
+  int64_t rawPressure= (((((((int64_t) _D1) * SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
+  
+  //printf("%d\n", temperature);
   //#define DEBUG_MS5611_ALT 
   #ifdef DEBUG_MS5611_ALT  
   static bool first = true ;
@@ -222,7 +233,7 @@ void MS5611::calculateAltitude(){
   //printf("D1: %" PRIi32 "   ", _D1);
   //printf("D2: %" PRIi32 "   ", _D2);
   //printf("temp: %" PRIi32 "   ", TEMP);
-  float rp = rawPressure / 1000000.0;  
+  float rp = rawPressure / 1000000.0;
   if ( rawPressure > 954610000) {
     altitude = ( 1013250000 - rawPressure ) * 0.08526603 ; // = 500 / (101325 - 95461)  // returned value 1234567 means 123,4567 m (temp is fixed to 15 degree celcius)
     //printf("-");
@@ -244,7 +255,7 @@ void MS5611::calculateAltitude(){
     altitude = 40000000 + ( 616450000 - rawPressure ) *  0.127811861 ;
   } else {    altitude = 45000000 + ( 577330000 - rawPressure ) *  0.134843581 ;
   }
-  //printf("raw p: %f",rp);
+  //printf("raw %f\n",rp);
   //printf("  alt:  %" PRId32 "\n"   ,  altitude/10000);
   //printf("  alt:  %f\n"   ,  ((float) altitude)/10000);
   //printf("calib: %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16  " %" PRIu16 "\n" , 

@@ -52,29 +52,9 @@ static const uint8_t ADS1115_POINTER_CONFIGURATION = 0x01;
 static const uint8_t ADS1115_POINTER_LO_THRESH = 0x02;
 static const uint8_t ADS1115_POINTER_HI_THRESH = 0x03;
 
-
-//const uint8_t ads_Measure[4] ;
-//const uint8_t ads_Gain[4] ;
-//const uint8_t ads_Rate[4] ;
-//const float ads_Offset[4] ;
-//const float ads_Scale[4] ;
-//const uint8_t ads_MaxCount[4] ;
-  
-
-//uint32_t ads_MilliAskConv  ; 
-//uint8_t ads_Addr;
-//uint8_t ads_CurrentIdx ;
-//uint8_t I2CErrorCodeAds1115 ; 
-//int32_t ads_SumOfConv[4] ; // summarise all conversion in order to calculate average 
-//uint8_t ads_Counter[4]  ;
-//  extern struct ONE_MEASUREMENT ads_Conv[4] ; //averaged conversion including offset and scale
-//  extern uint8_t ads_Last_Conv_Idx ;
-
-  
-
 class ADS1115 {
 public:
-  ADS1115(uint8_t addr) ;
+  ADS1115(uint8_t addr, uint8_t idx) ;
   
   void begin();
   bool  readSensor( void ); //return true if an averaged has just been calculated  
@@ -92,15 +72,9 @@ public:
 //#endif
   
 private: 
-const uint8_t ads_Measure[4] = {ADS_MEASURE} ; //  how to configure the multiplexer
-const uint8_t ads_Gain[4] = { ADS_FULL_SCALE_VOLT }; //  how to configure the programmable gain amplifier
-const uint8_t ads_Rate[4] = { ADS_RATE }; // how to configure the time of conversion
-const float ads_Offset[4] = { ADS_OFFSET };
-const float ads_Scale[4] = { ADS_SCALE };
-const uint8_t ads_MaxCount[4] = { ADS_AVERAGING_ON } ; //number of conversion before averaging
-  
 uint32_t ads_MilliAskConv  ; 
 uint8_t ads_Addr;
+uint8_t ads_idx ;         // make the difference between ads 1 and 2 
 uint8_t ads_CurrentIdx = 0;
 uint8_t I2CErrorCodeAds1115 ; 
 int32_t ads_SumOfConv[4] ; // summarise all conversion in order to calculate average 
@@ -112,4 +86,11 @@ uint8_t ads_Last_Conv_Idx ;
 
 }; // end class OXS_ADS1115
 
+const uint8_t ads_Measure[2][4] = { { ADS1_MEASURE} , {ADS2_MEASURE } }; //  how to configure the multiplexer
+const uint8_t ads_Gain[2][4] = { { ADS1_FULL_SCALE_VOLT } , { ADS2_FULL_SCALE_VOLT } }; //  how to configure the programmable gain amplifier
+const uint8_t ads_Rate[2][4] = { { ADS1_RATE } , { ADS2_RATE } }; // how to configure the time of conversion
+const float ads_Offset[2][4] =  { { ADS1_OFFSET } , { ADS2_OFFSET } };
+const float ads_Scale[2][4] =  { { ADS1_SCALE } , { ADS2_SCALE } };
+const uint8_t ads_MaxCount[2][4] = { { ADS1_AVERAGING_ON } , { ADS2_AVERAGING_ON } }; //number of conversion before averaging
+  
 

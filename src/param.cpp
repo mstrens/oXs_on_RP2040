@@ -6,6 +6,7 @@
 #include "MS5611.h"
 #include "SPL06.h"
 #include "BMP280.h"
+#include "ads1115.h"
 #include <string.h>
 #include <ctype.h>
 #include "gps.h"
@@ -57,6 +58,10 @@ extern bool configIsValid;
 extern MS5611 baro1 ;
 extern SPL06  baro2 ;
 extern BMP280 baro3 ; 
+
+extern ADS1115 adc1 ;
+extern ADS1115 adc2 ;    
+
 
 void handleUSBCmd(void){
     int c;
@@ -627,7 +632,30 @@ void printConfig(){
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else {
         printf("Baro sensor is not detected\n")  ;
-    }   
+    } 
+    if (adc1.adsInstalled) {
+        printf("First analog to digital sensor is detected using ads1115\n")  ;
+        printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[0][0], ads_Measure[0][1], ads_Measure[0][2], ads_Measure[0][3]) ;
+        printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[0][0], ads_Gain[0][1], ads_Gain[0][2], ads_Gain[0][3]) ;
+        printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[0][0], ads_Rate[0][1], ads_Rate[0][2], ads_Rate[0][3]) ;
+        printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[0][0], ads_Offset[0][1], ads_Offset[0][2], ads_Offset[0][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Offset[0][0], ads_Offset[0][1], ads_Offset[0][2], ads_Offset[0][3]) ;
+        printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[0][0], ads_MaxCount[0][1], ads_MaxCount[0][2], ads_MaxCount[0][3]) ;
+    } else {
+        printf("First analog to digital sensor is not detected\n")  ;
+    }
+    if (adc2.adsInstalled) {
+        printf("Second analog to digital sensor is detected using ads1115\n")  ;
+        printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[1][0], ads_Measure[1][1], ads_Measure[1][2], ads_Measure[1][3]) ;
+        printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[1][0], ads_Gain[1][1], ads_Gain[1][2], ads_Gain[1][3]) ;
+        printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[1][0], ads_Rate[1][1], ads_Rate[1][2], ads_Rate[1][3]) ;
+        printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[1][0], ads_Offset[1][1], ads_Offset[1][2], ads_Offset[1][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Offset[1][0], ads_Offset[1][1], ads_Offset[1][2], ads_Offset[1][3]) ;
+        printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[1][0], ads_MaxCount[1][1], ads_MaxCount[1][2], ads_MaxCount[1][3]) ;
+    }  else {
+        printf("Second analog to digital sensor is not detected\n")  ;
+    } 
+
     if (config.gpsType == 'U'){
             printf("Foreseen GPS type is Ublox  :")  ;
         } else if (config.gpsType == 'C'){
