@@ -184,7 +184,7 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
     fillBufferI16( (int16_t) fields[VSPEED].value ) ;  // cm/sec
-    printf("vspeed=%d\n", ((int16_t) fields[VSPEED].value) );
+    //printf("vspeed=%d\n", ((int16_t) fields[VSPEED].value) );
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;

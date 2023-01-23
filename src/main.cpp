@@ -26,6 +26,10 @@
 #include "rpm.h"
 #include "EMFButton.h"
 #include "ads1115.h"
+#include "mpu.h"
+
+
+
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
@@ -95,6 +99,9 @@ VARIO vario1;
 //queue_t gpsQueue ; // queue is used to transfer the data from the uart0 used by GPS
 GPS gps;
 
+// objet to manage the mpu6050
+MPU mpu(1);
+
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 
 EMFButton btn (3, 0); // button object will be associated to the boot button of rp2040; requires a special function to get the state (see tool.cpp)
@@ -141,6 +148,8 @@ void getSensors(void){
     adc2.readSensor();  
   } 
   
+  mpu.getAccZWorld();
+
   gps.readGps();
   readRpm();
 }
@@ -202,14 +211,20 @@ void setup() {
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
-  uint16_t counter = 0;                      // after an upload, watchdog_cause_reboot is true.
+  sleep_ms(500);
+  uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
-  while ( (!tud_cdc_connected()) && (counter--)) { 
-    sleep_ms(200); 
+  //while ( (!tud_cdc_connected()) && (counter--)) { 
+  while ( (!tud_cdc_connected()) ) { 
+  
+    sleep_ms(200);
+    watchdog_enable(1500, 0); 
     toggleRgb();
     //watchdog_update();
     }
   #endif
+     
+  
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
@@ -226,6 +241,7 @@ void setup() {
       watchdog_update();
       voltage.begin();
       setupI2c();      // setup I2C
+//i2cScan();
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
       watchdog_update();
       baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
@@ -234,6 +250,8 @@ void setup() {
       watchdog_update();
       adc1.begin() ; 
       adc2.begin() ; 
+      //printf("testing\n");
+      mpu.begin();  
       
       gps.setupGps();  //use a Pio
       watchdog_update();
@@ -273,6 +291,11 @@ void setup() {
 void loop() {
   //debugBootButton();
   watchdog_update();
+    if( configIsValid ) {
+        printf("+\n") ; 
+    } else { 
+        printf("-\n") ;
+    }
   if (configIsValid){
       getSensors();
       mergeSeveralSensors();

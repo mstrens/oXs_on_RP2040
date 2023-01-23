@@ -75,7 +75,6 @@ private:
   uint32_t _lastConversionRequest = 0;
   uint32_t _lastTempRequest = 0;
   uint32_t _D2Prev;
-  uint32_t testInit;
 };
 
 

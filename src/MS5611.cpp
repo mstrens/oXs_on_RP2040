@@ -68,7 +68,6 @@ void MS5611::begin()  // return true when baro exist
   baroInstalled = false;
   if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
   uint8_t rxdata;
-  //i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) ;
   rxdata = MS5611_CMD_RESET ;
   //printf("before baro reset\n");
   if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) {// ask for a reset
@@ -80,6 +79,7 @@ void MS5611::begin()  // return true when baro exist
   // read factory calibrations from EEPROM.
   for (uint8_t reg = 0; reg < 8; reg++)
   {
+      //sleep_ms(1000);watchdog_enable(1500, 0);sleep_ms(1000);watchdog_enable(1500, 0);
       uint8_t readBuffer[2];
       _calibrationData[reg] = 0;
       rxdata = MS5611_CMD_READ_PROM + (reg <<1) ; // this is the address to be read
@@ -96,7 +96,11 @@ void MS5611::begin()  // return true when baro exist
       //printf("cal=%x\n",_calibrationData[reg]) ;    
   }
   if (ms56xx_crc(_calibrationData) != 0) return;  // Check the crc
-
+  watchdog_enable(1500, 0);
+  rxdata = MS5611_CMD_READ_PROM + 0 ; // this is the address to be read
+  //printf("write i2c %d\n" ,  i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) );
+  //printf("readI2C baro1 %d\n",i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) );
+  //printf("generic %d\n",PICO_ERROR_GENERIC );  
   baroInstalled = true; // if we reach this point, baro is installed (and calibration is loaded)
 }
 
