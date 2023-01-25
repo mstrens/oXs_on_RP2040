@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include "tools.h"
 #include "pico/double.h"
+#include "param.h"
 
 #ifdef DEBUG
   //#define DEBUGADS1115SCAN
@@ -22,6 +23,9 @@
 //extern unsigned long micros( void ) ;
 //extern unsigned long millis( void ) ;
 //extern void delay(unsigned long ms) ;
+
+extern CONFIG config;
+
 
 
 ADS1115::ADS1115(uint8_t addr, uint8_t idx)
@@ -47,6 +51,9 @@ void ADS1115::begin() {
 #endif            
 */  
   adsInstalled = false;
+  if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+  
+  
   ads_requestNextConv() ; // Write next config and ask for conversion
   if (I2CErrorCodeAds1115 == 0) adsInstalled = true;  
 #ifdef DEBUG  
@@ -63,6 +70,8 @@ void ADS1115::begin() {
 /* readSensor - Read ADS115                                                 */
 /*********************    *******************************************************/
 bool ADS1115::readSensor() {  // return true when there is a new average data to calculate
+    if ( ! adsInstalled) return false;  
+  
     if ( ( millis() - ads_MilliAskConv ) >  (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 1) )   { // when delay of conversion expires (NB delay is 137 msec when ads_rate = 0, and goes down up to 3ms then is divided by 2 for each increase ) 
         if( I2CErrorCodeAds1115 == 0 ) { // if there is no error on previous I2C request for a conversion
             uint8_t adsReg = 0X0; // 0X0 = adress of conversion register

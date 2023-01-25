@@ -5,6 +5,8 @@
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "ws2812.pio.h"
+#include "hardware/watchdog.h"
+
 
 
 #include "ws2812.h"
@@ -62,4 +64,16 @@ void toggleRgb(){
     } else {
         setRgbOn();
     }    
+}
+
+void blinkRgb(uint8_t red , uint8_t green , uint8_t blue){
+    setRgbColor(red,green,blue);
+    while(1){
+        setRgbOn();
+        watchdog_update();
+        sleep_ms(500);
+        setRgbOff();
+        watchdog_update();
+        sleep_ms(500);
+    }       
 }

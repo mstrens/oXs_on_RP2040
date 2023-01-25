@@ -119,3 +119,9 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)();
 
 void setupListOfFields();
 
+void enlapsedTime(uint8_t idx);
+
+
+void startTimerUs(uint8_t idx); 
+
+void getTimerUs(uint8_t idx);

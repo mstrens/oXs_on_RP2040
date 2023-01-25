@@ -218,7 +218,7 @@ const unsigned char dmpMemory[MPU6050_DMP_CODE_SIZE] = {
 0xC1, 0xC3, 0xD8, 0xB1, 0xB9, 0xF3, 0x8B, 0xA3, 0x91, 0xB6, 0x09, 0xB4, 0xD9, 0xAB, 0xDE, 0xB0,
 0x87, 0x9C, 0xB9, 0xA3, 0xDD, 0xF1, 0xB3, 0x8B, 0x8B, 0x8B, 0x8B, 0x8B, 0xB0, 0x87, 0x20, 0x28,
 0x30, 0x38, 0xB2, 0x8B, 0xB6, 0x9B, 0xF2, 0xA3, 0xC0, 0xC8, 0xC2, 0xC4, 0xCC, 0xC6, 0xA3, 0xA3,
-0xA3, 0xF1, 0xB0, 0x87, 0xB5, 0x9A, 0xD8, 0xF3, 0x9B, 0xA3, 0xA3, 0xDC, 0xBA, 0xAC, 0xDF, 0xB9,
+0xA3, 0xF1, 0xB0, 0x87, 0xB5, 0x9A, 0xD8, 0xF3, 0x9B, 0xA3, 0xA3, 0xDC, 0xBA, 0xAC, 0xDF, 0xB9,// ????D8 changed by mstrens to 20 to avoid interrupt at 200hz when tap.
 0xA3, 0xFE, 0xF2, 0xAB, 0xC4, 0xAA, 0xF1, 0xDF, 0xDF, 0xBB, 0xAF, 0xDF, 0xDF, 0xA3, 0xA3, 0xA3,
 0xD8, 0xD8, 0xD8, 0xBB, 0xB3, 0xB7, 0xF1, 0xAA, 0xF9, 0xDA, 0xFF, 0xD9, 0x80, 0x9A, 0xAA, 0x28,
 0xB4, 0x80, 0x98, 0xA7, 0x20, 0xB7, 0x97, 0x87, 0xA8, 0x66, 0x88, 0xF0, 0x79, 0x51, 0xF1, 0x90,
@@ -356,10 +356,10 @@ uint8_t MPU6050::dmpGetQuaternion(Quaternion *q, const uint8_t* packet) {
     int16_t qI[4];
     uint8_t status = dmpGetQuaternion(qI, packet);
     if (status == 0) {
-        q -> w = (float)qI[0] / 16384.0f;
-        q -> x = (float)qI[1] / 16384.0f;
-        q -> y = (float)qI[2] / 16384.0f;
-        q -> z = (float)qI[3] / 16384.0f;
+        q -> w = ((float)qI[0]) / 16384.0f;
+        q -> x = ((float)qI[1]) / 16384.0f;
+        q -> y = ((float)qI[2]) / 16384.0f;
+        q -> z = ((float)qI[3]) / 16384.0f;
         return 0;
     }
     return status; // int16 return value, indicates error if this line is reached
@@ -393,10 +393,15 @@ uint8_t MPU6050::dmpGetGyro(VectorInt16 *v, const uint8_t* packet) {
 // uint8_t MPU6050::dmpSetLinearAccelFilterCoefficient(float coef);
 // uint8_t MPU6050::dmpGetLinearAccel(long *data, const uint8_t* packet);
 uint8_t MPU6050::dmpGetLinearAccel(VectorInt16 *v, VectorInt16 *vRaw, VectorFloat *gravity) {
+    // Mstrens think that it is not 8192 but 16384
     // get rid of the gravity component (+1g = +8192 in standard DMP FIFO packet, sensitivity is 2g)
-    v -> x = vRaw -> x - gravity -> x*8192;
-    v -> y = vRaw -> y - gravity -> y*8192;
-    v -> z = vRaw -> z - gravity -> z*8192;
+    //v -> x = vRaw -> x - gravity -> x*8192;
+    //v -> y = vRaw -> y - gravity -> y*8192;
+    //v -> z = vRaw -> z - gravity -> z*8192;
+    v -> x = vRaw -> x - (int16_t) (gravity -> x*16384.0f);
+    v -> y = vRaw -> y - (int16_t) (gravity -> y*16384.0f);
+    v -> z = vRaw -> z - (int16_t) (gravity -> z*16384.0f);
+    
     return 0;
 }
 // uint8_t MPU6050::dmpGetLinearAccelInWorld(long *data, const uint8_t* packet);
@@ -416,10 +421,10 @@ uint8_t MPU6050::dmpGetGravity(int16_t *data, const uint8_t* packet) {
     /* +1g corresponds to +8192, sensitivity is 2g. */
     int16_t qI[4];
     uint8_t status = dmpGetQuaternion(qI, packet);
-    data[0] = ((int32_t)qI[1] * qI[3] - (int32_t)qI[0] * qI[2]) / 16384;
-    data[1] = ((int32_t)qI[0] * qI[1] + (int32_t)qI[2] * qI[3]) / 16384;
-    data[2] = ((int32_t)qI[0] * qI[0] - (int32_t)qI[1] * qI[1]
-	       - (int32_t)qI[2] * qI[2] + (int32_t)qI[3] * qI[3]) / (2 * 16384);
+    data[0] = ( ((int32_t)qI[1]) * ((int32_t)qI[3]) - ((int32_t)qI[0]) * ((int32_t)qI[2]) ) / 16384;
+    data[1] = ( ((int32_t)qI[0]) * ((int32_t)qI[1]) + ((int32_t)qI[2]) * ((int32_t)qI[3]) ) / 16384;
+    data[2] = ( ((int32_t)qI[0]) * ((int32_t)qI[0]) - ((int32_t)qI[1]) * ((int32_t)qI[1])
+	       - ((int32_t)qI[2]) * ((int32_t)qI[2]) + ((int32_t)qI[3]) * ((int32_t)qI[3]) ) / (2 * 16384);
     return status;
 }
 

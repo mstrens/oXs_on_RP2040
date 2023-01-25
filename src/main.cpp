@@ -1,7 +1,7 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
 #include "pico/util/queue.h"
-#include <config.h>
+#include "config.h"
 #include "hardware/i2c.h"
 #include "MS5611.h"
 #include "SPL06.h"
@@ -117,7 +117,21 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 uint32_t lastBlinkMillis;
 
 void setupI2c(){
-    if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+    if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
+    // send 10 SCL clock to force sensor to release sda
+    gpio_init(config.pinSda);
+    gpio_init(config.pinScl);
+    gpio_set_dir(config.pinSda, GPIO_IN);
+    gpio_set_dir(config.pinScl, GPIO_OUT);
+    gpio_pull_up(config.pinSda);
+    gpio_pull_up(config.pinScl);
+    for (uint8_t i=0; i<9; i++){
+        gpio_put(config.pinScl, 0);
+        sleep_us(5);
+        gpio_put(config.pinScl, 1);
+        sleep_us(5);
+    }
+    // initialize I2C     
     i2c_init( i2c1, 400 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);
     gpio_set_function(config.pinScl, GPIO_FUNC_I2C);
@@ -148,8 +162,9 @@ void getSensors(void){
     adc2.readSensor();  
   } 
   
-  mpu.getAccZWorld();
-
+  if (mpu.mpuInstalled) {
+    mpu.getAccZWorld();
+  }  
   gps.readGps();
   readRpm();
 }
@@ -211,19 +226,19 @@ void setup() {
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
-  sleep_ms(500);
+  sleep_ms(1500);
   uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
-  //while ( (!tud_cdc_connected()) && (counter--)) { 
-  while ( (!tud_cdc_connected()) ) { 
+  while ( (!tud_cdc_connected()) && (counter--)) { 
+  //while ( (!tud_cdc_connected()) ) { 
   
     sleep_ms(200);
-    watchdog_enable(1500, 0); 
+    //watchdog_enable(1500, 0); 
     toggleRgb();
     //watchdog_update();
     }
   #endif
-     
+  printf("setup start\n");   
   
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
@@ -235,23 +250,27 @@ void setup() {
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   watchdog_update();
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
+  
   watchdog_update();
   if (configIsValid){ // continue with setup only if config is valid
       setupListOfFields(); // initialise the list of fields being used
       watchdog_update();
-      voltage.begin();
+      voltage.begin();      
       setupI2c();      // setup I2C
-//i2cScan();
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
       watchdog_update();
       baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
       watchdog_update();
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       watchdog_update();
+
       adc1.begin() ; 
       adc2.begin() ; 
       //printf("testing\n");
-      mpu.begin();  
+
+      mpu.begin(); 
+      if (!mpu.mpuInstalled) printf("mpu not OK\n"); 
+//blinkRgb(0,10,0);
       
       gps.setupGps();  //use a Pio
       watchdog_update();
@@ -283,19 +302,19 @@ void setup() {
   } else {
     configIsValid = false;
   }
+  
   printConfig(); // config is not valid
   setRgbColorOn(10,0,0); // set color on red (= no signal)
+  //while (1) {
+  //  watchdog_update();
+  //  sleep_ms(50);
+  //  printf("+\n");
+  //}
 }
 
 
 void loop() {
   //debugBootButton();
-  watchdog_update();
-    if( configIsValid ) {
-        printf("+\n") ; 
-    } else { 
-        printf("-\n") ;
-    }
   if (configIsValid){
       getSensors();
       mergeSeveralSensors();
@@ -324,8 +343,9 @@ void loop() {
       watchdog_update();
       updatePWM();
             //updatePioPwm();
-      watchdog_update();
+      
   }
+  watchdog_update();
   //if (tud_cdc_connected()) {
   handleUSBCmd();  // process the commands received from the USB
   tud_task();      // I suppose that this function has to be called periodicaly

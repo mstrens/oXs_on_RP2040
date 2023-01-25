@@ -1,6 +1,7 @@
 #include "tools.h"
 #include "pico/stdlib.h"
 #include "config.h"
+#include "stdio.h"
 
 
 
@@ -68,8 +69,25 @@ void waitUs(uint32_t delayUs){
     while (( micros() - nowUs) < delayUs) {micros();}
 }
 
+void enlapsedTime(uint8_t idx){
+    static uint32_t prevTime[10] = {0};
+    uint32_t currTime;
+    if (idx >= sizeof(prevTime)) return ;
+    currTime = micros() ;
+    printf("Eus%d=%d\n", idx , currTime-prevTime[idx]);
+    prevTime[idx]=currTime;
+}
 
+uint32_t startAtUs[10] = {0};
+void startTimerUs(uint8_t idx){
+    if (idx >= sizeof(startAtUs)) return ;
+    startAtUs[idx] = micros() ;
+}
 
+void getTimerUs(uint8_t idx){
+    if (idx >= sizeof(startAtUs)) return ;
+    printf("FSus%d=%d\n", idx , micros()-startAtUs[idx]);
+}
 
 
 

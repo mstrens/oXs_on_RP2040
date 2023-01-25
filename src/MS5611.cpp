@@ -96,8 +96,8 @@ void MS5611::begin()  // return true when baro exist
       //printf("cal=%x\n",_calibrationData[reg]) ;    
   }
   if (ms56xx_crc(_calibrationData) != 0) return;  // Check the crc
-  watchdog_enable(1500, 0);
-  rxdata = MS5611_CMD_READ_PROM + 0 ; // this is the address to be read
+  //watchdog_enable(1500, 0);
+  //rxdata = MS5611_CMD_READ_PROM + 0 ; // this is the address to be read
   //printf("write i2c %d\n" ,  i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) );
   //printf("readI2C baro1 %d\n",i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) );
   //printf("generic %d\n",PICO_ERROR_GENERIC );  
@@ -202,8 +202,8 @@ void MS5611::calculateAltitude(){
   int32_t TEMP = 2000 + ((dT * ((int64_t)_calibrationData[6])) >> 23)  ;
   temperature = TEMP;
   _D2Prev = _D2 ;
-  int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((_calibrationData[4] * dT) >> 7);
-  int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((_calibrationData[3] * dT) >> 8);
+  int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((((int64_t)_calibrationData[4]) * dT) >> 7);
+  int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((((int64_t)_calibrationData[3]) * dT) >> 8);
   int64_t rawPressure= (((((((int64_t) _D1) * SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
   
   //printf("%d\n", temperature);

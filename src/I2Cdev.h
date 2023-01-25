@@ -38,7 +38,7 @@ THE SOFTWARE.
 #include "hardware/i2c.h"
 
 // 1000ms default read timeout (modify with "I2Cdev::readTimeout = [ms];")
-#define I2CDEV_DEFAULT_READ_TIMEOUT     ((uint32_t)1000000) // RP2040 I2C functions with timeout use microseconds so we have to multiply by 10^3
+#define I2CDEV_DEFAULT_READ_TIMEOUT     ((uint32_t)1) // RP2040 I2C functions with timeout use microseconds so we have to multiply by 10^3
 
 class I2Cdev {
     public:

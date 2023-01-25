@@ -500,8 +500,11 @@ void processCmd(){
         }    
     }
     if (updateConfig) {
-        saveConfig();  
+        saveConfig();
+        printf("config has been saved\n");  
         printf("Device will reboot\n\n");
+        watchdog_enable(1500,false);
+        sleep_ms(1000);
         watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
     }    
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
@@ -609,7 +612,7 @@ void printConfig(){
         } else if (config.protocol == 'J'){
             printf("\nProtocol is Jeti (Ex)\n")  ;    
         } else if (config.protocol == 'H'){
-            printf("\nProtocol is Hott (Ex)\n")  ;    
+            printf("\nProtocol is Hott\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
