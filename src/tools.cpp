@@ -2,6 +2,10 @@
 #include "pico/stdlib.h"
 #include "config.h"
 #include "stdio.h"
+#include "pico/util/queue.h"
+#include "pico/multicore.h"
+
+extern queue_t qSensorData; 
 
 
 
@@ -22,7 +26,8 @@
 
 bool __no_inline_not_in_flash_func(get_bootsel_button)() {
     const uint CS_PIN_INDEX = 1;
-
+    //startTimerUs(0);
+    multicore_lockout_start_blocking();
     // Must disable interrupts, as interrupt handlers may be in flash, and we
     // are about to temporarily disable flash access!
     uint32_t flags = save_and_disable_interrupts();
@@ -46,7 +51,8 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
                     IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
 
     restore_interrupts(flags);
-
+    multicore_lockout_end_blocking();
+    //getTimerUs(0);
     return button_state;
 }
 
@@ -89,7 +95,13 @@ void getTimerUs(uint8_t idx){
     printf("FSus%d=%d\n", idx , micros()-startAtUs[idx]);
 }
 
-
+void sent2Core0( uint8_t fieldType, int32_t value){
+    queue_entry_t entry;
+    entry.type = fieldType;
+    entry.data = value ;
+    queue_add_blocking(&qSensorData, &entry);
+    //printf("sending %d = %10.0f\n", entry.type , (float) entry.data);
+}
 
 
 field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport

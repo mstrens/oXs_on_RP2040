@@ -117,7 +117,16 @@ void waitUs(uint32_t delayUs);
 
 bool __no_inline_not_in_flash_func(get_bootsel_button)();
 
+typedef struct
+{
+    uint8_t type;
+    int32_t data;
+} queue_entry_t;
+
+void sent2Core0( uint8_t fieldType, int32_t value);
+
 void setupListOfFields();
+
 
 void enlapsedTime(uint8_t idx);
 

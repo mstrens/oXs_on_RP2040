@@ -53,8 +53,12 @@ void VOLTAGE::getVoltages(void){
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
                 if ( config.pinVolt[cntInit] != 255) {    
-                    fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
-                    if (mVoltPerStep[cntInit] !=0) fields[cntInit + MVOLT].available = true ;
+                    //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
+                    if (mVoltPerStep[cntInit] !=0) {
+                        sent2Core0( cntInit + MVOLT, ((int32_t) ( ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit])) );
+
+                        //fields[cntInit + MVOLT].available = true ;
+                    }
                     sumVoltage[cntInit] = 0 ;
                     //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);  
                 }    

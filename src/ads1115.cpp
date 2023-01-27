@@ -97,7 +97,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
                         ads_Last_Conv_Idx = ads_CurrentIdx ;
                         #define DEBUG_ADC
                         #ifdef DEBUG_ADC
-                            printf("Adc %i : %d mVolt", ads_idx , ads_Value[ads_CurrentIdx]);
+                            printf("Adc %i : %d mVolt", ads_idx , (int) ads_Value[ads_CurrentIdx]);
                         #endif
                     }
                     ads_requestNextConv() ;

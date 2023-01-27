@@ -16,6 +16,7 @@
 #include  "hardware/sync.h"
 #include "hardware/watchdog.h"
 #include "crsf_out.h"
+#include "pico/multicore.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -213,7 +214,7 @@ void processCmd(){
             updateConfig = true;
         }
     }
-    // change GPS Tx pin
+    // change Sbus out pin
     if ( strcmp("SBUS_OUT", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
@@ -642,7 +643,7 @@ void printConfig(){
         printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[0][0], ads_Gain[0][1], ads_Gain[0][2], ads_Gain[0][3]) ;
         printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[0][0], ads_Rate[0][1], ads_Rate[0][2], ads_Rate[0][3]) ;
         printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[0][0], ads_Offset[0][1], ads_Offset[0][2], ads_Offset[0][3]) ;
-        printf("    Scales: %f , %f , %f ,%f\n", ads_Offset[0][0], ads_Offset[0][1], ads_Offset[0][2], ads_Offset[0][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Scale[0][0], ads_Scale[0][1], ads_Scale[0][2], ads_Scale[0][3]) ;
         printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[0][0], ads_MaxCount[0][1], ads_MaxCount[0][2], ads_MaxCount[0][3]) ;
     } else {
         printf("First analog to digital sensor is not detected\n")  ;
@@ -653,7 +654,7 @@ void printConfig(){
         printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[1][0], ads_Gain[1][1], ads_Gain[1][2], ads_Gain[1][3]) ;
         printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[1][0], ads_Rate[1][1], ads_Rate[1][2], ads_Rate[1][3]) ;
         printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[1][0], ads_Offset[1][1], ads_Offset[1][2], ads_Offset[1][3]) ;
-        printf("    Scales: %f , %f , %f ,%f\n", ads_Offset[1][0], ads_Offset[1][1], ads_Offset[1][2], ads_Offset[1][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Scale[1][0], ads_Scale[1][1], ads_Scale[1][2], ads_Scale[1][3]) ;
         printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[1][0], ads_MaxCount[1][1], ads_MaxCount[1][2], ads_MaxCount[1][3]) ;
     }  else {
         printf("Second analog to digital sensor is not detected\n")  ;
@@ -729,10 +730,12 @@ void saveConfig() {
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing
     watchdog_enable(3000 , true);
+    multicore_lockout_start_blocking();
     uint32_t irqStatus = save_and_disable_interrupts();
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
+    multicore_lockout_end_blocking();
     printf("New config has been saved\n");
     //printConfig(); 
 }

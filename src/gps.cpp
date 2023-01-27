@@ -308,31 +308,31 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
     case MSG_POSLLH:
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsInstalled = true;
-        fields[LONGITUDE].value = _buffer.posllh.longitude;           // in degree with 7 decimals
-        fields[LATITUDE].value = _buffer.posllh.latitude;            // in degree with 7 decimals
-        fields[ALTITUDE].value = _buffer.posllh.altitude_msl / 10;       //alt in mm in converted in cm (sport uses cm)
+        sent2Core0(LONGITUDE, _buffer.posllh.longitude);           // in degree with 7 decimals
+        sent2Core0(LATITUDE, _buffer.posllh.latitude);            // in degree with 7 decimals
+        sent2Core0(ALTITUDE, _buffer.posllh.altitude_msl / 10);       //alt in mm in converted in cm (sport uses cm)
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
             if ( GPS_home_lat == 0 ) { 
-              GPS_home_lat = fields[LATITUDE].value ;  // save home position
-              GPS_home_lon = fields[LONGITUDE].value ;
+              GPS_home_lat = _buffer.posllh.latitude ;  // save home position
+              GPS_home_lon = _buffer.posllh.longitude ;
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
             }
             // Calculate distance
-            float dlat  = (float)(GPS_home_lat - fields[LATITUDE].value);
-            float dlong  = ((float)(GPS_home_lon - fields[LONGITUDE].value)) * GPS_scale ;
+            float dlat  = (float)(GPS_home_lat - _buffer.posllh.latitude);
+            float dlong  = ((float)(GPS_home_lon - _buffer.posllh.longitude)) * GPS_scale ;
             GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
             // calculate bearing
-            int32_t off_x = fields[LONGITUDE].value - GPS_home_lon ;
-            int32_t off_y = (fields[LATITUDE].value - GPS_home_lat) / GPS_scale ;
+            int32_t off_x = _buffer.posllh.longitude - GPS_home_lon ;
+            int32_t off_y = (_buffer.posllh.latitude - GPS_home_lat) / GPS_scale ;
             GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
             if (GPS_bearing < 0) GPS_bearing += 360;
         } else {
             GPS_fix = false;
         }
-        fields[LONGITUDE].available = GPS_fix;           // in degree with 7 decimals
-        fields[LATITUDE].available = GPS_fix;
-        fields[ALTITUDE].available = GPS_fix; 
+        //fields[LONGITUDE].available = GPS_fix;           // in degree with 7 decimals
+        //fields[LATITUDE].available = GPS_fix;
+        //fields[ALTITUDE].available = GPS_fix; 
         new_position = true;
         break;
 //    case MSG_STATUS:                              // !!!!!!!!! I do not see real need of this message because same (and more) data are in SOL, so this message is not activated in init
@@ -345,10 +345,10 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         GPS_fix_type = _buffer.solution.fix_type;
         if (!next_fix)
              GPS_fix = false;
-        fields[NUMSAT].value = _buffer.solution.satellites; 
-        fields[NUMSAT].available = true;
-        if ( _buffer.solution.fix_type == FIX_3D ) fields[NUMSAT].value += 100; // we add 100 when we have a 3d fix (for Ublox)
-        GPS_hdop = _buffer.solution.position_DOP;
+        //fields[NUMSAT].available = true;
+        if ( _buffer.solution.fix_type == FIX_3D ) _buffer.solution.satellites += 100; // we add 100 when we have a 3d fix (for Ublox)
+        sent2Core0(NUMSAT, _buffer.solution.satellites); 
+        //GPS_hdop = _buffer.solution.position_DOP;
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_PVT:                                // this message does not exist in ublox6 (but SOL does not exist in ublox10)
@@ -356,19 +356,22 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         GPS_fix_type = _buffer.pvt.fix_type;
         if (!next_fix)
              GPS_fix = false;
-        fields[NUMSAT].value = _buffer.pvt.satellites; 
-        fields[NUMSAT].available = true;
-        if ( _buffer.pvt.fix_type == FIX_3D ) fields[NUMSAT].value += 100; // we add 100 when we have a 3d fix (for Ublox)
-        GPS_hdop = _buffer.pvt.position_DOP;
+        //fields[NUMSAT].value = _buffer.pvt.satellites; 
+        //fields[NUMSAT].available = true;
+        if ( _buffer.pvt.fix_type == FIX_3D ) _buffer.pvt.satellites += 100; // we add 100 when we have a 3d fix (for Ublox)
+        sent2Core0(NUMSAT, _buffer.pvt.satellites); 
+        //GPS_hdop = _buffer.pvt.position_DOP;
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_VELNED:   
-        fields[GROUNDSPEED].value  = _buffer.velned.speed_3d;  // cm/s
-        fields[GROUNDSPEED].available = GPS_fix ;
-        GPS_speed_2d = _buffer.velned.speed_2d;    // cm/s
-        GPS_speed_2dAvailable = GPS_fix ;
-        fields[HEADING].value = _buffer.velned.heading_2d /1000;     // Heading 2D deg with 5 decimals is reduced to 2 décimals
-        fields[HEADING].available = GPS_fix ;
+        if( GPS_fix) sent2Core0(GROUNDSPEED , _buffer.velned.speed_3d ) ; 
+        //fields[GROUNDSPEED].value  = _buffer.velned.speed_3d;  // cm/s
+        //fields[GROUNDSPEED].available = GPS_fix ;
+        //GPS_speed_2d = _buffer.velned.speed_2d;    // cm/s
+        //GPS_speed_2dAvailable = GPS_fix ;
+        if( GPS_fix) sent2Core0(HEADING , _buffer.velned.heading_2d /1000 ) ; 
+        //fields[HEADING].value = _buffer.velned.heading_2d /1000;     // Heading 2D deg with 5 decimals is reduced to 2 décimals
+        //fields[HEADING].available = GPS_fix ;
         new_speed = true;
         //printf("spd= %f   Head= %f\n", _buffer.velned.speed_3d , _buffer.velned.heading_2d);
         //for (uint8_t i=0 ; i<36; i++){
@@ -477,54 +480,54 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     //    printf(".");
     //}
     gpsInstalled = true;
-    fields[NUMSAT].value = _casicBuffer.nav_pv.numSV;
-    fields[NUMSAT].available = true;
+    sent2Core0(NUMSAT, _casicBuffer.nav_pv.numSV);
+    //fields[NUMSAT].available = true;
     if ( _casicBuffer.nav_pv.velValid >= 6) {
         GPS_speed_2d  = _casicBuffer.nav_pv.speed2D;
         GPS_speed_2dAvailable  = true;
     }    
     if ( _casicBuffer.nav_pv.velValid >= 7) {
-        fields[NUMSAT].value += 100; // add 100 if 3d fix available
-        fields[GROUNDSPEED].value  = _casicBuffer.nav_pv.speed3D * 100; // in ublox = cm/sec, in CASIC float M/sec
-        fields[LONGITUDE].value = _casicBuffer.nav_pv.lon * 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree 
-        fields[LATITUDE].value = _casicBuffer.nav_pv.lat* 10000000;   // in Ublox = degree with 7 decimals, in CASIC float degree
+        sent2Core0(NUMSAT,  _casicBuffer.nav_pv.numSV + 100); // add 100 if 3d fix available
+        sent2Core0(GROUNDSPEED, _casicBuffer.nav_pv.speed3D * 100); // in ublox = cm/sec, in CASIC float M/sec
+        sent2Core0(LONGITUDE, (int32_t) (_casicBuffer.nav_pv.lon * 10000000));   // in Ublox = degree with 7 decimals, in CASIC float degree 
+        sent2Core0(LATITUDE, (int32_t) ( _casicBuffer.nav_pv.lat* 10000000));   // in Ublox = degree with 7 decimals, in CASIC float degree
         if (_casicBuffer.nav_pv.height > 0) {
-            fields[ALTITUDE].value = _casicBuffer.nav_pv.height * 100 ;  // in cm : in Ublox = mm , in CASIC float m
+            sent2Core0(ALTITUDE,  _casicBuffer.nav_pv.height * 100) ;  // in cm : in Ublox = mm , in CASIC float m
         } else {
-            fields[ALTITUDE].value = 0 ;
+            sent2Core0(ALTITUDE, 0) ;
         }
-        fields[HEADING].value = _casicBuffer.nav_pv.heading * 100 ;    // in Ublox = deg with 5 decimals,  in CASIC = float degree
-        fields[GROUNDSPEED].available  = true;
-        fields[LONGITUDE].available = true;           
-        fields[LATITUDE].available = true;
-        fields[ALTITUDE].available = true; 
-        fields[HEADING].available = true;
+        sent2Core0(HEADING, _casicBuffer.nav_pv.heading * 100) ;    // in Ublox = deg with 5 decimals,  in CASIC = float degree
+        //fields[GROUNDSPEED].available  = true;
+        //fields[LONGITUDE].available = true;           
+        //fields[LATITUDE].available = true;
+        //fields[ALTITUDE].available = true; 
+        //fields[HEADING].available = true;
         if ( GPS_home_lat == 0 ) { 
-              GPS_home_lat = fields[LATITUDE].value ;  // save home position
-              GPS_home_lon = fields[LONGITUDE].value ;
+              GPS_home_lat = (int32_t) ( _casicBuffer.nav_pv.lat* 10000000) ;  // save home position
+              GPS_home_lon = (int32_t) (_casicBuffer.nav_pv.lon * 10000000) ;
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
         }
         // Calculate distance
-        float dlat  = (float)(GPS_home_lat - fields[LATITUDE].value);
-        float dlong  = ((float)(GPS_home_lon - fields[LONGITUDE].value)) * GPS_scale ;
+        float dlat  = (float)(GPS_home_lat -  (int32_t)( _casicBuffer.nav_pv.lat* 10000000));
+        float dlong  = ((float)(GPS_home_lon - (int32_t) (_casicBuffer.nav_pv.lon * 10000000))) * GPS_scale ;
         GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
         // calculate bearing
-        int32_t off_x = fields[LONGITUDE].value - GPS_home_lon ;
-        int32_t off_y = (fields[LATITUDE].value - GPS_home_lat) / GPS_scale ;
+        int32_t off_x = (int32_t) (_casicBuffer.nav_pv.lon * 10000000) - GPS_home_lon ;
+        int32_t off_y = ((int32_t)( _casicBuffer.nav_pv.lat* 10000000) - GPS_home_lat) / GPS_scale ;
         GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
         if (GPS_bearing < 0) GPS_bearing += 360;
         return true;
     } else {
-        fields[GROUNDSPEED].value  = 0;        // in cm/sec
-        fields[LONGITUDE].value = 0;           // in degree with 7 decimals
-        fields[LATITUDE].value = 0;            // in degree with 7 decimals
-        fields[ALTITUDE].value = 0 ;    // in mm
-        fields[HEADING].value = 0 ;     // Heading 2D deg with 5 decimals
-        fields[GROUNDSPEED].available  = false;
-        fields[LONGITUDE].available = false;           
-        fields[LATITUDE].available = false;
-        fields[ALTITUDE].available = false; 
-        fields[HEADING].available = false;
+        //fields[GROUNDSPEED].value  = 0;        // in cm/sec
+        //fields[LONGITUDE].value = 0;           // in degree with 7 decimals
+        //fields[LATITUDE].value = 0;            // in degree with 7 decimals
+        //fields[ALTITUDE].value = 0 ;    // in mm
+        //fields[HEADING].value = 0 ;     // Heading 2D deg with 5 decimals
+        //fields[GROUNDSPEED].available  = false;
+        //fields[LONGITUDE].available = false;           
+        //fields[LATITUDE].available = false;
+        //fields[ALTITUDE].available = false; 
+        //fields[HEADING].available = false;
     }
     return false;
 }

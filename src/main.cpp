@@ -1,6 +1,5 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
-#include "pico/util/queue.h"
 #include "config.h"
 #include "hardware/i2c.h"
 #include "MS5611.h"
@@ -27,7 +26,8 @@
 #include "EMFButton.h"
 #include "ads1115.h"
 #include "mpu.h"
-
+#include "pico/multicore.h"
+#include "pico/util/queue.h"
 
 
 
@@ -116,6 +116,12 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 
 uint32_t lastBlinkMillis;
 
+queue_t qSensorData;
+void core1_main(); // prototype of core 1 main function
+
+extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+
+
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
     // send 10 SCL clock to force sensor to release sda
@@ -139,6 +145,20 @@ void setupI2c(){
     gpio_pull_up(config.pinScl); 
 }
 
+void setupSensors(){
+      voltage.begin();      
+      setupI2c();      // setup I2C
+      baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
+      baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
+      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
+      adc1.begin() ; 
+      adc2.begin() ; 
+      //printf("testing\n");
+      mpu.begin(); 
+//blinkRgb(0,10,0);
+      gps.setupGps();  //use a Pio
+}
+
 void getSensors(void){
   voltage.getVoltages();
   if ( baro1.baroInstalled){
@@ -154,17 +174,9 @@ void getSensors(void){
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
   }
-
-  if ( adc1.adsInstalled) {
-    adc1.readSensor();  
-  } 
-  if ( adc2.adsInstalled) {
-    adc2.readSensor();  
-  } 
-  
-  if (mpu.mpuInstalled) {
-    mpu.getAccZWorld();
-  }  
+  adc1.readSensor(); 
+  adc2.readSensor(); 
+  mpu.getAccZWorld();  
   gps.readGps();
   readRpm();
 }
@@ -226,54 +238,28 @@ void setup() {
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
-  sleep_ms(1500);
-  uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
-  if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
+  //sleep_ms(1500);
+  uint16_t counter = 100;                      // after an upload, watchdog_cause_reboot is true.
+  //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
-  
     sleep_ms(200);
-    //watchdog_enable(1500, 0); 
     toggleRgb();
-    //watchdog_update();
     }
   #endif
-  printf("setup start\n");   
-  
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
         printf("Clean boot\n");
         sleep_ms(1000); // wait that GPS is initialized
     }
-  watchdog_enable(1500, 0); // require an update once every 1500 msec
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
-  watchdog_update();
-  setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
-  
-  watchdog_update();
+  setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   if (configIsValid){ // continue with setup only if config is valid
       setupListOfFields(); // initialise the list of fields being used
-      watchdog_update();
-      voltage.begin();      
-      setupI2c();      // setup I2C
-      baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
-      watchdog_update();
-      baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
-      watchdog_update();
-      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
-      watchdog_update();
-
-      adc1.begin() ; 
-      adc2.begin() ; 
-      //printf("testing\n");
-
-      mpu.begin(); 
-      if (!mpu.mpuInstalled) printf("mpu not OK\n"); 
-//blinkRgb(0,10,0);
+      queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
+      multicore_launch_core1(core1_main);// start core1
       
-      gps.setupGps();  //use a Pio
-      watchdog_update();
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
@@ -291,32 +277,36 @@ void setup() {
         setupSbus2In();
         setupHott();
       }
-      watchdog_update();
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
         }
       setupPwm();
-      watchdog_update();
       setupRpm(); // this function perform the setup of pio Rpm
-      watchdog_enable(500, 0); // require an update once every 500 msec
-  } else {
-    configIsValid = false;
-  }
+      watchdog_enable(3500, 0); // require an update once every 500 msec
+  } 
   
   printConfig(); // config is not valid
   setRgbColorOn(10,0,0); // set color on red (= no signal)
-  //while (1) {
-  //  watchdog_update();
-  //  sleep_ms(50);
-  //  printf("+\n");
-  //}
+  
 }
 
+void getSensorsFromCore1(){
+    queue_entry_t entry;
+    //printf("qlevel= %d\n",queue_get_level(&qSensorData));
+    
+    while( !queue_is_empty(&qSensorData)){
+        if ( queue_try_remove(&qSensorData,&entry)){
+            fields[entry.type].value = entry.data;
+            fields[entry.type].available = true ;
+            //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
+        }
+    }
+}
 
 void loop() {
   //debugBootButton();
   if (configIsValid){
-      getSensors();
+      getSensorsFromCore1();
       mergeSeveralSensors();
       watchdog_update();
       if ( config.protocol == 'C'){
@@ -359,7 +349,8 @@ void loop() {
         setRgbOn();  
     }
   }
-  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+
+//  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
   if (( bootButtonState == ARMED) || ( bootButtonState == SAVED)){
     //setRgbColorOn(0, 0, 10); //blue
   } else if ( ledState != prevLedState){
@@ -373,6 +364,22 @@ void loop() {
   //if (get_bootsel_button()) {
   //  printf("p\n");
   //} 
+  //enlapsedTime(0);
+}
+
+// initialisation of core 1 that capture the sensor data
+void setup1(){
+    multicore_lockout_victim_init();
+    setupSensors();    
+}
+// main loop on core 1 in order to read the sensors and send the data to core0
+void loop1(){
+    getSensors();
+}
+
+void core1_main(){
+    setup1();
+    while(1) loop1();
 }
 
 int main(){

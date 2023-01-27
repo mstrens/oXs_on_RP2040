@@ -19,7 +19,8 @@ public:
   int32_t altitudeHighPass;
   int32_t altitude ;
   int32_t intervalSmooth ; // we expect an interval of 20msec between 2 conversions
-  float   climbRateFloat ; 
+  float   climbRateFloat ;
+  float prevClimbRateFloat; 
   float climbRate2AltFloat;
   float abs_deltaClimbRate;
   uint32_t altMillis ;
