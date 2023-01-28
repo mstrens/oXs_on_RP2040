@@ -95,7 +95,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
                         ads_SumOfConv[ads_CurrentIdx] = 0 ;            // reset the sum 
                         ads_Counter[ads_CurrentIdx] = ads_MaxCount[ads_idx][ads_CurrentIdx] ;   // reset the counter to the number of count before averaging
                         ads_Last_Conv_Idx = ads_CurrentIdx ;
-                        #define DEBUG_ADC
+                        //#define DEBUG_ADC
                         #ifdef DEBUG_ADC
                             printf("Adc %i : %d mVolt", ads_idx , (int) ads_Value[ads_CurrentIdx]);
                         #endif

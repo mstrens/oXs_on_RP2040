@@ -238,8 +238,7 @@ void setup() {
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
-  //sleep_ms(1500);
-  uint16_t counter = 100;                      // after an upload, watchdog_cause_reboot is true.
+  uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
@@ -374,6 +373,7 @@ void setup1(){
 }
 // main loop on core 1 in order to read the sensors and send the data to core0
 void loop1(){
+    vario1.newClimbRateAvailable = false ; // reset at each loop (used to say when kalman filter has to run)
     getSensors();
 }
 

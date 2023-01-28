@@ -5,6 +5,7 @@
 #include "KalmanFilter.h"
 #include "MS5611.h"
 #include "vario.h"
+#include "config.h"
 
 extern CONFIG config;
 extern MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
@@ -13,18 +14,23 @@ extern VARIO vario1;
 //Kalman
 KalmanFilter kalman1 ;
 KalmanFilter kalman2 ;
-  float zTrack1 ;
-  float vTrack1 ;
-  float zTrack2 ;
-  float vTrack2 ;
-uint32_t prevKalman; 
+float zTrack1 ;
+float vTrack1 ;
+float zTrack2 ;
+float vTrack2 ;
+float prevVTrack2; // use to check hysteresis.
+float sumAccZ = 0; // used to calculate an average of AccZ
+uint32_t countAccZ=0;
 
-#define USE_MAK //USE_MAK //USE_DMP
+
+#define USE_MAH //USE_MAK //USE_DMP  // USE_MAH
 MPU::MPU(int a)
 {
 }
 
 #ifdef USE_DMP
+
+
 void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
 {
     //mpuInstalled = mpu6050.testConnection(); // true when a MPU6050 is installed
@@ -85,7 +91,18 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     mpu6050.dmpGetLinearAccel(&aaReal, &aa, &gravity);
     //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
     mpu6050.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-    
+    sumAccZ += aaWorld.z;
+    countAccZ++;
+    if (vario1.newClimbRateAvailable){
+        kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+        sumAccZ= 0;
+        countAccZ=0;
+        sent2Core0( VSPEED , (int32_t) vTrack2) ; 
+    //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z - 1000)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+//    kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+    }
+
+
     //printf("aworld: %d,\t %d,\t %d\n", aaWorld.x, aaWorld.y, aaWorld.z);
     //printf("AccZ=%d\n", aaWorld.z);
     
@@ -114,8 +131,6 @@ VectorFloat gravity;          // added by mstrens to calculate Z world acc
 VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
 VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
 
-float sumAccZ = 0;
-uint32_t countAccZ=0;
 
 void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
 {
@@ -334,8 +349,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
     sumAccZ += aaWorld.z;
     countAccZ++;
-    if ( (micros() - prevKalman) > 20000){
-        prevKalman= micros();
+    if (vario1.newClimbRateAvailable){
         kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
         sumAccZ= 0;
         countAccZ=0;
@@ -401,8 +415,6 @@ float Ki = 0.0;
 
 unsigned long now_ms, last_ms = 0; //millis() timers
 
-// print interval
-unsigned long print_ms = 200; //print angles every "print_ms" milliseconds
 float yaw, pitch, roll; //Euler angle output
 
 Quaternion qq;                // quaternion
@@ -410,7 +422,6 @@ VectorInt16 aa;         // [x, y, z]            accel sensor measurements
 VectorFloat gravity;          // added by mstrens to calculate Z world acc
 VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
 VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
-
 
 void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
 {
@@ -594,13 +605,24 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
     GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
 //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-
+    sumAccZ += aaWorld.z;
+    countAccZ++;
+    if (vario1.newClimbRateAvailable){
+        kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+        sumAccZ= 0;
+        countAccZ=0;
+        if ( abs((vTrack2 - prevVTrack2) ) >  VARIOHYSTERESIS ) {
+            prevVTrack2 = vTrack2 ;
+        }    
+        sent2Core0( VSPEED , (int32_t) prevVTrack2) ; 
+    //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z - 1000)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+//    kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+    }
     
     //printf("aworld: %d,\t %d,\t %d\n", aaWorld.x, aaWorld.y, aaWorld.z);
  
     now_ms = millis(); //time to print?
-    if (now_ms - last_ms >= print_ms) {
+    if (now_ms - last_ms >= 500) {
         last_ms = now_ms;
         roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
         pitch = asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
@@ -613,7 +635,9 @@ kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitu
         roll *= 180.0 / PI;
 
         // print angles for serial plotter...
+        #ifdef DEBUG
         printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack2, vario1.climbRateFloat);//  Serial.print("ypr ");
+        #endif
     }
     return false; 
 }

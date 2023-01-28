@@ -46,7 +46,7 @@ public:
   //oneMeasurement_t climbRate;       // in cm /sec = vertical speed
   
   bool switchClimbRateAvailable ; // use to say to the readsensors loop that that a climbrate is available (to select the one being send)  
-  
+  bool newClimbRateAvailable = false; 
   void calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalMicros);
 
 private:

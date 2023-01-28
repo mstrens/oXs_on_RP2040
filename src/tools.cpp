@@ -99,7 +99,7 @@ void sent2Core0( uint8_t fieldType, int32_t value){
     queue_entry_t entry;
     entry.type = fieldType;
     entry.data = value ;
-    queue_add_blocking(&qSensorData, &entry);
+    queue_try_add(&qSensorData, &entry);
     //printf("sending %d = %10.0f\n", entry.type , (float) entry.data);
 }
 

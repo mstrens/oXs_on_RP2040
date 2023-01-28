@@ -78,7 +78,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
       sensitivity = sensitivityMin + ( SENSITIVITY_MAX - sensitivityMin ) * (abs_deltaClimbRate - SENSITIVITY_MIN_AT) / (SENSITIVITY_MAX_AT - SENSITIVITY_MIN_AT) ;
   }
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
-  
+  newClimbRateAvailable = true; 
   //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",
   //   (float)  altitude , (float) altitudeLowPass , (float)  altitudeHighPass, (float) altitudeLowPass -  (float)  altitudeHighPass,   (float) climbRateFloat);
   // update climbRate only if the difference is big enough
@@ -90,6 +90,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
     sent2Core0( VSPEED , (int32_t) prevClimbRateFloat) ; 
   //fields[VSPEED].available=true; // allows SPORT protocol to transmit the value
   }
+
   //printf("altDif= %" PRIi32 "  interval=%" PRIu32 "  climb2= %f  climbS= %f   vspeed=%" PRIi32 "\n",
   //   (altitudeHighPass - altitudeLowPass ) , intervalSmooth , climbRate2AltFloat, climbRateFloat , fields[VSPEED].value);
   
