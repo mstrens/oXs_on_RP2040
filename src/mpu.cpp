@@ -390,7 +390,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
 #define PI 3.1416
 float A_cal[6] = {335.0, 79.0, 1132.0, 1.0, 1.000, 1.0}; // 0..2 offset xyz, 3..5 scale xyz
 float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
-#define gscale ((250./32768.0)*(PI/180.0))  //gyro default 250 LSB per d/s -> rad/s
+float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> rad/s
 
 // ^^^^^^^^^^^^^^^^^^^ VERY VERY IMPORTANT ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

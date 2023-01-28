@@ -17,6 +17,7 @@
 #include "hardware/watchdog.h"
 #include "crsf_out.h"
 #include "pico/multicore.h"
+#include "mpu.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -63,6 +64,7 @@ extern BMP280 baro3 ;
 extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
 
+extern MPU mpu;
 
 void handleUSBCmd(void){
     int c;
@@ -636,7 +638,12 @@ void printConfig(){
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else {
         printf("Baro sensor is not detected\n")  ;
-    } 
+    }
+    if(mpu.mpuInstalled){
+        printf("Acc/Gyro is detected using MP6050\n")  ;
+    } else {
+       printf("Acc/Gyro is not detected\n")  ;     
+    }
     if (adc1.adsInstalled) {
         printf("First analog to digital sensor is detected using ads1115\n")  ;
         printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[0][0], ads_Measure[0][1], ads_Measure[0][2], ads_Measure[0][3]) ;

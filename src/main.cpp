@@ -37,6 +37,9 @@
 //         reserve Volt 2 for current 
 //         Calculate consumed current and allow to reset it using a button          
 //         add switching 8 gpio from one channel
+//         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
+//         fill pitch and roll in telemetry (even for elrs?)
+//         add an option to calibrate MP6050 (probably with a command and saving the values in config)
 
 // Look at file config.h for more details
 //
@@ -295,9 +298,13 @@ void getSensorsFromCore1(){
     
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
-            fields[entry.type].value = entry.data;
-            fields[entry.type].available = true ;
-            //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
+            if (entry.type >= SPORT_TYPES_MAX) {
+                printf("error : invalid type of sensor = %d\n", entry.type);
+            } else {
+                fields[entry.type].value = entry.data;
+                fields[entry.type].available = true ;
+                //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
+            }    
         }
     }
 }
@@ -332,7 +339,6 @@ void loop() {
       watchdog_update();
       updatePWM();
             //updatePioPwm();
-      
   }
   watchdog_update();
   //if (tud_cdc_connected()) {
