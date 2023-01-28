@@ -50,7 +50,7 @@ extern uint8_t debugTlm;
 //    The pio that send each byte wait 1 msec between 2 bytes
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
-queue_t hottRxQueue ;
+queue_t hottRxQueue ;  // get the request from the receiver
 // one pio with 2 state machine is used to manage the inverted hal duplex uart for Sport
 PIO hottPio = pio0;
 uint hottSmTx = 0; // to send the telemetry to sport
@@ -58,7 +58,7 @@ uint hottSmRx = 1; // to get the request from sport
 uint hottOffsetTx ; 
 uint hottOffsetRx ; 
 
-// dma channel is used to send Sport telemetry without blocking
+// dma channel is used to send hott telemetry without blocking
 int hott_dma_chan;
 dma_channel_config hottDmaConfig;
 
@@ -71,7 +71,7 @@ enum HOTTSTATES {
     WAIT_END_OF_SENDING
 };
 
-uint32_t hottStartWaiting = 0; // timestamp (usec) when we statr waiting 
+uint32_t hottStartWaiting = 0; // timestamp (usec) when we start waiting 
 HOTTSTATES hottState;
 
 /*
@@ -116,10 +116,10 @@ static union {              // union is a easy way to access the data in several
 }  TxHottData;
 
 void setupHott() {                                                    
-// configure the queue to get the data from Sport in the irq handle
+// configure the queue to get the data from hott in the irq handle
     queue_init (&hottRxQueue, sizeof(uint8_t), 250);
 
-// set up the DMA but do not yet start it to send data to Sport
+// set up the DMA but do not yet start it to send data to Hott
 // Configure a channel to write the same byte (8 bits) repeatedly to PIO0
 // SM0's TX FIFO, placed by the data request signal from that peripheral.
     hott_dma_chan = dma_claim_unused_channel(true);
@@ -176,6 +176,7 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
                      ( (data == HOTT_TELEMETRY_GAM_SENSOR_ID) || (data == HOTT_TELEMETRY_GPS_SENSOR_ID) ) ){
                     hottState = WAIT_FOR_SENDING;
                     hottStartWaiting = micros(); 
+                    printf("r\n");
                 }
                 previous = data;
             }        
@@ -183,18 +184,21 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
         case WAIT_FOR_SENDING :
             if ( ( micros() - hottStartWaiting) > HOTTV4_REPLY_DELAY){
                 if (sendHottFrame(data) ) { // data must be GAM or GPS; return true when a frame is really being sent
-                    hottState = SENDING;
+                    hottState = WAIT_END_OF_SENDING;
+                    hottStartWaiting = micros();
                 } else { 
                     hottState = RECEIVING;
                 }   
             }
             break;         
+        /*
         case SENDING :
             if ( ! dma_channel_is_busy( hott_dma_chan)	){
                 hottState = WAIT_END_OF_SENDING;
                 hottStartWaiting = micros();
             }
             break;         
+        */
         case WAIT_END_OF_SENDING :
             if ( ( micros() - hottStartWaiting) > ( HOTTV4_END_SENDING_DELAY) ){
                 hott_uart_tx_program_stop(hottPio, hottSmTx, config.pinTlm );
@@ -206,7 +210,7 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
      
 }
 
-bool sendHottFrame(uint8_t data) {
+bool sendHottFrame(uint8_t data) { // return true when a frame is being sent
     bool sendingRequired = false;
     switch (data) {
         case HOTT_TELEMETRY_GAM_SENSOR_ID:       
@@ -218,7 +222,7 @@ bool sendHottFrame(uint8_t data) {
     }
     if (sendingRequired) { // when buffer is filled, it can be sent
         hott_uart_rx_program_stop(hottPio, hottSmRx, config.pinTlm); // stop receiving
-        hott_uart_tx_program_start(hottPio, hottSmTx, config.pinTlm, true); // prepare to transmit
+        hott_uart_tx_program_start(hottPio, hottSmTx, config.pinTlm, false); // prepare to transmit (do not invert)
         // start the DMA channel with the data to transmit
         dma_channel_set_read_addr (hott_dma_chan, &TxHottData.txBuffer[0], false);
         dma_channel_set_trans_count (hott_dma_chan, TXHOTTDATA_BUFFERSIZE, true) ;
