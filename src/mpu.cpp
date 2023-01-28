@@ -556,6 +556,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
         //printf("no mpu\n");
         return false;
     }
+    //return false; // to remove after testing
+
     //printf("mpu\n"); 
     uint8_t buffer[14];
 

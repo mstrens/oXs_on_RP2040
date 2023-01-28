@@ -91,7 +91,7 @@ void gpsPioRxHandlerIrq(){    // when a byte is received on the PIO GPS, read th
 
 void GPS::gpsInitRx(){
     // configure the queue to get the data from gps in the irq handle
-    queue_init (&gpsRxQueue, sizeof(uint8_t), 250);
+    queue_init (&gpsRxQueue, sizeof(uint8_t), 500);
 
     // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO1_IRQ_0 , gpsPioRxHandlerIrq) ;
@@ -207,91 +207,93 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
     
 void GPS::readGpsUblox(){
     uint8_t data;
-    if (queue_try_remove ( &gpsRxQueue , &data ) ){
-        //printf(" %X" , data);
-        bool parsed = false;
-        switch (_step) {
-            case 0: // Sync char 1 (0xB5)
-                if ( 0xB5 == data ) { // UBX sync char 1
-                    _skip_packet = false;
-                    _step++;
-                }
-                break;
-            case 1: // Sync char 2 (0x62)
-                if ( 0x62 != data) { // UBX sync char 1
-                    _step = 0;
+    while (!queue_is_empty(&gpsRxQueue)){
+        if (queue_try_remove ( &gpsRxQueue , &data ) ){
+            //printf(" %X" , data);
+            bool parsed = false;
+            switch (_step) {
+                case 0: // Sync char 1 (0xB5)
+                    if ( 0xB5 == data ) { // UBX sync char 1
+                        _skip_packet = false;
+                        _step++;
+                    }
                     break;
-                }
-                _step++;
-                break;
-            case 2: // Class
-                _step++;
-                _class = data;  // normally we should check that the class is the expected (otherwise, frame should be skipped)
-                _ck_b = _ck_a = data;   // reset the checksum accumulators
-                if ( 0x01 != data ) { // we handle only message type = 0x01 = NAVigation message.
-                    _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
-                }            
-                break;
-            case 3: // Id
-                _step++;
-                _ck_b += (_ck_a += data);       // checksum byte
-                _msg_id = data;
-                break;
-            case 4: // Payload length (part 1)
-                _step++;
-                _ck_b += (_ck_a += data);       // checksum byte
-                _payload_length = data; // payload length low byte
-                break;
-            case 5: // Payload length (part 2)
-                _step++;
-                _ck_b += (_ck_a += data);       // checksum byte
-                _payload_length += (uint16_t)(data << 8);
-                if (_payload_length > UBLOX_PAYLOAD_SIZE) {
-                    _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
-                }
-                _payload_counter = 0;   // prepare to receive payload
-                if (_payload_length == 0) {
-                    _step = 7;
-                }
-                break;
-            case 6:
-                _ck_b += (_ck_a += data);       // checksum byte
-                if  (_payload_counter < UBLOX_BUFFER_SIZE)  {
-                    _buffer.bytes[_payload_counter] = data; // save the content of the payload
-    //                printer->print(data , HEX);
-                }
-                _payload_counter++ ;  
-                if (_payload_counter >= _payload_length) {
+                case 1: // Sync char 2 (0x62)
+                    if ( 0x62 != data) { // UBX sync char 1
+                        _step = 0;
+                        break;
+                    }
                     _step++;
-    //                printer->println(" ");
-                }
-                break;
-            case 7:
-                _step++;
-                if (_ck_a != data) {
-                    _skip_packet = true;          // bad checksum
-                    gpsDataErrors++;
-                }
-                break;
-            case 8:
-                _step = 0;
-                if (_ck_b != data) {
-                    gpsDataErrors++;
-                    break;              // bad checksum
-                }
+                    break;
+                case 2: // Class
+                    _step++;
+                    _class = data;  // normally we should check that the class is the expected (otherwise, frame should be skipped)
+                    _ck_b = _ck_a = data;   // reset the checksum accumulators
+                    if ( 0x01 != data ) { // we handle only message type = 0x01 = NAVigation message.
+                        _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
+                    }            
+                    break;
+                case 3: // Id
+                    _step++;
+                    _ck_b += (_ck_a += data);       // checksum byte
+                    _msg_id = data;
+                    break;
+                case 4: // Payload length (part 1)
+                    _step++;
+                    _ck_b += (_ck_a += data);       // checksum byte
+                    _payload_length = data; // payload length low byte
+                    break;
+                case 5: // Payload length (part 2)
+                    _step++;
+                    _ck_b += (_ck_a += data);       // checksum byte
+                    _payload_length += (uint16_t)(data << 8);
+                    if (_payload_length > UBLOX_PAYLOAD_SIZE) {
+                        _skip_packet = true; // when skip packet = true, then the wholepacket will be read but discarded.
+                    }
+                    _payload_counter = 0;   // prepare to receive payload
+                    if (_payload_length == 0) {
+                        _step = 7;
+                    }
+                    break;
+                case 6:
+                    _ck_b += (_ck_a += data);       // checksum byte
+                    if  (_payload_counter < UBLOX_BUFFER_SIZE)  {
+                        _buffer.bytes[_payload_counter] = data; // save the content of the payload
+        //                printer->print(data , HEX);
+                    }
+                    _payload_counter++ ;  
+                    if (_payload_counter >= _payload_length) {
+                        _step++;
+        //                printer->println(" ");
+                    }
+                    break;
+                case 7:
+                    _step++;
+                    if (_ck_a != data) {
+                        _skip_packet = true;          // bad checksum
+                        gpsDataErrors++;
+                    }
+                    break;
+                case 8:
+                    _step = 0;
+                    if (_ck_b != data) {
+                        gpsDataErrors++;
+                        break;              // bad checksum
+                    }
 
-                GPS_packetCount++;
-    //            printer->print("pac : ");  printer->print(GPS_packetCount); printer->print(",err: "); printer->print(gpsDataErrors); printer->print(",skip: "); printer->println(_skip_packet) ;
+                    GPS_packetCount++;
+        //            printer->print("pac : ");  printer->print(GPS_packetCount); printer->print(",err: "); printer->print(gpsDataErrors); printer->print(",skip: "); printer->println(_skip_packet) ;
 
-                if (_skip_packet) {
-                    break;   // do not parse the packet to be skipped
-                }
-                            // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
-                if (parseGpsUblox() && (_class == 0x01) ) {
-                    parsed = true; 
-                }
-        }  // end of case
-    }    
+                    if (_skip_packet) {
+                        break;   // do not parse the packet to be skipped
+                    }
+                                // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
+                    if (parseGpsUblox() && (_class == 0x01) ) {
+                        parsed = true; 
+                    }
+            }  // end of case
+        } // end if
+    } // end While     
 }
 
 

@@ -13,7 +13,7 @@ VOLTAGE::VOLTAGE() {}
 
 void VOLTAGE::begin(void ) {
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    adc_init (); // prepare ADC
+    adc_init(); // prepare ADC
     for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
         if ( config.pinVolt[cntInit] != 255) {
             adc_gpio_init(config.pinVolt[cntInit]); // prepare the pin for ADC
