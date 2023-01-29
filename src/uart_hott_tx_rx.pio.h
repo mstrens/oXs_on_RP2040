@@ -11,7 +11,7 @@
 // ------------ //
 
 #define hott_uart_tx_wrap_target 0
-#define hott_uart_tx_wrap 7
+#define hott_uart_tx_wrap 5
 
 static const uint16_t hott_uart_tx_program_instructions[] = {
             //     .wrap_target
@@ -19,17 +19,15 @@ static const uint16_t hott_uart_tx_program_instructions[] = {
     0xf727, //  1: set    x, 7            side 0 [7] 
     0x6001, //  2: out    pins, 1                    
     0x0642, //  3: jmp    x--, 2                 [6] 
-    0xff47, //  4: set    y, 7            side 1 [7] 
-    0xff3f, //  5: set    x, 31           side 1 [7] 
-    0x0746, //  6: jmp    x--, 6                 [7] 
-    0x0785, //  7: jmp    y--, 5                 [7] 
+    0xff2f, //  4: set    x, 15           side 1 [7] 
+    0x0745, //  5: jmp    x--, 5                 [7] 
             //     .wrap
 };
 
 #if !PICO_NO_HARDWARE
 static const struct pio_program hott_uart_tx_program = {
     .instructions = hott_uart_tx_program_instructions,
-    .length = 8,
+    .length = 6,
     .origin = -1,
 };
 

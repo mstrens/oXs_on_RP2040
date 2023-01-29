@@ -113,7 +113,7 @@ static union {              // union is a easy way to access the data in several
     HOTT_GAM_MSG gamMsg ;   // structured general air module
     HOTT_GPS_MSG gpsMsg ;
     uint8_t txBuffer[TXHOTTDATA_BUFFERSIZE] ;
-}  TxHottData;
+}  __attribute__((packed)) TxHottData ;
 
 void setupHott() {                                                    
 // configure the queue to get the data from hott in the irq handle
@@ -162,13 +162,25 @@ void hottPioRxHandlerIrq(){    // when a byte is received on the tlm pin, read t
   }
 }
 
-
+//#define DEBUG_HOTT_WITHOUT_RX
+#ifdef DEBUG_HOTT_WITHOUT_RX
+uint32_t lastHottRequest = 0;
+#endif
 void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     static uint8_t previous = 0;
     static uint8_t data;
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     switch (hottState) {
         case RECEIVING :
+            #ifdef DEBUG_HOTT_WITHOUT_RX  // simulate a RX sending a GAM polling every 200 msec 
+            if ( (millis() - lastHottRequest) > 200)  { // to debug simulate a request once per 200msec
+                hottState = WAIT_FOR_SENDING;
+                hottStartWaiting = micros();
+                data = HOTT_TELEMETRY_GAM_SENSOR_ID;
+                lastHottRequest = millis();
+            }
+            break;
+            #endif
             if (! queue_is_empty(&hottRxQueue)) {
                 queue_try_remove (&hottRxQueue,&data);
                 //printf("%X ", data);
@@ -176,7 +188,7 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
                      ( (data == HOTT_TELEMETRY_GAM_SENSOR_ID) || (data == HOTT_TELEMETRY_GPS_SENSOR_ID) ) ){
                     hottState = WAIT_FOR_SENDING;
                     hottStartWaiting = micros(); 
-                    printf("r\n");
+                    //printf("r\n");
                 }
                 previous = data;
             }        
@@ -184,26 +196,28 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
         case WAIT_FOR_SENDING :
             if ( ( micros() - hottStartWaiting) > HOTTV4_REPLY_DELAY){
                 if (sendHottFrame(data) ) { // data must be GAM or GPS; return true when a frame is really being sent
-                    hottState = WAIT_END_OF_SENDING;
+                    hottState = SENDING;
                     hottStartWaiting = micros();
+                    //printf("s\n");
                 } else { 
                     hottState = RECEIVING;
                 }   
             }
             break;         
-        /*
-        case SENDING :
+        
+        case SENDING :   // wait that dma have sent all data (but the last bytes are not yet sent)
             if ( ! dma_channel_is_busy( hott_dma_chan)	){
                 hottState = WAIT_END_OF_SENDING;
                 hottStartWaiting = micros();
             }
             break;         
-        */
+        
         case WAIT_END_OF_SENDING :
             if ( ( micros() - hottStartWaiting) > ( HOTTV4_END_SENDING_DELAY) ){
                 hott_uart_tx_program_stop(hottPio, hottSmTx, config.pinTlm );
                 hott_uart_rx_program_restart(hottPio, hottSmRx, config.pinTlm, false );  // false = not inverted
                 hottState = RECEIVING ;
+                //printf("e\n");
             }
             break;     
     }
@@ -244,7 +258,11 @@ bool fillHottGamFrame(){
     // TxHottData.gamMsg.cell[4] =  voltageData->mVoltCell[4] /20 ; // Volt Cell 5 (in 2 mV increments, 210 == 4.20 V)
     // TxHottData.gamMsg.cell[5] =  voltageData->mVoltCell[5] /20 ; // Volt Cell 6 (in 2 mV increments, 210 == 4.20 V)
     if( fields[MVOLT].available ) {
-              TxHottData.gamMsg.Battery1 = fields[MVOLT].value / 100; }   //battery 1 voltage  0.1V steps. 55 = 5.5V only pos. voltages
+              TxHottData.gamMsg.Battery1 = fields[MVOLT].value / 100;   //battery 1 voltage  0.1V steps. 55 = 5.5V only pos. voltages
+              #ifdef DEBUG_HOTT_WITHOUT_RX
+              if (TxHottData.gamMsg.Battery1 == 0) TxHottData.gamMsg.Battery1 = 0XFF;
+              #endif
+    }
     if( fields[REMAIN].available ) {
               TxHottData.gamMsg.Battery2 = fields[REMAIN].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
     TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
@@ -260,8 +278,9 @@ bool fillHottGamFrame(){
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {
         TxHottData.gamMsg.current =  fields[CURRENT].value /100; }              //current in 0.1A steps 100 == 10,0A
-    if( fields[CAPACITY].available )
+    if( fields[CAPACITY].available ){
         TxHottData.gamMsg.main_voltage = fields[CAPACITY].value / 100;          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
+    }
     // TxHottData.gamMsg.batt_cap =  currentData->consumedMilliAmps.value / 10 ;   // used battery capacity in 10mAh steps
     // TxHottData.gamMsg.speed =  airSpeedData->airSpeed.value  ;                  //  Km/h 
     // TxHottData.gamMsg.min_cell_volt =  voltageData->mVoltCellMin /20 ; // minimum cell voltage in 2mV steps. 124 = 2,48V
@@ -275,10 +294,10 @@ bool fillHottGamFrame(){
 //  byte pressure;                        //#42 High pressure up to 16bar. 0,1bar scale. 20 == 2.0bar
 
     TxHottData.txBuffer[TXHOTTDATA_BUFFERSIZE-1] = 0 ;
-    for(uint8_t i = 0; i < TXHOTTDATA_BUFFERSIZE-1; i++){  // one byte less because the last byte is the checksum
+    for(uint8_t i = 0; i < (TXHOTTDATA_BUFFERSIZE-1); i++){  // one byte less because the last byte is the checksum
         TxHottData.txBuffer[TXHOTTDATA_BUFFERSIZE-1] += TxHottData.txBuffer[i];
+        //printf("%d %X\n ", i , TxHottData.txBuffer[i] );
     }  // end for
-
     return true;
 }
 

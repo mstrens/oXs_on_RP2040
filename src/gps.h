@@ -25,7 +25,7 @@ typedef struct {
     int32_t altitude_msl;              // in mm
     uint32_t horizontal_accuracy;
     uint32_t vertical_accuracy;        // in mm
-} ubx_nav_posllh;
+} __attribute__((__packed__)) ubx_nav_posllh;
 
 typedef struct {
     uint32_t time;              // GPS msToW
@@ -35,7 +35,7 @@ typedef struct {
     uint8_t res;
     uint32_t time_to_first_fix;
     uint32_t uptime;            // milliseconds
-} ubx_nav_status;
+} __attribute__((__packed__)) ubx_nav_status;
 
 typedef struct {
     uint32_t time;
@@ -55,7 +55,7 @@ typedef struct {
     uint8_t res;
     uint8_t satellites;
     uint32_t res2;
-} ubx_nav_solution;
+} __attribute__((__packed__)) ubx_nav_solution;
 
 typedef struct {
     uint32_t time;
@@ -91,7 +91,7 @@ typedef struct {
     int32_t  head_velocity;
     int16_t magnetic_declination;
     uint16_t magnetic_accuracy;  
-} ubx_nav_pvt;
+} __attribute__((__packed__)) ubx_nav_pvt;
 
 
 typedef struct {
@@ -104,7 +104,7 @@ typedef struct {
     int32_t heading_2d;
     uint32_t speed_accuracy;
     uint32_t heading_accuracy;
-} ubx_nav_velned;
+} __attribute__((__packed__)) ubx_nav_velned;
 
 typedef struct {
     uint8_t chn;                // Channel number, 255 for SVx not assigned to channel
@@ -115,7 +115,7 @@ typedef struct {
     uint8_t elev;               // Elevation in integer degrees
     int16_t azim;               // Azimuth in integer degrees
     int32_t prRes;              // Pseudo range residual in centimetres
-} ubx_nav_svinfo_channel;
+} __attribute__((__packed__)) ubx_nav_svinfo_channel;
 
 typedef struct {
     uint32_t time;              // GPS Millisecond time of week
@@ -123,7 +123,7 @@ typedef struct {
     uint8_t globalFlags;        // Bitmask, Chip hardware generation 0:Antaris, 1:u-blox 5, 2:u-blox 6
     uint16_t reserved2;         // Reserved
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
-} ubx_nav_svinfo;
+} __attribute__((__packed__)) ubx_nav_svinfo;
 
 struct __attribute__((__packed__)) casic_nav_pv_info {
     uint16_t header;              // Header = 0xBA 0XCE

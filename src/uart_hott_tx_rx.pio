@@ -25,13 +25,13 @@
 bitloop:                   ; This loop will run 8 times (8n1 UART)
     out pins, 1            ; Shift 1 bit from OSR to the first OUT pin
     jmp x-- bitloop   [6]  ; Each loop iteration is 8 cycles.
-setY:
-    set y, 7   side 1 [7]
+;setY:
+;    set y, 7   side 1 [7]
 setX:
-    set x, 31  side 1 [7]
+    set x, 15  side 1 [7]
 nextX:
     jmp x-- nextX     [7]
-    jmp y-- setX      [7] 
+;    jmp y-- setX      [7] 
 
 % c-sdk {
 #include "hardware/clocks.h"

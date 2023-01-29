@@ -5,7 +5,7 @@
 // Hott protocol v4 delay
 #define HOTTV4_TX_DELAY 1000 // Delai entre octets (usec)
 #define HOTTV4_REPLY_DELAY 5000 // delay before starting sending a reply to a request (usec)
-#define HOTTV4_END_SENDING_DELAY 15000 // delay to wait when dma is empty to let the last byte being sent (e.g. to send 10 bytes) 
+#define HOTTV4_END_SENDING_DELAY 25000 // delay to wait when dma is empty to let the last byte being sent (e.g. to send 10 bytes) 
 
 // first byte sent by Rx for polling can have 2 values
 #define HOTT_BINARY_MODE_REQUEST_ID      0x80
@@ -136,7 +136,7 @@ typedef struct {
   uint8_t version;                         //#43 version number (Bytes 35 .43 new but not yet in the record in the display!)
   uint8_t stop_byte;                       //#44 stop byte 0x7D
   uint8_t parity;                          //#45 CHECKSUM CRC/Parity (calculated dynamicaly)
-} HOTT_GAM_MSG ;
+} __attribute__((__packed__)) HOTT_GAM_MSG ;
 
 //GPS
 typedef struct {
@@ -188,7 +188,7 @@ typedef struct {
   uint8_t version;                 /* Byte 43: 00 version number */
   uint8_t endByte;                 /* Byte 44: 0x7D Ende byte */
   uint8_t chksum;                  /* Byte 45: Parity Byte */
-} HOTT_GPS_MSG ;
+} __attribute__((__packed__)) HOTT_GPS_MSG ;
 
 uint8_t warning_beeps_Hott(void);
 

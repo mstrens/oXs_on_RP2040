@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.5.0"
+#define VERSION "0.5.1"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -166,8 +166,8 @@
 // --------- Reserve for developer. ---------
 
 typedef struct {
-  uint8_t available ;
   int32_t value ;
+  uint8_t available ;
 } oneMeasurement_t;
 
 //Note:
