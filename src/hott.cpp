@@ -274,7 +274,7 @@ bool fillHottGamFrame(){
     } else { TxHottData.gamMsg.altitude =  500 ; }                             //altitude in meters. offset of 500, 500 = 0m
     if( fields[VSPEED].available ) {
         TxHottData.gamMsg.climbrate_L = ( fields[VSPEED].value ) +30000 ;//climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
-        printf("v= %d\n", TxHottData.gamMsg.climbrate_L);
+        //printf("v= %d\n", TxHottData.gamMsg.climbrate_L);
     } else { TxHottData.gamMsg.climbrate_L =  30000 ; }           //climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {
@@ -340,6 +340,7 @@ bool fillHottGpsFrame(){
         TxHottData.gpsMsg.distanceHigh = gps.GPS_distance >> 8 ;                       // Byte 21: 036 35 = /distance high byte
         TxHottData.gpsMsg.HomeDirection = gps.GPS_bearing / 2 ;                        //Byte 29: HomeDirection (direction from starting point to Model position) (1 byte) 2degree = 1
         altitudeHott += (fields[ALTITUDE].value / 100)  ;                                 // convert from cm to m (keep the ofsset of 500 m)
+        printf("gpsAlt=%d\n", (int32_t) fields[ALTITUDE].value/100);
     }
                   
  /* not yet implemented

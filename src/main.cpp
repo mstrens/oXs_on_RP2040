@@ -41,7 +41,8 @@
 //         fill pitch and roll in telemetry (even for elrs?)
 //         add an option to calibrate MP6050 (probably with a command and saving the values in config)
 //         manage the case where MP6050 exist but not a baro sensor
-
+//         try to detect MS5611 and other I2C testing the different I2C addresses
+//         in readme add the wiring of GPS and of other I2C devices+ comments about MP6050
 
 // Look at file config.h for more details
 //
