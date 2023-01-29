@@ -340,7 +340,7 @@ bool fillHottGpsFrame(){
         TxHottData.gpsMsg.distanceHigh = gps.GPS_distance >> 8 ;                       // Byte 21: 036 35 = /distance high byte
         TxHottData.gpsMsg.HomeDirection = gps.GPS_bearing / 2 ;                        //Byte 29: HomeDirection (direction from starting point to Model position) (1 byte) 2degree = 1
         altitudeHott += (fields[ALTITUDE].value / 100)  ;                                 // convert from cm to m (keep the ofsset of 500 m)
-        printf("gpsAlt=%d\n", (int32_t) fields[ALTITUDE].value/100);
+        //printf("gpsAlt=%d\n", (int32_t) fields[ALTITUDE].value/100);
     }
                   
  /* not yet implemented

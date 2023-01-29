@@ -313,6 +313,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         sent2Core0(LONGITUDE, _buffer.posllh.longitude);           // in degree with 7 decimals
         sent2Core0(LATITUDE, _buffer.posllh.latitude);            // in degree with 7 decimals
         sent2Core0(ALTITUDE, _buffer.posllh.altitude_msl / 10);       //alt in mm in converted in cm (sport uses cm)
+        printf("height POSLLH=%d\n", _buffer.posllh.altitude_msl / 10);
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
             if ( GPS_home_lat == 0 ) { 
