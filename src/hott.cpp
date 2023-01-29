@@ -274,6 +274,7 @@ bool fillHottGamFrame(){
     } else { TxHottData.gamMsg.altitude =  500 ; }                             //altitude in meters. offset of 500, 500 = 0m
     if( fields[VSPEED].available ) {
         TxHottData.gamMsg.climbrate_L = ( fields[VSPEED].value ) +30000 ;//climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
+        printf("v= %d\n", TxHottData.gamMsg.climbrate_L);
     } else { TxHottData.gamMsg.climbrate_L =  30000 ; }           //climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.5.1"
+#define VERSION "0.5.2"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -14,6 +14,7 @@
 //    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
+//    - initialize Kalman filter with altitude  
 //
 // It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from a Sbus signal (e.g Frsky or Jeti).
 // It can also provide SBUS signal. 

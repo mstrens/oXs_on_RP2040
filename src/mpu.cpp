@@ -427,11 +427,13 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
 {
     if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
     
+
     // Two byte reset. First byte register, second byte data
     // There are a load more options to set up the device in different ways that could be added here
     uint8_t buf[] = {0x6B, 0x00};
-    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false);
+    if ( i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false) == PICO_ERROR_GENERIC) return ;
     sleep_us(100);
+
         // set offsets
         //mpu6050.setXAccelOffset(335);
         //mpu6050.setYAccelOffset(79);
@@ -441,6 +443,7 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
         //mpu6050.setZGyroOffset(-9);
     mpuInstalled =  true;
     printf("MPU MAP initialized\n");
+
 
 }
 

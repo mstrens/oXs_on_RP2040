@@ -40,6 +40,8 @@
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         fill pitch and roll in telemetry (even for elrs?)
 //         add an option to calibrate MP6050 (probably with a command and saving the values in config)
+//         manage the case where MP6050 exist but not a baro sensor
+
 
 // Look at file config.h for more details
 //
