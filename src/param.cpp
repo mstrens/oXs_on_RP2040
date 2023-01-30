@@ -124,6 +124,7 @@ void processCmd(){
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
         printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
+        printf("-To force a calibration of MP6050, enter MPUCAL (currently calibration values are not saved)\n");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -268,6 +269,20 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    if ( strcmp("MPUCAL", pkey) == 0 ) {
+        mpu.calibrationRequest();
+        return; // do not continue in order to avoid printing config while config print some data too.
+        /*
+        db = strtod(pvalue,&ptr);
+        if (*ptr != 0x0) {
+            printf("Error : value is not a valid float\n");
+        } else {
+            config.rpmMultiplicator = db;
+            updateConfig = true;
+        }
+        */
+    }
+    
     // change for channels
     if ( *pkey == 'C' ) {
         pkey++; // skip 'C' char to extract the digits

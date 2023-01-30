@@ -315,7 +315,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             sent2Core0(LONGITUDE, _buffer.posllh.longitude);           // in degree with 7 decimals
             sent2Core0(LATITUDE, _buffer.posllh.latitude);            // in degree with 7 decimals
             sent2Core0(ALTITUDE, _buffer.posllh.altitude_msl / 10);       //alt in mm in converted in cm (sport uses cm)
-            printf("POSLLH alt_msl  alt_ellipsoid = %d  %d\n", _buffer.posllh.altitude_msl / 10 , _buffer.posllh.altitude_ellipsoid /10);
+            //printf("POSLLH alt_msl  alt_ellipsoid = %d  %d\n", _buffer.posllh.altitude_msl / 10 , _buffer.posllh.altitude_ellipsoid /10);
             if ( GPS_home_lat == 0 ) { 
               GPS_home_lat = _buffer.posllh.latitude ;  // save home position
               GPS_home_lon = _buffer.posllh.longitude ;

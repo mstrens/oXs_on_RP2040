@@ -1,4 +1,3 @@
-#include "mpu.h"
 //#include "hardware/watchdog.h"
 #include "param.h"
 #include "tools.h"
@@ -6,10 +5,17 @@
 #include "MS5611.h"
 #include "vario.h"
 #include "config.h"
+#include "I2Cdev.h"
+#include "helper_3dmath.h"
+#include "mpu.h"
+#include "pico/util/queue.h"
+
 
 extern CONFIG config;
 extern MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
 extern VARIO vario1;
+
+extern queue_t qSendCmdToCore1;
 
 //Kalman
 KalmanFilter kalman1 ;
@@ -441,12 +447,52 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
         //mpu6050.setXGyroOffset(70);
         //mpu6050.setYGyroOffset(-13);
         //mpu6050.setZGyroOffset(-9);
+    mpu6050.initialize();
+    /*
+    mpu6050.setClockSource(MPU6050_CLOCK_PLL_XGYRO);
+    mpu6050.setFullScaleGyroRange(MPU6050_GYRO_FS_250);
+    mpu6050.setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
+    mpu6050.setSleepEnabled(false); // thanks to Jack Elston for pointing this one out!
+    
+    printf("Acc & gyro before calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+    mpu6050.CalibrateGyro(6);
+    mpu6050.CalibrateAccel(6);
+    printf("Acc & gyro after calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+    */
     mpuInstalled =  true;
     printf("MPU MAP initialized\n");
-
-
 }
 
+void MPU::calibrationRequest()  // 
+{
+    if (!mpuInstalled) {
+        printf("Calibration not done: no MP6050 installed\n");
+        return ;
+    }
+    uint8_t data = 0X01; // 0X01 = execute calibration
+    queue_try_add(&qSendCmdToCore1 , &data);
+    /*
+    printf("Acc & gyro before calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+    mpu6050.CalibrateGyro(6);
+    mpu6050.CalibrateAccel(6);
+    printf("Acc & gyro after calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+    */
+}    
+
+void MPU::calibrationExecute()  // 
+{
+    sleep_ms(100); // delay to allow core0 to print the config.
+    printf("Acc & gyro before calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+    mpu6050.CalibrateGyro(6);
+    mpu6050.CalibrateAccel(6);
+    printf("Acc & gyro after calibration\n");
+    mpu6050.PrintActiveOffsets() ;
+}
 
 void GetGravity(VectorFloat *v, Quaternion *q) {
     v -> x = 2 * (q -> x*q -> z - q -> w*q -> y);
@@ -646,5 +692,14 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     }
     return false; 
 }
+
+/*
+void MPU::printOffsets() {
+    printf("acc = %d    %d   %d\n", mpu6050.getXAccelOffset() , mpu6050.getYAccelOffset() , mpu6050.getZAccelOffset());
+    printf("gyro= %d    %d   %d\n", mpu6050.getXGyroOffset() , mpu6050.getYGyroOffset() ,mpu6050.getZGyroOffset());
+}
+*/
+
+
 
 #endif

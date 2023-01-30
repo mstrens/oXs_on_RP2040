@@ -123,6 +123,7 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 uint32_t lastBlinkMillis;
 
 queue_t qSensorData;
+queue_t qSendCmdToCore1;
 void core1_main(); // prototype of core 1 main function
 
 extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
@@ -252,6 +253,7 @@ void setup() {
     toggleRgb();
     }
   #endif
+  //sleep_ms(5000);
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
@@ -263,6 +265,7 @@ void setup() {
   if (configIsValid){ // continue with setup only if config is valid
       setupListOfFields(); // initialise the list of fields being used
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
+      queue_init(&qSendCmdToCore1, 1, 10); 
       multicore_launch_core1(core1_main);// start core1
       
       if ( config.protocol == 'C'){
@@ -382,8 +385,15 @@ void setup1(){
 }
 // main loop on core 1 in order to read the sensors and send the data to core0
 void loop1(){
+    uint8_t qCmd;
     vario1.newClimbRateAvailable = false ; // reset at each loop (used to say when kalman filter has to run)
     getSensors();
+    if ( ! queue_is_empty(&qSendCmdToCore1)){
+        queue_try_remove(&qSendCmdToCore1, &qCmd);
+        if ( qCmd == 0X01) { // 0X01 is the code to request a calibration
+            mpu.calibrationExecute();
+        }
+    }
 }
 
 void core1_main(){

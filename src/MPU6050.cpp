@@ -3309,7 +3309,7 @@ void MPU6050::PID(uint8_t ReadAddress, float kP,float kI, uint8_t Loops){
 	float Error, PTerm, ITerm[3];
 	int16_t eSample;
 	uint32_t eSum ;
-	printf(">");
+	printf(">\n");
 	for (int i = 0; i < 3; i++) {
 		I2Cdev::readWords(devAddr, SaveAddress + (i * shift), 1, (uint16_t *)&Data); // reads 1 or more 16 bit integers (Word)
 		Reading = Data;
@@ -3340,13 +3340,13 @@ void MPU6050::PID(uint8_t ReadAddress, float kP,float kI, uint8_t Loops){
 			}
 			if((c == 99) && eSum > 1000){						// Error is still to great to continue 
 				c = 0;
-				printf("*");
+				printf("*\n");
 			}
 			if((eSum * ((ReadAddress == 0x3B)?.05: 1)) < 5) eSample++;	// Successfully found offsets prepare to  advance
 			if((eSum < 100) && (c > 10) && (eSample >= 10)) break;		// Advance to next Loop
 			sleep_ms(1);
 		}
-		printf(".");
+		printf(".\n");
 		kP *= .75;
 		kI *= .75;
 		for (int i = 0; i < 3; i++){
@@ -3357,8 +3357,8 @@ void MPU6050::PID(uint8_t ReadAddress, float kP,float kI, uint8_t Loops){
 			I2Cdev::writeWords(devAddr, SaveAddress + (i * shift), 1, (uint16_t *)&Data);
 		}
 	}
-	resetFIFO();
-	resetDMP();
+	//resetFIFO();
+	//resetDMP();
 }
 
 void MPU6050::PrintActiveOffsets() {

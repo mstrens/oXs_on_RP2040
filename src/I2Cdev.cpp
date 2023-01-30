@@ -1,3 +1,5 @@
+// modified by Mstrens to always use i2c1 (on rp2040)
+
 // Raspberry Pi Pico port for:
 // I2Cdev library collection - Main I2C device class
 // Abstracts bit and byte I2C R/W functions into a convenient class
