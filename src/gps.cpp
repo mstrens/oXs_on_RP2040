@@ -310,12 +310,12 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
     case MSG_POSLLH:
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsInstalled = true;
-        sent2Core0(LONGITUDE, _buffer.posllh.longitude);           // in degree with 7 decimals
-        sent2Core0(LATITUDE, _buffer.posllh.latitude);            // in degree with 7 decimals
-        sent2Core0(ALTITUDE, _buffer.posllh.altitude_msl / 10);       //alt in mm in converted in cm (sport uses cm)
-        printf("height POSLLH=%d\n", _buffer.posllh.altitude_msl / 10);
         if (next_fix) {                               // enable state if a position has been received after a positieve STATUS or SOL
             GPS_fix = true ;
+            sent2Core0(LONGITUDE, _buffer.posllh.longitude);           // in degree with 7 decimals
+            sent2Core0(LATITUDE, _buffer.posllh.latitude);            // in degree with 7 decimals
+            sent2Core0(ALTITUDE, _buffer.posllh.altitude_msl / 10);       //alt in mm in converted in cm (sport uses cm)
+            printf("POSLLH alt_msl  alt_ellipsoid = %d  %d\n", _buffer.posllh.altitude_msl / 10 , _buffer.posllh.altitude_ellipsoid /10);
             if ( GPS_home_lat == 0 ) { 
               GPS_home_lat = _buffer.posllh.latitude ;  // save home position
               GPS_home_lon = _buffer.posllh.longitude ;
@@ -345,7 +345,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
 //        break;
     case MSG_SOL:                                // !!!! here we could also use vertical speed which is I4 in cm/sec)
         next_fix = (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
-        GPS_fix_type = _buffer.solution.fix_type;
+        GPS_fix_type = _buffer.solution.fix_type; // use to send or not the data in Hott and ELRS
         if (!next_fix)
              GPS_fix = false;
         //fields[NUMSAT].available = true;
@@ -356,7 +356,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         break;
     case MSG_PVT:                                // this message does not exist in ublox6 (but SOL does not exist in ublox10)
         next_fix = (_buffer.pvt.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.pvt.fix_type == FIX_3D);
-        GPS_fix_type = _buffer.pvt.fix_type;
+        GPS_fix_type = _buffer.pvt.fix_type; // use to send or not the data in Hott and ELRS
         if (!next_fix)
              GPS_fix = false;
         //fields[NUMSAT].value = _buffer.pvt.satellites; 
