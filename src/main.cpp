@@ -386,7 +386,6 @@ void setup1(){
 // main loop on core 1 in order to read the sensors and send the data to core0
 void loop1(){
     uint8_t qCmd;
-    vario1.newClimbRateAvailable = false ; // reset at each loop (used to say when kalman filter has to run)
     getSensors();
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);

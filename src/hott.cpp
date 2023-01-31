@@ -263,8 +263,8 @@ bool fillHottGamFrame(){
               if (TxHottData.gamMsg.Battery1 == 0) TxHottData.gamMsg.Battery1 = 0XFF;
               #endif
     }
-    if( fields[REMAIN].available ) {
-              TxHottData.gamMsg.Battery2 = fields[REMAIN].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
+    if( fields[RESERVE1].available ) {
+              TxHottData.gamMsg.Battery2 = fields[RESERVE1].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
     TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     if( fields[RPM].available )
@@ -279,10 +279,12 @@ bool fillHottGamFrame(){
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {
         TxHottData.gamMsg.current =  fields[CURRENT].value /100; }              //current in 0.1A steps 100 == 10,0A
-    if( fields[CAPACITY].available ){
-        TxHottData.gamMsg.main_voltage = fields[CAPACITY].value / 100;          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
+    if( fields[RESERVE2].available ){
+        TxHottData.gamMsg.main_voltage = fields[RESERVE2].value / 100;          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
     }
-    // TxHottData.gamMsg.batt_cap =  currentData->consumedMilliAmps.value / 10 ;   // used battery capacity in 10mAh steps
+    if( fields[CAPACITY].available ){
+         TxHottData.gamMsg.batt_cap = fields[CAPACITY].value / 10 ;   // used battery capacity in 10mAh steps
+    }
     // TxHottData.gamMsg.speed =  airSpeedData->airSpeed.value  ;                  //  Km/h 
     // TxHottData.gamMsg.min_cell_volt =  voltageData->mVoltCellMin /20 ; // minimum cell voltage in 2mV steps. 124 = 2,48V
     // TxHottData.gamMsg.warning_beeps = warning_beeps_Hott();   // Transmitter warning message

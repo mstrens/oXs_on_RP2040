@@ -39,8 +39,11 @@ void VOLTAGE::begin(void ) {
 void VOLTAGE::getVoltages(void){
     static uint8_t sumCount = 0;
     static uint32_t lastVoltagemillis = 0 ;
+    static uint32_t enlapsedMillis =0;
+    float value;
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    if ( (millis() - lastVoltagemillis) > VOLTAGEINTERVAL ) {
+    enlapsedMillis = millis() - lastVoltagemillis; 
+    if ( enlapsedMillis > VOLTAGEINTERVAL ) {
         lastVoltagemillis = millis() ;
         for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
             if ( config.pinVolt[cntInit] != 255) {
@@ -52,15 +55,20 @@ void VOLTAGE::getVoltages(void){
         if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
-                if ( config.pinVolt[cntInit] != 255) {    
+                if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
-                        sent2Core0( cntInit + MVOLT, ((int32_t) ( ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit])) );
-
+                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
+                        sent2Core0( cntInit + MVOLT, (int32_t) value );
+                        if (cntInit == 1) { // when we are calculating a current we calculate also the consumption
+                            consumedMah += value * enlapsedMillis  / 3600000.0 ;  // in mah.
+                            sent2Core0( CAPACITY, (int32_t) value );
+                        }
                         //fields[cntInit + MVOLT].available = true ;
                     }
                     sumVoltage[cntInit] = 0 ;
-                    //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);  
+                    //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);
+                    
                 }    
             }    
         }

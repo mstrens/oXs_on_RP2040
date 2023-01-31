@@ -92,7 +92,7 @@ void fillCRSFFrame(){
 bool dataAvailable(uint8_t idx) {
     switch (idx) {
         case  CRSF_FRAMEIDX_BATTERY_SENSOR : 
-            return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available || fields[REMAIN].available ;
+            return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available  ;
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         //case CRSF_FRAMEIDX_ATTITUDE :
@@ -159,9 +159,10 @@ void fillFrameBattery(uint8_t idx){
     if ( fields[CAPACITY].value > 0 ) {
         fillBufferU24( (uint32_t) fields[CAPACITY].value);
     } else fillBufferU24(0);
-    if ( fields[REMAIN].value > 0 ) {
-        fillBufferU8( (uint8_t) ((fields[REMAIN].value+5) /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
-    } else fillBufferU8(0);
+    //if ( fields[REMAIN].value > 0 ) {
+    //    fillBufferU8( (uint8_t) ((fields[REMAIN].value+5) /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
+    //} else fillBufferU8(0);
+    fillBufferU8(0); // in this version, field "remain" is not used.  
     //voltageFrame.mVolt = 0X0A01;   // !!!!!!!!!!!!!! to remove
     //voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fillBufferU8(crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  

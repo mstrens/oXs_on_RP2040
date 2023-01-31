@@ -22,7 +22,7 @@ private:
     float offset[MAX_NBR_VOLTAGES] = { 0.0 } ;               // offset to apply while converting ADC to millivolt (See setting in oXs_config.h)  
     float mVoltPerStep[MAX_NBR_VOLTAGES] ;       // rate to apply while converting ADC to millivolt (See setting in oXs_config.h)  
     int32_t sumVoltage[MAX_NBR_VOLTAGES] = { 0,0,0};       // used to calculate average voltage
-
+    float consumedMah = 0 ;
 
 };
 /*

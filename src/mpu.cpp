@@ -12,13 +12,13 @@
 
 
 extern CONFIG config;
-extern MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
+//extern MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
 extern VARIO vario1;
 
 extern queue_t qSendCmdToCore1;
 
 //Kalman
-KalmanFilter kalman1 ;
+//KalmanFilter kalman1 ;
 KalmanFilter kalman2 ;
 float zTrack1 ;
 float vTrack1 ;
@@ -659,7 +659,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     sumAccZ += aaWorld.z;
     countAccZ++;
     if (vario1.newClimbRateAvailable){
-        kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+        vario1.newClimbRateAvailable = false; // reset the flag that says a new relative alt is available
+        kalman2.Update((float) vario1.relativeAlt  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
         sumAccZ= 0;
         countAccZ=0;
         if ( abs((vTrack2 - prevVTrack2) ) >  VARIOHYSTERESIS ) {

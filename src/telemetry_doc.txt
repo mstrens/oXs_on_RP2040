@@ -1,0 +1,24 @@
+Here the list of fields being calculated and transmitted per protocol
+
+
+Sport protocol
+--------------
+
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            VFAS (0x0210)              0.01V
+VOLT2       0.001V=0.001A    V2 pin is defined                            Current (0x0200)           0.001A
+Capacity    mAh              V2 pin is defined (reset after power down)   Fuel (0x0600)              mAh
+VOLT3       0.001V           V3 pin is defined                            DIY (0X5101)               0.001V
+VOLT4       0.001V           V4 pin is defined                            DIY (0X5102)               0.001V
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude (0X100)           cm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
+GPS lat                      Same as above                                 lat (0x0800)           special format
+GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 km/h
+GPS course degree            Same as above                                 GPS heading (0X840)       0.01 degree
+GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              DIY (0X5100)              unit (+100)
+RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  

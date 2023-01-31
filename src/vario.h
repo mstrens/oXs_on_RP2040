@@ -17,7 +17,7 @@ public:
   bool firstCalc = true; 
   int32_t altitudeLowPass ;
   int32_t altitudeHighPass;
-  int32_t altitude ;
+  int32_t altitude ;   // in cm * 100
   int32_t intervalSmooth ; // we expect an interval of 20msec between 2 conversions
   float   climbRateFloat ;
   float prevClimbRateFloat; 
@@ -38,7 +38,7 @@ public:
   int sensitivity ; 
   oneMeasurement_t absoluteAlt;     // in cm  
   bool altitudeAvailableForDte   ;  // use to say to readsensors() that an altitude is available and that dte can be calculated.
-  //oneMeasurement_t relativeAlt;     // in cm  
+  int32_t relativeAlt;     // in cm  
   oneMeasurement_t relativeAltMax;     // in cm  
   int32_t altOffset ;
   oneMeasurement_t vSpeed10Sec; // Altitude gain/loose between 10 sec (is calculated and send every 500 msec)

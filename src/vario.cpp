@@ -78,7 +78,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
       sensitivity = sensitivityMin + ( SENSITIVITY_MAX - sensitivityMin ) * (abs_deltaClimbRate - SENSITIVITY_MIN_AT) / (SENSITIVITY_MAX_AT - SENSITIVITY_MIN_AT) ;
   }
   climbRateFloat += sensitivity * (climbRate2AltFloat - climbRateFloat)  * 0.001 ; // sensitivity is an integer and must be divided by 1000
-  newClimbRateAvailable = true; 
+  newClimbRateAvailable = true; // this flag is used in mpu.cpp to say that a new vspeed may be calculated by kalman filter.
   //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",
   //   (float)  altitude , (float) altitudeLowPass , (float)  altitudeHighPass, (float) altitudeLowPass -  (float)  altitudeHighPass,   (float) climbRateFloat);
   // update climbRate only if the difference is big enough
@@ -97,6 +97,8 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   //switchClimbRateAvailable = true ; // inform readsensors() that a switchable vspeed is available
   
   // AltitudeAvailable is set to true only once every 100 msec in order to give priority to climb rate on SPORT
+  if (altOffset == 0) altOffset = altitude* 0.01 ; // altitude is in 1/100 of cm 
+  relativeAlt =   altitude* 0.01 - altOffset ; 
   altMillis = millis() ;
   if ( (altMillis - lastAltMillis) > 100){
     lastAltMillis = altMillis;
@@ -104,8 +106,8 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
     //absoluteAlt.available=true;  // Altitude is considered as available only after several loop in order to reduce number of transmission on Sport.
     //printf("abs alt= %" PRIu32 "\n", absoluteAlt.value );
     sensitivityAvailable = true ;
-    if (altOffset == 0) altOffset = altitude/100 ; // altitude is in 1/100 of cm 
-    sent2Core0(RELATIVEALT, altitude/100 - altOffset) ;
+    //if (altOffset == 0) altOffset = altitude/100 ; // altitude is in 1/100 of cm 
+    sent2Core0(RELATIVEALT, relativeAlt) ;
     //printf("relAlt=%f  vpseed =%f  interval=%f\n", ((float) fields[RELATIVEALT].value) / 100.0 , (float) fields[VSPEED].value, (float) baro_altIntervalMicros );
     //fields[RELATIVEALT].available = true ;
     //if ( fields[RELATIVEALT].value > relativeAltMax.value ) relativeAltMax.value = fields[RELATIVEALT].value ;
