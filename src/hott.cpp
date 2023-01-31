@@ -263,7 +263,7 @@ bool fillHottGamFrame(){
               if (TxHottData.gamMsg.Battery1 == 0) TxHottData.gamMsg.Battery1 = 0XFF;
               #endif
     }
-    if( fields[RESERVE1].available ) {
+    if( fields[RESERVE1].available ) {  // = volt3
               TxHottData.gamMsg.Battery2 = fields[RESERVE1].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
     TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
@@ -279,7 +279,7 @@ bool fillHottGamFrame(){
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {
         TxHottData.gamMsg.current =  fields[CURRENT].value /100; }              //current in 0.1A steps 100 == 10,0A
-    if( fields[RESERVE2].available ){
+    if( fields[RESERVE2].available ){ //Volt4
         TxHottData.gamMsg.main_voltage = fields[RESERVE2].value / 100;          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
     }
     if( fields[CAPACITY].available ){
@@ -342,6 +342,8 @@ bool fillHottGpsFrame(){
         TxHottData.gpsMsg.distanceHigh = gps.GPS_distance >> 8 ;                       // Byte 21: 036 35 = /distance high byte
         TxHottData.gpsMsg.HomeDirection = gps.GPS_bearing / 2 ;                        //Byte 29: HomeDirection (direction from starting point to Model position) (1 byte) 2degree = 1
         altitudeHott += (fields[ALTITUDE].value / 100)  ;                                 // convert from cm to m (keep the ofsset of 500 m)
+        TxHottData.gpsMsg.GPSNumSat = fields[NUMSAT].value;               // Byte 27: GPS.Satelites (number of satelites) (1 byte) 
+    
         //printf("gpsAlt=%d\n", (int32_t) fields[ALTITUDE].value/100);
     }
                   
