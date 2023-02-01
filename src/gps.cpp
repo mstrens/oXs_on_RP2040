@@ -364,7 +364,25 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         if ( _buffer.pvt.fix_type == FIX_3D ) _buffer.pvt.satellites += 100; // we add 100 when we have a 3d fix (for Ublox)
         sent2Core0(NUMSAT, _buffer.pvt.satellites); 
         //GPS_hdop = _buffer.pvt.position_DOP;
-        //printf("nbr sat : %X \n", GPS_numSat) ; 
+        //printf("nbr sat : %X \n", GPS_numSat) ;
+        gpsDate =_buffer.pvt.year % 100;
+        gpsDate <<= 8;
+        gpsDate += _buffer.pvt.month;
+        gpsDate <<= 8;
+        gpsDate += _buffer.pvt.day;
+        gpsDate <<= 8;
+        gpsDate += 0xFF;
+        gpsTime = _buffer.pvt.hour;
+        gpsTime <<= 8;
+        gpsTime += _buffer.pvt.min;
+        gpsTime <<= 8;
+        gpsTime += _buffer.pvt.sec;
+        gpsTime <<= 8;
+        if ( prevGpsTime != gpsTime) {
+            prevGpsTime = gpsTime; 
+            sent2Core0(GPS_DATE , gpsDate);
+            sent2Core0(GPS_TIME , gpsTime);
+        }
         break;
     case MSG_VELNED:   
         if( GPS_fix) sent2Core0(GROUNDSPEED , _buffer.velned.speed_3d ) ; 

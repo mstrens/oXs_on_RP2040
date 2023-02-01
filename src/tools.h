@@ -4,7 +4,7 @@
 //#include "Button2.h" moved to Button2.cpp
 //#include "stdio.h"
 
-#define SPORT_TYPES_MAX 28 //NUMBER_MAX_IDX
+#define SPORT_TYPES_MAX 30 //NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
@@ -168,7 +168,7 @@ enum fieldIdx {
       YAW ,
     UPLINK_RSSI_1 , UPLINK_RSSI_2 , UPLINK_LINK_QUALITY , UPLINK_SNR , ACTIVE_ANTENNA, RF_MODE ,
     UPLINK_TX_POWER , DOWNLINK_RSSI , DOWNLINK_LINK_QUALITY , DOWNLINK_SNR ,
-    RELATIVEALT , RPM , CAPACITY, RESERVE3, NUMBER_MAX_IDX , 
+    RELATIVEALT , RPM , CAPACITY, RESERVE3, GPS_DATE , GPS_TIME , NUMBER_MAX_IDX , 
 };
 
 

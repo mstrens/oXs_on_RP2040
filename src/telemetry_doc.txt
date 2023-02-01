@@ -20,6 +20,8 @@ GPS course degree            Same as above                                 GPS h
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              DIY (0X5100)              unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 GPS date                 special format 
+GPS time   HHMMSS0x00        Same as above                                 GPS time                 special format 
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
@@ -49,6 +51,8 @@ GPS course degree            Same as above                                 GPS h
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                 m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              Num of satelites         unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
 RPM        ?????             RPM pin is defined                            YAW                      ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
@@ -79,6 +83,8 @@ GPS course degree            Same as above                                 GPS h
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              GPS num sat               unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
 GPS distance from home       Same as above                                 GPS distance              m
 RPM        ?????             RPM pin is defined                            not available in Hott
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
@@ -111,6 +117,8 @@ GPS course degree            Same as above                                 GPS c
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted currently
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
 RPM        ?????             RPM pin is defined                            not transmitted currently
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently

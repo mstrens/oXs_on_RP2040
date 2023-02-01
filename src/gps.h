@@ -211,6 +211,10 @@ public:
     uint16_t GPS_hdop = 9999;           // Compute GPS quality signal
     uint16_t GPS_packetCount = 0;
 
+    uint32_t gpsDate;               // year(2 last digits = 1 bytes MSB ) + month (1 byte) + day (1 byte) + 0XFF (LSB 1 byte)
+    uint32_t gpsTime;               // hour (1 byte MSB ) + min (1 byte) + sec (1 byte) + 0X00 (LSB 1 byte)
+    uint32_t prevGpsTime = 0 ;  
+
     // *********** GPS calculated data
     int16_t GPS_distance ;   // distance from home (first location) in m
     int16_t GPS_heading ;          // heading from home (in Rad)
