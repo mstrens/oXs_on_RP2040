@@ -163,16 +163,19 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       GROUNDSPEED , //  GPS
       HEADING,      //  GPS
       ALTITUDE ,    //  GPS
+
       NUMSAT ,      //  GPS
       GPS_DATE ,    // GPS
       GPS_TIME ,    // GPS
       GPS_PDOP ,    // GPS
       MVOLT,        // volt1 
+      
       CURRENT,  // volt2 must be in seq for voltage.cpp
       RESERVE1, // volt3 must be in seq for voltage.cpp
       RESERVE2, // volt4 must be in seq for voltage.cpp
       CAPACITY,    // based on current (volt2)
       VSPEED,      // baro
+      
       RELATIVEALT , // baro
       PITCH,       // imu
       ROLL,        // imu

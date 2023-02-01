@@ -613,7 +613,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = 0x3B;
     i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-    i2c_read_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false);
+    if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 500) == PICO_ERROR_TIMEOUT) return false  ;
     ax = (buffer[0] << 8 | buffer[1]);
     ay = (buffer[2] << 8 | buffer[3]);
     az = (buffer[4] << 8 | buffer[5]);

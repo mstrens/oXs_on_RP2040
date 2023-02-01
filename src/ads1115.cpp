@@ -78,7 +78,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
             uint8_t data[2]; // buffer to read adc
             // send the Address, 0 = conversion register (in order to be able to read the conversion register)
             if (i2c_write_blocking (i2c1 , ads_Addr, &adsReg , 1 , false) != PICO_ERROR_GENERIC ) { //if there is no error on previous I2C request
-                if (i2c_read_blocking (i2c1 , ads_Addr , &data[0] , 2 , false) != PICO_ERROR_GENERIC) {
+                if (i2c_read_timeout_us (i2c1 , ads_Addr , &data[0] , 2 , false , 500) != PICO_ERROR_TIMEOUT) {
                     uint16_t valueAdc ;
                     valueAdc = data[0] << 8 | data[1] ;
                     ads_SumOfConv[ads_CurrentIdx] +=   (int16_t) valueAdc ;

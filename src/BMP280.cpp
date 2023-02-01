@@ -85,7 +85,7 @@ void BMP280::begin() {
  // read and check the device ID (in principe = 0X58 for a bmp280) 
     regToRead = BMP280_CHIP_ID_REG ;  // chipid address
     if ( i2c_write_blocking(i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-    if ( i2c_read_blocking(i2c1 , _address , &readValue , 1 , false) == PICO_ERROR_GENERIC) return ; 
+    if ( i2c_read_timeout_us(i2c1 , _address , &readValue , 1 , false, 500) == PICO_ERROR_TIMEOUT) return ; 
     if ( readValue != BMP280_CHIP_ID_VALUE) {
         printf("BMP280 has wrong device id\n");
         return ;
@@ -100,7 +100,7 @@ void BMP280::begin() {
         rxdata = 0x86 + i * 2 ; // this is the address to be read
         if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
         sleep_ms(1);
-        if ( i2c_read_blocking (i2c1 , _address , &readBuffer[0] , 2 , false) == PICO_ERROR_GENERIC)  return ;
+        if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 500) == PICO_ERROR_TIMEOUT)  return ;
         _calibrationData[i] = (readBuffer[1]<<8 ) | (readBuffer[0] );     
 #ifdef DEBUG
         printf("calibration data #%d = %u \n", i , _calibrationData[i]);
@@ -144,7 +144,7 @@ int BMP280::getAltitude() {
     uint8_t buffer[6];
     uint8_t regToRead = 0xF7 ;  // address reg of the first byte of conversion
     if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return -1; // command to get access to one register '0xA0 + 2* offset
-    if ( i2c_read_blocking (i2c1 , _address , &buffer[0] , 6 , false) == PICO_ERROR_GENERIC) return -1; 
+    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 6 , false, 500) == PICO_ERROR_TIMEOUT) return -1; 
     adc_P = (buffer[0]<<16) | (buffer[1]<<8) | (buffer[2]) ;
     adc_P = adc_P >> 4 ;
     adc_T = (buffer[3]<<16) | (buffer[4]<<8) | (buffer[5]) ;

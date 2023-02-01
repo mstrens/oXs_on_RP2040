@@ -37,7 +37,7 @@ void SPL06::begin()  // baroInstalled = true when baro exist
   
   regToRead = SPL06_CHIP_ID_REG ;  // chipid address
   if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-  if ( i2c_read_blocking (i2c1 , _address , &readValue , 1 , false) == PICO_ERROR_GENERIC) return ; 
+  if ( i2c_read_timeout_us (i2c1 , _address , &readValue , 1 , false, 500) == PICO_ERROR_TIMEOUT) return ; 
   if ( readValue != SPL06_DEFAULT_CHIP_ID) {
       printf("SPL06 has wrong device id\n");
       return ;
@@ -47,7 +47,7 @@ void SPL06::begin()  // baroInstalled = true when baro exist
   uint8_t caldata[SPL06_CALIB_COEFFS_LEN];    
   regToRead = SPL06_CALIB_COEFFS_START ; // this is the address to be read
   if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-  if ( i2c_read_blocking (i2c1 , _address , &caldata[0] , SPL06_CALIB_COEFFS_LEN , false) == PICO_ERROR_GENERIC) return ; 
+  if ( i2c_read_timeout_us (i2c1 , _address , &caldata[0] , SPL06_CALIB_COEFFS_LEN , false, 500) == PICO_ERROR_TIMEOUT) return ; 
   
     spl06_cal.c0 = (caldata[0] & 0x80 ? 0xF000 : 0) | ((uint16_t)caldata[0] << 4) | (((uint16_t)caldata[1] & 0xF0) >> 4);
     spl06_cal.c1 = ((caldata[1] & 0x8 ? 0xF000 : 0) | ((uint16_t)caldata[1] & 0x0F) << 8) | (uint16_t)caldata[2];
@@ -110,7 +110,7 @@ void SPL06::getPressure(){
     int32_t spl06_pressure;
     uint8_t regToRead = SPL06_PRESSURE_START_REG ;  
     if (i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
-    if (i2c_read_blocking (i2c1 , _address , &data[0] , SPL06_PRESSURE_LEN , false) == PICO_ERROR_GENERIC) _result = -1 ; 
+    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_PRESSURE_LEN , false , 500) == PICO_ERROR_TIMEOUT) _result = -1 ; 
     if (_result == 0){
         spl06_pressure = (int32_t)((data[0] & 0x80 ? 0xFF000000 : 0) | (((uint32_t)(data[0])) << 16) | (((uint32_t)(data[1])) << 8) | ((uint32_t)data[2]));
         spl06_pressure_raw = spl06_pressure;
@@ -131,7 +131,7 @@ void SPL06::getTemperature(){
     int32_t spl06_temperature;
     uint8_t regToRead = SPL06_TEMPERATURE_START_REG ;  
     if (i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
-    if (i2c_read_blocking (i2c1 , _address , &data[0] , SPL06_TEMPERATURE_LEN , false) == PICO_ERROR_GENERIC) _result = -1 ; 
+    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_TEMPERATURE_LEN , false, 500) == PICO_ERROR_TIMEOUT) _result = -1 ; 
     if (_result == 0){
         spl06_temperature = (int32_t)((data[0] & 0x80 ? 0xFF000000 : 0) | (((uint32_t)(data[0])) << 16) | (((uint32_t)(data[1])) << 8) | ((uint32_t)data[2]));
         spl06_temperature_raw = spl06_temperature;
