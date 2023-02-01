@@ -679,13 +679,15 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
         roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
         pitch = asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
         //conventional yaw increases clockwise from North. Not that the MPU-6050 knows where North is.
-        yaw   = -atan2((qh[1] * qh[2] + qh[0] * qh[3]), 0.5 - (qh[2] * qh[2] + qh[3] * qh[3]));
+        //yaw   = -atan2((qh[1] * qh[2] + qh[0] * qh[3]), 0.5 - (qh[2] * qh[2] + qh[3] * qh[3]));
         // to degrees
-        yaw   *= 180.0 / PI;
-        if (yaw < 0) yaw += 360.0; //compass circle
+        //yaw   *= 180.0 / PI;
+        //if (yaw < 0) yaw += 360.0; //compass circle
         pitch *= 180.0 / PI;
         roll *= 180.0 / PI;
-
+        sent2Core0( PITCH , (int32_t) pitch ) ; 
+        sent2Core0( ROLL , (int32_t) roll ) ; 
+    
         // print angles for serial plotter...
         #ifdef DEBUG
         printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack2, vario1.climbRateFloat);//  Serial.print("ypr ");

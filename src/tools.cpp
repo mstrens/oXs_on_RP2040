@@ -107,43 +107,46 @@ void sent2Core0( uint8_t fieldType, int32_t value){
 field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
 
 void setupListOfFields(){
-// list of fileds being used
-    //latitude , longitude , groundspeed , heading , altitude ,  numSat
-    //mVolt , current , temp1 ,  temp2 
-    //vSpeed, pitch , roll , yaw
-    //uplink_RSSI_1 , uplink_RSSI_2 , uplink_Link_quality , uplink_SNR , active_antenna , rf_Mode ,
-    //uplink_TX_Power , downlink_RSSI , downlink_Link_quality , downlink_SNR, 
+/*
+      LATITUDE =0,  //  GPS
+      LONGITUDE,    //  GPS
+      GROUNDSPEED , //  GPS
+      HEADING,      //  GPS
+      ALTITUDE ,    //  GPS
+      NUMSAT ,      //  GPS
+      GPS_DATE ,    // GPS
+      GPS_TIME ,    // GPS
+      GPS_PDOP ,    // GPS
+      MVOLT,        // volt1 
+      CURRENT,  // volt2 must be in seq for voltage.cpp
+      RESERVE1, // volt3 must be in seq for voltage.cpp
+      RESERVE2, // volt4 must be in seq for voltage.cpp
+      CAPACITY,    // based on current (volt2)
+      VSPEED,      // baro
+      RELATIVEALT , // baro
+      PITCH,       // imu
+      ROLL,        // imu
+      YAW ,        // not used to save data
+      RPM ,        // RPM sensor  
+*/
     
-    // relativeAlt , RPM , CAPACITY, REMAIN,
-    
-    #ifndef SKIP_VOLT1_3_4
-    uint16_t listFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID , GPS_ALT_FIRST_ID ,DIY_FIRST_ID  ,\
-                          VFAS_FIRST_ID , CURR_FIRST_ID , DIY_FIRST_ID+1 , DIY_FIRST_ID+2  ,\
-                          VARIO_FIRST_ID, ACCX_FIRST_ID , ACCY_FIRST_ID , ACCZ_FIRST_ID ,\
-                          UPLINK_RSSI_1_ID , UPLINK_RSSI_2_ID , UPLINK_LINK_QUALITY_ID , UPLINK_SNR_ID , ACTIVE_ANTENNA_ID, RF_MODE_ID ,\
-                          UPLINK_TX_POWER_ID , DOWNLINK_RSSI_ID , DOWNLINK_LINK_QUALITY_ID , DOWNLINK_SNR_ID ,\
-                          ALT_FIRST_ID , RPM_FIRST_ID , FUEL_FIRST_ID ,  DIY_FIRST_ID+2 , GPS_TIME_DATE_FIRST_ID , GPS_TIME_DATE_FIRST_ID} ;
-    #else
-    
-    uint16_t listFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID , GPS_ALT_FIRST_ID , T1_FIRST_ID  ,\
-                          CURR_FIRST_ID , VFAS_FIRST_ID , T2_FIRST_ID , FUEL_FIRST_ID  ,\
-                          VARIO_FIRST_ID, ACCX_FIRST_ID , ACCY_FIRST_ID , ACCZ_FIRST_ID ,\
-                          UPLINK_RSSI_1_ID , UPLINK_RSSI_2_ID , UPLINK_LINK_QUALITY_ID , UPLINK_SNR_ID , ACTIVE_ANTENNA_ID, RF_MODE_ID ,\
-                          UPLINK_TX_POWER_ID , DOWNLINK_RSSI_ID , DOWNLINK_LINK_QUALITY_ID , DOWNLINK_SNR_ID ,\
-                          ALT_FIRST_ID , RPM_FIRST_ID } ;
-    #endif
-    uint8_t listdeviceID[SPORT_TYPES_MAX] = {DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS , DATA_ID_GPS ,\
-                            DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS ,\
-                            DATA_ID_VARIO , DATA_ID_ACC , DATA_ID_ACC , DATA_ID_ACC ,\
-                            DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM,\
-                            DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM ,\
-                            DATA_ID_VARIO , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_RPM , DATA_ID_GPS , DATA_ID_GPS };
-    uint16_t listInterval[SPORT_TYPES_MAX] = { 500, 500 , 500 , 500 , 500 ,500,\
-                            500 , 500 , 500 , 500,\
-                            300 , 300 , 300 , 300,\
-                            500 , 500 , 500 , 500 , 500, 500,\
-                            500 , 500 , 500 , 500 ,\
-                            300 , 500 , 500 , 500 , 500 , 500};
+    uint16_t listFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID ,\
+                    GPS_ALT_FIRST_ID , DIY_GPS_NUM_SAT , GPS_TIME_DATE_FIRST_ID , GPS_TIME_DATE_FIRST_ID , DIY_GPS_PDOP,\
+                    VFAS_FIRST_ID    , CURR_FIRST_ID   , DIY_VOLT3              , DIY_VOLT4              , FUEL_FIRST_ID,\
+                    VARIO_FIRST_ID   , ALT_FIRST_ID    ,  DIY_PITCH             , DIY_ROLL               , DIY_YAW ,\
+                    RPM_FIRST_ID  };
+    uint8_t listdeviceID[SPORT_TYPES_MAX] = {DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS,\
+                            DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS,\
+                            DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS ,\
+                            DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO ,\
+                            DATA_ID_RPM };
+
+    uint16_t listInterval[SPORT_TYPES_MAX] = { 500, 500 , 500 , 500,\
+                                        500 , 500 , 500 , 500, 500,\
+                                        500 , 500 , 500 , 500, 500,\
+                                        300 , 500 , 500 , 500, 500,\
+                                        500 };
+                            
     for (uint8_t i = 0 ;  i<sizeof(listdeviceID); i++){
         fields[i].value= 0;
         fields[i].available= false;

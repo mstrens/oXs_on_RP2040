@@ -208,7 +208,7 @@ public:
 
     //uint8_t GPS_numSat;
     uint8_t GPS_fix_type;
-    uint16_t GPS_hdop = 9999;           // Compute GPS quality signal
+    uint16_t GPS_pdop = 9999;           // Compute GPS quality signal
     uint16_t GPS_packetCount = 0;
 
     uint32_t gpsDate;               // year(2 last digits = 1 bytes MSB ) + month (1 byte) + day (1 byte) + 0XFF (LSB 1 byte)

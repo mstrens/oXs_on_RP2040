@@ -1,12 +1,12 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.6.0"
+#define VERSION "0.6.1"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // ------- General ------------------
-// This project can be interfaced with one or 2 ELRS, JETI or FRSKY receiver(s) (protocol has to be selected accordingly)
+// This project can be interfaced with one or 2 ELRS, JETI , HOTT or FRSKY receiver(s) (protocol has to be selected accordingly)
 // 
 // This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and/or Sbus signals
 // For telemetry, it can provide
@@ -14,10 +14,10 @@
 //    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
 //    - the altitude and the vertical speed when connected to a pressure sensor (optional)
 //    - GPS data (longitude, latitude, speed, altitude,...) (optional)
-//    - initialize Kalman filter with altitude  
+//    
 //
 // It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from a Sbus signal (e.g Frsky or Jeti).
-// It can also provide SBUS signal. 
+// It can also provide SBUS signal (e.g. from a ELRS receiver). 
 //
 // When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels (= diversity)
 //
@@ -27,6 +27,7 @@
 // A better alternative is the RP2040-Zero (same processor but smaller board)
 // This board can be connected to:
 //    - a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
+//    - a MP6050 (acc+gyro) to improve reaction time of the vario or to get pitch/roll
 //    - a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
 //       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware
 //              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
@@ -36,7 +37,7 @@
 //
 // ----------Wiring --------------------
 // FRSKY/ELRS/JETI receiver, MS5611 and GPS must share the same Gnd
-// Connect a 5V source to the Vcc pin of RP2040 board
+// Connect a 5V source to the Vcc pin of RP2040 board ( RP2040-zero board does not accept more than 5.5V on Vcc pin !! )
 // There is no default affectation of the RP2040 pins so user has to specify it with some parameters after flashing the firmware (see below)
 // When used with a ELRS receiver:
 //    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
@@ -54,7 +55,7 @@
 //       Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
 //       All pulsed are counted (no debouncing); so use a hardware low pass filter (resistor/capitor) to avoid dummy pulses reading
 //
-// When a MS5611/SPL06/BMP280 (baro sensor) is used:
+// When a MS5611/SPL06/BMP280 (baro sensor) and/or MP5060 is used:
 //       Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor 
 //            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
 //       Connect SCL from baro sensor to the pin selected as SCL in parameter for RP2040

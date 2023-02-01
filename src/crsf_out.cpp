@@ -96,7 +96,7 @@ bool dataAvailable(uint8_t idx) {
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
-            return fields[RPM].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
+            return  fields[RPM].available || fields[PITCH].available || fields[ROLL].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
             //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled 
@@ -225,9 +225,21 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-    fillBufferI16( (int16_t) (0)) ; //not used in this version 
-    fillBufferI16( (int16_t) (0)); // not used in this version
-    fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+    if ( fields[PITCH].available ) {
+        fillBufferI16( (int16_t) (fields[PITCH].value)) ; //pitch  
+    } else {
+        fillBufferI16( (int16_t) 0);
+    }
+    if ( fields[ROLL].available ) {
+        fillBufferI16( (int16_t) (fields[ROLL].value)) ; //roll  
+    } else {
+        fillBufferI16( (int16_t) 0);
+    }
+    if ( fields[RPM].available  ) {
+        fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+    } else {
+        fillBufferI16( (int16_t) 0);
+    }
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;

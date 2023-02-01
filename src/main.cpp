@@ -34,8 +34,6 @@
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
 //         support Frsky Fport on top of sbus+sport protocol
-//         reserve Volt 2 for current 
-//         Calculate consumed current and allow to reset it using a button          
 //         add switching 8 gpio from one channel
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         fill pitch and roll in telemetry (even for elrs?)

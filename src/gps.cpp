@@ -351,7 +351,10 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         //fields[NUMSAT].available = true;
         if ( _buffer.solution.fix_type == FIX_3D ) _buffer.solution.satellites += 100; // we add 100 when we have a 3d fix (for Ublox)
         sent2Core0(NUMSAT, _buffer.solution.satellites); 
-        //GPS_hdop = _buffer.solution.position_DOP;
+        if ( _buffer.solution.fix_status & NAV_STATUS_FIX_VALID) { // PDOP is valid only when bit 0 =1  
+            GPS_pdop = _buffer.solution.position_DOP;
+            sent2Core0(GPS_PDOP, _buffer.solution.position_DOP);
+        }
         //printf("nbr sat : %X \n", GPS_numSat) ; 
         break;
     case MSG_PVT:                                // this message does not exist in ublox6 (but SOL does not exist in ublox10)
@@ -363,7 +366,10 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
         //fields[NUMSAT].available = true;
         if ( _buffer.pvt.fix_type == FIX_3D ) _buffer.pvt.satellites += 100; // we add 100 when we have a 3d fix (for Ublox)
         sent2Core0(NUMSAT, _buffer.pvt.satellites); 
-        //GPS_hdop = _buffer.pvt.position_DOP;
+        if ( _buffer.pvt.fix_status & NAV_STATUS_FIX_VALID) { // PDOP is valid only when bit 0 =1  
+            GPS_pdop = _buffer.pvt.position_DOP;
+            sent2Core0(GPS_PDOP, _buffer.pvt.position_DOP);
+        }
         //printf("nbr sat : %X \n", GPS_numSat) ;
         gpsDate =_buffer.pvt.year % 100;
         gpsDate <<= 8;

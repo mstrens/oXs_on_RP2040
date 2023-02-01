@@ -4,7 +4,7 @@
 //#include "Button2.h" moved to Button2.cpp
 //#include "stdio.h"
 
-#define SPORT_TYPES_MAX 30 //NUMBER_MAX_IDX
+#define SPORT_TYPES_MAX 20 //NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
@@ -149,26 +149,36 @@ struct field {
 #define DOWNLINK_LINK_QUALITY_ID  0x5208
 #define DOWNLINK_SNR_ID           0x5209
 
+#define DIY_GPS_NUM_SAT        0X5100
+#define DIY_GPS_PDOP           0X5101
+#define DIY_VOLT3              0X5113
+#define DIY_VOLT4              0X5114
+#define DIY_PITCH              0X5120
+#define DIY_ROLL               0X5121
+#define DIY_YAW                0X5122
 
-
-enum fieldIdx {
-      LATITUDE =0,
-      LONGITUDE,
-      GROUNDSPEED ,
-      HEADING, 
-      ALTITUDE ,
-      NUMSAT ,
-      MVOLT, 
-      CURRENT,
-      RESERVE1,
-      RESERVE2,
-      VSPEED,
-      PITCH,
-      ROLL,
-      YAW ,
-    UPLINK_RSSI_1 , UPLINK_RSSI_2 , UPLINK_LINK_QUALITY , UPLINK_SNR , ACTIVE_ANTENNA, RF_MODE ,
-    UPLINK_TX_POWER , DOWNLINK_RSSI , DOWNLINK_LINK_QUALITY , DOWNLINK_SNR ,
-    RELATIVEALT , RPM , CAPACITY, RESERVE3, GPS_DATE , GPS_TIME , NUMBER_MAX_IDX , 
+enum fieldIdx {     // Internal Id for the measurements stored in oXs and that can be sent (some in a different format/field)
+      LATITUDE =0,  //  GPS
+      LONGITUDE,    //  GPS
+      GROUNDSPEED , //  GPS
+      HEADING,      //  GPS
+      ALTITUDE ,    //  GPS
+      NUMSAT ,      //  GPS
+      GPS_DATE ,    // GPS
+      GPS_TIME ,    // GPS
+      GPS_PDOP ,    // GPS
+      MVOLT,        // volt1 
+      CURRENT,  // volt2 must be in seq for voltage.cpp
+      RESERVE1, // volt3 must be in seq for voltage.cpp
+      RESERVE2, // volt4 must be in seq for voltage.cpp
+      CAPACITY,    // based on current (volt2)
+      VSPEED,      // baro
+      RELATIVEALT , // baro
+      PITCH,       // imu
+      ROLL,        // imu
+      YAW ,        // not used to save data
+      RPM ,        // RPM sensor  
+      NUMBER_MAX_IDX, // used to count the number of entries  
 };
 
 

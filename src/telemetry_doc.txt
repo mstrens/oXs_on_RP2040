@@ -8,8 +8,8 @@ field       measured in      mesured and transmitted when                 transm
 VOLT1       0.001V           V1 pin is defined                            VFAS (0x0210)              0.01V
 VOLT2       0.001V=0.001A    V2 pin is defined                            Current (0x0200)           0.001A
 Capacity    mAh              V2 pin is defined (reset after power down)   Fuel (0x0600)              mAh
-VOLT3       0.001V           V3 pin is defined                            DIY (0X5101)               0.001V
-VOLT4       0.001V           V4 pin is defined                            DIY (0X5102)               0.001V
+VOLT3       0.001V           V3 pin is defined                            DIY (0X5113)               0.001V
+VOLT4       0.001V           V4 pin is defined                            DIY (0X5114)               0.001V
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude (0X100)           cm
 Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            cm/sec
                              if a MP6050 is installed, Vpeed use it too
@@ -20,12 +20,14 @@ GPS course degree            Same as above                                 GPS h
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              DIY (0X5100)              unit (+100)
-GPS date   YYMMDD0xFF        Same as above                                 GPS date                 special format 
-GPS time   HHMMSS0x00        Same as above                                 GPS time                 special format 
+GPS date   YYMMDD0xFF        Same as above                                 GPS date (0X850)         special format 
+GPS time   HHMMSS0x00        Same as above                                 GPS time (0X850)         special format 
+GPS distance from home       Same as above                                 not transmitted
+GPS PDOP   0.01  ????        Same as above                                 GPS PDOP (0X5101)         0.01 
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
-Roll                         Same as above
+Pitch                        MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
+Roll                         Same as above                                 DIY (05121)              degree
 
 Note: to test if openTx/edge is able to discover the "DIY" sensor ID's
 
@@ -53,11 +55,13 @@ GPS Alt    cm                Same as above; = alt above see level          GPAS 
 GPS number of satelites      Same as above (+100 when 3D fix)              Num of satelites         unit (+100)
 GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
 GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS distance from home       Same as above                                 not transmitted
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 RPM        ?????             RPM pin is defined                            YAW                      ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
-Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
-Roll                         Same as above
+Pitch                        MP6050 is installed (and SCL/SDA defined)     pitch                    degree
+Roll                         Same as above                                 roll                     degree
 
 Note: to analyse if handset can display a rpm value in YAW (which is supposed to be in degree; perhaps to redefine on handset)
 
@@ -86,6 +90,7 @@ GPS number of satelites      Same as above (+100 when 3D fix)              GPS n
 GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
 GPS time   HHMMSS0x00        Same as above                                 not transmitted 
 GPS distance from home       Same as above                                 GPS distance              m
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 RPM        ?????             RPM pin is defined                            not available in Hott
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
@@ -119,6 +124,8 @@ GPS Alt    cm                Same as above; = alt above see level          GPAS 
 GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted currently
 GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
 GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS distance from home       Same as above                                 not transmitted
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 RPM        ?????             RPM pin is defined                            not transmitted currently
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
