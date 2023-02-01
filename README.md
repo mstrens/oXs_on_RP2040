@@ -1,4 +1,4 @@
-# expressLRS / FRSKY / JETI openXsensor (oXs) on RP2040 board
+# expressLRS / FRSKY / HOTT / JETI openXsensor (oXs) on RP2040 board
 
 This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT or Jeti receiver(s) (protocol has to be selected accordingly).
  
