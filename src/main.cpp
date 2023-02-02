@@ -19,6 +19,7 @@
 #include "sport.h"
 #include "jeti.h"
 #include "hott.h"
+#include "mpx.h"
 #include "param.h"
 #include "tools.h"
 #include "ws2812.h"
@@ -62,8 +63,8 @@
 //  When interfaced with 2 receivers, 
 
 
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX
-//        0   1                         for Sport Rx            or HOTT RX
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX
+//        0   1                         for Sport Rx            or HOTT RX or MPX RX
 //        0   2            sbus out             
 
 //        1   0 is used for gps Tx  (was used for one pwm)        
@@ -282,6 +283,10 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupHott();
+      } else if (config.protocol == 'M') {
+        setupSbusIn();
+        setupSbus2In();
+        setupMpx();
       }
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
@@ -336,6 +341,11 @@ void loop() {
         fillSbusFrame();
       } else if (config.protocol == 'H') {
         handleHottRxTx();
+        handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
+      } else if (config.protocol == 'M') {
+        handleMpxRxTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();

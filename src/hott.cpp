@@ -15,6 +15,7 @@ It is possible to send some info to reverse some fields on the display and to ac
 #include "pico/stdlib.h"
 #include "pico/util/queue.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
 #include "uart_hott_tx_rx.pio.h"
 #include "MS5611.h"
 #include "SPL06.h"

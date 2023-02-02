@@ -23,6 +23,8 @@
 #include "uart_sport_tx_rx.pio.h"
 #include "pico/util/queue.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
+
 #include "sport.h"
 #include "tools.h"
 #include "config.h"

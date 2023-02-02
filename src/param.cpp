@@ -117,7 +117,7 @@ void processCmd(){
         printf("- To disable a function, set pin number to 255\n\n");
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
-        printf("-To change the protocol, enter PROTOCOL=x where x=S for Sport, C for CRSF/ELRS, J for Jeti or H for Hott\n");
+        printf("-To change the protocol, enter PROTOCOL=x where x=S for Sport, C for CRSF/ELRS, J for Jeti, H for Hott or M for Mpx\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
@@ -373,8 +373,11 @@ void processCmd(){
         } else if (strcmp("H", pvalue) == 0) {
             config.protocol = 'H';
             updateConfig = true;
+        } else if (strcmp("M", pvalue) == 0) {
+            config.protocol = 'M';
+            updateConfig = true;
         } else  {
-            printf("Error : protocol must be S (Sport), C (CRSF=ELRS), J (Jeti) or H (Hott)\n");
+            printf("Error : protocol must be S (Sport), C (CRSF=ELRS), J (Jeti), H (Hott) or M (Mpx)\n");
         }
     }
     
@@ -631,6 +634,8 @@ void printConfig(){
             printf("\nProtocol is Jeti (Ex)\n")  ;    
         } else if (config.protocol == 'H'){
             printf("\nProtocol is Hott\n")  ;    
+        } else if (config.protocol == 'M'){
+            printf("\nProtocol is Mpx\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }

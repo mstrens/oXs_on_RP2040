@@ -132,3 +132,33 @@ Pitch                        Could be added if MP6050 is installed (and SCL/SDA 
 Roll                         Same as above
 
 
+******************************************************************************************************************
+**                                        Multiplex protocol                                                    **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            Index = 1                   0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            not transmitted currently
+Capacity    mAh              V2 pin is defined (reset after power down)   not transmitted currently
+VOLT3       0.001V           V3 pin is defined                            not transmitted currently
+VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Index = 8                  m
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Index = 3                  dm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) not transmitted
+GPS lat                      Same as above                                 not transmitted
+GPS speed  cm/sec            Same as above                                 Index = 4                 0.1 km/h
+GPS course degree            Same as above                                 Index = 7                 0.1 degree
+GPS Alt    cm                Same as above; = alt above see level          not transmitted
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS distance from home       Same as above                                 not transmitted
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+RPM        ?????             RPM pin is defined                            Index = 5                 100 t/min
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll                         Same as above                                 Not transmitted 
+
+

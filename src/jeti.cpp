@@ -2,6 +2,7 @@
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
 #include "uart_jeti_tx.pio.h"
 #include "MS5611.h"
 #include "SPL06.h"

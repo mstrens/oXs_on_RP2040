@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "Arduino.h"
+//#include "Arduino.h"
 
 
 void setupSport(void);
