@@ -88,8 +88,8 @@ void MS5611::begin()  // return true when baro exist
         return ; // command to get access to one register '0xA0 + 2* offset
     //  sleep_ms(1);
       }
-      if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 500) == PICO_ERROR_TIMEOUT)  {
-        //printf("error read calibration\n");
+      if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) == PICO_ERROR_TIMEOUT)  {
+        printf("error read calibration MS5611\n");
         return ;
       }  
       _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );
@@ -123,11 +123,11 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
   if (_result == 0)
   {
     _result = 1; // error
-    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 3 , false, 500) != PICO_ERROR_TIMEOUT) {
+    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 3 , false, 1500) != PICO_ERROR_TIMEOUT) {
       adcValue = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
       _result = 0 ; // no error
     } else {
-        printf("read error\n");
+        printf("read error MS5611\n");
     }
   }
   if (_result ) adcValue = 0; //  

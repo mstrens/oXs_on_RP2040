@@ -593,6 +593,7 @@ void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, f
   qh[3] += (qa * gz + qb * gy - qc * gx);
 
   // renormalise quaternion
+  if ( (qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]) == 0 ) return;
   recipNorm = 1.0 / sqrt(qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]);
   qh[0] = qh[0] * recipNorm;
   qh[1] = qh[1] * recipNorm;
@@ -600,7 +601,7 @@ void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, f
   qh[3] = qh[3] * recipNorm;
 }
 
-bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU and calculate the acc on Z axis (world)
+bool MPU::getAccZWorld(){ // return true when a value is available ; read the IMU and calculate the acc on Z axis (world)
     if (!mpuInstalled) {
         //printf("no mpu\n");
         return false;
@@ -613,7 +614,10 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = 0x3B;
     i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-    if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 500) == PICO_ERROR_TIMEOUT) return false  ;
+    if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 2500) == PICO_ERROR_TIMEOUT){
+        printf("Read error for MPU6050\n");
+        return false;
+    }     
     ax = (buffer[0] << 8 | buffer[1]);
     ay = (buffer[2] << 8 | buffer[3]);
     az = (buffer[4] << 8 | buffer[5]);
