@@ -143,7 +143,7 @@ void setupI2c(){
         sleep_us(5);
     }
     // initialize I2C     
-    i2c_init( i2c1, 100 * 1000);
+    i2c_init( i2c1, 400 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);
     gpio_set_function(config.pinScl, GPIO_FUNC_I2C);
     gpio_pull_up(config.pinSda);
@@ -307,7 +307,7 @@ void getSensorsFromCore1(){
             } else {
                 fields[entry.type].value = entry.data;
                 fields[entry.type].available = true ;
-                printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
+                //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
             }    
         }
     }
