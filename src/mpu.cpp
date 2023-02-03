@@ -439,15 +439,14 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
     uint8_t buf[] = {0x6B, 0x00};
     if ( i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false) == PICO_ERROR_GENERIC) return ;
     sleep_us(100);
-
-        // set offsets
-        //mpu6050.setXAccelOffset(335);
-        //mpu6050.setYAccelOffset(79);
-        //mpu6050.setZAccelOffset(1132);
-        //mpu6050.setXGyroOffset(70);
-        //mpu6050.setYGyroOffset(-13);
-        //mpu6050.setZGyroOffset(-9);
     mpu6050.initialize();
+    // set offsets with values saved in config
+    mpu6050.setXAccelOffset(config.accOffsetX);
+    mpu6050.setYAccelOffset(config.accOffsetY);
+    mpu6050.setZAccelOffset(config.accOffsetZ);
+    mpu6050.setXGyroOffset(config.gyroOffsetX);
+    mpu6050.setYGyroOffset(config.gyroOffsetY);
+    mpu6050.setZGyroOffset(config.gyroOffsetZ);
     /*
     mpu6050.setClockSource(MPU6050_CLOCK_PLL_XGYRO);
     mpu6050.setFullScaleGyroRange(MPU6050_GYRO_FS_250);
@@ -465,6 +464,7 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
     printf("MPU MAP initialized\n");
 }
 
+/*   Moved to param.cpp
 void MPU::calibrationRequest()  // 
 {
     if (!mpuInstalled) {
@@ -473,25 +473,49 @@ void MPU::calibrationRequest()  //
     }
     uint8_t data = 0X01; // 0X01 = execute calibration
     queue_try_add(&qSendCmdToCore1 , &data);
-    /*
-    printf("Acc & gyro before calibration\n");
-    mpu6050.PrintActiveOffsets() ;
-    mpu6050.CalibrateGyro(6);
-    mpu6050.CalibrateAccel(6);
-    printf("Acc & gyro after calibration\n");
-    mpu6050.PrintActiveOffsets() ;
-    */
 }    
+
+void MPU::printConfigOffsets(){
+    printf("\nOffset Values in config:\n");
+	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
+    printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
+}
+*/
+
+void MPU::testDevicesOffsetX(){
+    sleep_ms(1000);
+    int16_t gyroX[16];
+    printf("with existing offset = %i\n", mpu6050.getXGyroOffset());
+    for (uint8_t i=0;i<16;i++)  printf("%d\n", mpu6050.getRotationX()); // get 16 values
+    mpu6050.setXGyroOffset(0);
+    printf("with offset = 0\n");
+    for (uint8_t i=0;i<16;i++)  printf("%d\n", mpu6050.getRotationX()); // get 16 values
+    mpu6050.setXGyroOffset(66);
+    printf("with offset = 66\n");    
+    for (uint8_t i=0;i<16;i++) printf("%d\n", mpu6050.getRotationX()); // get 16 values
+}
 
 void MPU::calibrationExecute()  // 
 {
-    sleep_ms(100); // delay to allow core0 to print the config.
-    printf("Acc & gyro before calibration\n");
-    mpu6050.PrintActiveOffsets() ;
+    //sleep_ms(2000); // delay to allow core0 to print the config.
+    //printf("Acc & gyro before calibration\n");
+    //printConfigOffsets() ;
     mpu6050.CalibrateGyro(6);
     mpu6050.CalibrateAccel(6);
-    printf("Acc & gyro after calibration\n");
-    mpu6050.PrintActiveOffsets() ;
+    // put the offsets in config.h
+    config.accOffsetX = mpu6050.getXAccelOffset();
+    config.accOffsetY = mpu6050.getYAccelOffset();
+    config.accOffsetZ = mpu6050.getZAccelOffset();
+    config.gyroOffsetX = mpu6050.getXGyroOffset();
+    config.gyroOffsetY = mpu6050.getYGyroOffset();
+    config.gyroOffsetZ = mpu6050.getZGyroOffset();
+    //printf("Acc & gyro after calibration\n");
+    //printConfigOffsets() ;
+    //printf("Calibration done: parameters will be saved\n");
+    //sleep_ms(3000);
+    sent2Core0(0XFF, 0XFFFFFFFF); // use a dummy type to give a command; here a cmd to save the config
+    //mpu6050.PrintActiveOffsets() ;
+    //testDevicesOffsetX();
 }
 
 void GetGravity(VectorFloat *v, Quaternion *q) {
@@ -631,12 +655,17 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
   Axyz[1] = (float) ay;
   Axyz[2] = (float) az;
 
+  //  printf("AX Gx = %i %i\n", ax , gxh);
   //apply offsets and scale factors from Magneto
-  for (int i = 0; i < 3; i++) Axyz[i] = (Axyz[i] - A_cal[i]) * A_cal[i + 3];
+  //for (int i = 0; i < 3; i++) Axyz[i] = (Axyz[i] - A_cal[i]) * A_cal[i + 3];
 
-  Gxyz[0] = ((float) gxh - G_off[0]) * gscale; //250 LSB(d/s) default to radians/s
-  Gxyz[1] = ((float) gyh - G_off[1]) * gscale;
-  Gxyz[2] = ((float) gzh - G_off[2]) * gscale;
+  //Gxyz[0] = ((float) gxh - G_off[0]) * gscale; //250 LSB(d/s) default to radians/s
+  //Gxyz[1] = ((float) gyh - G_off[1]) * gscale;
+  //Gxyz[2] = ((float) gzh - G_off[2]) * gscale;
+    Gxyz[0] = ((float) gxh) * gscale; //250 LSB(d/s) default to radians/s
+    Gxyz[1] = ((float) gyh) * gscale;
+    Gxyz[2] = ((float) gzh) * gscale;
+
 
   //  snprintf(s,sizeof(s),"mpu raw %d,%d,%d,%d,%d,%d",ax,ay,az,gx,gy,gz);
   //  Serial.println(s);

@@ -1,5 +1,10 @@
 #pragma once
 
+
+/////   ************* This file is not used anymore when MPU uses Mahony algorithm **************************************
+
+
+
 #include "I2Cdev.h"
 #include "helper_3dmath.h"
 #include "pico/double.h"

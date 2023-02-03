@@ -121,7 +121,7 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 
 uint32_t lastBlinkMillis;
 
-queue_t qSensorData;
+queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
 void core1_main(); // prototype of core 1 main function
 
@@ -131,18 +131,37 @@ extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and param
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
     // send 10 SCL clock to force sensor to release sda
+    /*
     gpio_init(config.pinSda);
     gpio_init(config.pinScl);
     gpio_set_dir(config.pinSda, GPIO_IN);
     gpio_set_dir(config.pinScl, GPIO_OUT);
     gpio_pull_up(config.pinSda);
     gpio_pull_up(config.pinScl);
-    for (uint8_t i=0; i<9; i++){
-        gpio_put(config.pinScl, 0);
-        sleep_us(5);
-        gpio_put(config.pinScl, 1);
-        sleep_us(5);
-    }
+    sleep_us(10);
+    while ( gpio_get(config.pinSda) == 0) {;
+        
+        for (uint8_t i=0; i<9; i++){
+            gpio_put(config.pinScl, 1);
+            sleep_us(10);
+            gpio_put(config.pinScl, 0);
+            sleep_us(10);
+            printf("trying to unlock I2C\n");
+        }
+    }    
+    gpio_put(config.pinScl, 1);
+    gpio_set_dir(config.pinSda, GPIO_OUT);
+    gpio_put(config.pinScl, 0);
+    sleep_us(10);
+    gpio_put(config.pinSda, 0);
+    sleep_us(10);
+    gpio_put(config.pinScl, 1);
+    sleep_us(10);
+    gpio_put(config.pinSda, 1);
+    sleep_us(10);
+    gpio_set_dir(config.pinSda, GPIO_IN);
+    if ( gpio_get(config.pinSda) == 0) printf("I2C still locked\n");    
+    */
     // initialize I2C     
     i2c_init( i2c1, 400 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);
@@ -308,7 +327,20 @@ void getSensorsFromCore1(){
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
             if (entry.type >= SPORT_TYPES_MAX) {
-                printf("error : invalid type of sensor = %d\n", entry.type);
+                if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
+                    printf("Calibration has been done\n");
+                    printConfigOffsets();
+                    printf("\nConfig will be saved\n\n");
+                    sleep_ms(1000);
+                    saveConfig();
+                    printf("config has been saved\n");  
+                    printf("Device will reboot\n\n");
+                    watchdog_enable(1500,false);
+                    sleep_ms(1000);
+                    watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
+                } else {
+                    printf("error : invalid type of sensor = %d\n", entry.type);
+                }    
             } else {
                 fields[entry.type].value = entry.data;
                 fields[entry.type].available = true ;
@@ -394,7 +426,7 @@ void setup1(){
 // main loop on core 1 in order to read the sensors and send the data to core0
 void loop1(){
     uint8_t qCmd;
-    getSensors();
+    getSensors(); // get sensor
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);
         if ( qCmd == 0X01) { // 0X01 is the code to request a calibration

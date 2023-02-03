@@ -13,8 +13,8 @@ public:
     MPU6050 mpu6050 ; 
     void begin();
     bool getAccZWorld();
-    void calibrationRequest(); 
     void calibrationExecute();
+    void testDevicesOffsetX();
     /*
     void readRegister(uint8_t register, uint8_t * buffer , uint8_t number);  
     uint8_t getDeviceID();

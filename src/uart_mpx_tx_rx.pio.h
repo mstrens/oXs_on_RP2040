@@ -16,7 +16,7 @@
 static const uint16_t mpx_uart_tx_program_instructions[] = {
             //     .wrap_target
     0x9fa0, //  0: pull   block           side 1 [7] 
-    0xf72a, //  1: set    x, 10           side 0 [7] 
+    0xf727, //  1: set    x, 7            side 0 [7] 
     0x6001, //  2: out    pins, 1                    
     0x0642, //  3: jmp    x--, 2                 [6] 
             //     .wrap

@@ -162,7 +162,7 @@ void setupMpx() {
     );
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     mpxOffsetTx = pio_add_program(mpxPio, &mpx_uart_tx_program);
-    mpx_uart_tx_program_init(mpxPio, mpxSmTx, mpxOffsetTx, config.pinTlm, 57600 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
+    mpx_uart_tx_program_init(mpxPio, mpxSmTx, mpxOffsetTx, config.pinTlm, 38400 , false); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
 
 // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO0_IRQ_0 , mpxPioRxHandlerIrq) ;
@@ -185,7 +185,7 @@ void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read th
   }
 }
 
-//#define DEBUG_MPX_WITHOUT_RX
+#define DEBUG_MPX_WITHOUT_RX
 #ifdef DEBUG_MPX_WITHOUT_RX
 uint32_t lastMpxRequest = 0;
 #endif
@@ -202,7 +202,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
                 mpxStartWaiting = micros();
                 data = pollingSimulation++;
                 if (pollingSimulation >0X0F) pollingSimulation = 0;
-                lastHottRequest = millis();
+                lastMpxRequest = millis();
             }
             break;
             #endif
@@ -219,7 +219,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
         case WAIT_FOR_SENDING :
             if ( ( micros() - mpxStartWaiting) > 1000 ) {  // wait 1000usec before sending the reply
                 if (sendMpxFrame(data) ) { // return true when a frame is really being sent
-                    mpxState = SENDING;
+                    mpxState = WAIT_END_OF_SENDING;
                     mpxStartWaiting = micros();
                     //printf("s\n");
                 } else { 
@@ -227,16 +227,16 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
                 }   
             }
             break;         
-        
+        /*
         case SENDING :   // wait that dma have sent all data (but the last bytes are not yet sent)
             if ( ! dma_channel_is_busy( mpx_dma_chan)	){
                 mpxState = WAIT_END_OF_SENDING;
                 mpxStartWaiting = micros();
             }
             break;         
-        
+        */
         case WAIT_END_OF_SENDING :
-            if ( ( micros() - mpxStartWaiting) > ( 1000) ){ // wait that the 3 bytes have been sent (780 usec)
+            if ( ( micros() - mpxStartWaiting) > (1500) ){ // wait that the 3 bytes have been sent (780 usec)
                 mpx_uart_tx_program_stop(mpxPio, mpxSmTx, config.pinTlm );
                 mpx_uart_rx_program_restart(mpxPio, mpxSmRx, config.pinTlm, false );  // false = not inverted
                 mpxState = RECEIVING ;
@@ -252,8 +252,13 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     bool sendingRequired = false;
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
+    //printf("da id= %d %d\n", data_id , fieldId);
+    
     if ( fieldId == 0XFF) return false; // do not reply is this address is not supported
+    //printf("da id val= %d %d %d %d\n", data_id , fieldId , fields[fieldId].value , fields[fieldId].available );
+    
     if ( fields[fieldId].available == false) return false; //do not reply if this field has never been available (no reset in mpx protocol) 
+    //printf("id= %d\n", data_id);
     if ( dma_channel_is_busy(mpx_dma_chan) ) {
         //printf("dma is busy\n");
         return false; // skip if the DMA is still sending data
@@ -286,10 +291,11 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
     mpx_uart_rx_program_stop(mpxPio, mpxSmRx, config.pinTlm); // stop receiving
-    mpx_uart_tx_program_start(mpxPio, mpxSmTx, config.pinTlm, true); // prepare to transmit
+    mpx_uart_tx_program_start(mpxPio, mpxSmTx, config.pinTlm, false); // prepare to transmit
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (mpx_dma_chan, &mpxTxBuffer[0], false);
     dma_channel_set_trans_count (mpx_dma_chan, 3, true) ;
+    //printf("mpx %X %X %X\n", mpxTxBuffer[0] , mpxTxBuffer[1] ,mpxTxBuffer[2]);
     return true;    
 }
 

@@ -18,6 +18,8 @@
 #include "crsf_out.h"
 #include "pico/multicore.h"
 #include "mpu.h"
+#include "pico/util/queue.h"
+
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -65,6 +67,8 @@ extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
 
 extern MPU mpu;
+extern queue_t qSendCmdToCore1;
+
 
 void handleUSBCmd(void){
     int c;
@@ -99,7 +103,10 @@ void processCmd(){
     char * pkey = NULL;
     char * pvalue = NULL;
     //printf("buffer0= %X\n", cmdBuffer[0]);
-    if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the instruction
+    if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the current config
+        
+    }
+    if (cmdBuffer[0] == '?'){ // when help is requested we print the instruction
         printf("\nCommands can be entered to change the config parameters\n");
         printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=1)\n");
         printf("    Function                  Code        Valid pins number\n");   
@@ -124,7 +131,7 @@ void processCmd(){
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
         printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
-        printf("-To force a calibration of MP6050, enter MPUCAL (currently calibration values are not saved)\n");
+        printf("-To force a calibration of MP6050, enter MPUCAL\n");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -132,7 +139,9 @@ void processCmd(){
     //    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
         printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
-        printf("   Note: some changes require a reset to be applied\n"); 
+        printf("-To get the current config, just press Enter\n");
+        printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
+        return;  
     }
     if (cmdBuffer[0] != 0x0){
         char * equalPos = strchr( (char*)cmdBuffer, '=');
@@ -270,7 +279,7 @@ void processCmd(){
         }
     }
     if ( strcmp("MPUCAL", pkey) == 0 ) {
-        mpu.calibrationRequest();
+        requestMpuCalibration();
         return; // do not continue in order to avoid printing config while config print some data too.
         /*
         db = strtod(pvalue,&ptr);
@@ -605,6 +614,7 @@ void checkConfig(){
     } else {
         printf("\nConfig parameters are OK\n");
     }
+    printf("Press ? + Enter to get help about the commands\n");
 }
 
 void printConfig(){
@@ -661,6 +671,8 @@ void printConfig(){
     }
     if(mpu.mpuInstalled){
         printf("Acc/Gyro is detected using MP6050\n")  ;
+        printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
+        printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
     } else {
        printf("Acc/Gyro is not detected\n")  ;     
     }
@@ -752,6 +764,7 @@ void printConfig(){
 const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
 void saveConfig() {
+    sleep_ms(1000); // let some printf to finish
     uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
     memcpy(&buffer[0], &config, sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
@@ -763,6 +776,7 @@ void saveConfig() {
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
     multicore_lockout_end_blocking();
+    sleep_ms(1000);
     printf("New config has been saved\n");
     //printConfig(); 
 }
@@ -852,3 +866,24 @@ void setupConfig(){   // The config is uploaded at power on
     }
     
 } 
+
+
+void requestMpuCalibration()  // 
+{
+    if (!mpu.mpuInstalled) {
+        printf("Calibration not done: no MP6050 installed\n");
+        return ;
+    }
+    uint8_t data = 0X01; // 0X01 = execute calibration
+    printf("Before calibration:\n");
+    printConfigOffsets();
+    sleep_ms(1000); // wait that message is printed
+    queue_try_add(&qSendCmdToCore1 , &data);
+
+}    
+
+void printConfigOffsets(){
+    printf("\nOffset Values in config:\n");
+	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
+    printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
+}
