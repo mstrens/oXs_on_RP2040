@@ -185,7 +185,7 @@ void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read th
   }
 }
 
-#define DEBUG_MPX_WITHOUT_RX
+//#define DEBUG_MPX_WITHOUT_RX
 #ifdef DEBUG_MPX_WITHOUT_RX
 uint32_t lastMpxRequest = 0;
 #endif
