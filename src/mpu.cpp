@@ -500,6 +500,11 @@ void MPU::calibrationExecute()  //
     //sleep_ms(2000); // delay to allow core0 to print the config.
     //printf("Acc & gyro before calibration\n");
     //printConfigOffsets() ;
+    uint8_t buf[] = {0x6B, 0x00};
+    if ( i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false) == PICO_ERROR_GENERIC) return ;
+    sleep_us(100);
+    mpu6050.initialize();
+    
     mpu6050.CalibrateGyro(6);
     mpu6050.CalibrateAccel(6);
     // put the offsets in config.h
