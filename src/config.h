@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.6.7"
+#define VERSION "0.6.8"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -121,7 +121,7 @@
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
 #define VARIO_FRAME_INTERVAL 50   // This frame contains only Vertical speed
 #define GPS_FRAME_INTERVAL 500     // This frame contains longitude, latitude, altitude, ground speed, heading and number of satellites
-#define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw. It is currently not used in this project.
+#define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw.
 #define BARO_ALTITUDE_FRAME_INTERVAL 500 // This frame contains only barometric relative altitude
 
 #define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec

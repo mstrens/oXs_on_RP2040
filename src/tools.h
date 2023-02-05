@@ -176,9 +176,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       CAPACITY,    // based on current (volt2)
       VSPEED,      // baro       14
       
-      RELATIVEALT , // baro      10
-      PITCH,       // imu        11 
-      ROLL,        // imu        12
+      RELATIVEALT , // baro      15
+      PITCH,       // imu        16 
+      ROLL,        // imu        17
       YAW ,        // not used to save data
       RPM ,        // RPM sensor  
       NUMBER_MAX_IDX, // used to count the number of entries  

@@ -242,10 +242,13 @@ void fillFrameAttitude(uint8_t idx){
     }
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
+    fields[PITCH].available = false ;
+    fields[ROLL].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    //    printf("Attitude: ");
-    //    for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
-    //    printf("\n");
+        //printf("Attitude: ");
+        //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        //printf("\n");
+        printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }
