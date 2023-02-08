@@ -299,7 +299,8 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (mpx_dma_chan, &mpxTxBuffer[0], false);
     dma_channel_set_trans_count (mpx_dma_chan, 3, true) ;
-      printf("mpx %X %X %X\n", mpxTxBuffer[0] , mpxTxBuffer[1] ,mpxTxBuffer[2]);
+    //printf("mpx %X %X %X Vs=%d A=%d\n", mpxTxBuffer[0] , mpxTxBuffer[1] ,mpxTxBuffer[2], fields[VSPEED].value , fields[RELATIVEALT].value  );
     return true;    
 }
+
 

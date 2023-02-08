@@ -24,8 +24,8 @@ KalmanFilter::KalmanFilter() { // constructor initialize 3 parameters
 //void KalmanFilter::Update(float z, float a, float dt, float* pZ, float* pV) {
 void KalmanFilter::Update(float z, float a ,  float* pZ, float* pV) {               // Update takes about 750 usec when running at 16 mHz
 
-#define Z_VARIANCE        50.0f // initially 500  cdhanged to 50
-#define ZACCEL_VARIANCE     0.1f  // initially 1  changed to 0.1
+#define Z_VARIANCE        50.0f // 
+#define ZACCEL_VARIANCE     0.1f  // 
 #define ZACCELBIAS_VARIANCE 1.0f
  
 #define DT 0.02f                          // time interval = 20 msec

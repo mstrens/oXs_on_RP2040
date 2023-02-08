@@ -178,9 +178,8 @@ void setupSensors(){
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
       adc1.begin() ; 
       adc2.begin() ; 
-      //printf("testing\n");
       mpu.begin(); 
-//blinkRgb(0,10,0);
+    //blinkRgb(0,10,0);
       gps.setupGps();  //use a Pio
 }
 
@@ -271,7 +270,7 @@ void setup() {
     toggleRgb();
     }
   #endif
-  //sleep_ms(5000);
+  sleep_ms(2000);
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
@@ -328,6 +327,8 @@ void getSensorsFromCore1(){
         if ( queue_try_remove(&qSensorData,&entry)){
             if (entry.type >= SPORT_TYPES_MAX) {
                 if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
+                    watchdog_enable(15000,false);
+                    sleep_ms(1000);
                     printf("Calibration has been done\n");
                     printConfigOffsets();
                     printf("\nConfig will be saved\n\n");

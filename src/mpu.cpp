@@ -2,6 +2,7 @@
 #include "param.h"
 #include "tools.h"
 #include "KalmanFilter.h"
+#include "KalmanFilter4D.h"
 #include "MS5611.h"
 #include "vario.h"
 #include "config.h"
@@ -19,14 +20,26 @@ extern queue_t qSendCmdToCore1;
 
 //Kalman
 //KalmanFilter kalman1 ;
-KalmanFilter kalman2 ;
-float zTrack1 ;
-float vTrack1 ;
-float zTrack2 ;
-float vTrack2 ;
-float prevVTrack2; // use to check hysteresis.
+//KalmanFilter kalman2 ;
+
+//float zTrack1 ;
+//float vTrack1 ;
+float zTrack ;
+float vTrack ;
+float prevVTrack; // use to check hysteresis.
 float sumAccZ = 0; // used to calculate an average of AccZ
 uint32_t countAccZ=0;
+
+// for Kalman4D
+//float zTrack4 ;
+//float vTrack4 ;
+//float KFAltitudeCm; // heigh calculated by kalman filter
+//float KFClimbrateCps ; // Vspeed calculated by kalman filter
+//float KFAltitudeCm2; // heigh calculated by kalman filter
+//float KFClimbrateCps2 ; // Vspeed calculated by kalman filter
+uint32_t lastKfUs = micros(); 
+uint32_t kfUs ;
+    
 
 
 #define USE_MAH //USE_MAK //USE_DMP  // USE_MAH
@@ -416,8 +429,8 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 
 // Free parameters in the Mahony filter and fusion scheme,
 // Kp for proportional feedback, Ki for integral
-float Kp = 30.0;
-float Ki = 0.0;
+float Kp = 30.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
+float Ki = 0.0;  // on same site, it is set on 2
 
 unsigned long now_ms, last_ms = 0; //millis() timers
 
@@ -447,6 +460,11 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
     mpu6050.setXGyroOffset(config.gyroOffsetX);
     mpu6050.setYGyroOffset(config.gyroOffsetY);
     mpu6050.setZGyroOffset(config.gyroOffsetZ);
+    mpu6050.setDLPFMode(MPU6050_DLPF_BW_188);
+    //mpu6050.setDLPFMode(MPU6050_DLPF_BW_10);
+    //printf("dlpfMode= %d\n", mpu6050.getDLPFMode() );
+    //printf("rate= %d\n", mpu6050.getRate() );
+     
     /*
     mpu6050.setClockSource(MPU6050_CLOCK_PLL_XGYRO);
     mpu6050.setFullScaleGyroRange(MPU6050_GYRO_FS_250);
@@ -461,7 +479,9 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
     mpu6050.PrintActiveOffsets() ;
     */
     mpuInstalled =  true;
-    printf("MPU MAP initialized\n");
+    //printf("MPU MAP initialized\n");
+    kalmanFilter4d_configure(1000.0f*(float)KF_ACCEL_VARIANCE_DEFAULT, KF_ADAPT, 0.0f, 0.0f, 0.0f);
+
 }
 
 /*   Moved to param.cpp
@@ -639,6 +659,23 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
 
     //printf("mpu\n"); 
     uint8_t buffer[14];
+    static float sumAz;
+    static float azWorldAverage;
+    static float azAverage; 
+    static float vSpeedAcc = 0;
+    static float vSpeedAccHighPass;
+    static float vSpeedAccLow ;
+    static float vSpeedAcc2;
+    static float accLow;
+    static float accHigh;
+    static float vSpeedAcc3;
+    static float lowPass = 0;        //initialization of EMA S
+    static uint32_t lastMpuUs;
+    if ( ( micros() - lastMpuUs) < 2000) return false ; // perfor calculation only every 2 msec 
+    lastMpuUs = micros();
+ 
+ 
+
 
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = 0x3B;
@@ -650,6 +687,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     ax = (buffer[0] << 8 | buffer[1]);
     ay = (buffer[2] << 8 | buffer[3]);
     az = (buffer[4] << 8 | buffer[5]);
+    //printf("az=%.0f\n", (float) az ); 
     gxh = (buffer[8] << 8 | buffer[9]);
     gyh = (buffer[10] << 8 | buffer[11]);
     gzh = (buffer[12] << 8 | buffer[13]);
@@ -676,11 +714,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
   //  Serial.println(s);
 
   now = micros();
-  deltat = (now - last) * 1.0e-6; //seconds since last update
+  deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
   last = now;
 
   Mahony_update(Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], deltat);
-
+    
     // at this stage, quaternion q is updated based on acceleration and gyro
     qq.w = qh[0];
     qq.x = qh[1];
@@ -691,26 +729,54 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     aa.y = ay;
     aa.z = az;
     GetLinearAccel(&aaReal, &aa, &gravity);
-    //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
+    //printf("%d,\t %d\n", aa.z - 16384 , aaReal.z);
+    
     GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
+    //printf("%d,\t %d\n", ((int32_t) az) - 16384 ,  aaWorld.z );
+    
 //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-    sumAccZ += aaWorld.z;
+    //sumAz += (float) az;
+    sumAccZ += (float) aaWorld.z;
     countAccZ++;
-    if (vario1.newClimbRateAvailable){
+        //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
+    // here above is executed nearly once per millisec 
+    if (vario1.newClimbRateAvailable){   // here once per about 20 msec
+        //enlapsedTime(0);
         vario1.newClimbRateAvailable = false; // reset the flag that says a new relative alt is available
-        kalman2.Update((float) vario1.relativeAlt  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+        azWorldAverage = (sumAccZ/countAccZ);
+        //azAverage = (sumAz / countAccZ);
+        //accLow = 0.999 * accLow + (1-0.999) * ((float) az); 
+        //accLow = 0.999 * accLow + (1-0.999) * ((float) azWorldAverage); 
+        
+        //accHigh = ((float) azWorldAverage) - accLow;
+        //accHigh =  az;
+        //vSpeedAcc3 = accHigh / 16384.0 * 981.0 * 0.02;
+        //vSpeedAcc += ( ((float) aaWorld.z)  / 16384.0 * 981.0 * 0.02) ;
+        //vSpeedAccLow = 0.9 * vSpeedAccLow + (1-0.9)* vSpeedAcc3;
+        //vSpeedAcc2 = vSpeedAcc3 - vSpeedAccLow;
+    //printf("Vb Va %d ,  %d, %d , 50, -50\n", (int32_t) vario1.climbRateFloat ,   (int32_t) vSpeedAcc3, (int32_t) vSpeedAcc2);  
+    //printf("aza wza %0.f %0.f\n", azAverage / 16384.0 * 981.0, azWorldAverage / 16384.0 * 981.0 );
+
+
+
+
+        //kalman2.Update((float) vario1.rawRelAltitudeCm , azWorldAverage /16384.0 * 981.0 ,  &zTrack2, &vTrack2);
+        kfUs = micros(); 
+        kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
+        lastKfUs = kfUs;  
+        kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /16384.0 * 981.0 , (float*) &zTrack , (float*)&vTrack);
+        //printf("Vv4 Vk4  %d %d 50 -50\n", (int32_t) vario1.climbRateFloat ,  (int32_t) (float) vTrack);
+        //printf("Va4 Va4  %d %d 50 -50\n", (int32_t) vario1.relativeAlt ,  (int32_t) (float) zTrack);
+            
+        
         sumAccZ= 0;
         countAccZ=0;
-        if ( abs((vTrack2 - prevVTrack2) ) >  VARIOHYSTERESIS ) {
-            prevVTrack2 = vTrack2 ;
+        sumAz = 0;
+        if ( abs((vTrack - prevVTrack) ) >  VARIOHYSTERESIS ) {
+            prevVTrack = vTrack ;
         }    
-        sent2Core0( VSPEED , (int32_t) prevVTrack2) ; 
-    //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z - 1000)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-//    kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
+        sent2Core0( VSPEED , (int32_t) prevVTrack) ; 
     }
-    
-    //printf("aworld: %d,\t %d,\t %d\n", aaWorld.x, aaWorld.y, aaWorld.z);
- 
     now_ms = millis(); //time to print?
     if (now_ms - last_ms >= 500) {
         last_ms = now_ms;

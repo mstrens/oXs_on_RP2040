@@ -18,6 +18,8 @@ public:
   int32_t altitudeLowPass ;
   int32_t altitudeHighPass;
   int32_t altitude ;   // in cm * 100
+  int32_t rawOffsetAltitudeCm ;
+  int32_t rawRelAltitudeCm = 0;
   int32_t intervalSmooth ; // we expect an interval of 20msec between 2 conversions
   float   climbRateFloat ;
   float prevClimbRateFloat; 
