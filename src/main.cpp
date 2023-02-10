@@ -37,32 +37,18 @@
 //         support Frsky Fport on top of sbus+sport protocol
 //         add switching 8 gpio from one channel
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
-//         fill pitch and roll in telemetry (even for elrs?)
-//         add an option to calibrate MP6050 (probably with a command and saving the values in config)
-//         manage the case where MP6050 exist but not a baro sensor
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         in readme add the wiring of GPS and of other I2C devices+ comments about MP6050
+//         add parameters to allow to specify if volt3 or 4  are use for temperature and then fill temperature fields instead of volt fields
+//         in Mpx protocol calculate and sent course and distance from home location
+//         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
+//         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
+//         put some files (telemetry_doc, ...) in a separate doc subdirectory
 
-// Look at file config.h for more details
+
+
+// Look at file in folder "doc" for more details
 //
-// This project can be interfaced with 
-//    - one or two receivers. 
-//    - receivers can be ELRS, FRSKY or Jeti
-// It can be used to:
-//    - convert ELRS signal to SBUS
-//    - generate up to 16 PWM signals (based on ELRS TX or on SBUS)
-//    - provide telemetry data (Altitude, Vertical speed, RPM, up to 4 Voltages, GPS)
-// When connected to 2 receivers:
-//    - it provides receiver diversity
-//    - PWM and SBUS are generated on the latest received frame (if one receiver fails to provide RC data)
-//    - the 2 receivers must use the same protocol (ELRS/SPORT/JETI).
-//    - only one (the primary) can transmit the telemetry data
-// It is possible in some way to define which pins are used and for what function
-// PWM signals are generated on:
-//     - pins GPIO0 up to GPIO15 (without use of a pio)
-//  When interfaced with 2 receivers, 
-
-
 // So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX
 //        0   1                         for Sport Rx            or HOTT RX or MPX RX
 //        0   2            sbus out             
@@ -88,7 +74,6 @@
 // LED = 16
 
 
-
 VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
@@ -97,7 +82,6 @@ BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0
 
 ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin connected to grnd)
 ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
-
 
 VARIO vario1;
 

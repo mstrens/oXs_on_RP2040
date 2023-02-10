@@ -42,6 +42,7 @@ struct CONFIG{
     int16_t gyroOffsetX;
     int16_t gyroOffsetY;
     int16_t gyroOffsetZ;
+    uint8_t temperature; 
 };
 
 void handleUSBCmd(void);

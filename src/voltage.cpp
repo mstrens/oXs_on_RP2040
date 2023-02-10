@@ -59,7 +59,15 @@ void VOLTAGE::getVoltages(void){
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
                         value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
-                        sent2Core0( cntInit + MVOLT, (int32_t) value );
+                        // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
+                        // volt 2 is used for current and consumed capacity is then calculated too
+                        if ( (cntInit == 2) && (config.temperature == 1 || config.temperature == 2) ) {
+                            sent2Core0( TEMP1 , (int32_t) value );
+                        } else if ( (cntInit == 3) && (config.temperature == 2) ) {
+                            sent2Core0( TEMP2 , (int32_t) value );
+                        } else {
+                            sent2Core0( cntInit + MVOLT, (int32_t) value ); // save as MVOLT, CURRENT, RESERVE1 or RESERVE2
+                        }
                         if (cntInit == 1) { // when we are calculating a current we calculate also the consumption
                             consumedMah += value * enlapsedMillis  / 3600000.0 ;  // in mah.
                             sent2Core0( CAPACITY, (int32_t) value );

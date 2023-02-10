@@ -266,8 +266,16 @@ bool fillHottGamFrame(){
     }
     if( fields[RESERVE1].available ) {  // = volt3
               TxHottData.gamMsg.Battery2 = fields[RESERVE1].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
-    TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
-    TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
+    if ( ( fields[TEMP1].available) && (fields[TEMP1].value > -20) ) {
+        TxHottData.gamMsg.temperature1 = fields[TEMP1].value + 20 ; // Hott applies an offset of 20. A value of 20 = 0°C
+    } else {
+        TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
+    }
+    if ( ( fields[TEMP2].available) && (fields[TEMP2].value > -20) ) {
+        TxHottData.gamMsg.temperature1 = fields[TEMP2].value + 20 ; // Hott applies an offset of 20. A value of 20 = 0°C
+    } else {
+        TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
+    }
     if( fields[RPM].available )
         {TxHottData.gamMsg.rpm = fields[RPM].value / 10;}    //#22 RPM in 10 RPM steps. 300 = 3000rpm
     if( fields[RELATIVEALT].available ) {

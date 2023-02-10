@@ -325,11 +325,14 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             float dlat  = (float)(GPS_home_lat - _buffer.posllh.latitude);
             float dlong  = ((float)(GPS_home_lon - _buffer.posllh.longitude)) * GPS_scale ;
             GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
+            sent2Core0(GPS_HOME_DISTANCE, (int32_t) GPS_distance);
             // calculate bearing
             int32_t off_x = _buffer.posllh.longitude - GPS_home_lon ;
             int32_t off_y = (_buffer.posllh.latitude - GPS_home_lat) / GPS_scale ;
             GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
             if (GPS_bearing < 0) GPS_bearing += 360;
+            sent2Core0(GPS_HOME_BEARING, (int32_t) GPS_bearing);
+            
         } else {
             GPS_fix = false;
         }

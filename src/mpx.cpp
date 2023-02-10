@@ -76,7 +76,7 @@ MU_ALT,   //#define MPX_HEIGHT  8	     //Hauteur                             1m 
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 MU_MAH,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
-0XFF,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
+MU_DIST,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 0XFF,         //14
 0XFF          //15
 };
@@ -88,14 +88,14 @@ CURRENT,       //#define MPX_CURRENT 2        //électricité                   
 VSPEED,        //#define MPX_VSPEED  3        //monter/descendre                   0,1 m/s       -500 à +500
 GROUNDSPEED,   //#define MPX_SPEED   4        //vitesse                            0,1 km/h       0 à +6000
 RPM,           //#define MPX_RPM     5        //vitesse rotationnelle         100 tr/min ou 10 tr/min	0 à +500 / -5000
-0XFF,          //#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
-HEADING,       //#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
+TEMP1,          //#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
+GPS_HOME_BEARING ,       //#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
 RELATIVEALT,   //#define MPX_HEIGHT  8	     //Hauteur                             1m         -500 à +2000
 0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 CAPACITY,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
-0XFF,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
+GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 0XFF,         //14
 0XFF          //15
 };
@@ -275,6 +275,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         case CURRENT:
             mpxValue= fields[fieldId].value / 100; // from mamp to 0.1A
             break;
+        case TEMP1:
+            mpxValue= fields[fieldId].value * 10; // from ° to 0.1°
+            break;
         case VSPEED:
             mpxValue= fields[fieldId].value / 10; // from cm/sec to 0.1m/sec
             break;
@@ -284,9 +287,12 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         case RPM:
             mpxValue= fields[fieldId].value *60 / 100 ; // from Hz to 100 tr/min???? not sure it is ok
             break;            
-        case HEADING:
-            mpxValue= fields[fieldId].value / 100 ; // from 0.001 deg  to 0.1 deg
-            break;            
+        case GPS_HOME_BEARING:
+            mpxValue= fields[fieldId].value *10 ; // from  deg  to 0.1 deg
+            break;
+        case GPS_HOME_DISTANCE:
+            mpxValue= fields[fieldId].value /100 ; // from  m  to 0.1km
+            break;     
         case RELATIVEALT:
             mpxValue= fields[fieldId].value /100; // from cm to m
             break;            

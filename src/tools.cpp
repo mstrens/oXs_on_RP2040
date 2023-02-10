@@ -117,6 +117,8 @@ void setupListOfFields(){
       GPS_DATE ,    // GPS
       GPS_TIME ,    // GPS
       GPS_PDOP ,    // GPS
+      GPS_HOME_DISTANCE, // GPS
+      GPS_HOME_BEARING, // GPS
       MVOLT,        // volt1 
       CURRENT,  // volt2 must be in seq for voltage.cpp
       RESERVE1, // volt3 must be in seq for voltage.cpp
@@ -129,31 +131,39 @@ void setupListOfFields(){
       YAW ,        // not used to save data
       RPM ,        // RPM sensor  
 */
-    
-    uint16_t listFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID ,\
+    // !!! those list must follow the same sequence as fieldIdx (in tools.h)
+    uint16_t listSportFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID ,\
                     GPS_ALT_FIRST_ID , DIY_GPS_NUM_SAT , GPS_TIME_DATE_FIRST_ID , GPS_TIME_DATE_FIRST_ID , DIY_GPS_PDOP,\
+                    DIY_GPS_HOME_BEARING , DIY_GPS_HOME_DISTANCE ,\
+
                     VFAS_FIRST_ID    , CURR_FIRST_ID   , DIY_VOLT3              , DIY_VOLT4              , FUEL_FIRST_ID,\
+                    T1_FIRST_ID , T1_FIRST_ID,\
                     VARIO_FIRST_ID   , ALT_FIRST_ID    ,  DIY_PITCH             , DIY_ROLL               , DIY_YAW ,\
                     RPM_FIRST_ID  };
-    uint8_t listdeviceID[SPORT_TYPES_MAX] = {DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS,\
+    /*
+    uint8_t sportListdeviceID[SPORT_TYPES_MAX] = {DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS, DATA_ID_GPS,\
                             DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS , DATA_ID_GPS,\
+                            DATA_ID_GPS , DATA_ID_GPS,\
                             DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS , DATA_ID_FAS ,\
+                            DATA_ID_FAS , DATA_ID_FAS ,\
                             DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO,DATA_ID_VARIO ,\
                             DATA_ID_RPM };
-
+    */
     uint16_t listInterval[SPORT_TYPES_MAX] = { 500, 500 , 500 , 500,\
                                         500 , 500 , 500 , 500, 500,\
+                                        500, 500,\
                                         500 , 500 , 500 , 500, 500,\
+                                        500, 500,\
                                         300 , 500 , 500 , 500, 500,\
                                         500 };
                             
-    for (uint8_t i = 0 ;  i<sizeof(listdeviceID); i++){
+    for (uint8_t i = 0 ;  i<sizeof(listSportFieldsID); i++){
         fields[i].value= 0;
         fields[i].available= false;
         fields[i].nextMillis= 0;
         fields[i].interval= listInterval[i];
-        fields[i].deviceId= listdeviceID[i];
-        fields[i].fieldId= listFieldsID[i];
+    //    fields[i].deviceId= sportListdeviceID[i];
+        fields[i].sportFieldId= listSportFieldsID[i];
     }
 }
 

@@ -128,6 +128,7 @@ void processCmd(){
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
+        printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
         printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
@@ -529,6 +530,19 @@ void processCmd(){
             printf("Error : No RC channels have been received yet. FAILSAFE values are unknown\n");
         }    
     }
+    // change number of temperature sensors
+    if ( strcmp("TEMP", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : value must be an unsigned integer\n");
+        } else if ( !(ui==0 or ui==1 or ui==2 or ui ==255)) {
+            printf("Error : value must be 0, 1, 2 or 255\n");
+        } else {    
+            config.temperature;
+            printf("Number of temperature sensors = %u\n" , config.temperature );
+            updateConfig = true;
+        }
+    }
     if (updateConfig) {
         saveConfig();
         printf("config has been saved\n");  
@@ -608,7 +622,14 @@ void checkConfig(){
     //if ( (config.pinSbusOut != 255 and ( config.protocol == 'S' or config.protocol == 'J') ) ) { //check that Prim is defined ff pinSec is defined
     //    printf("Warning: Sbus signal will not be generated for Sport or Jeti protocol\n");
     //}
-    
+    if (config.temperature == 1 and config.pinVolt[2] == 255){
+        printf("Error in parameters: when 1 temperature sensor is used (TEMP = 1), a pin for V3 must be defined too)\n");
+        configIsValid=false;
+    }
+    if (config.temperature == 2 && (config.pinVolt[2] == 255 || config.pinVolt[3] == 255)){
+        printf("Error in parameters: when 2 temperature sensors are used (TEMP = 2), a pin for V3 and for V4 must be defined too)\n");
+        configIsValid=false;
+    }
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
@@ -653,6 +674,12 @@ void printConfig(){
     printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
+    if ( config.pinVolt[2] !=255 && config.temperature == 1) {
+        printf("    One temperature sensor is connected on V3\n");
+    }
+    if (config.pinVolt[2] !=255 && config.pinVolt[3] !=255 && config.temperature == 2){
+         printf("    Temperature sensors are connected on V3 and V4\n");
+    }
     printf("RPM multiplier = %f\n", config.rpmMultiplicator);
     if (baro1.baroInstalled) {
         printf("Baro sensor is detected using MS5611\n")  ;

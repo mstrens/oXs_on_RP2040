@@ -208,8 +208,8 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     uint16_t crc ;
     uint8_t tempBuffer[10];
     tempBuffer[counter++] = 0X10 ; // type of packet : data
-    tempBuffer[counter++] = fields[idx].fieldId    ; // 0x0110 = Id for vario data
-    tempBuffer[counter++] = fields[idx].fieldId >> 8 ; // 0x0110 = Id for vario data
+    tempBuffer[counter++] = fields[idx].sportFieldId    ; // 0x0110 = Id for vario data
+    tempBuffer[counter++] = fields[idx].sportFieldId >> 8 ; // 0x0110 = Id for vario data
     tempBuffer[counter++] = uintValue >> 0 ; // value 
     tempBuffer[counter++] = uintValue >> 8 ;  
     tempBuffer[counter++] = uintValue >> 16 ;  

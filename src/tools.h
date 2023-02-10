@@ -4,15 +4,15 @@
 //#include "Button2.h" moved to Button2.cpp
 //#include "stdio.h"
 
-#define SPORT_TYPES_MAX 20 //NUMBER_MAX_IDX
+#define SPORT_TYPES_MAX 24 // = NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
     bool available;
     uint32_t nextMillis;
     uint16_t interval; // msec
-    uint8_t deviceId;
-    uint16_t fieldId;
+    uint8_t sportDeviceId;
+    uint16_t sportFieldId;
 } ;
 
 
@@ -151,6 +151,9 @@ struct field {
 
 #define DIY_GPS_NUM_SAT        0X5100
 #define DIY_GPS_PDOP           0X5101
+#define DIY_GPS_HOME_BEARING   0X5102
+#define DIY_GPS_HOME_DISTANCE  0X5103
+
 #define DIY_VOLT3              0X5113
 #define DIY_VOLT4              0X5114
 #define DIY_PITCH              0X5120
@@ -168,20 +171,25 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       GPS_DATE ,    // GPS
       GPS_TIME ,    // GPS
       GPS_PDOP ,    // GPS
-      MVOLT,        // volt1  9
-      
+      GPS_HOME_BEARING, // GPS
+
+      GPS_HOME_DISTANCE, // GPS  10
+      MVOLT,        // volt1  
       CURRENT,  // volt2 must be in seq for voltage.cpp
       RESERVE1, // volt3 must be in seq for voltage.cpp
       RESERVE2, // volt4 must be in seq for voltage.cpp
-      CAPACITY,    // based on current (volt2)
-      VSPEED,      // baro       14
       
-      RELATIVEALT , // baro      15
-      PITCH,       // imu        16 
-      ROLL,        // imu        17
+      CAPACITY,    // based on current (volt2)
+      TEMP1,       // = Volt3 but saved as temp
+      TEMP2,       // = Volt4 but saved as temp
+      VSPEED,      // baro       
+      RELATIVEALT , // baro      
+      
+      PITCH,       // imu        20 
+      ROLL,        // imu        
       YAW ,        // not used to save data
       RPM ,        // RPM sensor  
-      NUMBER_MAX_IDX, // used to count the number of entries  
+      NUMBER_MAX_IDX, // used to count the number of entries  24
 };
 
 
