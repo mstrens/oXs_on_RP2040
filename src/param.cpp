@@ -890,6 +890,13 @@ void setupConfig(){   // The config is uploaded at power on
         config.failsafeChannels.ch13 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch14 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch15 = config.failsafeChannels.ch0 ;
+        config.accOffsetX = 0;
+        config.accOffsetY = 0;
+        config.accOffsetZ = 0;
+        config.gyroOffsetX = 0;
+        config.gyroOffsetY = 0;
+        config.gyroOffsetZ= 0;
+        config.temperature = 255;
     }
     
 } 

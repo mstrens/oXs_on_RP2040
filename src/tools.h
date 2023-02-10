@@ -11,7 +11,7 @@ struct field {
     bool available;
     uint32_t nextMillis;
     uint16_t interval; // msec
-    uint8_t sportDeviceId;
+    //uint8_t sportDeviceId;
     uint16_t sportFieldId;
 } ;
 

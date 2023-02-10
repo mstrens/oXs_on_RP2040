@@ -135,7 +135,6 @@ void setupListOfFields(){
     uint16_t listSportFieldsID[SPORT_TYPES_MAX] = {GPS_LONG_LATI_FIRST_ID , GPS_LONG_LATI_FIRST_ID ,GPS_SPEED_FIRST_ID, GPS_COURS_FIRST_ID ,\
                     GPS_ALT_FIRST_ID , DIY_GPS_NUM_SAT , GPS_TIME_DATE_FIRST_ID , GPS_TIME_DATE_FIRST_ID , DIY_GPS_PDOP,\
                     DIY_GPS_HOME_BEARING , DIY_GPS_HOME_DISTANCE ,\
-
                     VFAS_FIRST_ID    , CURR_FIRST_ID   , DIY_VOLT3              , DIY_VOLT4              , FUEL_FIRST_ID,\
                     T1_FIRST_ID , T1_FIRST_ID,\
                     VARIO_FIRST_ID   , ALT_FIRST_ID    ,  DIY_PITCH             , DIY_ROLL               , DIY_YAW ,\
@@ -157,12 +156,12 @@ void setupListOfFields(){
                                         300 , 500 , 500 , 500, 500,\
                                         500 };
                             
-    for (uint8_t i = 0 ;  i<sizeof(listSportFieldsID); i++){
+    for (uint8_t i = 0 ;  i< sizeof(listSportFieldsID)/sizeof(listSportFieldsID[0]); i++){
         fields[i].value= 0;
         fields[i].available= false;
         fields[i].nextMillis= 0;
         fields[i].interval= listInterval[i];
-    //    fields[i].deviceId= sportListdeviceID[i];
+    //    fields[i].sportDeviceId= sportListdeviceID[i];
         fields[i].sportFieldId= listSportFieldsID[i];
     }
 }
