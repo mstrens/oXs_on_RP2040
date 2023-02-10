@@ -57,11 +57,11 @@ GPS date   YYMMDD0xFF        Same as above                                 not t
 GPS time   HHMMSS0x00        Same as above                                 not transmitted 
 GPS distance from home       Same as above                                 not transmitted
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
-RPM        ?????             RPM pin is defined                            YAW                      ????  
+RPM        ?????             RPM pin is defined                            not transmitted  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
-Pitch                        MP6050 is installed (and SCL/SDA defined)     pitch                    degree
-Roll                         Same as above                                 roll                     degree
+Pitch                        MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
+Roll                         Same as above                                 roll                     Rad (1/10000)
 
 Note: to analyse if handset can display a rpm value in YAW (which is supposed to be in degree; perhaps to redefine on handset)
 

@@ -29,7 +29,7 @@
 #include "mpu.h"
 #include "pico/multicore.h"
 #include "pico/util/queue.h"
-
+#include "ds18b20.h"
 
 
 // to do : add current and rpm telemetry fields to jeti protocol
@@ -176,11 +176,16 @@ void setupSensors(){
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
       baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
+      #ifdef USE_ADS1115
       adc1.begin() ; 
-      adc2.begin() ; 
+      adc2.begin() ;
+      #endif 
       mpu.begin(); 
     //blinkRgb(0,10,0);
       gps.setupGps();  //use a Pio
+      #ifdef USEDS18B20
+      ds18b20Setup(); 
+      #endif
 }
 
 void getSensors(void){
@@ -198,11 +203,16 @@ void getSensors(void){
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
   }
+  #ifdef USE_ADS1115
   adc1.readSensor(); 
-  adc2.readSensor(); 
+  adc2.readSensor();
+  #endif 
   mpu.getAccZWorld();  
   gps.readGps();
   readRpm();
+  #ifdef USE_DS18B20
+  ds18b20Read(); 
+  #endif
 }
 
 void mergeSeveralSensors(void){
@@ -269,8 +279,9 @@ void setup() {
     sleep_ms(200);
     toggleRgb();
     }
+    sleep_ms(2000);
   #endif
-  sleep_ms(2000);
+  
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {

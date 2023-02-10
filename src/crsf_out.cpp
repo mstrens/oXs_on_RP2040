@@ -96,7 +96,8 @@ bool dataAvailable(uint8_t idx) {
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
-            return  fields[RPM].available || fields[PITCH].available || fields[ROLL].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
+            //return  fields[RPM].available || fields[PITCH].available || fields[ROLL].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
+            return  fields[PITCH].available || fields[ROLL].available ;           
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
             //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled 
@@ -226,20 +227,20 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
     if ( fields[PITCH].available ) {
-        fillBufferI16( (int16_t) (fields[PITCH].value)) ; //pitch  
+        fillBufferI16( (int16_t) (fields[PITCH].value * 175)) ; //pitch  (must be in 1/1000 of deci rad )
     } else {
         fillBufferI16( (int16_t) 0);
     }
     if ( fields[ROLL].available ) {
-        fillBufferI16( (int16_t) (fields[ROLL].value)) ; //roll  
+        fillBufferI16( (int16_t) (fields[ROLL].value * 175)) ; //roll  
     } else {
         fillBufferI16( (int16_t) 0);
     }
-    if ( fields[RPM].available  ) {
-        fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
-    } else {
+    //if ( fields[RPM].available  ) {
+    //    fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+    //} else {
         fillBufferI16( (int16_t) 0);
-    }
+    //}
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
     fields[PITCH].available = false ;
@@ -248,7 +249,7 @@ void fillFrameAttitude(uint8_t idx){
         //printf("Attitude: ");
         //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
         //printf("\n");
-        printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
+        //printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }

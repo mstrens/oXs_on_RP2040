@@ -1,3 +1,6 @@
+
+// kalmanfilter4D algorithm is based on the code from https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO
+
 //#include "hardware/watchdog.h"
 #include "param.h"
 #include "tools.h"

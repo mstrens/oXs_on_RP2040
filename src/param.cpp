@@ -764,7 +764,7 @@ void printConfig(){
 const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
 void saveConfig() {
-    sleep_ms(1000); // let some printf to finish
+    //sleep_ms(1000); // let some printf to finish
     uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
     memcpy(&buffer[0], &config, sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
@@ -776,7 +776,7 @@ void saveConfig() {
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
     multicore_lockout_end_blocking();
-    sleep_ms(1000);
+    //sleep_ms(1000);
     printf("New config has been saved\n");
     //printConfig(); 
 }
