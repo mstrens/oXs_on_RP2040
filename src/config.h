@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "0.7.6"
+#define VERSION "0.7.7"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -9,10 +9,10 @@
 
 // -----------  for Sport protocol -------------------------------
 // default SPORT_SENSOR_ID
-#define DATA_ID_VARIO  0x00  // = sensor 0 used for Alt and Vspeed
-#define DATA_ID_FLVSS  0xA1  //          1
+#define DATA_ID_VARIO  0x00  // = sensor 0 used for Vspeed, GPS long and lat as P1
+#define DATA_ID_FLVSS  0xA1  //          1 used as P2
 #define DATA_ID_FAS    0x22  //          2
-#define DATA_ID_GPS    0x83  //          3 used for all GPS data
+#define DATA_ID_GPS    0x83  //          3 used as P3
 #define DATA_ID_RPM    0xE4  //          4
 #define DATA_ID_ACC    0x67  //          7
 //list of 28 device ID codes is (in sequence)

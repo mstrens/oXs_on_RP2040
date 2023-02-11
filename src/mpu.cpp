@@ -797,7 +797,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     
         // print angles for serial plotter...
         #ifdef DEBUG
-        printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack2, vario1.climbRateFloat);//  Serial.print("ypr ");
+        //printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack, vario1.climbRateFloat);//  Serial.print("ypr ");
         #endif
     }
     return false; 

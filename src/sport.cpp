@@ -136,6 +136,10 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
     
     fields[VSPEED].sportInterval = 100; //usec
     // add here other fields that should be sent more often
+    for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
+        printf("deviceId %d = %x\n", i , fields[i].sportDeviceId);
+    }
+
 } 
 
 void setupSport() {
@@ -237,7 +241,7 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
         uint8_t currentFieldIdx = last_sport_idx[deviceIndex];
         if (fields[currentFieldIdx].sportDeviceId == data_id) { // process only fields for requested device id
             if ( (_millis >= fields[currentFieldIdx].nextMillis) && (fields[currentFieldIdx].available)  ) {
-                //printf("sendOneSport\n");
+                //printf("Sport for device %X  with field %d\n", data_id , currentFieldIdx);
                 sendOneSport(currentFieldIdx);
                 fields[currentFieldIdx].available = false; // flag as sent
                 fields[currentFieldIdx].nextMillis = millis() + fields[currentFieldIdx].sportInterval;
