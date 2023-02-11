@@ -3,9 +3,12 @@
 //#include "common.h"
 #include <math.h>
 //#include "config.h"
-#include "kalmanfilter4d.h"
+#include "KalmanFilter4D.h"
 
-static const char* TAG = "kalmanfilter4d";
+//static const char* TAG = "kalmanfilter4d";
+
+// this file is based on a project found on github
+// here the address
 
 typedef struct KF4_STATE_ {
 	float z; // altitude

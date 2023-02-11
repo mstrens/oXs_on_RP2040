@@ -39,12 +39,10 @@
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         in readme add the wiring of GPS and of other I2C devices+ comments about MP6050
-//         add parameters to allow to specify if volt3 or 4  are use for temperature and then fill temperature fields instead of volt fields
-//         in Mpx protocol calculate and sent course and distance from home location
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
-//         put some files (telemetry_doc, ...) in a separate doc subdirectory
-
+//         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
+//         manage different priorities (device ID) for sport
 
 
 // Look at file in folder "doc" for more details
@@ -109,7 +107,7 @@ queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it 
 queue_t qSendCmdToCore1;
 void core1_main(); // prototype of core 1 main function
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 
 void setupI2c(){
@@ -321,7 +319,7 @@ void getSensorsFromCore1(){
     
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
-            if (entry.type >= SPORT_TYPES_MAX) {
+            if (entry.type >= NUMBER_MAX_IDX) {
                 if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
                     watchdog_enable(15000,false);
                     sleep_ms(1000);

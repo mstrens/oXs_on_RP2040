@@ -38,12 +38,12 @@ public:
   bool sensitivityAvailable ;  //used to decide if sensivityPpm can be sent or not
   int sensitivityPpm ;      // sensivity to apply when PPM is used. Value has to be divided by 1000 in order to calculate the smoothing parameter
   int sensitivity ; 
-  oneMeasurement_t absoluteAlt;     // in cm  
+  //oneMeasurement_t absoluteAlt;     // in cm  
   bool altitudeAvailableForDte   ;  // use to say to readsensors() that an altitude is available and that dte can be calculated.
   int32_t relativeAlt;     // in cm  
-  oneMeasurement_t relativeAltMax;     // in cm  
+  //oneMeasurement_t relativeAltMax;     // in cm  
   int32_t altOffset ;
-  oneMeasurement_t vSpeed10Sec; // Altitude gain/loose between 10 sec (is calculated and send every 500 msec)
+  //oneMeasurement_t vSpeed10Sec; // Altitude gain/loose between 10 sec (is calculated and send every 500 msec)
   
   //oneMeasurement_t climbRate;       // in cm /sec = vertical speed
   

@@ -6,7 +6,7 @@
 #include "param.h"
 
 extern CONFIG config;
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 
 VOLTAGE::VOLTAGE() {}

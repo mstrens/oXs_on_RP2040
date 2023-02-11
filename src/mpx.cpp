@@ -132,7 +132,7 @@ MPXSTATES mpxState;
 //uint32_t restoreMpxPioToReceiveMillis = 0; // when 0, the pio is normally in receive mode,
 //                                        // otherwise, it is the timestamp when pio transmit has to be restore to receive mode
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 //extern MS5611 baro1;
 //extern SPL06 baro2;

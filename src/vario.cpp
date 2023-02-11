@@ -8,7 +8,7 @@
 #include "mpu.h"
 //#include <stdlib.h>     /* abs */
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MPU mpu;
 
 uint32_t abs1(int32_t value){
