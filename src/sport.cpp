@@ -135,7 +135,7 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
     fields[RPM].sportDeviceId = SPORT_DEVICEID_P2;
     
     fields[VSPEED].sportInterval = 100; //usec
-    
+    // add here other fields that should be sent more often
 } 
 
 void setupSport() {
@@ -218,14 +218,13 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
 
 void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent for this device ID
     // search an idx (0,1,2 ) of current deviceId
+    static uint8_t last_sport_idx[3] = {0, 0, 0} ;
     uint8_t deviceIndex= 0; // 0 mean P1 device
     if (data_id == SPORT_DEVICEID_P2) deviceIndex=1;
     if (data_id == SPORT_DEVICEID_P3) deviceIndex=2;
-    // find lastfield being search for this deviceId
-
+    
     //printf("sendNextSportFrame\n");
     waitUs(300); // wait a little before replying to a pooling
-    static uint8_t last_sport_idx[3] = {0, 0, 0} ;
     if ( dma_channel_is_busy(sport_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
@@ -235,13 +234,16 @@ void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent
          last_sport_idx[deviceIndex]++;
          if (last_sport_idx[deviceIndex] >= NUMBER_MAX_IDX) last_sport_idx[deviceIndex] = 0 ;
         //printf("last_sport_idx= %d\n", last_sport_idx);
-         if ( (_millis >= fields[last_sport_idx[deviceIndex]].nextMillis) && (fields[last_sport_idx[deviceIndex]].available)  ) {
-             //printf("sendOneSport\n");
-             sendOneSport(last_sport_idx[deviceIndex]);
-             fields[last_sport_idx[deviceIndex]].available = false; // flag as sent
-             fields[last_sport_idx[deviceIndex]].nextMillis = millis() + fields[last_sport_idx[deviceIndex]].sportInterval;
-             break;
-         }
+        uint8_t currentFieldIdx = last_sport_idx[deviceIndex];
+        if (fields[currentFieldIdx].sportDeviceId == data_id) { // process only fields for requested device id
+            if ( (_millis >= fields[currentFieldIdx].nextMillis) && (fields[currentFieldIdx].available)  ) {
+                //printf("sendOneSport\n");
+                sendOneSport(currentFieldIdx);
+                fields[currentFieldIdx].available = false; // flag as sent
+                fields[currentFieldIdx].nextMillis = millis() + fields[currentFieldIdx].sportInterval;
+                break;
+            }
+        }    
     }
 }
 

@@ -116,7 +116,7 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
     }    
     // here we could add other voltage parameter (current, ...)
-    if ( baro1.baroInstalled || baro2.baroInstalled) {
+    if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }
