@@ -538,7 +538,7 @@ void processCmd(){
         } else if ( !(ui==0 or ui==1 or ui==2 or ui ==255)) {
             printf("Error : value must be 0, 1, 2 or 255\n");
         } else {    
-            config.temperature;
+            config.temperature = ui;
             printf("Number of temperature sensors = %u\n" , config.temperature );
             updateConfig = true;
         }
