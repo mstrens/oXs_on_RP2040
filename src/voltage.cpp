@@ -70,7 +70,7 @@ void VOLTAGE::getVoltages(void){
                         }
                         if (cntInit == 1) { // when we are calculating a current we calculate also the consumption
                             consumedMah += value * enlapsedMillis  / 3600000.0 ;  // in mah.
-                            sent2Core0( CAPACITY, (int32_t) value );
+                            sent2Core0( CAPACITY, (int32_t) consumedMah );
                         }
                         //fields[cntInit + MVOLT].available = true ;
                     }

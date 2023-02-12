@@ -256,9 +256,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     bool sendingRequired = false;
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
-    //printf("da id= %d %d\n", data_id , fieldId);
     
     if ( fieldId == 0XFF) return false; // do not reply is this address is not supported
+    
     //printf("da id val= %d %d %d %d\n", data_id , fieldId , fields[fieldId].value , fields[fieldId].available );
     
     if ( fields[fieldId].available == false) return false; //do not reply if this field has never been available (no reset in mpx protocol) 
@@ -267,6 +267,8 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         //printf("dma is busy\n");
         return false; // skip if the DMA is still sending data
     }
+    printf("da id= %d %d\n", data_id , fieldId);
+    
     mpxTxBuffer[0] = (data_id << 4) | convertMpxAddToUnit[data_id] ; // 2X 4 bits (address and units)
     switch (fieldId) {
         case MVOLT:

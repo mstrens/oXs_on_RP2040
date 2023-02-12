@@ -734,8 +734,10 @@ void printConfig(){
         } else {
             printf("Foreseen GPS type is unknown  :")  ;
         }
-    if (gps.gpsInstalled) {
-        printf("GPS is detected\n")  ;
+    if (gps.gpsInstalled && gps.GPS_fix) {
+        printf("GPS is detected and has a fix\n")  ;
+    } else if (gps.gpsInstalled ) {
+        printf("GPS is detected but has not (yet) a fix\n")  ;
     } else {
         printf("GPS is not (yet) detected\n")  ;
     }
