@@ -64,7 +64,7 @@
 
 uint8_t convertMpxAddToUnit[16] = {
 0XFF,       // 0XFF means not used
-MU_VOLT,    //#define MPX_VOLT    1	     //tension	                           0.1V          -600 à +600
+0XFF,       // 0XFF means not used
 MU_CURR,   //#define MPX_CURRENT 2        //électricité                        0.1A          -1000 à +1000
 MU_VSPD,   //#define MPX_VSPEED  3        //monter/descendre                   0,1 m/s       -500 à +500
 MU_ASPD,   //#define MPX_SPEED   4        //vitesse                            0,1 km/h       0 à +6000
@@ -72,7 +72,7 @@ MU_RPM,           //#define MPX_RPM     5        //vitesse rotationnelle        
 MU_TEMP,         //#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
 MU_DIR,       //#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
 MU_ALT,   //#define MPX_HEIGHT  8	     //Hauteur                             1m         -500 à +2000
-0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+MU_VOLT,    //#define MPX_VOLT    9	     //tension	                           0.1V          -600 à +600
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 MU_MAH,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
@@ -80,10 +80,12 @@ MU_DIST,          //#define MPX_DIST    13       //distance                     
 0XFF,         //14
 0XFF          //15
 };
+//0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+
 
 uint8_t convertMpxAddToFieldId[16] = { 
 0XFF,          // 0XFF means not used
-MVOLT,         //#define MPX_VOLT    1	     //tension	                           0.1V          -600 à +600
+0XFF,          // 0XFF means not used 1
 CURRENT,       //#define MPX_CURRENT 2        //électricité                        0.1A          -1000 à +1000
 VSPEED,        //#define MPX_VSPEED  3        //monter/descendre                   0,1 m/s       -500 à +500
 GROUNDSPEED,   //#define MPX_SPEED   4        //vitesse                            0,1 km/h       0 à +6000
@@ -91,7 +93,7 @@ RPM,           //#define MPX_RPM     5        //vitesse rotationnelle         10
 TEMP1,          //#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
 GPS_HOME_BEARING ,       //#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
 RELATIVEALT,   //#define MPX_HEIGHT  8	     //Hauteur                             1m         -500 à +2000
-0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+MVOLT,         //#define MPX_VOLT    9	     //tension	                           0.1V          -600 à +600
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 CAPACITY,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
@@ -99,6 +101,7 @@ GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance           
 0XFF,         //14
 0XFF          //15
 };
+//0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
 
 queue_t mpxRxQueue ;
@@ -267,7 +270,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         //printf("dma is busy\n");
         return false; // skip if the DMA is still sending data
     }
-    printf("da id= %d %d\n", data_id , fieldId);
+    //printf("da id= %d %d\n", data_id , fieldId);
     
     mpxTxBuffer[0] = (data_id << 4) | convertMpxAddToUnit[data_id] ; // 2X 4 bits (address and units)
     switch (fieldId) {
