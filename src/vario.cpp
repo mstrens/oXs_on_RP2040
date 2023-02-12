@@ -72,7 +72,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   //printf("altitude %f   lowpass %f  highpass %f  dif %f   climbRateFloat %f  \n",
   //   (float)  altitude , (float) altitudeLowPass , (float)  altitudeHighPass, (float) altitudeLowPass -  (float)  altitudeHighPass,   (float) climbRateFloat);
   // update climbRate only if the difference is big enough
-  if ( abs1(((int32_t)  (climbRateFloat - prevClimbRateFloat) ) > (int32_t) VARIOHYSTERESIS ) ) {
+  if ( abs1(((int32_t)  (climbRateFloat - prevClimbRateFloat) )) > (int32_t) VARIOHYSTERESIS  ) {
       prevClimbRateFloat = climbRateFloat  ;
   }    
   if ( !mpu.mpuInstalled) {   // do not sent when a mp6050 is installed (value will be sent by mpu)
