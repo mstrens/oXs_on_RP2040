@@ -136,9 +136,9 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
     
     fields[VSPEED].sportInterval = 100; //usec
     // add here other fields that should be sent more often
-    for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
-        printf("deviceId %d = %x\n", i , fields[i].sportDeviceId);
-    }
+    //for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
+    //    printf("deviceId %d = %x\n", i , fields[i].sportDeviceId);
+    //}
 
 } 
 

@@ -105,6 +105,7 @@ uint32_t lastBlinkMillis;
 
 queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
+bool core1SetupDone = false;
 void core1_main(); // prototype of core 1 main function
 
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
@@ -152,7 +153,7 @@ void setupI2c(){
     gpio_pull_up(config.pinScl); 
 }
 
-void setupSensors(){
+void setupSensors(){     // this runs on core1!!!!!!!!
       voltage.begin();      
       setupI2c();      // setup I2C
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
@@ -168,9 +169,10 @@ void setupSensors(){
       #ifdef USEDS18B20
       ds18b20Setup(); 
       #endif
+      core1SetupDone = true;
 }
 
-void getSensors(void){
+void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   voltage.getVoltages();
   if ( baro1.baroInstalled){
     if ( baro1.getAltitude() == 0) { // if an altitude is calculated
@@ -277,8 +279,16 @@ void setup() {
       setupListOfFields(); // initialise the list of fields being used
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); 
-      multicore_launch_core1(core1_main);// start core1
-      
+      multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
+      uint32_t setup1StartUs = micros();  
+      while (! core1SetupDone){
+        sleep_us(100);
+        if ((micros() - setup1StartUs) > 2000) {
+            printf("Attention: setup on core 1 did not ended within timeout\n");
+            continue;
+        }
+      }
+      //rintf("Setup1 takes %d usec\n",micros() - setup1StartUs);
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
