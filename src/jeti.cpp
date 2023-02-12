@@ -1,8 +1,8 @@
 #include <stdio.h>
-
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
 #include "uart_jeti_tx.pio.h"
 #include "MS5611.h"
 #include "SPL06.h"
@@ -23,7 +23,7 @@
 //#define DEBUGJETI
 #endif
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MS5611 baro1;
 extern SPL06 baro2;
 
@@ -61,7 +61,7 @@ static const bool jetiParityTable256[256] =
 };
 
 
-// one pio and 1 state machines are used to manage the sport 
+// one pio and 1 state machines are used to manage the jeti bus 
 // the state machine (sm) handle only the TX 
 //    We fill a buffer with the data
 //    we then start the sm configuring the gpio as output
@@ -116,7 +116,7 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
     }    
     // here we could add other voltage parameter (current, ...)
-    if ( baro1.baroInstalled || baro2.baroInstalled) {
+    if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }

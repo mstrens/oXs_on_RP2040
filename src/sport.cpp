@@ -23,6 +23,8 @@
 #include "uart_sport_tx_rx.pio.h"
 #include "pico/util/queue.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
+
 #include "sport.h"
 #include "tools.h"
 #include "config.h"
@@ -44,9 +46,11 @@
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
 
-//#define SPORT_PIO_RX_PIN 10  // pin being used by the UART pio
 #define SPORTSYNCREQUEST 0x7E
 #define SPORTDEVICEID    0xE4
+
+
+
 
 extern CONFIG config;
 extern uint8_t debugTlm;
@@ -68,10 +72,77 @@ uint8_t sportTxBuffer[50];
 uint32_t restoreSportPioToReceiveMillis = 0; // when 0, the pio is normally in receive mode,
                                         // otherwise, it is the timestamp when pio transmit has to be restore to receive mode
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters used by Sport
+
+void setupListOfFields(){    // codes use to identify each field is defined in tool.h
+    for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ 
+        fields[i].value= 0;
+        fields[i].available= false;
+        fields[i].nextMillis= 0;
+        fields[i].sportInterval= 300; // default interval in msec
+        fields[i].sportDeviceId= 0XFF; // default dummy value = do not reply on this
+        fields[i].sportFieldId= DIY_LAST_ID; // default dummy ID
+    }
+    // overwrite the default setting
+    fields[LATITUDE].sportFieldId = GPS_LONG_LATI_FIRST_ID;
+    fields[LONGITUDE].sportFieldId = GPS_LONG_LATI_FIRST_ID;
+    fields[GROUNDSPEED].sportFieldId = GPS_SPEED_FIRST_ID;
+    fields[HEADING].sportFieldId = GPS_COURS_FIRST_ID;
+    fields[ALTITUDE].sportFieldId = GPS_ALT_FIRST_ID;
+    fields[NUMSAT].sportFieldId = DIY_GPS_NUM_SAT;
+    fields[GPS_DATE].sportFieldId = GPS_TIME_DATE_FIRST_ID;
+    fields[GPS_TIME].sportFieldId = GPS_TIME_DATE_FIRST_ID;
+    fields[GPS_PDOP].sportFieldId = DIY_GPS_PDOP;
+    fields[GPS_HOME_DISTANCE].sportFieldId = DIY_GPS_HOME_DISTANCE;
+    fields[GPS_HOME_BEARING].sportFieldId = DIY_GPS_HOME_BEARING;
+    fields[MVOLT].sportFieldId = VFAS_FIRST_ID;
+    fields[CURRENT].sportFieldId = CURR_FIRST_ID;
+    fields[RESERVE1].sportFieldId = DIY_VOLT3;
+    fields[RESERVE2].sportFieldId = DIY_VOLT4;
+    fields[CAPACITY].sportFieldId = FUEL_FIRST_ID;
+    fields[TEMP1].sportFieldId = T1_FIRST_ID; 
+    fields[TEMP2].sportFieldId = T2_FIRST_ID ;
+    fields[VSPEED].sportFieldId = VARIO_FIRST_ID;
+    fields[RELATIVEALT].sportFieldId = ALT_FIRST_ID ;
+    fields[PITCH].sportFieldId = DIY_PITCH;
+    fields[ROLL].sportFieldId = DIY_ROLL;
+    //fields[YAW].sportFieldId = DIY_YAW;
+    fields[RPM].sportFieldId = RPM_FIRST_ID;
+    
+    fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;
+    fields[LONGITUDE].sportDeviceId = SPORT_DEVICEID_P1;
+    fields[GROUNDSPEED].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[HEADING].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[ALTITUDE].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[NUMSAT].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[GPS_DATE].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[GPS_TIME].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[GPS_PDOP].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[GPS_HOME_DISTANCE].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[GPS_HOME_BEARING].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[MVOLT].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[CURRENT].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[RESERVE1].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[RESERVE2].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[CAPACITY].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[TEMP1].sportDeviceId = SPORT_DEVICEID_P3; 
+    fields[TEMP2].sportDeviceId =  SPORT_DEVICEID_P3;
+    fields[VSPEED].sportDeviceId = SPORT_DEVICEID_P1;
+    fields[RELATIVEALT].sportDeviceId =  SPORT_DEVICEID_P2;
+    fields[PITCH].sportDeviceId = SPORT_DEVICEID_P2;
+    fields[ROLL].sportDeviceId = SPORT_DEVICEID_P2;
+    //fields[YAW].sportDeviceId = SPORT_DEVICEID_P3;
+    fields[RPM].sportDeviceId = SPORT_DEVICEID_P2;
+    
+    fields[VSPEED].sportInterval = 100; //usec
+    // add here other fields that should be sent more often
+    //for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
+    //    printf("deviceId %d = %x\n", i , fields[i].sportDeviceId);
+    //}
+
+} 
 
 void setupSport() {
-                                                    
 // configure the queue to get the data from Sport in the irq handle
     queue_init (&sportRxQueue, sizeof(uint8_t), 250);
 
@@ -129,7 +200,7 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
     static uint8_t previous = 0;
     uint8_t data;
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
-    if ( restoreSportPioToReceiveMillis) {            // put sm back in recive mode after some delay
+    if ( restoreSportPioToReceiveMillis) {            // put sm back in receive mode after some delay
         if (millis() > restoreSportPioToReceiveMillis){
             sport_uart_tx_program_stop(sportPio, sportSmTx, config.pinTlm );
             sport_uart_rx_program_restart(sportPio, sportSmRx, config.pinTlm, true);  // true = inverted
@@ -139,40 +210,44 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
         if (! queue_is_empty(&sportRxQueue)) {
             queue_try_remove (&sportRxQueue,&data);
             //printf("%X ", data);
-            if ( ( previous ==  SPORTSYNCREQUEST)  &&  (data == SPORTDEVICEID)   ) sendNextSportFrame(data);
-            // we could use several device id ti increase the telemetry rate
-            //if ( ( previous ==  SPORTSYNCREQUEST)  && ( (data == DATA_ID_GPS) || 
-            //(data == DATA_ID_VARIO) || (data == DATA_ID_RPM) || (data == DATA_ID_FAS) || (data == DATA_ID_ACC) ) ) sendNextSportFrame(data);
-            previous = data; 
+            if ( ( previous ==  SPORTSYNCREQUEST)  &&
+                ((data == SPORT_DEVICEID_P1) || (data == SPORT_DEVICEID_P2) || (data == SPORT_DEVICEID_P3)  )){
+                     sendNextSportFrame(data);
             }
+            previous = data; 
+        }
     }           
 }
 
 
 void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent for this device ID
+    // search an idx (0,1,2 ) of current deviceId
+    static uint8_t last_sport_idx[3] = {0, 0, 0} ;
+    uint8_t deviceIndex= 0; // 0 mean P1 device
+    if (data_id == SPORT_DEVICEID_P2) deviceIndex=1;
+    if (data_id == SPORT_DEVICEID_P3) deviceIndex=2;
+    
     //printf("sendNextSportFrame\n");
-    waitUs(300);
-    static uint8_t last_sport_idx = 0 ;
+    waitUs(300); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(sport_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
     }
     uint32_t _millis = millis();
-    for (uint8_t i = 0 ; i< SPORT_TYPES_MAX ; i++ ){
-         last_sport_idx++;
-         if (last_sport_idx >= SPORT_TYPES_MAX) last_sport_idx = 0 ;
-#ifdef SKIP_VOLT1_3_4
-         if ((last_sport_idx == MVOLT) || (last_sport_idx == CAPACITY) || (last_sport_idx == REMAIN) )  continue;
-#endif
-
+    for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
+         last_sport_idx[deviceIndex]++;
+         if (last_sport_idx[deviceIndex] >= NUMBER_MAX_IDX) last_sport_idx[deviceIndex] = 0 ;
         //printf("last_sport_idx= %d\n", last_sport_idx);
-         if ( (_millis >= fields[last_sport_idx].nextMillis) && (fields[last_sport_idx].available)  ) {
-             //printf("sendOneSport\n");
-             sendOneSport(last_sport_idx);
-             fields[last_sport_idx].available = false; // flag as sent
-             fields[last_sport_idx].nextMillis = millis() + fields[last_sport_idx].interval;
-             break;
-         }
+        uint8_t currentFieldIdx = last_sport_idx[deviceIndex];
+        if (fields[currentFieldIdx].sportDeviceId == data_id) { // process only fields for requested device id
+            if ( (_millis >= fields[currentFieldIdx].nextMillis) && (fields[currentFieldIdx].available)  ) {
+                //printf("Sport for device %X  with field %d\n", data_id , currentFieldIdx);
+                sendOneSport(currentFieldIdx);
+                fields[currentFieldIdx].available = false; // flag as sent
+                fields[currentFieldIdx].nextMillis = millis() + fields[currentFieldIdx].sportInterval;
+                break;
+            }
+        }    
     }
 }
 
@@ -207,8 +282,8 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     uint16_t crc ;
     uint8_t tempBuffer[10];
     tempBuffer[counter++] = 0X10 ; // type of packet : data
-    tempBuffer[counter++] = fields[idx].fieldId    ; // 0x0110 = Id for vario data
-    tempBuffer[counter++] = fields[idx].fieldId >> 8 ; // 0x0110 = Id for vario data
+    tempBuffer[counter++] = fields[idx].sportFieldId    ; // 0x0110 = Id for vario data
+    tempBuffer[counter++] = fields[idx].sportFieldId >> 8 ; // 0x0110 = Id for vario data
     tempBuffer[counter++] = uintValue >> 0 ; // value 
     tempBuffer[counter++] = uintValue >> 8 ;  
     tempBuffer[counter++] = uintValue >> 16 ;  

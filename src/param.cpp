@@ -6,6 +6,7 @@
 #include "MS5611.h"
 #include "SPL06.h"
 #include "BMP280.h"
+#include "ads1115.h"
 #include <string.h>
 #include <ctype.h>
 #include "gps.h"
@@ -15,6 +16,10 @@
 #include  "hardware/sync.h"
 #include "hardware/watchdog.h"
 #include "crsf_out.h"
+#include "pico/multicore.h"
+#include "mpu.h"
+#include "pico/util/queue.h"
+
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -58,6 +63,13 @@ extern MS5611 baro1 ;
 extern SPL06  baro2 ;
 extern BMP280 baro3 ; 
 
+extern ADS1115 adc1 ;
+extern ADS1115 adc2 ;    
+
+extern MPU mpu;
+extern queue_t qSendCmdToCore1;
+
+
 void handleUSBCmd(void){
     int c;
     while (1) {
@@ -91,7 +103,10 @@ void processCmd(){
     char * pkey = NULL;
     char * pvalue = NULL;
     //printf("buffer0= %X\n", cmdBuffer[0]);
-    if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the instruction
+    if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the current config
+        
+    }
+    if (cmdBuffer[0] == '?'){ // when help is requested we print the instruction
         printf("\nCommands can be entered to change the config parameters\n");
         printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=1)\n");
         printf("    Function                  Code        Valid pins number\n");   
@@ -109,13 +124,15 @@ void processCmd(){
         printf("- To disable a function, set pin number to 255\n\n");
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
-        printf("-To change the protocol, for Sport enter PROTOCOL=S, for CRSF/ELRS enter PROTOCOL=C, for Jeti enter PROTOCOL=J\n");
+        printf("-To change the protocol, enter PROTOCOL=x where x=S for Sport, C for CRSF/ELRS, J for Jeti, H for Hott or M for Mpx\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
+        printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
         printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
+        printf("-To force a calibration of MP6050, enter MPUCAL\n");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -123,7 +140,9 @@ void processCmd(){
     //    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
         printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
-        printf("   Note: some changes require a reset to be applied\n"); 
+        printf("-To get the current config, just press Enter\n");
+        printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
+        return;  
     }
     if (cmdBuffer[0] != 0x0){
         char * equalPos = strchr( (char*)cmdBuffer, '=');
@@ -208,7 +227,7 @@ void processCmd(){
             updateConfig = true;
         }
     }
-    // change GPS Tx pin
+    // change Sbus out pin
     if ( strcmp("SBUS_OUT", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
@@ -260,6 +279,20 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    if ( strcmp("MPUCAL", pkey) == 0 ) {
+        requestMpuCalibration();
+        return; // do not continue in order to avoid printing config while config print some data too.
+        /*
+        db = strtod(pvalue,&ptr);
+        if (*ptr != 0x0) {
+            printf("Error : value is not a valid float\n");
+        } else {
+            config.rpmMultiplicator = db;
+            updateConfig = true;
+        }
+        */
+    }
+    
     // change for channels
     if ( *pkey == 'C' ) {
         pkey++; // skip 'C' char to extract the digits
@@ -347,8 +380,14 @@ void processCmd(){
         } else if (strcmp("J", pvalue) == 0) {
             config.protocol = 'J';
             updateConfig = true;
+        } else if (strcmp("H", pvalue) == 0) {
+            config.protocol = 'H';
+            updateConfig = true;
+        } else if (strcmp("M", pvalue) == 0) {
+            config.protocol = 'M';
+            updateConfig = true;
         } else  {
-            printf("Error : protocol must be S (Sport) ,  C (CRSF=ELRS) or J (Jeti)\n");
+            printf("Error : protocol must be S (Sport), C (CRSF=ELRS), J (Jeti), H (Hott) or M (Mpx)\n");
         }
     }
     
@@ -491,9 +530,25 @@ void processCmd(){
             printf("Error : No RC channels have been received yet. FAILSAFE values are unknown\n");
         }    
     }
+    // change number of temperature sensors
+    if ( strcmp("TEMP", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : value must be an unsigned integer\n");
+        } else if ( !(ui==0 or ui==1 or ui==2 or ui ==255)) {
+            printf("Error : value must be 0, 1, 2 or 255\n");
+        } else {    
+            config.temperature = ui;
+            printf("Number of temperature sensors = %u\n" , config.temperature );
+            updateConfig = true;
+        }
+    }
     if (updateConfig) {
-        saveConfig();  
+        saveConfig();
+        printf("config has been saved\n");  
         printf("Device will reboot\n\n");
+        watchdog_enable(1500,false);
+        sleep_ms(1000);
         watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
     }    
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
@@ -567,32 +622,40 @@ void checkConfig(){
     //if ( (config.pinSbusOut != 255 and ( config.protocol == 'S' or config.protocol == 'J') ) ) { //check that Prim is defined ff pinSec is defined
     //    printf("Warning: Sbus signal will not be generated for Sport or Jeti protocol\n");
     //}
-    
+    if (config.temperature == 1 and config.pinVolt[2] == 255){
+        printf("Error in parameters: when 1 temperature sensor is used (TEMP = 1), a pin for V3 must be defined too)\n");
+        configIsValid=false;
+    }
+    if (config.temperature == 2 && (config.pinVolt[2] == 255 || config.pinVolt[3] == 255)){
+        printf("Error in parameters: when 2 temperature sensors are used (TEMP = 2), a pin for V3 and for V4 must be defined too)\n");
+        configIsValid=false;
+    }
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
         printf("\nConfig parameters are OK\n");
     }
+    printf("Press ? + Enter to get help about the commands\n");
 }
 
 void printConfig(){
     uint8_t version[] =   VERSION ;
     printf("\nVersion = %s \n", version)  ;
-    printf("    Function              Code      Pin (255=disabled)\n");   
-    printf("Primary channels input    PRI     = %4u\n", config.pinPrimIn);
-    printf("Secondary channels input  SEC     = %4u\n", config.pinSecIn);
-    printf("Telemetry                 TLM     = %4u\n", config.pinTlm );
-    printf("GPS Rx                    GPS_RX  = %4u\n", config.pinGpsRx );
-    printf("GPS Tx                    GPS_TX  = %4u\n", config.pinGpsTx );
-    printf("Sbus OUT                  SBUS_OUT= %4u\n", config.pinSbusOut );
-    printf("RPM                       RPM     = %4u\n", config.pinRpm );
-    printf("SDA (baro sensor)         SDA     = %4u\n", config.pinSda );
-    printf("SCL (baro sensor)         SCL     = %4u\n", config.pinScl );
-    printf("PWM Channels 1, 2, 3 ,4   C1 / C4 = %4u %4u %4u %4u\n", config.pinChannels[0] , config.pinChannels[1] , config.pinChannels[2] , config.pinChannels[3]);
-    printf("PWM Channels 5, 6, 7 ,8   C5 / C8 = %4u %4u %4u %4u\n", config.pinChannels[4] , config.pinChannels[5] , config.pinChannels[6] , config.pinChannels[7]);
-    printf("PWM Channels 9,10,11,12   C9 / C12= %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
-    printf("PWM Channels 13,14,15,16  C13/ C16= %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
-    printf("Voltage 1, 2, 3, 4        V1 / V4 = %4u %4u %4u %4u\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
+    printf("    Function                Pin   Change entering XXX=yyy (yyy=255 to disable)\n");   
+    printf("Primary channels input    = %4u  (PRI     = 5, 9, 21, 25)\n", config.pinPrimIn);
+    printf("Secondary channels input  = %4u  (SEC     = 1, 13, 17, 29)\n", config.pinSecIn);
+    printf("Telemetry . . . . . . . . = %4u  (TLM     = 0, 1, 2, ..., 29)\n", config.pinTlm );
+    printf("GPS Rx  . . . . . . . . . = %4u  (GPS_RX  = 0, 1, 2, ..., 29)\n", config.pinGpsRx );
+    printf("GPS Tx  . . . . . . . . . = %4u  (GPS_TX  = 0, 1, 2, ..., 29)\n", config.pinGpsTx );
+    printf("Sbus OUT  . . . . . . . . = %4u  (SBUS_OUT= 0, 1, 2, ..., 29)\n", config.pinSbusOut );
+    printf("RPM   . . . . . . . . . . = %4u  (RPM     = 0, 1, 2, ..., 29)\n", config.pinRpm );
+    printf("SDA (I2C sensors) . . . . = %4u  (SDA     = 2, 6, 10, 14, 18, 22, 26)\n", config.pinSda );
+    printf("SCL (I2C sensors) . . . . = %4u  (SCL     = 3, 7, 11, 15, 19, 23, 27)\n", config.pinScl );
+    printf("PWM Channels 1, 2, 3 ,4   = %4u %4u %4u %4u (C1 / C16= 0, 1, 2, ..., 15)\n", config.pinChannels[0] , config.pinChannels[1] , config.pinChannels[2] , config.pinChannels[3]);
+    printf("PWM Channels 5, 6, 7 ,8   = %4u %4u %4u %4u\n", config.pinChannels[4] , config.pinChannels[5] , config.pinChannels[6] , config.pinChannels[7]);
+    printf("PWM Channels 9,10,11,12   = %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
+    printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
+    printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
@@ -600,6 +663,10 @@ void printConfig(){
             printf("\nProtocol is CRSF (=ELRS)\n")  ;
         } else if (config.protocol == 'J'){
             printf("\nProtocol is Jeti (Ex)\n")  ;    
+        } else if (config.protocol == 'H'){
+            printf("\nProtocol is Hott\n")  ;    
+        } else if (config.protocol == 'M'){
+            printf("\nProtocol is Mpx\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
@@ -607,6 +674,13 @@ void printConfig(){
     printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
+    if ( config.pinVolt[2] !=255 && config.temperature == 1) {
+        printf("    One temperature sensor is connected on V3\n");
+    } else if (config.pinVolt[2] !=255 && config.pinVolt[3] !=255 && config.temperature == 2){
+         printf("    Temperature sensors are connected on V3 and V4\n");
+    } else {
+        printf("    No temperature sensors are connected on V3 and V4\n");
+    }
     printf("RPM multiplier = %f\n", config.rpmMultiplicator);
     if (baro1.baroInstalled) {
         printf("Baro sensor is detected using MS5611\n")  ;
@@ -622,7 +696,37 @@ void printConfig(){
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else {
         printf("Baro sensor is not detected\n")  ;
-    }   
+    }
+    if(mpu.mpuInstalled){
+        printf("Acc/Gyro is detected using MP6050\n")  ;
+        printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
+        printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
+    } else {
+       printf("Acc/Gyro is not detected\n")  ;     
+    }
+    if (adc1.adsInstalled) {
+        printf("First analog to digital sensor is detected using ads1115\n")  ;
+        printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[0][0], ads_Measure[0][1], ads_Measure[0][2], ads_Measure[0][3]) ;
+        printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[0][0], ads_Gain[0][1], ads_Gain[0][2], ads_Gain[0][3]) ;
+        printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[0][0], ads_Rate[0][1], ads_Rate[0][2], ads_Rate[0][3]) ;
+        printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[0][0], ads_Offset[0][1], ads_Offset[0][2], ads_Offset[0][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Scale[0][0], ads_Scale[0][1], ads_Scale[0][2], ads_Scale[0][3]) ;
+        printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[0][0], ads_MaxCount[0][1], ads_MaxCount[0][2], ads_MaxCount[0][3]) ;
+    } else {
+        printf("First analog to digital sensor is not detected\n")  ;
+    }
+    if (adc2.adsInstalled) {
+        printf("Second analog to digital sensor is detected using ads1115\n")  ;
+        printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[1][0], ads_Measure[1][1], ads_Measure[1][2], ads_Measure[1][3]) ;
+        printf("    Gains: %i , %i , %i ,%i\n", ads_Gain[1][0], ads_Gain[1][1], ads_Gain[1][2], ads_Gain[1][3]) ;
+        printf("    Rates: %i , %i , %i ,%i\n", ads_Rate[1][0], ads_Rate[1][1], ads_Rate[1][2], ads_Rate[1][3]) ;
+        printf("    Offsets: %f , %f , %f ,%f\n", ads_Offset[1][0], ads_Offset[1][1], ads_Offset[1][2], ads_Offset[1][3]) ;
+        printf("    Scales: %f , %f , %f ,%f\n", ads_Scale[1][0], ads_Scale[1][1], ads_Scale[1][2], ads_Scale[1][3]) ;
+        printf("    Averaged on: %i , %i , %i ,%i\n", ads_MaxCount[1][0], ads_MaxCount[1][1], ads_MaxCount[1][2], ads_MaxCount[1][3]) ;
+    }  else {
+        printf("Second analog to digital sensor is not detected\n")  ;
+    } 
+
     if (config.gpsType == 'U'){
             printf("Foreseen GPS type is Ublox  :")  ;
         } else if (config.gpsType == 'C'){
@@ -688,16 +792,20 @@ void printConfig(){
 const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
 void saveConfig() {
+    //sleep_ms(1000); // let some printf to finish
     uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
     memcpy(&buffer[0], &config, sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing
     watchdog_enable(3000 , true);
+    multicore_lockout_start_blocking();
     uint32_t irqStatus = save_and_disable_interrupts();
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
-    printf("New config has been saved\n");
+    multicore_lockout_end_blocking();
+    //sleep_ms(1000);
+    //printf("New config has been saved\n");
     //printConfig(); 
 }
 
@@ -783,6 +891,34 @@ void setupConfig(){   // The config is uploaded at power on
         config.failsafeChannels.ch13 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch14 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch15 = config.failsafeChannels.ch0 ;
+        config.accOffsetX = 0;
+        config.accOffsetY = 0;
+        config.accOffsetZ = 0;
+        config.gyroOffsetX = 0;
+        config.gyroOffsetY = 0;
+        config.gyroOffsetZ= 0;
+        config.temperature = 255;
     }
     
 } 
+
+
+void requestMpuCalibration()  // 
+{
+    if (!mpu.mpuInstalled) {
+        printf("Calibration not done: no MP6050 installed\n");
+        return ;
+    }
+    uint8_t data = 0X01; // 0X01 = execute calibration
+    printf("Before calibration:\n");
+    printConfigOffsets();
+    sleep_ms(1000); // wait that message is printed
+    queue_try_add(&qSendCmdToCore1 , &data);
+
+}    
+
+void printConfigOffsets(){
+    printf("\nOffset Values in config:\n");
+	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
+    printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
+}

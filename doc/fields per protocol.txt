@@ -1,0 +1,174 @@
+Here the list of fields being calculated and transmitted per protocol
+
+******************************************************************************************************************
+**                                          Sport protocol                                                      **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            VFAS (0x0210)              0.01V
+VOLT2       0.001V=0.001A    V2 pin is defined                            Current (0x0200)           0.001A
+Capacity    mAh              V2 pin is defined (reset after power down)   Fuel (0x0600)              mAh
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           DIY (0X5113)               0.001V
+                             V3 pin is defined & TEMP=1 or TEMP=2         T1 (0X400)                  degree
+VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           DIY (0X5114)               0.001V
+                             V4 pin is defined & TEMP=2                   T2 (0X410)                  degree
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude (0X100)           cm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
+GPS lat                      Same as above                                 lat (0x0800)           special format
+GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 km/h
+GPS course degree            Same as above                                 GPS heading (0X840)       0.01 degree
+GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              DIY (0X5100)              unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 GPS date (0X850)         special format 
+GPS time   HHMMSS0x00        Same as above                                 GPS time (0X850)         special format 
+GPS PDOP   0.01  ????        Same as above                                 GPS PDOP (0X5101)         0.01 
+GPS bearing from home degree Same as above                                 DIY (5102)                degree
+GPS distance from home  m    Same as above                                 DIY (5103)                m
+RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Pitch                        MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
+Roll                         Same as above                                 DIY (05121)              degree
+
+Note: to test if openTx/edge is able to discover the "DIY" sensor ID's
+
+
+
+******************************************************************************************************************
+**                                       ELRS/CRSF protocol                                                     **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            Volt                       0.010V
+VOLT2       0.001V=0.001A    V2 pin is defined                            Current                    0.001A
+Capacity    mAh              V2 pin is defined (reset after power down)   capacity                   mAh
+VOLT3       0.001V           V3 pin is defined                            not transmitted
+VOLT4       0.001V           V4 pin is defined                            not transmitted
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude                  dm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed                    cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) longitude                special format
+GPS lat                      Same as above                                 latitude                 special format
+GPS speed  cm/sec            Same as above                                 GPS ground speed         0.1 km/h
+GPS heading degree           Same as above                                 heading                  0.01 degree
+GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                 m
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              Num of satelites         unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 not transmitted
+GPS distance from home       Same as above                                 not transmitted
+RPM        ?????             RPM pin is defined                            not transmitted  
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
+Pitch                        MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
+Roll                         Same as above                                 roll                     Rad (1/10000)
+
+Note: to analyse if handset can display a rpm value in YAW (which is supposed to be in degree; perhaps to redefine on handset)
+
+
+
+******************************************************************************************************************
+**                                           Hott protocol                                                      **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            GAM Battery 1              0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            GAM Current                0.1A
+Capacity    mAh              V2 pin is defined (reset after power down)   GAM Batt capavity          0.01 Ah
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           GAM Battery 2              0.1V
+                             V3 pin is defined & TEMP=1 or =2             GAM temperature 1          degree
+VOLT4       0.001V           V4 pin is defined  & TEMP=0 or =255          GAM Main voltage           0.1V
+                             V4 pin is defined & TEMP=2                   GAM temperature 2          degree
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    GAMm Rel. Altitude          m
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    GAM Vspeed                 cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) Gps longitude             special format
+GPS lat                      Same as above                                 GPS latitude              special format
+GPS speed  cm/sec            Same as above                                 GPS ground speed          km/h
+GPS course degree            Same as above                                 GPS heading               0.5 degree
+GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              GPS num sat               unit (+100)
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 GPS bearing               degree
+GPS distance from home       Same as above                                 GPS distance              m
+RPM        ?????             RPM pin is defined                            not available in Hott
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
+Roll                         Same as above
+                                                                           GAM temperature 1 not transmitted
+                                                                           GAM temperature 2 not transmitted
+                                                                           GAM Airspeed      not transmitted
+                                                                           GAM Min cell Volt not transmitted
+
+
+
+******************************************************************************************************************
+**                                           Jeti protocol                                                      **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            Accu volt                  0.01V
+VOLT2       0.001V=0.001A    V2 pin is defined                            not transmitted currently
+Capacity    mAh              V2 pin is defined (reset after power down)   not transmitted currently
+VOLT3       0.001V           V3 pin is defined                            not transmitted currently
+VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Rel. Altitude              dm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed                     cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) longitude                 special format
+GPS lat                      Same as above                                 latitude                  special format
+GPS speed  cm/sec            Same as above                                 GPS ground speed          0.1 km/h
+GPS course degree            Same as above                                 GPS course                degree
+GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted currently
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 not transmitted
+GPS distance from home       Same as above                                 not transmitted
+RPM        ?????             RPM pin is defined                            not transmitted currently
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
+Roll                         Same as above
+
+
+******************************************************************************************************************
+**                                        Multiplex protocol                                                    **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            Index = 1                   0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            not transmitted currently
+Capacity    mAh              V2 pin is defined (reset after power down)   not transmitted currently
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
+            represent temp   V3 pin is defined & TEMP=1 or =2             Index = 6                  0.1 degree
+VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Index = 8                  m
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Index = 3                  dm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) not transmitted
+GPS lat                      Same as above                                 not transmitted
+GPS speed  cm/sec            Same as above                                 Index = 4                 0.1 km/h
+GPS course degree            Same as above                                 not transmitted
+GPS Alt    cm                Same as above; = alt above see level          not transmitted
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 Index = 7                 0.1 degree
+GPS distance from home       Same as above                                 Index = 13                0.1 km
+RPM        ?????             RPM pin is defined                            Index = 5                 100 t/min
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll                         Same as above                                 Not transmitted 
+
+

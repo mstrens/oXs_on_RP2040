@@ -1,6 +1,6 @@
-# expressLRS / FRSKY / JETI openXsensor (oXs) on RP2040 board
+# expressLRS / FRSKY / HOTT / JETI openXsensor (oXs) on RP2040 board
 
-This project can be interfaced with 1 or 2 ELRS, FRSKY or Jeti receiver(s) (protocol has to be selected accordingly).
+This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT or Jeti receiver(s) (protocol has to be selected accordingly).
  
 This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
  
@@ -26,6 +26,7 @@ This board can be connected to:
    * a GY63 or a GY86 board based on MS5611
    * a SPL06-001 sensor
    * a BMP280 sensor
+* a MP6050 (acc+gyro) to improve reaction time of the vario or to get pitch/roll
 * a GPS from UBlox (like the BEITIAN bn220) or one that support CASIC messages
 
        note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware  
@@ -40,7 +41,7 @@ This board can be connected to:
 ## --------- Wiring --------------------
 
 * FRSKY/ELRS receiver, baro sensor GPS, ... must share the same Gnd
-* Connect a 5V source to the Vcc pin of RP2040 board (attention max is 5.5Volt)  
+* Connect a 5V source to the Vcc pin of RP2040 board (attention max input voltage is 5.5Volt)  
 * Select the functions and pins being used (most are optional)
 * The config parameters allow to select:
 
@@ -58,16 +59,16 @@ This board can be connected to:
     
    * a pin used to measure RPM (gpio 0...29)
    
-   * the 2 pins used for GPS (gpio 0...29) (one pin for Tx and one for RX)
+   * the 2 pins used for GPS (gpio 0...29) (RP2040 pin defined as GPS-TX is connected GPS Tx pin and GPS-RX to GPS RX pin)
    
-   * the 2 pins connected to baro sensor (SDA=2, 6, 10, 14, 18, 22, 26) (SCL=3, 7, 11, 15, 19, 23, 27)
+   * the 2 pins connected to baro sensor and/or MP6050 (SDA=2, 6, 10, 14, 18, 22, 26) (SCL=3, 7, 11, 15, 19, 23, 27)
 
 
    Take care to use a voltage divider (2 resistances) in order to limit the voltage on the pins to 3V max (e.g. when you want to measure higher voltages)
 
-* When a baro sensor is used:
+* When a baro sensor and/or MP6050 is used:
 
-   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06/BMP280  
+   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06/BMP280/MP6050  
 
    Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
 

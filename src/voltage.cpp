@@ -6,14 +6,14 @@
 #include "param.h"
 
 extern CONFIG config;
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 
 VOLTAGE::VOLTAGE() {}
 
 void VOLTAGE::begin(void ) {
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    adc_init (); // prepare ADC
+    adc_init(); // prepare ADC
     for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
         if ( config.pinVolt[cntInit] != 255) {
             adc_gpio_init(config.pinVolt[cntInit]); // prepare the pin for ADC
@@ -39,8 +39,11 @@ void VOLTAGE::begin(void ) {
 void VOLTAGE::getVoltages(void){
     static uint8_t sumCount = 0;
     static uint32_t lastVoltagemillis = 0 ;
+    static uint32_t enlapsedMillis =0;
+    float value;
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    if ( (millis() - lastVoltagemillis) > VOLTAGEINTERVAL ) {
+    enlapsedMillis = millis() - lastVoltagemillis; 
+    if ( enlapsedMillis > VOLTAGEINTERVAL ) {
         lastVoltagemillis = millis() ;
         for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
             if ( config.pinVolt[cntInit] != 255) {
@@ -52,11 +55,28 @@ void VOLTAGE::getVoltages(void){
         if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
-                if ( config.pinVolt[cntInit] != 255) {    
-                    fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
-                    if (mVoltPerStep[cntInit] !=0) fields[cntInit + MVOLT].available = true ;
+                if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
+                    //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
+                    if (mVoltPerStep[cntInit] !=0) {
+                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
+                        // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
+                        // volt 2 is used for current and consumed capacity is then calculated too
+                        if ( (cntInit == 2) && (config.temperature == 1 || config.temperature == 2) ) {
+                            sent2Core0( TEMP1 , (int32_t) value );
+                        } else if ( (cntInit == 3) && (config.temperature == 2) ) {
+                            sent2Core0( TEMP2 , (int32_t) value );
+                        } else {
+                            sent2Core0( cntInit + MVOLT, (int32_t) value ); // save as MVOLT, CURRENT, RESERVE1 or RESERVE2
+                        }
+                        if (cntInit == 1) { // when we are calculating a current we calculate also the consumption
+                            consumedMah += value * enlapsedMillis  / 3600000.0 ;  // in mah.
+                            sent2Core0( CAPACITY, (int32_t) value );
+                        }
+                        //fields[cntInit + MVOLT].available = true ;
+                    }
                     sumVoltage[cntInit] = 0 ;
-                    //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);  
+                    //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);
+                    
                 }    
             }    
         }

@@ -1,7 +1,6 @@
 #include "pico/stdlib.h"
 #include "stdio.h"
-#include "pico/util/queue.h"
-#include <config.h>
+#include "config.h"
 #include "hardware/i2c.h"
 #include "MS5611.h"
 #include "SPL06.h"
@@ -19,42 +18,37 @@
 #include "hardware/watchdog.h"
 #include "sport.h"
 #include "jeti.h"
+#include "hott.h"
+#include "mpx.h"
 #include "param.h"
 #include "tools.h"
 #include "ws2812.h"
 #include "rpm.h"
 #include "EMFButton.h"
+#include "ads1115.h"
+#include "mpu.h"
+#include "pico/multicore.h"
+#include "pico/util/queue.h"
+#include "ds18b20.h"
+
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
 //         support Frsky Fport on top of sbus+sport protocol
-//         support hott protocol
-//         for Sbus, better managing of failsafe when PRI and SEC are both used (check on sbus flags)
-//         advance use of LED color (e.g. blink Green = OK; blink yellow = PRI or SEC OK but failsafe on the other, orange=failsafe apply, red=no signal)
-//           
+//         add switching 8 gpio from one channel
+//         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
+//         try to detect MS5611 and other I2C testing the different I2C addresses
+//         in readme add the wiring of GPS and of other I2C devices+ comments about MP6050
+//         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
+//         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
+//         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
+//         manage different priorities (device ID) for sport
 
-// Look at file config.h for more details
+
+// Look at file in folder "doc" for more details
 //
-// This project can be interfaced with 
-//    - one or two receivers. 
-//    - receivers can be ELRS, FRSKY or Jeti
-// It can be used to:
-//    - convert ELRS signal to SBUS
-//    - generate up to 16 PWM signals (based on ELRS TX or on SBUS)
-//    - provide telemetry data (Altitude, Vertical speed, RPM, up to 4 Voltages, GPS)
-// When connected to 2 receivers:
-//    - it provides receiver diversity
-//    - PWM and SBUS are generated on the latest received frame (if one receiver fails to provide RC data)
-//    - the 2 receivers must use the same protocol (ELRS/SPORT/JETI).
-//    - only one (the primary) can transmit the telemetry data
-// It is possible in some way to define which pins are used and for what function
-// PWM signals are generated on:
-//     - pins GPIO0 up to GPIO15 (without use of a pio)
-//  When interfaced with 2 receivers, 
-
-
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX
-//        0   1                         for Sport Rx
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX
+//        0   1                         for Sport Rx            or HOTT RX or MPX RX
 //        0   2            sbus out             
 
 //        1   0 is used for gps Tx  (was used for one pwm)        
@@ -78,18 +72,22 @@
 // LED = 16
 
 
-//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
-
 VOLTAGE voltage ;    // class to handle voltages
 
 MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
 SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
 BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0x76
 
+ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin connected to grnd)
+ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
+
 VARIO vario1;
 
 //queue_t gpsQueue ; // queue is used to transfer the data from the uart0 used by GPS
 GPS gps;
+
+// objet to manage the mpu6050
+MPU mpu(1);
 
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 
@@ -105,8 +103,49 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 
 uint32_t lastBlinkMillis;
 
+queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
+queue_t qSendCmdToCore1;
+bool core1SetupDone = false;
+void core1_main(); // prototype of core 1 main function
+
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
+
+
 void setupI2c(){
-    if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+    if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
+    // send 10 SCL clock to force sensor to release sda
+    /*
+    gpio_init(config.pinSda);
+    gpio_init(config.pinScl);
+    gpio_set_dir(config.pinSda, GPIO_IN);
+    gpio_set_dir(config.pinScl, GPIO_OUT);
+    gpio_pull_up(config.pinSda);
+    gpio_pull_up(config.pinScl);
+    sleep_us(10);
+    while ( gpio_get(config.pinSda) == 0) {;
+        
+        for (uint8_t i=0; i<9; i++){
+            gpio_put(config.pinScl, 1);
+            sleep_us(10);
+            gpio_put(config.pinScl, 0);
+            sleep_us(10);
+            printf("trying to unlock I2C\n");
+        }
+    }    
+    gpio_put(config.pinScl, 1);
+    gpio_set_dir(config.pinSda, GPIO_OUT);
+    gpio_put(config.pinScl, 0);
+    sleep_us(10);
+    gpio_put(config.pinSda, 0);
+    sleep_us(10);
+    gpio_put(config.pinScl, 1);
+    sleep_us(10);
+    gpio_put(config.pinSda, 1);
+    sleep_us(10);
+    gpio_set_dir(config.pinSda, GPIO_IN);
+    if ( gpio_get(config.pinSda) == 0) printf("I2C still locked\n");    
+    */
+    // initialize I2C     
     i2c_init( i2c1, 400 * 1000);
     gpio_set_function(config.pinSda, GPIO_FUNC_I2C);
     gpio_set_function(config.pinScl, GPIO_FUNC_I2C);
@@ -114,7 +153,26 @@ void setupI2c(){
     gpio_pull_up(config.pinScl); 
 }
 
-void getSensors(void){
+void setupSensors(){     // this runs on core1!!!!!!!!
+      voltage.begin();      
+      setupI2c();      // setup I2C
+      baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
+      baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
+      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
+      #ifdef USE_ADS1115
+      adc1.begin() ; 
+      adc2.begin() ;
+      #endif 
+      mpu.begin(); 
+    //blinkRgb(0,10,0);
+      gps.setupGps();  //use a Pio
+      #ifdef USEDS18B20
+      ds18b20Setup(); 
+      #endif
+      core1SetupDone = true;
+}
+
+void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   voltage.getVoltages();
   if ( baro1.baroInstalled){
     if ( baro1.getAltitude() == 0) { // if an altitude is calculated
@@ -128,9 +186,17 @@ void getSensors(void){
     if ( baro3.getAltitude() == 0) { // if an altitude is calculated
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
-  } 
+  }
+  #ifdef USE_ADS1115
+  adc1.readSensor(); 
+  adc2.readSensor();
+  #endif 
+  mpu.getAccZWorld();  
   gps.readGps();
   readRpm();
+  #ifdef USE_DS18B20
+  ds18b20Read(); 
+  #endif
 }
 
 void mergeSeveralSensors(void){
@@ -190,39 +256,39 @@ void setup() {
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
-  uint16_t counter = 0;                      // after an upload, watchdog_cause_reboot is true.
-  if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
+  uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
+  //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
-    sleep_ms(200); 
+  //while ( (!tud_cdc_connected()) ) { 
+    sleep_ms(200);
     toggleRgb();
-    //watchdog_update();
     }
+    sleep_ms(2000);
   #endif
+  
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
     } else {
         printf("Clean boot\n");
         sleep_ms(1000); // wait that GPS is initialized
     }
-  watchdog_enable(1500, 0); // require an update once every 1500 msec
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
-  watchdog_update();
-  setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)
-  watchdog_update();
+  
+  setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   if (configIsValid){ // continue with setup only if config is valid
       setupListOfFields(); // initialise the list of fields being used
-      watchdog_update();
-      voltage.begin();
-      setupI2c();      // setup I2C
-      baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
-      watchdog_update();
-      baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
-      watchdog_update();
-      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
-      watchdog_update();
-      
-      gps.setupGps();  //use a Pio
-      watchdog_update();
+      queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
+      queue_init(&qSendCmdToCore1, 1, 10); 
+      multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
+      uint32_t setup1StartUs = micros();  
+      while (! core1SetupDone){
+        sleep_us(100);
+        if ((micros() - setup1StartUs) > 2000) {
+            printf("Attention: setup on core 1 did not ended within timeout\n");
+            continue;
+        }
+      }
+      //rintf("Setup1 takes %d usec\n",micros() - setup1StartUs);
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
@@ -235,28 +301,64 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupJeti();
+      } else if (config.protocol == 'H') {
+        setupSbusIn();
+        setupSbus2In();
+        setupHott();
+      } else if (config.protocol == 'M') {
+        setupSbusIn();
+        setupSbus2In();
+        setupMpx();
       }
-      watchdog_update();
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
         }
       setupPwm();
-      watchdog_update();
       setupRpm(); // this function perform the setup of pio Rpm
-      watchdog_enable(500, 0); // require an update once every 500 msec
-  } else {
-    configIsValid = false;
-  }
+      watchdog_enable(3500, 0); // require an update once every 500 msec
+  } 
+  
   printConfig(); // config is not valid
   setRgbColorOn(10,0,0); // set color on red (= no signal)
+  
 }
 
+void getSensorsFromCore1(){
+    queue_entry_t entry;
+    //printf("qlevel= %d\n",queue_get_level(&qSensorData));
+    
+    while( !queue_is_empty(&qSensorData)){
+        if ( queue_try_remove(&qSensorData,&entry)){
+            if (entry.type >= NUMBER_MAX_IDX) {
+                if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
+                    watchdog_enable(15000,false);
+                    sleep_ms(1000);
+                    printf("Calibration has been done\n");
+                    printConfigOffsets();
+                    printf("\nConfig will be saved\n\n");
+                    sleep_ms(1000);
+                    saveConfig();
+                    printf("config has been saved\n");  
+                    printf("Device will reboot\n\n");
+                    watchdog_enable(1500,false);
+                    sleep_ms(1000);
+                    watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
+                } else {
+                    printf("error : invalid type of sensor = %d\n", entry.type);
+                }    
+            } else {
+                fields[entry.type].value = entry.data;
+                fields[entry.type].available = true ;
+                //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
+            }    
+        }
+    }
+}
 
 void loop() {
   //debugBootButton();
-  watchdog_update();
   if (configIsValid){
-      getSensors();
+      getSensorsFromCore1();
       mergeSeveralSensors();
       watchdog_update();
       if ( config.protocol == 'C'){
@@ -274,12 +376,22 @@ void loop() {
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
+      } else if (config.protocol == 'H') {
+        handleHottRxTx();
+        handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
+      } else if (config.protocol == 'M') {
+        handleMpxRxTx();
+        handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
       } 
       watchdog_update();
       updatePWM();
             //updatePioPwm();
-      watchdog_update();
   }
+  watchdog_update();
   //if (tud_cdc_connected()) {
   handleUSBCmd();  // process the commands received from the USB
   tud_task();      // I suppose that this function has to be called periodicaly
@@ -293,7 +405,8 @@ void loop() {
         setRgbOn();  
     }
   }
-  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+
+//  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
   if (( bootButtonState == ARMED) || ( bootButtonState == SAVED)){
     //setRgbColorOn(0, 0, 10); //blue
   } else if ( ledState != prevLedState){
@@ -307,6 +420,29 @@ void loop() {
   //if (get_bootsel_button()) {
   //  printf("p\n");
   //} 
+  //enlapsedTime(0);
+}
+
+// initialisation of core 1 that capture the sensor data
+void setup1(){
+    multicore_lockout_victim_init();
+    setupSensors();    
+}
+// main loop on core 1 in order to read the sensors and send the data to core0
+void loop1(){
+    uint8_t qCmd;
+    getSensors(); // get sensor
+    if ( ! queue_is_empty(&qSendCmdToCore1)){
+        queue_try_remove(&qSendCmdToCore1, &qCmd);
+        if ( qCmd == 0X01) { // 0X01 is the code to request a calibration
+            mpu.calibrationExecute();
+        }
+    }
+}
+
+void core1_main(){
+    setup1();
+    while(1) loop1();
 }
 
 int main(){

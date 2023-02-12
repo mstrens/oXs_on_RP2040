@@ -1,0 +1,16 @@
+here some links that I used
+
+MPX protocol
+https://www.mikrocontroller.net/articles/Der_Multiplex_Sensor_Bus_(MSB)#Datenformat_und_Adressen
+
+Kalman filter for merging baro and acc/gyro
+https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO
+there is here also a version of mahony algo that discard some huge acceleration.
+Perhaps good to implement it.
+
+ELRS
+https://github.com/ExpressLRS/ExpressLRS/tree/master/src/lib/CrsfProtocol
+
+https://github.com/iNavFlight/inav/blob/master/src/main/telemetry/crsf.c
+
+

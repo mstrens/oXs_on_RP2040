@@ -22,7 +22,7 @@
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
 uint8_t crsf_last_frame_idx = 0 ;  
 
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 voltageFrameStruct voltageFrame;
   
@@ -92,11 +92,12 @@ void fillCRSFFrame(){
 bool dataAvailable(uint8_t idx) {
     switch (idx) {
         case  CRSF_FRAMEIDX_BATTERY_SENSOR : 
-            return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available || fields[REMAIN].available ;
+            return fields[MVOLT].available || fields[CURRENT].available || fields[CAPACITY].available  ;
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
-        //case CRSF_FRAMEIDX_ATTITUDE :
-        //    return fields[RPM].available ;    // in this version, attitude frame is used to transmit RPM         
+        case CRSF_FRAMEIDX_ATTITUDE :
+            //return  fields[RPM].available || fields[PITCH].available || fields[ROLL].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
+            return  fields[PITCH].available || fields[ROLL].available ;           
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
             //return gps.gpsInstalled || baro1.baroInstalled ; //gps.GPS_lonAvailable ;  // gps.gpsInstalled || baro1.baroInstalled 
@@ -159,9 +160,10 @@ void fillFrameBattery(uint8_t idx){
     if ( fields[CAPACITY].value > 0 ) {
         fillBufferU24( (uint32_t) fields[CAPACITY].value);
     } else fillBufferU24(0);
-    if ( fields[REMAIN].value > 0 ) {
-        fillBufferU8( (uint8_t) ((fields[REMAIN].value+5) /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
-    } else fillBufferU8(0);
+    //if ( fields[REMAIN].value > 0 ) {
+    //    fillBufferU8( (uint8_t) ((fields[REMAIN].value+5) /10 ));  // it is only a uint8_t; to use for a voltage we divide by 10
+    //} else fillBufferU8(0);
+    fillBufferU8(0); // in this version, field "remain" is not used.  
     //voltageFrame.mVolt = 0X0A01;   // !!!!!!!!!!!!!! to remove
     //voltageFrame.crc = crsf_crc.calc( ((uint8_t *) &voltageFrame) + 2 , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1)  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fillBufferU8(crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
@@ -184,6 +186,7 @@ void fillFrameVario(uint8_t idx){
     fillBufferU8( CRSF_FRAME_VARIO_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_VARIO ) ;
     fillBufferI16( (int16_t) fields[VSPEED].value ) ;  // cm/sec
+    //printf("vspeed=%d\n", ((int16_t) fields[VSPEED].value) );
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
     crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
@@ -203,6 +206,7 @@ void fillFrameBaroAltitude(uint8_t idx){
     fillBufferU8( CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_BARO_ALTITUDE ) ;
     fillBufferI16( (int16_t) ( (fields[RELATIVEALT].value / 10 ) + 10000) ) ;  // from cm to dm and a 10000 dm offset
+    //printf("alt=%f\n", (float) ( (int16_t) ( (fields[RELATIVEALT].value / 10 ) + 10000) )  );
     // in theory, when Alt in dm should be more than about 32000-10000, then value should be negative and in m instead of in dm (and no offset)
     // So when alt is more than 2000m; we can discard this situation
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
@@ -222,17 +226,30 @@ void fillFrameAttitude(uint8_t idx){
     fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
     fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
     fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-    fillBufferI16( (int16_t) (fields[RPM].value  )); //int16 allows values from -32000 up to +32000; apply SCALE4 if needed
-    fillBufferI16( (int16_t) (0)) ; //not used in this version 
-    fillBufferI16( (int16_t) (0)); // not used in this version
+    if ( fields[PITCH].available ) {
+        fillBufferI16( (int16_t) (fields[PITCH].value * 175)) ; //pitch  (must be in 1/1000 of deci rad )
+    } else {
+        fillBufferI16( (int16_t) 0);
+    }
+    if ( fields[ROLL].available ) {
+        fillBufferI16( (int16_t) (fields[ROLL].value * 175)) ; //roll  
+    } else {
+        fillBufferI16( (int16_t) 0);
+    }
+    //if ( fields[RPM].available  ) {
+    //    fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+    //} else {
+        fillBufferI16( (int16_t) 0);
+    //}
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RPM].available = false ;
+    fields[PITCH].available = false ;
+    fields[ROLL].available = false ;
     crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
-    if ( debugTlm == 'Y' ){
-        printf("Attitude: ");
-        for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
-        printf("\n");
-    }
+        //printf("Attitude: ");
+        //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+        //printf("\n");
+        //printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
     dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
     dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }
@@ -296,9 +313,9 @@ void fillOneFrame(uint8_t idx){
         case CRSF_FRAMEIDX_VARIO :
             fillFrameVario(idx);
             break ;
-        //case CRSF_FRAMEIDX_ATTITUDE :
-        //    fillFrameAttitude(idx);
-        //    break;
+        case CRSF_FRAMEIDX_ATTITUDE :
+            fillFrameAttitude(idx);
+            break;
         case CRSF_FRAMEIDX_GPS :
             fillFrameGps(idx);
             break;

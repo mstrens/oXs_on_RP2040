@@ -36,11 +36,17 @@ struct CONFIG{
     //uint8_t gpio11 = 11;
     uint8_t failsafeType = 'H';
     crsf_channels_s failsafeChannels ;
+    int16_t accOffsetX;
+    int16_t accOffsetY;
+    int16_t accOffsetZ;
+    int16_t gyroOffsetX;
+    int16_t gyroOffsetY;
+    int16_t gyroOffsetZ;
+    uint8_t temperature; 
 };
 
 void handleUSBCmd(void);
 void processCmd(void);
-
 
 char * skipWhiteSpace(char * str);
 void removeTrailingWhiteSpace( char * str);
@@ -53,4 +59,7 @@ void addPinToCount(uint8_t pinId);
 void checkConfig();
 void setupConfig();
 void printConfig();
+void requestMpuCalibration();
+void printConfigOffsets();
+
  //uint8_t * find(uint8_t * search, uint8_t in , uint16_t max); // search for first occurence of search string in "in" buffer  

@@ -1,15 +1,5 @@
 #pragma once
 
-/*
-struct t_mbOneData {
-	uint8_t volatile active;
-	uint8_t volatile response[3];
-} ;
-
-struct t_mbAllData {
-  struct t_mbOneData mbData[16] ;
-} ;  
-*/
 // list of Jeti type being used
 #define JETI_14 0b00000001  // jeti TYpe = 1
 #define JETI_22 0b00000100  // jeti TYpe = 4

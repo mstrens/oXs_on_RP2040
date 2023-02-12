@@ -9,7 +9,7 @@
 
 
 extern CONFIG config;
-extern field fields[SPORT_TYPES_MAX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 
 PIO pioRpm = pio1; // we use pio 1; 
