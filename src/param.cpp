@@ -939,10 +939,10 @@ void printFieldValues(){
         if (fields[i].onceAvailable ){
             switch (i) {
                 case LATITUDE:
-                    printf("GPS Latitude = %f degree\n", ((float) fields[i].value) / 10000000.0);
+                    printf("GPS Latitude = %.7f degree\n", ((float) fields[i].value) / 10000000.0);
                     break;
                 case LONGITUDE:
-                    printf("GPS Longitude = %f degree\n", ((float) fields[i].value) / 10000000.0);
+                    printf("GPS Longitude = %.7f degree\n", ((float) fields[i].value) / 10000000.0);
                     break;
                 case GROUNDSPEED:
                     printf("GPS Groundspeed = %d cm/s\n", fields[i].value) ;

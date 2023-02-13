@@ -272,7 +272,7 @@ bool fillHottGamFrame(){
         TxHottData.gamMsg.temperature1 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     }
     if ( ( fields[TEMP2].available) && (fields[TEMP2].value > -20) ) {
-        TxHottData.gamMsg.temperature1 = fields[TEMP2].value + 20 ; // Hott applies an offset of 20. A value of 20 = 0°C
+        TxHottData.gamMsg.temperature2 = fields[TEMP2].value + 20 ; // Hott applies an offset of 20. A value of 20 = 0°C
     } else {
         TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     }
