@@ -7,6 +7,7 @@
 #include "hardware/irq.h"
 #include "MS5611.h"
 #include "SPL06.h"
+#include "BMP280.h"
 #include "tools.h"
 #include "gps.h"
 #include "param.h"
@@ -103,6 +104,7 @@ GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance           
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
+bool mpxFieldsToReply[16] = {false} ; // this table says if oXs has to reply to this index polling (based on hardware installed)
 
 queue_t mpxRxQueue ;
 
@@ -137,10 +139,11 @@ MPXSTATES mpxState;
 
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
-//extern MS5611 baro1;
-//extern SPL06 baro2;
+extern MS5611 baro1;
+extern SPL06 baro2;
+extern BMP280 baro3;
 
-//extern GPS gps;
+extern GPS gps;
 extern CONFIG config;
 
 void setupMpx() {                                                 
@@ -175,8 +178,47 @@ void setupMpx() {
 // Set up the state machine we're going to use to receive them.
     mpxOffsetRx = pio_add_program(mpxPio, &mpx_uart_rx_program);
     mpx_uart_rx_program_init(mpxPio, mpxSmRx, mpxOffsetRx, config.pinTlm, 38400 , false); // false = not inverted   
+    setupListMpxFieldsToReply();
 }
 
+void setupListMpxFieldsToReply(){
+    uint8_t oXsCode; 
+    for (uint8_t i= 0; i<= 15 ; i++) {
+        oXsCode = convertMpxAddToFieldId[i];  
+        switch (oXsCode) {
+            case MVOLT:
+                if (config.pinVolt[1] !=255) mpxFieldsToReply[i] = true;
+                break;
+            case CURRENT:
+                if (config.pinVolt[2] !=255) mpxFieldsToReply[i] = true;
+                break;
+            case CAPACITY:
+                if (config.pinVolt[2] !=255) mpxFieldsToReply[i] = true;
+                break;
+            case TEMP1:
+                if ( (config.pinVolt[3] !=255) && ( (config.temperature == 1) || (config.temperature == 2) ) ) mpxFieldsToReply[i] = true;
+                break;
+            case VSPEED:
+                if (baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled ) mpxFieldsToReply[i] = true;
+                break;
+            case GROUNDSPEED:
+                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                break;            
+            case RPM:
+                if (config.pinRpm !=255) mpxFieldsToReply[i] = true;
+                break;            
+            case GPS_HOME_BEARING:
+                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                break;
+            case GPS_HOME_DISTANCE:
+                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                break;     
+            case RELATIVEALT:
+                if (baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled ) mpxFieldsToReply[i] = true;
+                break;            
+        } // end switch
+    }    // end for
+}
 
 void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read the pio mpx fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
@@ -260,12 +302,10 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
     
-    if ( fieldId == 0XFF) return false; // do not reply is this address is not supported
-    
+    if ( fieldId == 0XFF) return false; // do not reply if this address is not supported
+    if (mpxFieldsToReply[data_id] == false) return false; // do not reply if the hardware does not support it 
     //printf("da id val= %d %d %d %d\n", data_id , fieldId , fields[fieldId].value , fields[fieldId].available );
     
-    if ( fields[fieldId].available == false) return false; //do not reply if this field has never been available (no reset in mpx protocol) 
-    //printf("id= %d\n", data_id);
     if ( dma_channel_is_busy(mpx_dma_chan) ) {
         //printf("dma is busy\n");
         return false; // skip if the DMA is still sending data
@@ -279,6 +319,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             break;
         case CURRENT:
             mpxValue= fields[fieldId].value / 100; // from mamp to 0.1A
+            break;
+        case CAPACITY:
+            mpxValue= fields[fieldId].value ; // from mah to mah
             break;
         case TEMP1:
             mpxValue= fields[fieldId].value * 10; // from ° to 0.1°
@@ -303,6 +346,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             break;            
     }
     mpxValue = mpxValue << 1; // Shift 1 X and do not set an alarm.
+    #define MB_NOVALUE		0x8000
+    if ( fields[fieldId].available == false) mpxValue = MB_NOVALUE; //overwrite with NO_VALUE as long this field has never been available (no reset in mpx protocol) 
+    //printf("id= %d\n", data_id);
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
     mpx_uart_rx_program_stop(mpxPio, mpxSmRx, config.pinTlm); // stop receiving

@@ -145,9 +145,9 @@ Roll                         Same as above
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
-VOLT1       0.001V           V1 pin is defined                            Index = 1                   0.1V
-VOLT2       0.001V=0.001A    V2 pin is defined                            not transmitted currently
-Capacity    mAh              V2 pin is defined (reset after power down)   not transmitted currently
+VOLT1       0.001V           V1 pin is defined                            Index = 9                  0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            Index = 2                  0.001V
+Capacity    mAh              V2 pin is defined (reset after power down)   Index = 11                 mAh
 VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
             represent temp   V3 pin is defined & TEMP=1 or =2             Index = 6                  0.1 degree
 VOLT4       0.001V           V4 pin is defined                            not transmitted currently
