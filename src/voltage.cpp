@@ -21,15 +21,15 @@ void VOLTAGE::begin(void ) {
             mVolt[cntInit].available = false ;
         }    
     } // end for
-    // 330 because the max volt is 3.3V and we expect 2 decimals - to check if this is correct
+    // 330 because the max volt is 3.3V and we expect 3 decimals to get it in mvolt
     mVoltPerStep[0] = 0;  // 0 means that the value must not be transmitted (set scale = 0 to avoid sending the data)
     mVoltPerStep[1] = 0;
     mVoltPerStep[2] = 0;
     mVoltPerStep[3] = 0;
-    if ( config.scaleVolt1 != 0) mVoltPerStep[0] = 330 / 4095.0  * config.scaleVolt1;
-    if ( config.scaleVolt2 != 0) mVoltPerStep[1] = 330 / 4095.0  * config.scaleVolt2;
-    if ( config.scaleVolt3 != 0) mVoltPerStep[2] = 330 / 4095.0  * config.scaleVolt3;
-    if ( config.scaleVolt4 != 0) mVoltPerStep[3] = 330 / 4095.0  * config.scaleVolt4;  
+    if ( config.scaleVolt1 != 0) mVoltPerStep[0] = 3300 / 4095.0  * config.scaleVolt1;
+    if ( config.scaleVolt2 != 0) mVoltPerStep[1] = 3300 / 4095.0  * config.scaleVolt2;
+    if ( config.scaleVolt3 != 0) mVoltPerStep[2] = 3300 / 4095.0  * config.scaleVolt3;
+    if ( config.scaleVolt4 != 0) mVoltPerStep[3] = 3300 / 4095.0  * config.scaleVolt4;  
     offset[0] = config.offset1; 
     offset[1] = config.offset2;
     offset[2] = config.offset3;

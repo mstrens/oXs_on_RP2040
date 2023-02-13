@@ -29,8 +29,8 @@ GPS bearing from home degree Same as above                                 DIY (
 GPS distance from home  m    Same as above                                 DIY (5103)                m
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch                        MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
-Roll                         Same as above                                 DIY (05121)              degree
+Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
+Roll       degree            Same as above                                 DIY (05121)              degree
 
 Note: to test if openTx/edge is able to discover the "DIY" sensor ID's
 
@@ -64,8 +64,8 @@ GPS distance from home       Same as above                                 not t
 RPM        ?????             RPM pin is defined                            not transmitted  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
-Pitch                        MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
-Roll                         Same as above                                 roll                     Rad (1/10000)
+Pitch      degree            MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
+Roll       degree            Same as above                                 roll                     Rad (1/10000)
 
 Note: to analyse if handset can display a rpm value in YAW (which is supposed to be in degree; perhaps to redefine on handset)
 
@@ -100,8 +100,8 @@ GPS bearing from home        Same as above                                 GPS b
 GPS distance from home       Same as above                                 GPS distance              m
 RPM        ?????             RPM pin is defined                            not available in Hott
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
-Roll                         Same as above
+Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
+Roll       degree            Same as above
                                                                            GAM temperature 1 not transmitted
                                                                            GAM temperature 2 not transmitted
                                                                            GAM Airspeed      not transmitted
@@ -136,8 +136,8 @@ GPS bearing from home        Same as above                                 not t
 GPS distance from home       Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            not transmitted currently
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
-Roll                         Same as above
+Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
+Roll       degree            Same as above
 
 
 ******************************************************************************************************************
@@ -168,7 +168,7 @@ GPS bearing from home        Same as above                                 Index
 GPS distance from home       Same as above                                 Index = 13                0.1 km
 RPM        ?????             RPM pin is defined                            Index = 5                 100 t/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
-Pitch                        Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
-Roll                         Same as above                                 Not transmitted 
+Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       degree            Same as above                                 Not transmitted 
 
 

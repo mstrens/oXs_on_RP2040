@@ -348,6 +348,7 @@ void getSensorsFromCore1(){
             } else {
                 fields[entry.type].value = entry.data;
                 fields[entry.type].available = true ;
+                fields[entry.type].onceAvailable = true ;
                 //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
             }    
         }

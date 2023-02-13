@@ -19,7 +19,7 @@
 #include "pico/multicore.h"
 #include "mpu.h"
 #include "pico/util/queue.h"
-
+#include "tools.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -58,6 +58,7 @@ uint8_t debugSbusOut = 'N';
 uint8_t pinCount[30] = {0};
 extern bool configIsValid; 
 
+extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 extern MS5611 baro1 ;
 extern SPL06  baro2 ;
@@ -369,6 +370,13 @@ void processCmd(){
         }
     }
     
+    // print current values of all telemetry fields
+    if ( strcmp("FV", pkey) == 0 ) { 
+            printFieldValues();
+            return;
+    }
+    
+
     // change protocol
     if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
         if (strcmp("S", pvalue) == 0) {
@@ -923,4 +931,88 @@ void printConfigOffsets(){
     printf("\nOffset Values in config:\n");
 	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
     printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
+}
+
+void printFieldValues(){
+    printf("\n");
+    for (uint8_t i=0; i< NUMBER_MAX_IDX ;i++){
+        if (fields[i].onceAvailable ){
+            switch (i) {
+                case LATITUDE:
+                    printf("GPS Latitude = %f degree\n", ((float) fields[i].value) / 10000000.0);
+                    break;
+                case LONGITUDE:
+                    printf("GPS Longitude = %f degree\n", ((float) fields[i].value) / 10000000.0);
+                    break;
+                case GROUNDSPEED:
+                    printf("GPS Groundspeed = %d cm/s\n", fields[i].value) ;
+                    break;
+                case HEADING:
+                    printf("GPS Heading = %f degree\n", ((float) fields[i].value) / 100.0) ;
+                    break;
+                case ALTITUDE:
+                    printf("GPS Altitude = %d cm\n", fields[i].value) ;
+                    break;
+                case NUMSAT:
+                    printf("GPS Num sat. = %d cm\n", fields[i].value) ;
+                    break;
+                case GPS_DATE:
+                    printf("GPS Date J M A = %d %d %d \n", (uint8_t) (fields[i].value >>8) , (uint8_t) (fields[i].value >> 16) ,
+                        (uint8_t) (fields[i].value >> 24) ) ;
+                    break;
+                case GPS_TIME:
+                    printf("GPS Time H M S = %d %d %d \n", (uint8_t) (fields[i].value >>24) , (uint8_t) (fields[i].value >> 16) ,
+                        (uint8_t) (fields[i].value >> 8) ) ;
+                    break;
+                case GPS_PDOP:
+                    printf("GPS Pdop = %d \n", fields[i].value) ;
+                    break;
+                case GPS_HOME_BEARING:
+                    printf("GPS Home bearing = %d degree\n", fields[i].value) ;
+                    break;
+                case GPS_HOME_DISTANCE:
+                    printf("GPS Home distance = %d m\n", fields[i].value) ;
+                    break;
+                case MVOLT:
+                    printf("Volt 1 = %d mVolt\n", fields[i].value) ;
+                    break;
+                case CURRENT:
+                    printf("Current (Volt 2) = %d mA\n", fields[i].value) ;
+                    break;
+                case RESERVE1:
+                    printf("Volt 3 = %d mVolt\n", fields[i].value) ;
+                    break;
+                case RESERVE2:
+                    printf("Volt 4 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case CAPACITY:
+                    printf("Capacity (using current) = %d mAh\n", fields[i].value) ;
+                    break;        
+                case TEMP1:
+                    printf("Temp 1 (Volt 3) = %d degree\n", fields[i].value) ;
+                    break;        
+                case TEMP2:
+                    printf("Temp 2 (Volt 4) = %d degree\n", fields[i].value) ;
+                    break;        
+                case VSPEED:
+                    printf("Vspeed = %d cm/s\n", fields[i].value) ;
+                    break;        
+                case RELATIVEALT:
+                    printf("Baro Rel altitude = %d cm\n", fields[i].value) ;
+                    break;        
+                case PITCH:
+                    printf("Pitch = %d degree\n", fields[i].value) ;
+                    break;        
+                case ROLL:
+                    printf("Roll = %d degree\n", fields[i].value) ;
+                    break;        
+                case YAW:
+                    printf("Yaw = %d degree\n", fields[i].value) ;
+                    break;        
+                case RPM:
+                    printf("RPM = %d Hertz\n", fields[i].value) ;
+                    break;        
+            } // end switch
+        }
+    }
 }

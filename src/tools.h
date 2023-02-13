@@ -9,6 +9,7 @@
 struct field {
     int32_t value;
     bool available;
+    bool onceAvailable;
     uint32_t nextMillis;
     uint16_t sportInterval; // msec
     uint8_t sportDeviceId;
@@ -18,34 +19,34 @@ struct field {
 
 
 enum fieldIdx {     // Internal Id for the measurements stored in oXs and that can be sent (some in a different format/field)
-      LATITUDE =0,  //  GPS
-      LONGITUDE,    //  GPS
-      GROUNDSPEED , //  GPS
-      HEADING,      //  GPS
-      ALTITUDE ,    //  GPS
+      LATITUDE =0,  //  GPS special format
+      LONGITUDE,    //  GPS special format
+      GROUNDSPEED , //  GPS cm/s
+      HEADING,      //  GPS 0.01 degree
+      ALTITUDE ,    //  GPS cm
 
-      NUMSAT ,      //  GPS   5
-      GPS_DATE ,    // GPS
-      GPS_TIME ,    // GPS
-      GPS_PDOP ,    // GPS
-      GPS_HOME_BEARING, // GPS
+      NUMSAT ,      //  5 GPS no unit   
+      GPS_DATE ,    // GPS special format AAMMJJFF
+      GPS_TIME ,    // GPS special format HHMMSS00
+      GPS_PDOP ,    // GPS no unit
+      GPS_HOME_BEARING, // GPS degree
 
-      GPS_HOME_DISTANCE, // GPS  10
-      MVOLT,        // volt1  
-      CURRENT,  // volt2 must be in seq for voltage.cpp
-      RESERVE1, // volt3 must be in seq for voltage.cpp
-      RESERVE2, // volt4 must be in seq for voltage.cpp
+      GPS_HOME_DISTANCE, // 10 GPS  in m
+      MVOLT,        // volt1   in mVolt
+      CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
+      RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+      RESERVE2, // volt4 must be in seq for voltage.cpp in mV
       
-      CAPACITY,    // based on current (volt2)
-      TEMP1,       // = Volt3 but saved as temp
-      TEMP2,       // = Volt4 but saved as temp
-      VSPEED,      // baro       
-      RELATIVEALT , // baro      
+      CAPACITY,    // based on current (volt2) in mAh
+      TEMP1,       // = Volt3 but saved as temp in degree
+      TEMP2,       // = Volt4 but saved as temp in degree
+      VSPEED,      // baro       in cm/s
+      RELATIVEALT , // baro      in cm
       
-      PITCH,       // imu        20 
-      ROLL,        // imu        
-      YAW ,        // not used to save data
-      RPM ,        // RPM sensor  
+      PITCH,       // 20 imu        in degree 
+      ROLL,        // imu           in degree
+      YAW ,        // not used to save data  in degree
+      RPM ,        // RPM sensor    in Herzt
       NUMBER_MAX_IDX, // used to count the number of entries  24
 };
 
