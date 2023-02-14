@@ -278,6 +278,9 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     case MVOLT:
         uintValue =  ( ((uint32_t) uintValue) /10 ) ;// voltage in mv is divided by 10 because SPORT expect it (volt * 100)
         break;    
+    case CURRENT:
+        uintValue =  ( ((uint32_t) uintValue) /100 ) ;// voltage in mv is divided by 100 because SPORT expect it (Amp * 10)
+        break;    
     }
     uint16_t crc ;
     uint8_t tempBuffer[10];
