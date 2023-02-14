@@ -222,16 +222,19 @@ void setupListMpxFieldsToReply(){
 
 void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read the pio mpx fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
-  irq_clear (PIO0_IRQ_0 );
-  while (  ! pio_sm_is_rx_fifo_empty (mpxPio ,mpxSmRx)){ // when some data have been received
-     uint8_t c = pio_sm_get (mpxPio , mpxSmRx) >> 24;         // read the data
-     //printf("%x", c);
-     queue_try_add (&mpxRxQueue, &c);          // push to the queue
-    //mpxRxMillis = micros();                    // save the timestamp.
-  }
+    irq_clear (PIO0_IRQ_0 );
+    while (  ! pio_sm_is_rx_fifo_empty (mpxPio ,mpxSmRx)){ // when some data have been received
+         uint8_t c = pio_sm_get (mpxPio , mpxSmRx) >> 24;         // read the data
+        if ( ( ( micros() - lastMpxReceivedUs) > 4000) && ( c <= 0X0F) ) { // check that it is a first char since xxxx usec.
+            //printf("%x", c);
+            queue_try_add (&mpxRxQueue, &c);          // push to the queue
+            //mpxRxMillis = micros();                    // save the timestamp.
+        }
+        lastMpxReceivedUs = micros();    
+    }
 }
 
-#define DEBUG_MPX_WITHOUT_RX
+//#define DEBUG_MPX_WITHOUT_RX
 #ifdef DEBUG_MPX_WITHOUT_RX
 uint32_t lastMpxRequest = 0;
 #endif
@@ -255,18 +258,16 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
             if (! queue_is_empty(&mpxRxQueue)) {
                 queue_try_remove (&mpxRxQueue,&data);
                 //printf("%X ", data);
-                if ( data <= 0X0F && ( (micros() - lastMpxReceivedUs)) > 4000) { // when data is less than 16, it is a sensor polling 
-                                                                                // check that it is a first char.
+                if ( data <= 0X0F ) { // when data is less than 16, it is a sensor polling 
                     mpxState = WAIT_FOR_SENDING;
                     mpxStartWaiting = micros();
-                    lastMpxReceivedUs = micros(); 
                     //printf("r\n");
                 }
                 
             }        
             break;
         case WAIT_FOR_SENDING :
-            if ( ( micros() - mpxStartWaiting) > 1600 ) {  // wait 1600usec before sending the reply
+            if ( ( micros() - mpxStartWaiting) > 1000 ) {  // wait 1000usec before sending the reply
                 if (sendMpxFrame(data) ) { // return true when a frame is really being sent
                     mpxState = WAIT_END_OF_SENDING;
                     mpxStartWaiting = micros();
@@ -285,7 +286,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
             break;         
         */
         case WAIT_END_OF_SENDING :
-            if ( ( micros() - mpxStartWaiting) > (2500) ){ // wait that the 3 bytes have been sent (780 usec)
+            if ( ( micros() - mpxStartWaiting) > (1000) ){ // wait that the 3 bytes have been sent (780 usec)
                 mpx_uart_tx_program_stop(mpxPio, mpxSmTx, config.pinTlm );
                 mpx_uart_rx_program_restart(mpxPio, mpxSmRx, config.pinTlm, false );  // false = not inverted
                 mpxState = RECEIVING ;
