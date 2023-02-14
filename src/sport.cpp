@@ -134,7 +134,20 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
     //fields[YAW].sportDeviceId = SPORT_DEVICEID_P3;
     fields[RPM].sportDeviceId = SPORT_DEVICEID_P2;
     
-    fields[VSPEED].sportInterval = 100; //usec
+    fields[VSPEED].sportInterval = 100; //msec
+    fields[GPS_DATE].sportInterval = 1000; //msec
+    fields[GPS_TIME].sportInterval = 1000; //msec
+    fields[ALTITUDE].sportInterval = 1000; //msec
+    fields[NUMSAT].sportInterval = 1000; //msec
+    fields[CAPACITY].sportInterval = 1000; //msec
+    fields[GPS_HOME_DISTANCE].sportInterval = 1000; //msec
+    fields[GPS_HOME_BEARING].sportInterval = 1000; //msec
+    fields[GPS_PDOP].sportInterval = 1000; //msec
+    fields[TEMP1].sportInterval = 1000; //msec
+    fields[TEMP2].sportInterval = 1000; //msec
+    fields[RPM].sportInterval = 1000; //msec
+    
+
     // add here other fields that should be sent more often
     //for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
     //    printf("deviceId %d = %x\n", i , fields[i].sportDeviceId);
