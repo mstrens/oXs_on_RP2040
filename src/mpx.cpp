@@ -349,7 +349,17 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             mpxValue= fields[fieldId].value /100; // from cm to m
             break;            
     }
-    mpxValue = mpxValue << 1; // Shift 1 X and do not set an alarm.
+    if (mpxValue > 16383)
+        mpxValue = 16383;
+    if (mpxValue < -16383)
+        mpxValue = -16383;
+    bool isNegative = false;
+    if (mpxValue < 0)
+        isNegative = true;
+    mpxValue <<= 1; // Shift 1 X and do not set an alarm.
+    if (isNegative)
+        mpxValue |= 1 << 15;
+    //mpxValue = mpxValue << 1; // Shift 1 X and do not set an alarm.
     #define MB_NOVALUE		0x8000
     if ( fields[fieldId].available == false) mpxValue = MB_NOVALUE; //overwrite with NO_VALUE as long this field has never been available (no reset in mpx protocol) 
     //printf("id= %d\n", data_id);
