@@ -187,16 +187,16 @@ void setupListMpxFieldsToReply(){
         oXsCode = convertMpxAddToFieldId[i];  
         switch (oXsCode) {
             case MVOLT:
-                if (config.pinVolt[1] !=255) mpxFieldsToReply[i] = true;
+                if (config.pinVolt[0] !=255) mpxFieldsToReply[i] = true;
                 break;
             case CURRENT:
-                if (config.pinVolt[2] !=255) mpxFieldsToReply[i] = true;
+                if (config.pinVolt[1] !=255) mpxFieldsToReply[i] = true;
                 break;
             case CAPACITY:
-                if (config.pinVolt[2] !=255) mpxFieldsToReply[i] = true;
+                if (config.pinVolt[1] !=255) mpxFieldsToReply[i] = true;
                 break;
             case TEMP1:
-                if ( (config.pinVolt[3] !=255) && ( (config.temperature == 1) || (config.temperature == 2) ) ) mpxFieldsToReply[i] = true;
+                if ( (config.pinVolt[2] !=255) && ( (config.temperature == 1) || (config.temperature == 2) ) ) mpxFieldsToReply[i] = true;
                 break;
             case VSPEED:
                 if (baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled ) mpxFieldsToReply[i] = true;
@@ -226,7 +226,7 @@ void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read th
     irq_clear (PIO0_IRQ_0 );
     while (  ! pio_sm_is_rx_fifo_empty (mpxPio ,mpxSmRx)){ // when some data have been received
          uint8_t c = pio_sm_get (mpxPio , mpxSmRx) >> 24;         // read the data
-        if ( ( ( micros() - lastMpxReceivedUs) > 2500) && ( c <= 0X0F) ) { // check that it is a first char since xxxx usec.
+        if ( ( ( micros() - lastMpxReceivedUs) > 2200) && ( c <= 0X0F) ) { // check that it is a first char since xxxx usec.
         // note : mpx Rx generates it self a reply on polling code 0X00 and 0X01 This reply arrive about 1900 usec after the polling
         // So oxs has to avoid to consider this reply as a pooling code
         // there is about 2700 usec between end of Rx own reply and next pooling.
@@ -265,7 +265,6 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
                 if ( data <= 0X0F ) { // when data is less than 16, it is a sensor polling 
                     mpxState = WAIT_FOR_SENDING;
                     mpxStartWaiting = micros();
-                    //printf("r\n");
                 }
                 
             }        
