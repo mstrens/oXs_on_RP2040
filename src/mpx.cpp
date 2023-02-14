@@ -225,7 +225,10 @@ void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read th
     irq_clear (PIO0_IRQ_0 );
     while (  ! pio_sm_is_rx_fifo_empty (mpxPio ,mpxSmRx)){ // when some data have been received
          uint8_t c = pio_sm_get (mpxPio , mpxSmRx) >> 24;         // read the data
-        if ( ( ( micros() - lastMpxReceivedUs) > 4000) && ( c <= 0X0F) ) { // check that it is a first char since xxxx usec.
+        if ( ( ( micros() - lastMpxReceivedUs) > 2500) && ( c <= 0X0F) ) { // check that it is a first char since xxxx usec.
+        // note : mpx Rx generates it self a reply on polling code 0X00 and 0X01 This reply arrive about 1900 usec after the polling
+        // So oxs has to avoid to consider this reply as a pooling code
+        // there is about 2700 usec between end of Rx own reply and next pooling.
             //printf("%x", c);
             queue_try_add (&mpxRxQueue, &c);          // push to the queue
             //mpxRxMillis = micros();                    // save the timestamp.
