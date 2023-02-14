@@ -202,21 +202,22 @@ void setupListMpxFieldsToReply(){
                 if (baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled ) mpxFieldsToReply[i] = true;
                 break;
             case GROUNDSPEED:
-                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                if (config.pinGpsRx !=255) mpxFieldsToReply[i] = true;
                 break;            
             case RPM:
                 if (config.pinRpm !=255) mpxFieldsToReply[i] = true;
                 break;            
             case GPS_HOME_BEARING:
-                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                if (config.pinGpsRx !=255) mpxFieldsToReply[i] = true;
                 break;
             case GPS_HOME_DISTANCE:
-                if (gps.gpsInstalled) mpxFieldsToReply[i] = true;
+                if (config.pinGpsRx !=255) mpxFieldsToReply[i] = true;
                 break;     
             case RELATIVEALT:
                 if (baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled ) mpxFieldsToReply[i] = true;
                 break;            
         } // end switch
+        //if ( mpxFieldsToReply[i] ) printf("mpx reply for poll %d\n", i);
     }    // end for
 }
 

@@ -282,12 +282,12 @@ void setup() {
       uint32_t setup1StartUs = micros();  
       while (! core1SetupDone){
         sleep_us(100);
-        if ((micros() - setup1StartUs) > 2000) {
+        if ((micros() - setup1StartUs) > 1000000) {
             printf("Attention: setup on core 1 did not ended within timeout\n");
             continue;
         }
       }
-      //rintf("Setup1 takes %d usec\n",micros() - setup1StartUs);
+      //printf("Setup1 takes %d usec\n",micros() - setup1StartUs);
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
