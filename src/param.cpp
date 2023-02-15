@@ -1011,6 +1011,30 @@ void printFieldValues(){
                     break;        
                 case RPM:
                     printf("RPM = %d Hertz\n", fields[i].value) ;
+                    break;
+                case ADS_1_1:
+                    printf("Ads 1 1 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_1_2:
+                    printf("Ads 1 2 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_1_3:
+                    printf("Ads 1 3 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_1_4:
+                    printf("Ads 1 4 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_2_1:
+                    printf("Ads 2 1 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_2_2:
+                    printf("Ads 2 2 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_2_3:
+                    printf("Ads 2 3 = %d mVolt\n", fields[i].value) ;
+                    break;        
+                case ADS_2_4:
+                    printf("Ads 2 4 = %d mVolt\n", fields[i].value) ;
                     break;        
             } // end switch
         }

@@ -30,9 +30,6 @@
 #include "config.h"
 #include "param.h"
 
-// to do: 
-// if we can reply to several device id, we should keep a table with the last field index used for this deviceid
-// when we get a polling for one device id, we should use this table to search from this last field index 
 
 
 // one pio and 2 state machines are used to manage the sport in halfduplex
@@ -72,43 +69,156 @@ uint8_t sportTxBuffer[50];
 uint32_t restoreSportPioToReceiveMillis = 0; // when 0, the pio is normally in receive mode,
                                         // otherwise, it is the timestamp when pio transmit has to be restore to receive mode
 
-field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields that are measured
 
-void setupListOfFields(){    // codes use to identify each field is defined in tool.h
-    for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ 
-        fields[i].value= 0;
-        fields[i].available= false;
-        fields[i].nextMillis= 0;
-        fields[i].sportInterval= 300; // default interval in msec
-        fields[i].sportDeviceId= 0XFF; // default dummy value = do not reply on this
-        fields[i].sportFieldId= DIY_LAST_ID; // default dummy ID
+
+uint16_t sportFieldId[NUMBER_MAX_IDX]; // contains the code to be used in sport to identify the field
+uint8_t sportPriority[NUMBER_MAX_IDX]; // contains the list of fields in priority sequence (first = highest) 
+uint8_t sportMaxPooling[NUMBER_MAX_IDX]; // contains the max number of polling allowed between 2 transmissions
+uint8_t sportMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
+uint32_t sportLastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each field
+uint32_t sportPoolingNr= 0; // contains the current Pooling nr
+
+void setupSportList(){     // table used by sport
+    uint8_t temp[] = { // sequence of fields (first = highest priority to sent on sport)
+        VSPEED,      // baro       in cm/s    5
+        LATITUDE,  //  GPS special format     10
+        LONGITUDE,    //  GPS special format  10
+        GROUNDSPEED , //  GPS cm/s            20
+        RELATIVEALT , // baro      in cm      20
+        PITCH,       // 20 imu        in degree  20
+        ROLL,        // imu           in degree  20 
+        HEADING,      //  GPS 0.01 degree        50
+        ALTITUDE ,    //  GPS cm                 50
+        GPS_HOME_BEARING, // GPS degree          50
+        GPS_HOME_DISTANCE, // 10 GPS  in m       50
+        MVOLT,        // volt1   in mVolt        50
+        CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)  50
+        RESERVE1, // volt3 must be in seq for voltage.cpp in mV       50
+        RESERVE2, // volt4 must be in seq for voltage.cpp in mV       50
+        TEMP1,       // = Volt3 but saved as temp in degree           50
+        TEMP2,       // = Volt4 but saved as temp in degree           50
+        RPM ,        // RPM sensor    in Herzt                        50
+        YAW ,        // not used to save data  in degree              100
+        NUMSAT ,      //  5 GPS no unit                               200 
+        GPS_DATE ,    // GPS special format AAMMJJFF                  200
+        GPS_TIME ,    // GPS special format HHMMSS00                  200
+        GPS_PDOP ,    // GPS no unit                                  200
+        CAPACITY,    // based on current (volt2) in mAh                200
+        ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    200
+        ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3    200
+        ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4    200
+        ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1    200
+        ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2    200
+        ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    200
+        ADS_2_4     // Voltage provided by ads1115 nr 2 on pin 4      200
+    };
+    for (uint8_t i = 0; i < NUMBER_MAX_IDX ; i++){
+        sportPriority[i]= temp[i];
     }
-    // overwrite the default setting
-    fields[LATITUDE].sportFieldId = GPS_LONG_LATI_FIRST_ID;
-    fields[LONGITUDE].sportFieldId = GPS_LONG_LATI_FIRST_ID;
-    fields[GROUNDSPEED].sportFieldId = GPS_SPEED_FIRST_ID;
-    fields[HEADING].sportFieldId = GPS_COURS_FIRST_ID;
-    fields[ALTITUDE].sportFieldId = GPS_ALT_FIRST_ID;
-    fields[NUMSAT].sportFieldId = DIY_GPS_NUM_SAT;
-    fields[GPS_DATE].sportFieldId = GPS_TIME_DATE_FIRST_ID;
-    fields[GPS_TIME].sportFieldId = GPS_TIME_DATE_FIRST_ID;
-    fields[GPS_PDOP].sportFieldId = DIY_GPS_PDOP;
-    fields[GPS_HOME_DISTANCE].sportFieldId = DIY_GPS_HOME_DISTANCE;
-    fields[GPS_HOME_BEARING].sportFieldId = DIY_GPS_HOME_BEARING;
-    fields[MVOLT].sportFieldId = VFAS_FIRST_ID;
-    fields[CURRENT].sportFieldId = CURR_FIRST_ID;
-    fields[RESERVE1].sportFieldId = DIY_VOLT3;
-    fields[RESERVE2].sportFieldId = DIY_VOLT4;
-    fields[CAPACITY].sportFieldId = FUEL_FIRST_ID;
-    fields[TEMP1].sportFieldId = T1_FIRST_ID; 
-    fields[TEMP2].sportFieldId = T2_FIRST_ID ;
-    fields[VSPEED].sportFieldId = VARIO_FIRST_ID;
-    fields[RELATIVEALT].sportFieldId = ALT_FIRST_ID ;
-    fields[PITCH].sportFieldId = DIY_PITCH;
-    fields[ROLL].sportFieldId = DIY_ROLL;
-    //fields[YAW].sportFieldId = DIY_YAW;
-    fields[RPM].sportFieldId = RPM_FIRST_ID;
     
+    // code used by sport to identify a field in a sport frame
+    sportFieldId[LATITUDE] = GPS_LONG_LATI_FIRST_ID;
+    sportFieldId[LONGITUDE] = GPS_LONG_LATI_FIRST_ID;
+    sportFieldId[GROUNDSPEED] = GPS_SPEED_FIRST_ID;
+    sportFieldId[HEADING] = GPS_COURS_FIRST_ID;
+    sportFieldId[ALTITUDE] = GPS_ALT_FIRST_ID;
+    sportFieldId[NUMSAT] = DIY_GPS_NUM_SAT;
+    sportFieldId[GPS_DATE] = GPS_TIME_DATE_FIRST_ID;
+    sportFieldId[GPS_TIME] = GPS_TIME_DATE_FIRST_ID;
+    sportFieldId[GPS_PDOP] = DIY_GPS_PDOP;
+    sportFieldId[GPS_HOME_DISTANCE] = DIY_GPS_HOME_DISTANCE;
+    sportFieldId[GPS_HOME_BEARING] = DIY_GPS_HOME_BEARING;
+    sportFieldId[MVOLT] = VFAS_FIRST_ID;
+    sportFieldId[CURRENT] = CURR_FIRST_ID;
+    sportFieldId[RESERVE1] = DIY_VOLT3;
+    sportFieldId[RESERVE2] = DIY_VOLT4;
+    sportFieldId[CAPACITY] = FUEL_FIRST_ID;
+    sportFieldId[TEMP1] = T1_FIRST_ID; 
+    sportFieldId[TEMP2] = T2_FIRST_ID ;
+    sportFieldId[VSPEED] = VARIO_FIRST_ID;
+    sportFieldId[RELATIVEALT] = ALT_FIRST_ID ;
+    sportFieldId[PITCH] = DIY_PITCH;
+    sportFieldId[ROLL] = DIY_ROLL;
+    //sportFieldId[YAW] = DIY_YAW;
+    sportFieldId[RPM] = RPM_FIRST_ID;
+    sportFieldId[ADS_1_1] = DIY_ADS_1_1;
+    sportFieldId[ADS_1_2] = DIY_ADS_1_2;
+    sportFieldId[ADS_1_3] = DIY_ADS_1_3;
+    sportFieldId[ADS_1_4] = DIY_ADS_1_4;
+    sportFieldId[ADS_2_1] = DIY_ADS_2_1;
+    sportFieldId[ADS_2_2] = DIY_ADS_2_2;
+    sportFieldId[ADS_2_3] = DIY_ADS_2_3;
+    sportFieldId[ADS_2_4] = DIY_ADS_2_4;
+    
+
+    sportMaxPooling[LATITUDE] = 10;
+    sportMaxPooling[LONGITUDE] = 10;
+    sportMaxPooling[GROUNDSPEED] = 20;
+    sportMaxPooling[HEADING] = 50;
+    sportMaxPooling[ALTITUDE] = 50;
+    sportMaxPooling[NUMSAT] = 200;
+    sportMaxPooling[GPS_DATE] = 200;
+    sportMaxPooling[GPS_TIME] = 200;
+    sportMaxPooling[GPS_PDOP] = 200;
+    sportMaxPooling[GPS_HOME_BEARING] = 50;
+    sportMaxPooling[GPS_HOME_DISTANCE] = 50;
+    sportMaxPooling[MVOLT] = 50;
+    sportMaxPooling[CURRENT] = 50;
+    sportMaxPooling[RESERVE1] = 50;
+    sportMaxPooling[RESERVE2] = 50;
+    sportMaxPooling[CAPACITY] = 200;
+    sportMaxPooling[TEMP1] = 50;
+    sportMaxPooling[TEMP2] = 50;
+    sportMaxPooling[VSPEED] = 5;
+    sportMaxPooling[RELATIVEALT] = 20;
+    sportMaxPooling[PITCH] = 20;
+    sportMaxPooling[ROLL] = 20;
+    sportMaxPooling[YAW] = 100;
+    sportMaxPooling[RPM] = 50;
+    sportMaxPooling[ADS_1_1] = 200;
+    sportMaxPooling[ADS_1_2] = 200;
+    sportMaxPooling[ADS_1_3] = 200;
+    sportMaxPooling[ADS_1_4] = 200;
+    sportMaxPooling[ADS_2_1] = 200;
+    sportMaxPooling[ADS_2_2] = 200;
+    sportMaxPooling[ADS_2_3] = 200;
+    sportMaxPooling[ADS_2_4] = 200;
+
+    sportMinPooling[LATITUDE] = 5;
+    sportMinPooling[LONGITUDE] = 5;
+    sportMinPooling[GROUNDSPEED] = 10;
+    sportMinPooling[HEADING] = 30;
+    sportMinPooling[ALTITUDE] = 30;
+    sportMinPooling[NUMSAT] = 100;
+    sportMinPooling[GPS_DATE] = 100;
+    sportMinPooling[GPS_TIME] = 100;
+    sportMinPooling[GPS_PDOP] = 100;
+    sportMinPooling[GPS_HOME_BEARING] = 30;
+    sportMinPooling[GPS_HOME_DISTANCE] = 30;
+    sportMinPooling[MVOLT] = 30;
+    sportMinPooling[CURRENT] = 30;
+    sportMinPooling[RESERVE1] = 30;
+    sportMinPooling[RESERVE2] = 30;
+    sportMinPooling[CAPACITY] = 100;
+    sportMinPooling[TEMP1] = 30;
+    sportMinPooling[TEMP2] = 30;
+    sportMinPooling[VSPEED] = 3;
+    sportMinPooling[RELATIVEALT] = 10;
+    sportMinPooling[PITCH] = 10;
+    sportMinPooling[ROLL] = 10;
+    sportMinPooling[YAW] = 50;
+    sportMinPooling[RPM] = 30;
+    sportMinPooling[ADS_1_1] = 50;
+    sportMinPooling[ADS_1_2] = 50;
+    sportMinPooling[ADS_1_3] = 50;
+    sportMinPooling[ADS_1_4] = 50;
+    sportMinPooling[ADS_2_1] = 50;
+    sportMinPooling[ADS_2_2] = 50;
+    sportMinPooling[ADS_2_3] = 50;
+    sportMinPooling[ADS_2_4] = 50;
+    
+    /*
     fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;
     fields[LONGITUDE].sportDeviceId = SPORT_DEVICEID_P1;
     fields[GROUNDSPEED].sportDeviceId = SPORT_DEVICEID_P2;
@@ -146,7 +256,7 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
     fields[TEMP1].sportInterval = 1000; //msec
     fields[TEMP2].sportInterval = 1000; //msec
     fields[RPM].sportInterval = 1000; //msec
-    
+    */
 
     // add here other fields that should be sent more often
     //for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){
@@ -156,6 +266,8 @@ void setupListOfFields(){    // codes use to identify each field is defined in t
 } 
 
 void setupSport() {
+// configure some table to manage priorities and sport fields codes used bu sport    
+    setupSportList();
 // configure the queue to get the data from Sport in the irq handle
     queue_init (&sportRxQueue, sizeof(uint8_t), 250);
 
@@ -195,7 +307,7 @@ void sportPioRxHandlerIrq(){    // when a byte is received on the Sport, read th
   irq_clear (PIO0_IRQ_0 );
   while (  ! pio_sm_is_rx_fifo_empty (sportPio ,sportSmRx)){ // when some data have been received
      uint8_t c = pio_sm_get (sportPio , sportSmRx) >> 24;         // read the data
-     //printf("%x", c);
+     //printf("c%x\n", c);
      queue_try_add (&sportRxQueue, &c);          // push to the queue
     //sportRxMillis = millis();                    // save the timestamp.
   }
@@ -222,10 +334,9 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
     } else {                             // when we are in receive mode
         if (! queue_is_empty(&sportRxQueue)) {
             queue_try_remove (&sportRxQueue,&data);
-            //printf("%X ", data);
-            if ( ( previous ==  SPORTSYNCREQUEST)  &&
-                ((data == SPORT_DEVICEID_P1) || (data == SPORT_DEVICEID_P2) || (data == SPORT_DEVICEID_P3)  )){
-                     sendNextSportFrame(data);
+            //printf("%X\n", data);
+            if ( ( previous ==  SPORTSYNCREQUEST)  && (data == SPORT_DEVICEID) ){
+                     sendNextSportFrame();
             }
             previous = data; 
         }
@@ -233,39 +344,49 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
 }
 
 
-void sendNextSportFrame(uint8_t data_id){ // search for the next data to be sent for this device ID
-    // search an idx (0,1,2 ) of current deviceId
-    static uint8_t last_sport_idx[3] = {0, 0, 0} ;
-    uint8_t deviceIndex= 0; // 0 mean P1 device
-    if (data_id == SPORT_DEVICEID_P2) deviceIndex=1;
-    if (data_id == SPORT_DEVICEID_P3) deviceIndex=2;
-    
-    //printf("sendNextSportFrame\n");
-    waitUs(300); // wait a little before replying to a pooling
+void sendNextSportFrame(){ // search for the next data to be sent
+    // oXs search (in the sequence defined by priority) for a field that has not been sent since more or equal than max
+    // if not found, it search for a field that has not been sent since more or equal than min
+    // if not found, it sent a frame with all 0
+    waitUs(400); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(sport_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
     }
-    uint32_t _millis = millis();
+    //uint32_t _millis = millis();
+    uint32_t currentPollingNr = ++sportPoolingNr;
+    uint8_t _fieldId; 
+    // first we search the first field 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
-         last_sport_idx[deviceIndex]++;
-         if (last_sport_idx[deviceIndex] >= NUMBER_MAX_IDX) last_sport_idx[deviceIndex] = 0 ;
-        //printf("last_sport_idx= %d\n", last_sport_idx);
-        uint8_t currentFieldIdx = last_sport_idx[deviceIndex];
-        if (fields[currentFieldIdx].sportDeviceId == data_id) { // process only fields for requested device id
-            if ( (_millis >= fields[currentFieldIdx].nextMillis) && (fields[currentFieldIdx].available)  ) {
-                //printf("Sport for device %X  with field %d\n", data_id , currentFieldIdx);
-                sendOneSport(currentFieldIdx);
-                fields[currentFieldIdx].available = false; // flag as sent
-                fields[currentFieldIdx].nextMillis = millis() + fields[currentFieldIdx].sportInterval;
-                break;
+         _fieldId = sportPriority[i]; // retrieve field ID to be checked
+         if (fields[_fieldId].available) {
+            if (currentPollingNr >= (sportLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
+                sendOneSport(_fieldId);
+                fields[_fieldId].available = false; // flag as sent
+                sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
+                return;
             }
-        }    
-    }
+         } 
+    } // end for
+    // repeat base on min 
+    for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
+         _fieldId = sportPriority[i]; // retrieve field ID to be checked
+         if (fields[_fieldId].available) {
+            if (currentPollingNr >= (sportLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
+                sendOneSport(_fieldId);
+                fields[_fieldId].available = false; // flag as sent
+                sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
+                return;
+            }
+         } 
+    } // end for
+    // else send a frame with all zero.
+    #define NO_SPORT_DATA 0xFF
+    sendOneSport(NO_SPORT_DATA); // 0XFF identify the case where we should send a packet with all 0 (meaning no data available) 
 }
 
 void sendOneSport(uint8_t idx){  // fill one frame and send it
-    //printf("send idx %f\n", (float) idx);
+    //printf("%d\n", idx); // used to get the id and check the sequence in a xls
     // the frame contains 1 byte = type, 2 bytes = value id, 4 byte( or more) for value, 1 byte CRC
     uint8_t counter = 0;
     //uint8_t value[4] = { 0, 1, 2, 3};
@@ -296,15 +417,16 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         break;    
     }
     uint16_t crc ;
-    uint8_t tempBuffer[10];
-    tempBuffer[counter++] = 0X10 ; // type of packet : data
-    tempBuffer[counter++] = fields[idx].sportFieldId    ; // 0x0110 = Id for vario data
-    tempBuffer[counter++] = fields[idx].sportFieldId >> 8 ; // 0x0110 = Id for vario data
-    tempBuffer[counter++] = uintValue >> 0 ; // value 
-    tempBuffer[counter++] = uintValue >> 8 ;  
-    tempBuffer[counter++] = uintValue >> 16 ;  
-    tempBuffer[counter++] = uintValue >> 24; // value
-    
+    uint8_t tempBuffer[10]= {0};
+    if ( idx != NO_SPORT_DATA) {
+        tempBuffer[counter++] = 0X10 ; // type of packet : data
+        tempBuffer[counter++] = sportFieldId[idx]    ; // 0x0110 = Id for vario data
+        tempBuffer[counter++] = sportFieldId[idx] >> 8 ; // 0x0110 = Id for vario data
+        tempBuffer[counter++] = uintValue >> 0 ; // value 
+        tempBuffer[counter++] = uintValue >> 8 ;  
+        tempBuffer[counter++] = uintValue >> 16 ;  
+        tempBuffer[counter++] = uintValue >> 24; // value
+    }    
     crc = tempBuffer[0] ;
     for (uint8_t i = 1; i<=6;i++){
       crc +=  tempBuffer[i]; //0-1FF
@@ -334,7 +456,7 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         }
         printf("/n");    
     }
-    sleep_us(100) ;
+    //sleep_us(100) ;
     sport_uart_rx_program_stop(sportPio, sportSmRx, config.pinTlm); // stop receiving
     sport_uart_tx_program_start(sportPio, sportSmTx, config.pinTlm, true); // prepare to transmit
     // start the DMA channel with the data to transmit

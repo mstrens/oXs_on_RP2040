@@ -1,13 +1,14 @@
 
 #pragma once
 
-void setupListOfFields();
+
+void setupSportList();
 void setupSport(void);
 
 void sportPioRxHandlerIrq() ;   // when a byte is received on the Sport, read the pio Sport fifo and push the data to a queue (to be processed in the main loop)
 
 void handleSportRxTx(void);
-void sendNextSportFrame(uint8_t data_id) ; // search for the next data to be sent
+void sendNextSportFrame() ; // search for the next data to be sent
 void sendOneSport(uint8_t idx); 
 
 
@@ -144,3 +145,12 @@ void sendOneSport(uint8_t idx);
 #define DIY_ROLL               0X5121
 #define DIY_YAW                0X5122
 
+#define DIY_ADS_1_1             0X5131
+#define DIY_ADS_1_2             0X5132
+#define DIY_ADS_1_3             0X5133
+#define DIY_ADS_1_4             0X5134
+
+#define DIY_ADS_2_1             0X5135
+#define DIY_ADS_2_2             0X5136
+#define DIY_ADS_2_3             0X5137
+#define DIY_ADS_2_4             0X5138

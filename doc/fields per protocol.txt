@@ -28,7 +28,7 @@ GPS PDOP   0.01  ????        Same as above                                 GPS P
 GPS bearing from home degree Same as above                                 DIY (5102)                degree
 GPS distance from home  m    Same as above                                 DIY (5103)                m
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
-Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     DIY (0X5131 / 0X5138)    mVolt
 Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
 Roll       degree            Same as above                                 DIY (05121)              degree
 

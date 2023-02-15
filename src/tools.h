@@ -4,16 +4,11 @@
 //#include "Button2.h" moved to Button2.cpp
 //#include "stdio.h"
 
-//#define SPORT_TYPES_MAX 24 // = NUMBER_MAX_IDX
 
 struct field {
     int32_t value;
     bool available;
     bool onceAvailable;
-    uint32_t nextMillis;
-    uint16_t sportInterval; // msec
-    uint8_t sportDeviceId;
-    uint16_t sportFieldId;
 } ;
 
 
@@ -47,7 +42,17 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       ROLL,        // imu           in degree
       YAW ,        // not used to save data  in degree
       RPM ,        // RPM sensor    in Herzt
-      NUMBER_MAX_IDX, // used to count the number of entries  24
+      ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+
+      ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+      ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+      ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+      ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
+      ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
+      
+      ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
+      ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
+      NUMBER_MAX_IDX, // used to count the number of entries       32
 };
 
 

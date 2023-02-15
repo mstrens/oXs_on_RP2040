@@ -88,6 +88,9 @@ GPS gps;
 // objet to manage the mpu6050
 MPU mpu(1);
 
+field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters that can be measured (not only used by Sport)
+
+
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 
 EMFButton btn (3, 0); // button object will be associated to the boot button of rp2040; requires a special function to get the state (see tool.cpp)
@@ -107,7 +110,6 @@ queue_t qSendCmdToCore1;
 bool core1SetupDone = false;
 void core1_main(); // prototype of core 1 main function
 
-extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 
 void setupI2c(){
@@ -158,10 +160,8 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
       baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
       baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
-      #ifdef USE_ADS1115
       adc1.begin() ; 
       adc2.begin() ;
-      #endif 
       mpu.begin(); 
     //blinkRgb(0,10,0);
       gps.setupGps();  //use a Pio
@@ -186,10 +186,8 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
       vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
   }
-  #ifdef USE_ADS1115
   adc1.readSensor(); 
   adc2.readSensor();
-  #endif 
   mpu.getAccZWorld();  
   gps.readGps();
   readRpm();
@@ -275,7 +273,10 @@ void setup() {
   
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   if (configIsValid){ // continue with setup only if config is valid
-      setupListOfFields(); // initialise the list of fields being used
+      for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
+        fields[i].value= 0;
+        fields[i].available= false;
+      }  
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); 
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
