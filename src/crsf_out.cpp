@@ -147,10 +147,6 @@ void fillFrameBattery(uint8_t idx){
     fillBufferU8(CRSF_ADDRESS_CRSF_RECEIVER) ;
     fillBufferU8(CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 2); // + 2 because we add type and crc byte 
     fillBufferU8(CRSF_FRAMETYPE_BATTERY_SENSOR) ;
-    //voltage.mVolt[0].value = 100;  // only for testing with dummy values
-    //voltage.mVolt[1].value = 1000;
-    //voltage.mVolt[2].value = 1000;
-    //voltage.mVolt[3].value = 100;
     if ( fields[MVOLT].value > 0 ) {
         fillBufferU16( (uint16_t) fields[MVOLT].value ) ;
     } else  fillBufferU16(0) ;

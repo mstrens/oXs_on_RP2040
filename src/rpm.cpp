@@ -29,6 +29,7 @@ void setupRpm(){
     if (config.pinRpm == 255) return; // skip when pin is not defined
     setupRpmPio( );
     rpmScaling = 1000000.0 * config.rpmMultiplicator; // 1000000 = nbr of microsec in a sec
+    //printf("RPM is set up\n");
 }
 void setupRpmPio(){
     // setup the PIO for RPM
@@ -40,6 +41,7 @@ void setupRpmPio(){
 }
 void readRpm(){
     if (config.pinRpm == 255) return; // skip when pin is not defined
+    //printf("read rpm\n");
     if (rpmScaling != 0.0){
         currentRpmUsec = micros();
         if ( ( currentRpmUsec - previousRpmUsec ) > RPM_COUNTER_INTERVAL_USEC ) {
@@ -49,8 +51,7 @@ void readRpm(){
             //        (previousRpmCounter - currentRpmCounter) , ( currentRpmUsec - previousRpmUsec ), rpm);
             previousRpmUsec = currentRpmUsec;
             previousRpmCounter = currentRpmCounter;
-            fields[RPM].value = rpm;
-            fields[RPM].available = true ;       
+            sent2Core0( RPM, (int32_t) rpm );       
         }
     }    
 }

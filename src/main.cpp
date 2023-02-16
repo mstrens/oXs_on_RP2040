@@ -168,6 +168,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       #ifdef USEDS18B20
       ds18b20Setup(); 
       #endif
+      setupRpm(); // this function perform the setup of pio Rpm
       core1SetupDone = true;
 }
 
@@ -282,8 +283,8 @@ void setup() {
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
       uint32_t setup1StartUs = micros();  
       while (! core1SetupDone){
-        sleep_us(100);
-        if ((micros() - setup1StartUs) > 1000000) {
+        sleep_us(100000);
+        if ((micros() - setup1StartUs) > 2000000) {
             printf("Attention: setup on core 1 did not ended within timeout\n");
             continue;
         }
@@ -314,7 +315,6 @@ void setup() {
           setupSbusOutPio();
         }
       setupPwm();
-      setupRpm(); // this function perform the setup of pio Rpm
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
   

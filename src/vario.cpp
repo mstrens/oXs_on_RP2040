@@ -49,10 +49,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   rawRelAltitudeCm = baro_altitude * 0.01 - rawOffsetAltitudeCm;  // raw relative altitude
   // smooth altitude
   altitude += 0.04 * ( baro_altitude - altitude) ;
-  //absoluteAlt.value = altitude ;
-  //absoluteAlt.available = true ;
-  //altitudeAvailableForDte = true; // it was altitudeAt20MsecAvailable = true ; // inform openxsens.ino that calculation of dTE can be performed
-
+  
   altitudeLowPass += 0.085 * ( baro_altitude - altitudeLowPass) ;
   altitudeHighPass += 0.1 * ( baro_altitude - altitudeHighPass) ;
   intervalSmooth += 0.1 * (baro_altIntervalMicros - intervalSmooth) ; //delay between 2 measures  only if there is no overflow of pressureMicos
