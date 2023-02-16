@@ -105,6 +105,7 @@ void setupSportList(){     // table used by sport
         GPS_TIME ,    // GPS special format HHMMSS00                  200
         GPS_PDOP ,    // GPS no unit                                  200
         CAPACITY,    // based on current (volt2) in mAh                200
+        ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 2    200
         ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    200
         ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3    200
         ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4    200
