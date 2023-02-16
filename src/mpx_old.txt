@@ -104,7 +104,7 @@ GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance           
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
-//bool mpxFieldsToReply[16] = {false} ; // this table says if oXs has to reply to this index polling (based on hardware installed)
+bool mpxFieldsToReply[16] = {false} ; // this table says if oXs has to reply to this index polling (based on hardware installed)
 
 queue_t mpxRxQueue ;
 
@@ -178,10 +178,9 @@ void setupMpx() {
 // Set up the state machine we're going to use to receive them.
     mpxOffsetRx = pio_add_program(mpxPio, &mpx_uart_rx_program);
     mpx_uart_rx_program_init(mpxPio, mpxSmRx, mpxOffsetRx, config.pinTlm, 38400 , false); // false = not inverted   
-    //setupListMpxFieldsToReply();
+    setupListMpxFieldsToReply();
 }
 
-/*
 void setupListMpxFieldsToReply(){
     uint8_t oXsCode; 
     for (uint8_t i= 0; i<= 15 ; i++) {
@@ -221,7 +220,6 @@ void setupListMpxFieldsToReply(){
         //if ( mpxFieldsToReply[i] ) printf("mpx reply for poll %d\n", i);
     }    // end for
 }
-*/
 
 void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read the pio mpx fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
@@ -309,9 +307,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     int16_t mpxValue ;
     
     if ( fieldId == 0XFF) return false; // do not reply if this address is not supported
-    if ( fields[data_id].available ) fields[data_id].onceAvailable = true;
-    if ( fields[data_id].onceAvailable == false) return false;
-    //if (mpxFieldsToReply[data_id] == false) return false; // do not reply if the hardware does not support it 
+    if (mpxFieldsToReply[data_id] == false) return false; // do not reply if the hardware does not support it 
     //printf("da id val= %d %d %d %d\n", data_id , fieldId , fields[fieldId].value , fields[fieldId].available );
     
     if ( dma_channel_is_busy(mpx_dma_chan) ) {
@@ -366,7 +362,6 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     //mpxValue = mpxValue << 1; // Shift 1 X and do not set an alarm.
     #define MB_NOVALUE		0x8000
     if ( fields[fieldId].available == false) mpxValue = MB_NOVALUE; //overwrite with NO_VALUE as long this field has never been available (no reset in mpx protocol) 
-    fields[fieldId].available = false;   // reset the flag available
     //printf("id= %d\n", data_id);
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
