@@ -13,7 +13,7 @@ VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           DIY (0
 VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           DIY (0X5114)               0.001V
                              V4 pin is defined & TEMP=2                   T2 (0X410)                  degree
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude (0X100)           cm
-Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            cm/sec
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            kts
                              if a MP6050 is installed, Vpeed use it too
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
 GPS lat                      Same as above                                 lat (0x0800)           special format

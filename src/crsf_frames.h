@@ -73,8 +73,8 @@ struct voltageFrameStruct
     uint8_t device_addr; // should be 0xEC (=receiver)
     uint8_t frame_size;  // counts size after this byte, so it must be the payload size + 2 (type and crc)
     uint8_t type;        // from crsf_frame_type_e
-    uint16_t mVolt ;
-    uint16_t current ;
+    uint16_t mVolt ;     
+    uint16_t current ;   // in 0.1 A
     uint32_t capacity : 24; // there is only one uint32 (splitted in 24 and 8)
     uint32_t remain : 8 ;
     uint8_t crc;

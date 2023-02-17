@@ -407,8 +407,8 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         uintValue =  intValue / 1000 ; // convert from degree * 100000 to degree * 100
         break;
     case GROUNDSPEED:  // to do : test for the right value
-        uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
-        //uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)
+        //uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
+        uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)
         break;
     case MVOLT:
         uintValue =  ( ((uint32_t) uintValue) /10 ) ;// voltage in mv is divided by 10 because SPORT expect it (volt * 100)

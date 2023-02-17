@@ -286,7 +286,7 @@ void setup() {
         sleep_us(100000);
         if ((micros() - setup1StartUs) > 2000000) {
             printf("Attention: setup on core 1 did not ended within timeout\n");
-            continue;
+            break   ;
         }
       }
       //printf("Setup1 takes %d usec\n",micros() - setup1StartUs);
