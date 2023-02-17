@@ -89,9 +89,9 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
         printf("read error ads1115"); //if there is no error on previous I2C request
         return false;
     }
-    ads_requestNextConv() ;
     uint16_t valueAdc ;
     valueAdc = data[0] << 8 | data[1] ;
+    //printf("idx=%d : %d adc at%d\n", ads_CurrentIdx , (int) valueAdc , (int) millis());
     ads_SumOfConv[ads_CurrentIdx] +=   (int16_t) valueAdc ;
     ads_Counter[ads_CurrentIdx]-- ;
     if ( ads_Counter[ads_CurrentIdx] == 0 ) {
@@ -102,7 +102,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
             adcToMvoltScaling =  6144  / 32768.0 ;  // When ads_Gain[] = 0, it means that 32768 = 6144 mvolt
         }
         ads_Value[ads_CurrentIdx] = round( ((float) ads_SumOfConv[ads_CurrentIdx] / (float) ads_MaxCount[ads_idx][ads_CurrentIdx] * adcToMvoltScaling ) * ads_Scale[ads_idx][ads_CurrentIdx] ) + ads_Offset[ads_idx][ads_CurrentIdx];
-        printf("Adc=%d pin=%d : %d mVolt at%d\n", ads_idx , ads_CurrentIdx , ads_Value[ads_CurrentIdx], millis());
+        //printf("Adc=%d pin=%d : %d mVolt at%d\n", ads_idx , ads_CurrentIdx , ads_Value[ads_CurrentIdx], millis());
         ads_Available[ads_CurrentIdx] = true ;
         ads_SumOfConv[ads_CurrentIdx] = 0 ;            // reset the sum 
         ads_Counter[ads_CurrentIdx] = ads_MaxCount[ads_idx][ads_CurrentIdx] ;   // reset the counter to the number of count before averaging
@@ -112,6 +112,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
             printf("Adc %i : %d mVolt\n", ads_idx , (int) ads_Value[ads_CurrentIdx]);
         #endif
     }
+    ads_requestNextConv() ;
     return true ;
 } // end of readSensor
 
@@ -137,11 +138,9 @@ void ADS1115::ads_requestNextConv(void) {
     // bit 2 = latching comparator ; not used
     // bits 1,0 = 11 means comparator disabled
     dataToWrite[2] = ( ads_Rate[ads_idx][ads_CurrentIdx] << 5 | 0B11 );
-    printf("request %x %x %x idx=%d at%d\n",ads_CurrentIdx , dataToWrite[1] , dataToWrite[2], ads_CurrentIdx , millis() );
         // bit 15 says that a conversion is requested, bit 8 says on shot mode, bits 0 and 1 = 11 says comparator is disabled.
     
     if (i2c_write_blocking (i2c1 , ads_Addr , &dataToWrite[0] , 3 , false) == PICO_ERROR_GENERIC ) I2CErrorCodeAds1115 = -1; // -1 shows an error
-    
     //I2CErrorCodeAds1115 = I2c.write((uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // send the Address, 1 = config register , 2 bytes , pointer to the data to write
 //    if ( I2CErrorCodeAds1115 ) I2CErrorCodeAds1115 = I2c.write( (uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // retry once if there is an error (probably we should add a clear of I2C bus in between)
 #ifdef DEBUGADS1115REQUESTCONV  
@@ -151,6 +150,8 @@ void ADS1115::ads_requestNextConv(void) {
       printer->println(" ");
 #endif
     ads_MilliAskConv = millis() ;
+    //printf("request %x %x %x idx=%d at%d  ",ads_CurrentIdx , dataToWrite[1] , dataToWrite[2], ads_CurrentIdx , ads_MilliAskConv );
+    
 } // end of Ads_requestNextConv
 
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.1.8"
+#define VERSION "1.1.9"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -51,14 +51,14 @@
 #define I2C_ADS_Add1 0x48 // I2C address of ads1115 when addr pin is connected to ground
 #define I2C_ADS_Add2 0x49 // I2C address of ads1115 when addr pin is connected to vdd
 
-#define ADS1_MEASURE A0_TO_A1 ,  A1_TO_GND , A2_TO_GND , A3_TO_GND // select 4 values between A0_TO_A1, A0_TO_A3, A1_TO_A3, A2_TO_A3, A0_TO_GND, A1_TO_GND, A2_TO_GND, A3_TO_GND, ADS_OFF
+#define ADS1_MEASURE A0_TO_GND ,  A1_TO_GND , A2_TO_GND , A3_TO_GND // select 4 values between A0_TO_A1, A0_TO_A3, A1_TO_A3, A2_TO_A3, A0_TO_GND, A1_TO_GND, A2_TO_GND, A3_TO_GND, ADS_OFF
 #define ADS1_FULL_SCALE_VOLT  MV2048, MV2048, MV2048, MV2048 //  select between MV6144 MV4096 MV2048 MV1024 MV512 MV256
 #define ADS1_OFFSET 0.0, 0.0 , 0.0 , 0.0 // can be a float (positive or negative)
 #define ADS1_SCALE 1.0, 1.0, 1.0, 1.0 // can be a float
 #define ADS1_RATE  MS69 , MS69, MS69 , MS69 // select between MS137, MS69, MS35, MS18, MS9, MS5, MS3 , MS2
 #define ADS1_AVERAGING_ON 10 , 10, 10, 10 // number of values used for averaging (must be between 1 and 254) 
 
-#define ADS2_MEASURE A0_TO_A1 ,  A1_TO_GND , A2_TO_GND , A3_TO_GND // select 4 values between A0_TO_A1, A0_TO_A3, A1_TO_A3, A2_TO_A3, A0_TO_GND, A1_TO_GND, A2_TO_GND, A3_TO_GND, ADS_OFF
+#define ADS2_MEASURE A0_TO_GND ,  A1_TO_GND , A2_TO_GND , A3_TO_GND // select 4 values between A0_TO_A1, A0_TO_A3, A1_TO_A3, A2_TO_A3, A0_TO_GND, A1_TO_GND, A2_TO_GND, A3_TO_GND, ADS_OFF
 #define ADS2_FULL_SCALE_VOLT  MV2048, MV2048, MV2048, MV2048 //  select between MV6144 MV4096 MV2048 MV1024 MV512 MV256
 #define ADS2_OFFSET 0.0, 0.0 , 0.0 , 0.0 // can be a float (positive or negative)
 #define ADS2_SCALE 1.0, 1.0, 1.0, 1.0 // can be a float
