@@ -21,397 +21,23 @@ extern VARIO vario1;
 
 extern queue_t qSendCmdToCore1;
 
-//Kalman
-//KalmanFilter kalman1 ;
-//KalmanFilter kalman2 ;
-
-//float zTrack1 ;
-//float vTrack1 ;
 float zTrack ;
 float vTrack ;
 float prevVTrack; // use to check hysteresis.
 float sumAccZ = 0; // used to calculate an average of AccZ
 uint32_t countAccZ=0;
 
-// for Kalman4D
-//float zTrack4 ;
-//float vTrack4 ;
-//float KFAltitudeCm; // heigh calculated by kalman filter
-//float KFClimbrateCps ; // Vspeed calculated by kalman filter
-//float KFAltitudeCm2; // heigh calculated by kalman filter
-//float KFClimbrateCps2 ; // Vspeed calculated by kalman filter
 uint32_t lastKfUs = micros(); 
 uint32_t kfUs ;
-    
 
-
-#define USE_MAH //USE_MAK //USE_DMP  // USE_MAH
 MPU::MPU(int a)
 {
 }
 
-#ifdef USE_DMP
-
-
-void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
-{
-    //mpuInstalled = mpu6050.testConnection(); // true when a MPU6050 is installed
-    if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
-    //printf("start MPU initialisation\n");
-    mpu6050.initialize();
-    devStatus = mpu6050.dmpInitialize();  
-    if (devStatus == 0) {
-        // Calibration Time: generate offsets and calibrate our MPU6050
-        printf("MPU+DMP initialized\n");
-        /* --- if you have calibration data then set the sensor offsets here --- */
-        mpu6050.setXAccelOffset(335);
-        mpu6050.setYAccelOffset(79);
-        mpu6050.setZAccelOffset(1132);
-        mpu6050.setXGyroOffset(70);
-        mpu6050.setYGyroOffset(-13);
-        mpu6050.setZGyroOffset(-9);
-        //
-        
-        
-        //mpu6050.CalibrateAccel(6);
-        //mpu6050.CalibrateGyro(6);
-
-        //mpu6050.PrintActiveOffsets();
-        
-        mpu6050.setDMPEnabled(true);                // turn on the DMP, now that it's ready
-        mpuIntStatus = mpu6050.getIntStatus();
-        dmpReady = true;                        // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        packetSize = mpu6050.dmpGetFIFOPacketSize();      // get expected DMP packet size for later comparison
-        mpuInstalled =  true;
-    } 
-    else 
-    {                                          // ERROR!        1 = initial memory load failed         2 = DMP configuration updates failed        (if it's going to break, usually the code will be 1)
-        printf("DMP Initialization failed (code %d)\n", devStatus);
-        mpuInstalled =  false;
-    }
-    yaw = 0.0;
-    pitch = 0.0;
-    roll = 0.0;      
-}
-
-bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU and calculate the acc on Z axis (world)
-    if (!mpuInstalled) {
-        //printf("no mpu\n");
-        return false;
-    }
-    fifoCount = mpu6050.getFIFOCount(); 
-    if (fifoCount < packetSize) return false;
-    //enlapsedTime(0);
-    
-    mpu6050.getFIFOBytes(fifoBuffer, packetSize);                             // read a packet from FIFO
-    
-    mpu6050.dmpGetQuaternion(&q, fifoBuffer);
-    mpu6050.dmpGetAccel(&aa, fifoBuffer);
-    //printf("aa: %d,\t %d,\t %d\n", aa.x, aa.y, aa.z);
-    mpu6050.dmpGetGravity(&gravity, &q);
-    //printf("gravity: %d,\t %d,\t %d\n", gravity.x, gravity.y, gravity.z);
-    mpu6050.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-    //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
-    mpu6050.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-    sumAccZ += aaWorld.z;
-    countAccZ++;
-    if (vario1.newClimbRateAvailable){
-        kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-        sumAccZ= 0;
-        countAccZ=0;
-        sent2Core0( VSPEED , (int32_t) vTrack2) ; 
-    //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z - 1000)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-//    kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-    }
-
-
-    //printf("aworld: %d,\t %d,\t %d\n", aaWorld.x, aaWorld.y, aaWorld.z);
-    //printf("AccZ=%d\n", aaWorld.z);
-    
-    return false; 
-}
-#endif
-#ifdef USE_MAK //  // do not use dmp
-//*****************************************************
-#define PI 3.1416
-
-float qf[4] = {1.0f, 0.0f, 0.0f, 0.0f};            // vector to hold quaternion
-uint32_t delt_t = 0; // used to control display output rate
-uint32_t count = 0;  // used to control display output rate
-// parameters for 6 DoF sensor fusion calculations
-float GyroMeasError ;     // gyroscope measurement error in rads/s (start at 60 deg/s), then reduce after ~10 s to 3
-float beta ;  // compute beta
-float GyroMeasDrift ;      // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
-float zeta;  // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
-float deltat = 0.0f;                              // integration interval for both filter schemes
-uint32_t lastUpdate = 0, firstUpdate = 0;         // used to calculate integration interval
-uint32_t Now = 0;                                 // used to calculate integration interval
-
-Quaternion qq;                // quaternion
-VectorInt16 aa;         // [x, y, z]            accel sensor measurements
-VectorFloat gravity;          // added by mstrens to calculate Z world acc
-VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
-VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
-
-
-void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
-{
-    if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
-    
-    // Two byte reset. First byte register, second byte data
-    // There are a load more options to set up the device in different ways that could be added here
-    uint8_t buf[] = {0x6B, 0x00};
-    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false);
-    sleep_us(100);
-        // set offsets
-        /*
-        mpu6050.setXAccelOffset(335);
-        mpu6050.setYAccelOffset(79);
-        mpu6050.setZAccelOffset(1132);
-        mpu6050.setXGyroOffset(70);
-        mpu6050.setYGyroOffset(-13);
-        mpu6050.setZGyroOffset(-9);
-        */
-    
-    //GyroMeasError = PI * (40.0f / 180.0f);     // gyroscope measurement error in rads/s (start at 60 deg/s), then reduce after ~10 s to 3
-    GyroMeasError = PI * (40.0f / 180.0f);     // gyroscope measurement error in rads/s (start at 60 deg/s), then reduce after ~10 s to 3
-    
-    beta = sqrt(3.0f / 4.0f) * GyroMeasError;  // compute beta
-    GyroMeasDrift = PI * (2.0f / 180.0f);      // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
-    zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;  // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
-    mpuInstalled =  true;
-    printf("MPU initialized\n");
-
-}
-
-    int16_t acceleration[3], gyro[3], temp;
-
-static void mpu6050_read_raw(int16_t accel[3], int16_t gyro[3]) {
-    // For this particular device, we send the device the register we want to read
-    // first, then subsequently read from the device. The register is auto incrementing
-    // so we don't need to keep sending the register we want, just the first.
-
-    uint8_t buffer[14];
-
-    // Start reading acceleration registers from register 0x3B for 6 bytes
-    uint8_t val = 0x3B;
-    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-    i2c_read_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false);
-    for (int i = 0; i < 3; i++) {
-        accel[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);
-    }
-    for (int i = 4; i < 7; i++) {
-        gyro[i] = (buffer[i * 2] << 8 | buffer[(i * 2) + 1]);;
-    }
-
-}
-
-void MadgwickQuaternionUpdate(float ax, float ay, float az, float gyrox, float gyroy, float gyroz)
-{
-    float axn; // added by ms to avoid changes of ax,ay,az
-    float ayn;
-    float azn;
-    float q1 = qf[0], q2 = qf[1], q3 = qf[2], q4 = qf[3];         // short name local variable for readability
-    float norm;                                               // vector norm
-    float f1, f2, f3;                                         // objetive funcyion elements
-    float J_11or24, J_12or23, J_13or22, J_14or21, J_32, J_33; // objective function Jacobian elements
-    float qDot1, qDot2, qDot3, qDot4;
-    float hatDot1, hatDot2, hatDot3, hatDot4;
-    float gerrx, gerry, gerrz, gbiasx, gbiasy, gbiasz;        // gyro bias error
-
-    // Auxiliary variables to avoid repeated arithmetic
-    float _halfq1 = 0.5f * q1;
-    float _halfq2 = 0.5f * q2;
-    float _halfq3 = 0.5f * q3;
-    float _halfq4 = 0.5f * q4;
-    float _2q1 = 2.0f * q1;
-    float _2q2 = 2.0f * q2;
-    float _2q3 = 2.0f * q3;
-    float _2q4 = 2.0f * q4;
-    float _2q1q3 = 2.0f * q1 * q3;
-    float _2q3q4 = 2.0f * q3 * q4;
-
-    // Normalise accelerometer measurement
-    norm = sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f) return; // handle NaN
-    norm = 1.0f/norm;
-    axn = ax * norm;
-    ayn = ay * norm;
-    azn = az * norm;
-    
-    // Compute the objective function and Jacobian
-    f1 = _2q2 * q4 - _2q1 * q3 - axn;
-    f2 = _2q1 * q2 + _2q3 * q4 - ayn;
-    f3 = 1.0f - _2q2 * q2 - _2q3 * q3 - azn;
-    J_11or24 = _2q3;
-    J_12or23 = _2q4;
-    J_13or22 = _2q1;
-    J_14or21 = _2q2;
-    J_32 = 2.0f * J_14or21;
-    J_33 = 2.0f * J_11or24;
-    
-    // Compute the gradient (matrix multiplication)
-    hatDot1 = J_14or21 * f2 - J_11or24 * f1;
-    hatDot2 = J_12or23 * f1 + J_13or22 * f2 - J_32 * f3;
-    hatDot3 = J_12or23 * f2 - J_33 *f3 - J_13or22 * f1;
-    hatDot4 = J_14or21 * f1 + J_11or24 * f2;
-    
-    // Normalize the gradient
-    norm = sqrt(hatDot1 * hatDot1 + hatDot2 * hatDot2 + hatDot3 * hatDot3 + hatDot4 * hatDot4);
-    hatDot1 /= norm;
-    hatDot2 /= norm;
-    hatDot3 /= norm;
-    hatDot4 /= norm;
-    
-    // Compute estimated gyroscope biases
-    gerrx = _2q1 * hatDot2 - _2q2 * hatDot1 - _2q3 * hatDot4 + _2q4 * hatDot3;
-    gerry = _2q1 * hatDot3 + _2q2 * hatDot4 - _2q3 * hatDot1 - _2q4 * hatDot2;
-    gerrz = _2q1 * hatDot4 - _2q2 * hatDot3 + _2q3 * hatDot2 - _2q4 * hatDot1;
-    
-    // Compute and remove gyroscope biases
-    gbiasx += gerrx * deltat * zeta;
-    gbiasy += gerry * deltat * zeta;
-    gbiasz += gerrz * deltat * zeta;
-    gyrox -= gbiasx;
-    gyroy -= gbiasy;
-    gyroz -= gbiasz;
-    
-    // Compute the quaternion derivative
-    qDot1 = -_halfq2 * gyrox - _halfq3 * gyroy - _halfq4 * gyroz;
-    qDot2 =  _halfq1 * gyrox + _halfq3 * gyroz - _halfq4 * gyroy;
-    qDot3 =  _halfq1 * gyroy - _halfq2 * gyroz + _halfq4 * gyrox;
-    qDot4 =  _halfq1 * gyroz + _halfq2 * gyroy - _halfq3 * gyrox;
-
-    // Compute then integrate estimated quaternion derivative
-    q1 += (qDot1 -(beta * hatDot1)) * deltat;
-    q2 += (qDot2 -(beta * hatDot2)) * deltat;
-    q3 += (qDot3 -(beta * hatDot3)) * deltat;
-    q4 += (qDot4 -(beta * hatDot4)) * deltat;
-
-    // Normalize the quaternion
-    norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
-    norm = 1.0f/norm;
-    qf[0] = q1 * norm;
-    qf[1] = q2 * norm;
-    qf[2] = q3 * norm;
-    qf[3] = q4 * norm;
-}
-
-void GetGravity(VectorFloat *v, Quaternion *q) {
-    v -> x = 2 * (q -> x*q -> z - q -> w*q -> y);
-    v -> y = 2 * (q -> w*q -> x + q -> y*q -> z);
-    v -> z = q -> w*q -> w - q -> x*q -> x - q -> y*q -> y + q -> z*q -> z;
-}
-
-void GetLinearAccel(VectorInt16 *v, VectorInt16 *vRaw, VectorFloat *gravity) {
-    // Mstrens think that it is not 8192 but 16384
-    // get rid of the gravity component (+1g = +8192 in standard DMP FIFO packet, sensitivity is 2g)
-    //v -> x = vRaw -> x - gravity -> x*8192;
-    //v -> y = vRaw -> y - gravity -> y*8192;
-    //v -> z = vRaw -> z - gravity -> z*8192;
-    v -> x = vRaw -> x - (int16_t) (gravity -> x*16384.0f);
-    v -> y = vRaw -> y - (int16_t) (gravity -> y*16384.0f);
-    v -> z = vRaw -> z - (int16_t) (gravity -> z*16384.0f);
-}
-
-void GetLinearAccelInWorld(VectorInt16 *v, VectorInt16 *vReal, Quaternion *q) {
-    // rotate measured 3D acceleration vector into original state
-    // frame of reference based on orientation quaternion
-    memcpy(v, vReal, sizeof(VectorInt16));
-    v -> rotate(q);
-}
-
-
-bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU and calculate the acc on Z axis (world)
-    if (!mpuInstalled) {
-        //printf("no mpu\n");
-        return false;
-    }
-    
-    //printf("mpu\n"); 
-    mpu6050_read_raw(acceleration, gyro);
-    Now = micros();
-    deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
-    lastUpdate = Now;
-  //    if(lastUpdate - firstUpdate > 10000000uL) {
-  //      beta = 0.041; // decrease filter gain after stabilized
-  //      zeta = 0.015; // increase gyro bias drift gain after stabilized
-  //    }
-  // Pass gyro rate as rad/s
-  
-  //MadgwickQuaternionUpdate(ax, ay, az, gyrox * PI / 180.0f, gyroy * PI / 180.0f, gyroz * PI / 180.0f);
-    MadgwickQuaternionUpdate( (float) acceleration[0], (float) acceleration[1],(float) acceleration[2],
-        (float) gyro[0]  * PI / 180.0f, (float) gyro[1]  * PI / 180.0f, (float) gyro[2]  * PI / 180.0f) ;     
-    
-    // at this stage, quaternion qf is updated based on acceleration and gyro
-    qq.w = qf[0];
-    qq.x = qf[1];
-    qq.y = qf[2];
-    qq.z = qf[3];
-    GetGravity(&gravity, &qq);
-    aa.x = acceleration[0];
-    aa.y = acceleration[1];
-    aa.z = acceleration[2];
-    GetLinearAccel(&aaReal, &aa, &gravity);
-    //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
-    GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
-    //printf("aworld: %d,\t %d,\t %d\n", aaWorld.x, aaWorld.y, aaWorld.z);
- 
-    // at this stage, quaternion q is updated based on acceleration and gyro
-    qq.w = qf[0];
-    qq.x = qf[1];
-    qq.y = qf[2];
-    qq.z = qf[3];
-    GetGravity(&gravity, &qq);
-    aa.x = acceleration[0];
-    aa.y = acceleration[1];
-    aa.z = acceleration[2];
-    GetLinearAccel(&aaReal, &aa, &gravity);
-    //printf("aaReal: %d,\t %d,\t %d\n", aaReal.x, aaReal.y, aaReal.z);
-    GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
-    sumAccZ += aaWorld.z;
-    countAccZ++;
-    if (vario1.newClimbRateAvailable){
-        kalman2.Update((float) baro1.altitude/100  , (sumAccZ/countAccZ) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-        sumAccZ= 0;
-        countAccZ=0;
-        sent2Core0( VSPEED , (int32_t) vTrack2) ; 
-    //    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z - 1000)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-//    kalman2.Update((float) baro1.altitude/100  , 0,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-    }
-
-
-  // Serial print and/or display at 0.5 s rate independent of data rates
-    delt_t = millis() - count;
-    if (delt_t > 500) { // update LCD once per half-second independent of read rate
-        //printf("aworld: %d,\t %d,\t %d, \t %d  \t %f  \t %f\n", aaWorld.x, aaWorld.y, aaWorld.z, -(acceleration[2]+16384), zTrack, vTrack);
-        //printf("aworldz : %d\n", aaWorld.z);
-        
-        //printf(" %d,\t %2.0f,\t %2.0f,\t %2.0f, \t %5.2f  \n", aaWorld.z-1000, vTrack1 , vTrack2 , vario1.climbRateFloat, (float) baro1.altitude* 0.0001 );
-        
-        yaw   = atan2(2.0f * (qf[1] * qf[2] + qf[0] * qf[3]), qf[0] * qf[0] + qf[1] * qf[1] - qf[2] * qf[2] - qf[3] * qf[3]);
-        pitch = -asin(2.0f * (qf[1] * qf[3] - qf[0] * qf[2]));
-        roll  = atan2(2.0f * (qf[0] * qf[1] + qf[2] * qf[3]), qf[0] * qf[0] - qf[1] * qf[1] - qf[2] * qf[2] + qf[3] * qf[3]);
-
-        pitch *= 180.0f / PI;
-        yaw   *= 180.0f / PI;
-        roll  *= 180.0f / PI;
-
-        //printf("Yaw, Pitch, Roll: %5.0f %5.0f %5.0f\n", yaw, pitch, roll); 
-        printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack2, vario1.climbRateFloat);//  Serial.print("ypr ");
-        count = millis();
-    }
-    return false; 
-}
-#endif
-
-// **************************************************************
-
-#ifdef USE_MAH
 
 #define PI 3.1416
-float A_cal[6] = {335.0, 79.0, 1132.0, 1.0, 1.000, 1.0}; // 0..2 offset xyz, 3..5 scale xyz
-float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
+//float A_cal[6] = {335.0, 79.0, 1132.0, 1.0, 1.000, 1.0}; // 0..2 offset xyz, 3..5 scale xyz
+//float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
 float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> rad/s
 
 // ^^^^^^^^^^^^^^^^^^^ VERY VERY IMPORTANT ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -433,7 +59,7 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 // Free parameters in the Mahony filter and fusion scheme,
 // Kp for proportional feedback, Ki for integral
 float Kp = 30.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
-float Ki = 0.0;  // on same site, it is set on 2
+float Ki = 0.0;  // on same site, it is set on 0
 
 unsigned long now_ms, last_ms = 0; //millis() timers
 
@@ -445,10 +71,9 @@ VectorFloat gravity;          // added by mstrens to calculate Z world acc
 VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
 VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measurements
 
-void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6050 exist
+void MPU::begin()  // initialise MPU6050 
 {
     if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
-    
 
     // Two byte reset. First byte register, second byte data
     // There are a load more options to set up the device in different ways that could be added here
@@ -487,23 +112,6 @@ void MPU::begin()  // initialise MPU6050 and dmp; mpuInstalled is true when MPU6
 
 }
 
-/*   Moved to param.cpp
-void MPU::calibrationRequest()  // 
-{
-    if (!mpuInstalled) {
-        printf("Calibration not done: no MP6050 installed\n");
-        return ;
-    }
-    uint8_t data = 0X01; // 0X01 = execute calibration
-    queue_try_add(&qSendCmdToCore1 , &data);
-}    
-
-void MPU::printConfigOffsets(){
-    printf("\nOffset Values in config:\n");
-	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
-    printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
-}
-*/
 
 void MPU::testDevicesOffsetX(){
     sleep_ms(1000);
@@ -655,12 +263,8 @@ void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, f
 
 bool MPU::getAccZWorld(){ // return true when a value is available ; read the IMU and calculate the acc on Z axis (world)
     if (!mpuInstalled) {
-        //printf("no mpu\n");
         return false;
     }
-    //return false; // to remove after testing
-
-    //printf("mpu\n"); 
     uint8_t buffer[14];
     static float sumAz;
     static float azWorldAverage;
@@ -674,7 +278,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     static float vSpeedAcc3;
     static float lowPass = 0;        //initialization of EMA S
     static uint32_t lastMpuUs;
-    if ( ( micros() - lastMpuUs) < 2000) return false ; // perfor calculation only every 2 msec 
+    if ( ( micros() - lastMpuUs) < 2000) return false ; // perform calculation only every 2 msec 
     lastMpuUs = micros();
  
  
@@ -810,6 +414,3 @@ void MPU::printOffsets() {
 }
 */
 
-
-
-#endif

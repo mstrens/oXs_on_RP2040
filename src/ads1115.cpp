@@ -71,13 +71,25 @@ void ADS1115::begin() {
 /*********************    *******************************************************/
 bool ADS1115::readSensor() {  // return true when there is a new average data to calculate
     if ( ! adsInstalled) return false;  
-    if ( ( millis() - ads_MilliAskConv ) <= (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 1) ) return false;
+    if ( ( millis() - ads_MilliAskConv ) <= (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 2) ) return false;
     // when delay of conversion expires (NB delay is 137 msec when ads_rate = 0, and goes down up to 3ms then is divided by 2 for each increase ) 
     if( I2CErrorCodeAds1115 != 0 ) { // if there is an error on previous I2C request for a conversion
         printf("Write error ads1115 in previous request conversion\n");
         ads_requestNextConv() ;
         return false ;
     }
+    // read the config status to see if conversion is really done
+    uint8_t adsConfigReg  = 0x01;
+    uint8_t adsConfigMsb;
+    if (i2c_write_blocking (i2c1 , ads_Addr, &adsConfigReg , 1 , false) == PICO_ERROR_GENERIC ) { 
+        printf("Write error ads1115"); //if there is no error on previous I2C request
+        return false;
+    }  
+    if (i2c_read_timeout_us (i2c1 , ads_Addr , &adsConfigMsb , 1 , false , 1500) == PICO_ERROR_TIMEOUT) {
+        printf("read error ads1115"); //if there is no error on previous I2C request
+        return false;
+    }
+    if ( ( adsConfigMsb & 0X80) == 0) return false; // conversion is not yet done
     uint8_t adsReg = 0X0; // 0X0 = adress of conversion register
     uint8_t data[2]; // buffer to read adc
     // send the Address, 0 = conversion register (in order to be able to read the conversion register)

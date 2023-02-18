@@ -35,7 +35,7 @@ THE SOFTWARE.
 */
 
 #include "MPU6050.h"
-#include "MPU650_6axis.h"
+//#include "MPU650_6axis.h"
 
 
 #ifndef BUFFER_LENGTH

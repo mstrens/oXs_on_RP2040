@@ -261,7 +261,7 @@ void setup() {
     sleep_ms(200);
     toggleRgb();
     }
-    sleep_ms(2000);
+  sleep_ms(2000);
   #endif
   
   if (watchdog_caused_reboot()) {
@@ -289,7 +289,7 @@ void setup() {
             break   ;
         }
       }
-      //printf("Setup1 takes %d usec\n",micros() - setup1StartUs);
+      printf("Setup1 takes %d usec\n",micros() - setup1StartUs);
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
