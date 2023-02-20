@@ -310,7 +310,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 if( ibusType >= 0X80 && ibusType <= 0X8F ) ibusValueLength = 4; // length of field    
                 switch (ibusCmd) {
                     case 0X08: // request discovering next sensor ; we reply the same value to confirm it exists
-                        if ( ibusAdr != (maxIbusFieldsIdx+1)) {
+                        if ( ibusAdr > (maxIbusFieldsIdx+1)) {
                             printf("ibus request for sensor adr %d\n", ibusAdr);
                             return;
                         }        
