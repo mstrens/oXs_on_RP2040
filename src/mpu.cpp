@@ -316,7 +316,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     float accVert = 2.0*(qh[1]*qh[3] - qh[0]*qh[2])*( (float) ax) + 2.0f*(qh[0]*qh[1] + qh[2]*qh[3])*((float)ay)
      + (qh[0]*qh[0] - qh[1]*qh[1] - qh[2]*qh[2] + qh[3]*qh[3])*((float)az) - 16384.0f; // 16384 = 1g to be substracted
     sumAccZ += accVert;
-    printf("aaw=%.0f acc=%.0f  az=%.0f\n", (float) aaWorld.z , accVert, (float) az);
+    //printf("aaw=%.0f acc=%.0f  az=%.0f\n", (float) aaWorld.z , accVert, (float) az);
     //acc *= 0.9807f; // in cm/s/s, assuming ax, ay, az are in milli-Gs
 	
 
