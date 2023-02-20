@@ -166,7 +166,7 @@ void setupIbus() {
 void addToIbus(uint8_t idx){
     if (maxIbusFieldsIdx >= 15) return; // skip if the table is already full
     maxIbusFieldsIdx++;
-    listOfIbusFields[maxIbusFieldsIdx];
+    listOfIbusFields[maxIbusFieldsIdx] = idx; // store the oXs code for the field in the list.
 }
 
 void setupListIbusFieldsToReply() {  // fill an array with the list of fields (field ID) that are defined
@@ -272,7 +272,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     switch (ibusState) {
         case RECEIVING :
-            #ifdef DEBUG_IBUS_WITHOUT_RX  // simulate a RX sending a polling every xxxx msec 
+            #ifdef DEBUG_IBUS_WITHOUT_RX  // simulate a RX sending a polling every 7 msec 
             if ( (millisRp() - lastIbusRequest) > 6)  { // to debug simulate a request once per 200msec
                 ibusState = WAIT_FOR_SENDING;
                 ibusStartWaiting = microsRp();
@@ -330,6 +330,9 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         ibusTxBuffer[ibusValueLength + 2] = checksum;
                         ibusTxBuffer[ibusValueLength + 3] = checksum >> 8;
                         break;
+                    default:
+                        return;
+                        break;    
                 } // end switch about a ibus request
                 // at this point, a frame is prepared and can be sent    
                 sleep_us(100);
@@ -337,7 +340,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 ibus_uart_tx_program_start(ibusPio, ibusSmTx, config.pinTlm, false); // prepare to transmit
                 // start the DMA channel with the data to transmit
                 dma_channel_set_read_addr (ibus_dma_chan, &ibusTxBuffer[0], false);
-                dma_channel_set_trans_count (ibus_dma_chan, 3, true) ;
+                dma_channel_set_trans_count (ibus_dma_chan, ibusTxBuffer[0], true) ; // ibusTxBuffer contains the number of bytes
                 ibusState = WAIT_END_OF_SENDING;
                 ibusStartWaiting = microsRp();
             } // end if        

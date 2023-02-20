@@ -185,71 +185,62 @@ void GetLinearAccelInWorld(VectorInt16 *v, VectorInt16 *vReal, Quaternion *q) {
 // IMU algorithm update
 
 void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, float deltat) {
-  float recipNorm;
-  float vx, vy, vz;
-  float ex, ey, ez;  //error terms
-  float qa, qb, qc;
-  static float ix = 0.0, iy = 0.0, iz = 0.0;  //integral feedback terms
-  float tmp;
-
-  // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-  tmp = ax * ax + ay * ay + az * az;
- if (tmp > 0.0)
-  {
-
-    // Normalise accelerometer (assumed to measure the direction of gravity in body frame)
-    recipNorm = 1.0 / sqrt(tmp);
-    ax *= recipNorm;
-    ay *= recipNorm;
-    az *= recipNorm;
-
-    // Estimated direction of gravity in the body frame (factor of two divided out)
-    vx = qh[1] * qh[3] - qh[0] * qh[2];
-    vy = qh[0] * qh[1] + qh[2] * qh[3];
-    vz = qh[0] * qh[0] - 0.5f + qh[3] * qh[3];
-
-    // Error is cross product between estimated and measured direction of gravity in body frame
-    // (half the actual magnitude)
-    ex = (ay * vz - az * vy);
-    ey = (az * vx - ax * vz);
-    ez = (ax * vy - ay * vx);
-
-    // Compute and apply to gyro term the integral feedback, if enabled
-    if (Ki > 0.0f) {
-      ix += Ki * ex * deltat;  // integral error scaled by Ki
-      iy += Ki * ey * deltat;
-      iz += Ki * ez * deltat;
-      gx += ix;  // apply integral feedback
-      gy += iy;
-      gz += iz;
+    float recipNorm;
+    float vx, vy, vz;
+    float ex, ey, ez;  //error terms
+    float qa, qb, qc;
+    static float ix = 0.0, iy = 0.0, iz = 0.0;  //integral feedback terms
+    float tmp;
+    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    tmp = ax * ax + ay * ay + az * az;
+    if (tmp > 0.0) {
+        // Normalise accelerometer (assumed to measure the direction of gravity in body frame)
+        recipNorm = 1.0 / sqrt(tmp);
+        ax *= recipNorm;
+        ay *= recipNorm;
+        az *= recipNorm;
+        // Estimated direction of gravity in the body frame (factor of two divided out)
+        vx = qh[1] * qh[3] - qh[0] * qh[2];
+        vy = qh[0] * qh[1] + qh[2] * qh[3];
+        vz = qh[0] * qh[0] - 0.5f + qh[3] * qh[3];
+        // Error is cross product between estimated and measured direction of gravity in body frame
+        // (half the actual magnitude)
+        ex = (ay * vz - az * vy);
+        ey = (az * vx - ax * vz);
+        ez = (ax * vy - ay * vx);
+        // Compute and apply to gyro term the integral feedback, if enabled
+        if (Ki > 0.0f) {
+        ix += Ki * ex * deltat;  // integral error scaled by Ki
+        iy += Ki * ey * deltat;
+        iz += Ki * ez * deltat;
+        gx += ix;  // apply integral feedback
+        gy += iy;
+        gz += iz;
+        }
+        // Apply proportional feedback to gyro term
+        gx += Kp * ex;
+        gy += Kp * ey;
+        gz += Kp * ez;
     }
-
-    // Apply proportional feedback to gyro term
-    gx += Kp * ex;
-    gy += Kp * ey;
-    gz += Kp * ez;
-  }
-
-  // Integrate rate of change of quaternion, q cross gyro term
-  deltat = 0.5 * deltat;
-  gx *= deltat;   // pre-multiply common factors
-  gy *= deltat;
-  gz *= deltat;
-  qa = qh[0];
-  qb = qh[1];
-  qc = qh[2];
-  qh[0] += (-qb * gx - qc * gy - qh[3] * gz);
-  qh[1] += (qa * gx + qc * gz - qh[3] * gy);
-  qh[2] += (qa * gy - qb * gz + qh[3] * gx);
-  qh[3] += (qa * gz + qb * gy - qc * gx);
-
-  // renormalise quaternion
-  if ( (qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]) == 0 ) return;
-  recipNorm = 1.0 / sqrt(qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]);
-  qh[0] = qh[0] * recipNorm;
-  qh[1] = qh[1] * recipNorm;
-  qh[2] = qh[2] * recipNorm;
-  qh[3] = qh[3] * recipNorm;
+    // Integrate rate of change of quaternion, q cross gyro term
+    deltat = 0.5 * deltat;
+    gx *= deltat;   // pre-multiply common factors
+    gy *= deltat;
+    gz *= deltat;
+    qa = qh[0];
+    qb = qh[1];
+    qc = qh[2];
+    qh[0] += (-qb * gx - qc * gy - qh[3] * gz);
+    qh[1] += (qa * gx + qc * gz - qh[3] * gy);
+    qh[2] += (qa * gy - qb * gz + qh[3] * gx);
+    qh[3] += (qa * gz + qb * gy - qc * gx);
+    // renormalise quaternion
+    if ( (qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]) == 0 ) return;
+    recipNorm = 1.0 / sqrt(qh[0] * qh[0] + qh[1] * qh[1] + qh[2] * qh[2] + qh[3] * qh[3]);
+    qh[0] = qh[0] * recipNorm;
+    qh[1] = qh[1] * recipNorm;
+    qh[2] = qh[2] * recipNorm;
+    qh[3] = qh[3] * recipNorm;
 }
 
 bool MPU::getAccZWorld(){ // return true when a value is available ; read the IMU and calculate the acc on Z axis (world)
@@ -291,25 +282,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     gx = (buffer[8] << 8 | buffer[9]);
     gy = (buffer[10] << 8 | buffer[11]);
     gz = (buffer[12] << 8 | buffer[13]);
-  now = microsRp();
-  deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
-  last = now;
-  Mahony_update( (float) ax, (float) ay, (float) az , ((float) gx) * gscale, ((float) gy) * gscale , ((float) gz) * gscale, deltat);
-    /*
-    // at this stage, quaternion q is updated based on acceleration and gyro
-    qq.w = qh[0];
-    qq.x = qh[1];
-    qq.y = qh[2];
-    qq.z = qh[3];
-    GetGravity(&gravity, &qq);   // gravity is a float based only on quaternion (so no dimension)
-    aa.x = ax;   // aa is a vector I16 bits
-    aa.y = ay;
-    aa.z = az;
-    GetLinearAccel(&aaReal, &aa, &gravity);   // aareal = gravity * 16384 (= value of 1G when accelerometer is on 2G range)
-    GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
-    sumAccZ += (float) aaWorld.z;
-    */
-    // this formula ti calculate vertical accz comes from
+    now = microsRp();
+    deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
+    last = now;
+    Mahony_update( (float) ax, (float) ay, (float) az , ((float) gx) * gscale, ((float) gy) * gscale , ((float) gz) * gscale, deltat);
+    // this formula to calculate vertical accz comes from
     // https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO/blob/b0157b91902fe4d2de13a3198160438307d71662/src/sensor/imu.cpp
     // in imu_gravityCompensatedAccel()
     // and gives the same result as previous formula
@@ -324,34 +301,14 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
     if (vario1.newClimbRateAvailable){   // here once per about 20 msec
-        //enlapsedTime(0);
         vario1.newClimbRateAvailable = false; // reset the flag that says a new relative alt is available
         azWorldAverage = (sumAccZ/countAccZ);
-        //azAverage = (sumAz / countAccZ);
-        //accLow = 0.999 * accLow + (1-0.999) * ((float) az); 
-        //accLow = 0.999 * accLow + (1-0.999) * ((float) azWorldAverage); 
-        
-        //accHigh = ((float) azWorldAverage) - accLow;
-        //accHigh =  az;
-        //vSpeedAcc3 = accHigh / 16384.0 * 981.0 * 0.02;
-        //vSpeedAcc += ( ((float) aaWorld.z)  / 16384.0 * 981.0 * 0.02) ;
-        //vSpeedAccLow = 0.9 * vSpeedAccLow + (1-0.9)* vSpeedAcc3;
-        //vSpeedAcc2 = vSpeedAcc3 - vSpeedAccLow;
-    //printf("Vb Va %d ,  %d, %d , 50, -50\n", (int32_t) vario1.climbRateFloat ,   (int32_t) vSpeedAcc3, (int32_t) vSpeedAcc2);  
-    //printf("aza wza %0.f %0.f\n", azAverage / 16384.0 * 981.0, azWorldAverage / 16384.0 * 981.0 );
-
-
-
-
-        //kalman2.Update((float) vario1.rawRelAltitudeCm , azWorldAverage /16384.0 * 981.0 ,  &zTrack2, &vTrack2);
         kfUs = microsRp(); 
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
         lastKfUs = kfUs;  
         kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /16384.0 * 981.0 , (float*) &zTrack , (float*)&vTrack);
         //printf("Vv4 Vk4  %d %d 50 -50\n", (int32_t) vario1.climbRateFloat ,  (int32_t) (float) vTrack);
         //printf("Va4 Va4  %d %d 50 -50\n", (int32_t) vario1.relativeAlt ,  (int32_t) (float) zTrack);
-            
-        
         sumAccZ= 0;
         countAccZ=0;
         sumAz = 0;
@@ -365,16 +322,10 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         last_ms = now_ms;
         roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
         pitch = asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
-        //conventional yaw increases clockwise from North. Not that the MPU-6050 knows where North is.
-        //yaw   = -atan2((qh[1] * qh[2] + qh[0] * qh[3]), 0.5 - (qh[2] * qh[2] + qh[3] * qh[3]));
-        // to degrees
-        //yaw   *= 180.0 / PI;
-        //if (yaw < 0) yaw += 360.0; //compass circle
         pitch *= 180.0 / PI;
         roll *= 180.0 / PI;
         sent2Core0( PITCH , (int32_t) pitch ) ; 
         sent2Core0( ROLL , (int32_t) roll ) ; 
-    
         // print angles for serial plotter...
         #ifdef DEBUG
         //printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack, vario1.climbRateFloat);//  Serial.print("ypr ");
@@ -390,3 +341,116 @@ void MPU::printOffsets() {
 }
 */
 
+/*
+#define ACCEL_NUM_AVG_SAMPLES	50
+
+int calibrateAccel(void){
+	int16_t ax,ay,az,az1g;
+	int32_t axAccum, ayAccum, azAccum;
+	axAccum = ayAccum = azAccum = 0;
+    uint8_t val = 0x3B;
+    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
+    
+   if(mpu9250_writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_20) < 0){ 
+      ESP_LOGE(TAG,"accel calib : error reducing bandwidth to 20Hz");
+      return -1;
+      } 
+   delayMs(500);
+	for (int inx = 0; inx < ACCEL_NUM_AVG_SAMPLES; inx++){
+      taskYIELD();
+      cct_delayUs(2000); 
+      if (mpu9250_getVector(ACCEL_OUT,false, &ax, &ay, &az) < 0) {
+         ESP_LOGE(TAG, "accel calib : error reading accel data");
+         return -2;
+         }
+		axAccum += (int32_t) ax;
+		ayAccum += (int32_t) ay;
+		azAccum += (int32_t) az;
+		}
+	axBias_ = (int16_t)(axAccum / ACCEL_NUM_AVG_SAMPLES);
+	ayBias_ = (int16_t)(ayAccum / ACCEL_NUM_AVG_SAMPLES);
+	az1g = (int16_t)(azAccum / ACCEL_NUM_AVG_SAMPLES);
+
+   azBias_ = az1g > 0 ? az1g - (int16_t)(1000.0f/accelScale_) : az1g + (int16_t)(1000.0f/accelScale_);
+   ESP_LOGI(TAG, "axBias = %d\r\nayBias = %d\r\nazBias = %d", (int)axBias_, (int)ayBias_, (int)azBias_);
+   calib.axBias = axBias_;
+   calib.ayBias = ayBias_;
+   calib.azBias = azBias_;
+   calib_save(); // update calibration file with accel calibration parameter
+
+   if(mpu9250_writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_184) < 0){ 
+      ESP_LOGE(TAG,"accel calib : error resetting bandwidth to 184Hz");
+      return -3;
+      } 
+   return 1;
+	}
+	
+
+
+
+#define GYRO_NUM_CALIB_SAMPLES			50
+	
+int mpu9250_calibrateGyro(void) {
+	int16_t gx,gy,gz;
+	int32_t gxAccum, gyAccum, gzAccum;
+	int foundBadData;
+	int numTries = 1;
+   ESP_LOGI(TAG, "Calibrating gyro");
+   // reduce bandwidth to reduce noise power
+   if(mpu9250_writeRegister(CONFIG,GYRO_DLPF_20) < 0){
+      ESP_LOGE(TAG,"gyro calib : error reducing bandwidth to 20Hz");
+      return -1;
+      }
+
+	do {
+		delayMs(500);
+		foundBadData = 0;
+		gxAccum = gyAccum = gzAccum = 0;
+		for (int inx = 0; inx < GYRO_NUM_CALIB_SAMPLES; inx++){
+         taskYIELD();
+         cct_delayUs(2000); 
+			if (mpu9250_getVector(GYRO_OUT,false, &gx, &gy, &gz) < 0) {
+            ESP_LOGE(TAG, "gyro calib : error reading data");
+            return -2;
+            }
+         int16_t maxOffset = opt.misc.gyroOffsetLimit1000DPS;
+			//ESP_LOGI(TAG, "[%d] %d %d %d", inx, gx, gy, gz);
+			// if a larger than expected gyro bias is measured, assume the unit was disturbed and try again
+         // after a short delay, upto 10 times
+			if ((ABS(gx) > maxOffset) || 
+            (ABS(gy) > maxOffset) || 
+            (ABS(gz) > maxOffset)) {
+				foundBadData = 1;
+				ESP_LOGE(TAG, "gyro calib try [%d] bias > %d",inx, maxOffset);
+				break;
+				}  
+			gxAccum  += (int32_t) gx;
+			gyAccum  += (int32_t) gy;
+			gzAccum  += (int32_t) gz;
+			}
+		} while (foundBadData && (++numTries < 10));
+
+	// update gyro biases only if calibration succeeded, else use the last saved 
+   // values from flash memory. Valid scenario for gyro calibration failing is 
+   // when you turn on the unit while flying. So not a big deal.
+    if (!foundBadData) {		
+		gxBias_ =  (int16_t)( gxAccum / GYRO_NUM_CALIB_SAMPLES);
+		gyBias_ =  (int16_t)( gyAccum / GYRO_NUM_CALIB_SAMPLES);
+		gzBias_ =  (int16_t)( gzAccum / GYRO_NUM_CALIB_SAMPLES);		
+      calib.gxBias = gxBias_;
+      calib.gyBias = gyBias_;
+      calib.gzBias = gzBias_;
+      calib_save();
+		}
+	ESP_LOGI(TAG,"Num Tries = %d",numTries);
+	ESP_LOGI(TAG,"gxBias = %d",gxBias_);
+	ESP_LOGI(TAG,"gyBias = %d",gyBias_);
+	ESP_LOGI(TAG,"gzBias = %d",gzBias_);
+   // reset bandwidth for normal use
+   if(mpu9250_writeRegister(CONFIG,GYRO_DLPF_184) < 0){
+      ESP_LOGE(TAG,"gyro calib : error resetting bandwidth");
+      return -3;
+      }
+	return (foundBadData ? -4 : 0);
+	}
+*/
