@@ -240,7 +240,15 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(GROUNDSPEED) ;
         addToIbus(HEADING) ;
         addToIbus(ALTITUDE) ;    
-    } 
+    }
+    #define DEBUG_IBUS_LIST
+    #ifdef DEBUG_IBUS_LIST
+    printf("List of ibus fields : ");
+    for (uint8_t i = 0; i<= maxIbusFieldsIdx ; i++){
+        printf(" %d ", listOfIbusFields[i]);
+    }
+    printf("\n");
+    #endif 
 }
 
 
@@ -291,21 +299,31 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 queue_try_remove (&ibusRxQueue,&data[3]);
                 checksum = data[2] | (data[3] << 8);
                 checksumCalc = 0xFFFF - (data[0] + data[1]);
-                if (checksumCalc != checksum) return; // skip if checksum is wrong
+                if (checksumCalc != checksum) {
+                    printf("ibus pooling with checksum error\n");
+                    return; // skip if checksum is wrong
+                }
                 ibusCmd = data[1] >> 4;
                 ibusAdr =  data[1] & 0X0F ;
                 ibusType = ibusTypes[listOfIbusFields[ibusAdr]]; // type of field being sent
                 ibusValueLength = 2;
-                if( ibusType >= 0X80 && ibusType <= 0X8F ) ibusValueLength = 4; // length of field
-                if (ibusAdr > maxIbusFieldsIdx) return; // Skip if the index exceed the number of fields to transmit    
+                if( ibusType >= 0X80 && ibusType <= 0X8F ) ibusValueLength = 4; // length of field    
                 switch (ibusCmd) {
                     case 0X80: // request discovering next sensor ; we reply the same value to confirm it exists
+                        if ( ibusAdr != (maxIbusFieldsIdx+1)) {
+                            printf("ibus request for sensor adr %d\n", ibusAdr);
+                            return;
+                        }        
                         ibusTxBuffer[0] = data[0];
                         ibusTxBuffer[1] = data[1];
                         ibusTxBuffer[2] = data[2];
                         ibusTxBuffer[3] = data[3];
                         break;
                     case 0X09:  // request specify the type for an index
+                        if (ibusAdr > maxIbusFieldsIdx) {
+                            printf("error ibus request 0X09 for sensor adr %d\n", ibusAdr);
+                            return;
+                        }    
                         if (ibusType == IBUS_SENSOR_TYPE_UNKNOWN ) return; // skip when this field is not supported // should not happen
                         ibusTxBuffer[0] = 0x06; // length of the frame
                         ibusTxBuffer[1] = data[1]; // original cmd +adr
@@ -316,6 +334,10 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         ibusTxBuffer[5] = checksum >> 8;
                         break;
                     case 0x0A:
+                        if (ibusAdr > maxIbusFieldsIdx) {
+                            printf("error ibus request 0X0A for sensor adr %d\n", ibusAdr);
+                            return;
+                        }    
                         if (ibusType == IBUS_SENSOR_TYPE_UNKNOWN ) return; // skip when this field is not supported // should not happen
                         ibusTxBuffer[0] = ibusValueLength + 4; // length of the frame
                         ibusTxBuffer[1] = data[1]; // original cmd +adr

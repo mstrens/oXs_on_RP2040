@@ -15,6 +15,10 @@ public:
     bool getAccZWorld();
     void calibrationExecute();
     void testDevicesOffsetX();
+    void printOffsets();
+    bool calibrateAccelGyro(void);
+
+
     /*
     void readRegister(uint8_t register, uint8_t * buffer , uint8_t number);  
     uint8_t getDeviceID();

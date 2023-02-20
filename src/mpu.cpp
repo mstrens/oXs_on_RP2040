@@ -136,8 +136,13 @@ void MPU::calibrationExecute()  //
     config.gyroOffsetX = mpu6050.getXGyroOffset();
     config.gyroOffsetY = mpu6050.getYGyroOffset();
     config.gyroOffsetZ = mpu6050.getZGyroOffset();
-    //printf("Acc & gyro after calibration\n");
+    
+    //printf("Acc & gyro after old calibration\n");
     //printConfigOffsets() ;
+    //calibrateAccelGyro();
+    //printf("Acc & gyro after new calibration\n");
+    //printConfigOffsets() ;
+    
     //printf("Calibration done: parameters will be saved\n");
     //sleep_ms(3000);
     sent2Core0(0XFF, 0XFFFFFFFF); // use a dummy type to give a command; here a cmd to save the config
@@ -334,123 +339,50 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     return false; 
 }
 
-/*
+
 void MPU::printOffsets() {
-    printf("acc = %d    %d   %d\n", mpu6050.getXAccelOffset() , mpu6050.getYAccelOffset() , mpu6050.getZAccelOffset());
-    printf("gyro= %d    %d   %d\n", mpu6050.getXGyroOffset() , mpu6050.getYGyroOffset() ,mpu6050.getZGyroOffset());
+    printf("acc = %d    %d   %d\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
+    printf("gyro= %d    %d   %d\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ);
 }
-*/
 
-/*
+
 #define ACCEL_NUM_AVG_SAMPLES	50
-
-int calibrateAccel(void){
-	int16_t ax,ay,az,az1g;
+bool MPU::calibrateAccelGyro(void){
+	int16_t az1g;
 	int32_t axAccum, ayAccum, azAccum;
 	axAccum = ayAccum = azAccum = 0;
-    uint8_t val = 0x3B;
-    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-    
-   if(mpu9250_writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_20) < 0){ 
-      ESP_LOGE(TAG,"accel calib : error reducing bandwidth to 20Hz");
-      return -1;
-      } 
-   delayMs(500);
-	for (int inx = 0; inx < ACCEL_NUM_AVG_SAMPLES; inx++){
-      taskYIELD();
-      cct_delayUs(2000); 
-      if (mpu9250_getVector(ACCEL_OUT,false, &ax, &ay, &az) < 0) {
-         ESP_LOGE(TAG, "accel calib : error reading accel data");
-         return -2;
-         }
-		axAccum += (int32_t) ax;
-		ayAccum += (int32_t) ay;
-		azAccum += (int32_t) az;
-		}
-	axBias_ = (int16_t)(axAccum / ACCEL_NUM_AVG_SAMPLES);
-	ayBias_ = (int16_t)(ayAccum / ACCEL_NUM_AVG_SAMPLES);
+    int32_t gxAccum, gyAccum, gzAccum;
+	gxAccum = gyAccum = gzAccum = 0;
+	// use a lower dlpf
+    uint8_t val = MPU6050_DLPF_BW_20; // 0X04
+    i2c_write_blocking(i2c1, MPU6050_RA_CONFIG , &val, 1, false); // true to keep master control of bus
+    sleep_ms(500);
+    for (int inx = 0; inx < ACCEL_NUM_AVG_SAMPLES; inx++){
+        sleep_us(10000); // take 8 msec with dlpf = 20 
+        // Start reading acceleration registers from register 0x3B for 14 bytes (acc, temp, gyro)
+        uint8_t val = 0x3B;
+        uint8_t buffer[14]; 
+        i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
+        if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 2500) == PICO_ERROR_TIMEOUT){
+            printf("Read error for MPU6050\n");
+            return false;
+        }     
+        axAccum += (int32_t) (buffer[0] << 8 | buffer[1]);
+        ayAccum += (int32_t) (buffer[2] << 8 | buffer[3]);
+        azAccum += (int32_t) (buffer[4] << 8 | buffer[5]);
+        //printf("az=%.0f\n", (float) az ); 
+        gxAccum += (buffer[8] << 8 | buffer[9]);
+        gyAccum += (buffer[10] << 8 | buffer[11]);
+        gzAccum += (buffer[12] << 8 | buffer[13]);
+    }
+	config.accOffsetX = (int16_t)(axAccum / ACCEL_NUM_AVG_SAMPLES);
+	config.accOffsetY = (int16_t)(ayAccum / ACCEL_NUM_AVG_SAMPLES);
 	az1g = (int16_t)(azAccum / ACCEL_NUM_AVG_SAMPLES);
-
-   azBias_ = az1g > 0 ? az1g - (int16_t)(1000.0f/accelScale_) : az1g + (int16_t)(1000.0f/accelScale_);
-   ESP_LOGI(TAG, "axBias = %d\r\nayBias = %d\r\nazBias = %d", (int)axBias_, (int)ayBias_, (int)azBias_);
-   calib.axBias = axBias_;
-   calib.ayBias = ayBias_;
-   calib.azBias = azBias_;
-   calib_save(); // update calibration file with accel calibration parameter
-
-   if(mpu9250_writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_184) < 0){ 
-      ESP_LOGE(TAG,"accel calib : error resetting bandwidth to 184Hz");
-      return -3;
-      } 
-   return 1;
-	}
-	
-
-
-
-#define GYRO_NUM_CALIB_SAMPLES			50
-	
-int mpu9250_calibrateGyro(void) {
-	int16_t gx,gy,gz;
-	int32_t gxAccum, gyAccum, gzAccum;
-	int foundBadData;
-	int numTries = 1;
-   ESP_LOGI(TAG, "Calibrating gyro");
-   // reduce bandwidth to reduce noise power
-   if(mpu9250_writeRegister(CONFIG,GYRO_DLPF_20) < 0){
-      ESP_LOGE(TAG,"gyro calib : error reducing bandwidth to 20Hz");
-      return -1;
-      }
-
-	do {
-		delayMs(500);
-		foundBadData = 0;
-		gxAccum = gyAccum = gzAccum = 0;
-		for (int inx = 0; inx < GYRO_NUM_CALIB_SAMPLES; inx++){
-         taskYIELD();
-         cct_delayUs(2000); 
-			if (mpu9250_getVector(GYRO_OUT,false, &gx, &gy, &gz) < 0) {
-            ESP_LOGE(TAG, "gyro calib : error reading data");
-            return -2;
-            }
-         int16_t maxOffset = opt.misc.gyroOffsetLimit1000DPS;
-			//ESP_LOGI(TAG, "[%d] %d %d %d", inx, gx, gy, gz);
-			// if a larger than expected gyro bias is measured, assume the unit was disturbed and try again
-         // after a short delay, upto 10 times
-			if ((ABS(gx) > maxOffset) || 
-            (ABS(gy) > maxOffset) || 
-            (ABS(gz) > maxOffset)) {
-				foundBadData = 1;
-				ESP_LOGE(TAG, "gyro calib try [%d] bias > %d",inx, maxOffset);
-				break;
-				}  
-			gxAccum  += (int32_t) gx;
-			gyAccum  += (int32_t) gy;
-			gzAccum  += (int32_t) gz;
-			}
-		} while (foundBadData && (++numTries < 10));
-
-	// update gyro biases only if calibration succeeded, else use the last saved 
-   // values from flash memory. Valid scenario for gyro calibration failing is 
-   // when you turn on the unit while flying. So not a big deal.
-    if (!foundBadData) {		
-		gxBias_ =  (int16_t)( gxAccum / GYRO_NUM_CALIB_SAMPLES);
-		gyBias_ =  (int16_t)( gyAccum / GYRO_NUM_CALIB_SAMPLES);
-		gzBias_ =  (int16_t)( gzAccum / GYRO_NUM_CALIB_SAMPLES);		
-      calib.gxBias = gxBias_;
-      calib.gyBias = gyBias_;
-      calib.gzBias = gzBias_;
-      calib_save();
-		}
-	ESP_LOGI(TAG,"Num Tries = %d",numTries);
-	ESP_LOGI(TAG,"gxBias = %d",gxBias_);
-	ESP_LOGI(TAG,"gyBias = %d",gyBias_);
-	ESP_LOGI(TAG,"gzBias = %d",gzBias_);
-   // reset bandwidth for normal use
-   if(mpu9250_writeRegister(CONFIG,GYRO_DLPF_184) < 0){
-      ESP_LOGE(TAG,"gyro calib : error resetting bandwidth");
-      return -3;
-      }
-	return (foundBadData ? -4 : 0);
-	}
-*/
+    config.accOffsetZ = az1g > 0 ? az1g - 16384 : az1g + 16384 ; // 16384 = 1G
+    config.gyroOffsetX = (int16_t)(gxAccum / ACCEL_NUM_AVG_SAMPLES);
+	config.gyroOffsetY = (int16_t)(gyAccum / ACCEL_NUM_AVG_SAMPLES);
+	config.gyroOffsetZ = (int16_t)(gzAccum / ACCEL_NUM_AVG_SAMPLES);
+    val = MPU6050_DLPF_BW_188; // 0X01
+    i2c_write_blocking(i2c1, MPU6050_RA_CONFIG , &val, 1, false); // true to keep master control of bus
+    return true;
+}
