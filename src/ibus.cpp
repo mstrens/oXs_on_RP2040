@@ -243,6 +243,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
     }
     #define DEBUG_IBUS_LIST
     #ifdef DEBUG_IBUS_LIST
+    sleep_ms(2000);
     printf("List of ibus fields : ");
     for (uint8_t i = 0; i<= maxIbusFieldsIdx ; i++){
         printf(" %d ", listOfIbusFields[i]);
@@ -311,7 +312,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 switch (ibusCmd) {
                     case 0X08: // request discovering next sensor ; we reply the same value to confirm it exists
                         if ( ibusAdr > (maxIbusFieldsIdx+1)) {
-                            printf("ibus request for sensor adr %d\n", ibusAdr);
+                            printf("ibus request for sensor adr %d max=%d\n", ibusAdr, maxIbusFieldsIdx);
                             return;
                         }        
                         ibusTxBuffer[0] = data[0];
@@ -357,6 +358,11 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         break;    
                 } // end switch about a ibus request
                 // at this point, a frame is prepared and can be sent    
+                printf("ibus frame sent:");
+                for (uint8_t i = 0 ; i < ibusTxBuffer[0]; i++){
+                    printf(" %x ", ibusTxBuffer[i]);
+                }
+                printf("\n");
                 sleep_us(100);
                 ibus_uart_rx_program_stop(ibusPio, ibusSmRx, config.pinTlm); // stop receiving
                 ibus_uart_tx_program_start(ibusPio, ibusSmTx, config.pinTlm, false); // prepare to transmit
@@ -372,7 +378,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 ibus_uart_tx_program_stop(ibusPio, ibusSmTx, config.pinTlm );
                 ibus_uart_rx_program_restart(ibusPio, ibusSmRx, config.pinTlm, false );  // false = not inverted
                 ibusState = RECEIVING ;
-                //printf("e\n");
+                printf("end sending\n");
             }
             break;     
     }
