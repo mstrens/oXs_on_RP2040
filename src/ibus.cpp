@@ -30,6 +30,8 @@
 // Rx sent on uart (115200 baud 8N1 not inverted) a frame of 4 char 
 // When the second char is 0x8y (starting with 0X81) , it means that the RX ask if sensor y exist.
 //    When sensor exits, oXs must reply after a delay of 100 usec, sending back the same char
+//    Note : when oXs replies to a 0X8y cmd, Rx send only a cmd 0X9y as long it does not get a reply to his 0x9y cmd
+//           so the receiver does not skip to next adr or to 0xAy commands 
 // When the second char is 0x9y, it means that the sensor is asking the type of sensor.
 //    oXs must reply with a frame of 6 bytes:
 //           - first  = 0X06 = number of bytes
@@ -305,6 +307,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                     printf("ibus pooling with checksum error %x %x %x %x \n", data[0] , data[1], data[2], data[3]);
                     return; // skip if checksum is wrong
                 }
+                printf("ibus get %x %x %x %x\n", data[0] , data[1], data[2], data[3]);
                 ibusCmd = data[1] >> 4;
                 ibusAdr =  data[1] & 0X0F ;
                 ibusType = ibusTypes[listOfIbusFields[ibusAdr]]; // type of field being sent
@@ -313,7 +316,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 switch (ibusCmd) {
                     case 0X08: // request discovering next sensor ; we reply the same value to confirm it exists
                         if ( ibusAdr > (maxIbusFieldsIdx)) {
-                            printf("ibus request for sensor adr %d max=%d\n", ibusAdr, maxIbusFieldsIdx);
+                            //printf("ibus request for sensor adr %d max=%d\n", ibusAdr, maxIbusFieldsIdx);
                             return;
                         }        
                         ibusTxBuffer[0] = data[0];
@@ -352,7 +355,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         for (int i = 0; i < ibusValueLength; i++) {  // there can be 2 or 4 bytes in the value
                             pByte     = (ibusValue >> (8 * i)) & 0xFF;
                             checksum -= pByte;
-                            ibusTxBuffer[3+i] = pByte ;
+                            ibusTxBuffer[2+i] = pByte ;
                         }
                         ibusTxBuffer[ibusValueLength + 2] = checksum;
                         ibusTxBuffer[ibusValueLength + 3] = checksum >> 8;
@@ -382,7 +385,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 ibus_uart_tx_program_stop(ibusPio, ibusSmTx, config.pinTlm );
                 ibus_uart_rx_program_restart(ibusPio, ibusSmRx, config.pinTlm, false );  // false = not inverted
                 ibusState = RECEIVING ;
-                printf("end sending\n");
+                //printf("end sending\n");
             }
             break;     
     }
