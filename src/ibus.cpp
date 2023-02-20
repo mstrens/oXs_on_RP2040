@@ -220,6 +220,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
     }
     if ( config.pinVolt[1] != 255) {
         addToIbus(CURRENT) ;
+        addToIbus(CAPACITY) ;
     } 
     if (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2) ) {
         addToIbus(TEMP1) ;
@@ -350,7 +351,8 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         ibusTxBuffer[0] = ibusValueLength + 4; // length of the frame
                         ibusTxBuffer[1] = data[1]; // original cmd +adr
                         checksum = 0xFFFF - (ibusTxBuffer[0] + ibusTxBuffer[1]);
-                        if (formatIbusValue(ibusAdr) == false) return ; // skip when value is not available
+                        //if (formatIbusValue(ibusAdr) == false) return ; // skip when value is not available
+                        formatIbusValue(ibusAdr); 
                         uint8_t pByte;
                         for (int i = 0; i < ibusValueLength; i++) {  // there can be 2 or 4 bytes in the value
                             pByte     = (ibusValue >> (8 * i)) & 0xFF;
@@ -394,6 +396,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
 
 bool formatIbusValue( uint8_t ibusAdr){
     uint8_t fieldId = listOfIbusFields[ibusAdr];
+    ibusValue = 0;
     if (fields[fieldId].available == false) return false; // false when the value is not available
     ibusValue= fields[fieldId].value ; // default do not use conversion
     switch (fieldId) {
@@ -431,7 +434,7 @@ bool formatIbusValue( uint8_t ibusAdr){
         //    value= fields[fieldId].value ; // from cm to cm
         //    break;            
     } // end switch 
-    fields[fieldId].available = false;   // reset the flag available
+    // fields[fieldId].available = false;   // reset the flag available // it seems we always have to send a value otherwise Rx try to rediscover the sensor
     return true;    
 }
 
