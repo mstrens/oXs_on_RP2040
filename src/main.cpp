@@ -273,7 +273,6 @@ void setup() {
         sleep_ms(1000); // wait that GPS is initialized
     }
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
-  
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   if (configIsValid){ // continue with setup only if config is valid
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 

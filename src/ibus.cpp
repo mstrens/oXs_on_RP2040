@@ -300,7 +300,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 checksum = data[2] | (data[3] << 8);
                 checksumCalc = 0xFFFF - (data[0] + data[1]);
                 if (checksumCalc != checksum) {
-                    printf("ibus pooling with checksum error\n");
+                    printf("ibus pooling with checksum error %x %x %x %x \n", data[0] , data[1], data[2], data[3]);
                     return; // skip if checksum is wrong
                 }
                 ibusCmd = data[1] >> 4;
@@ -309,7 +309,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                 ibusValueLength = 2;
                 if( ibusType >= 0X80 && ibusType <= 0X8F ) ibusValueLength = 4; // length of field    
                 switch (ibusCmd) {
-                    case 0X80: // request discovering next sensor ; we reply the same value to confirm it exists
+                    case 0X08: // request discovering next sensor ; we reply the same value to confirm it exists
                         if ( ibusAdr != (maxIbusFieldsIdx+1)) {
                             printf("ibus request for sensor adr %d\n", ibusAdr);
                             return;

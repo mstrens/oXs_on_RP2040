@@ -73,12 +73,14 @@ void MPU::begin()  // initialise MPU6050
     sleep_us(100);
     mpu6050.initialize();
     // set offsets with values saved in config
-    mpu6050.setXAccelOffset(config.accOffsetX);
-    mpu6050.setYAccelOffset(config.accOffsetY);
-    mpu6050.setZAccelOffset(config.accOffsetZ);
-    mpu6050.setXGyroOffset(config.gyroOffsetX);
-    mpu6050.setYGyroOffset(config.gyroOffsetY);
-    mpu6050.setZGyroOffset(config.gyroOffsetZ);
+    // not used whith new calib
+    //mpu6050.setXAccelOffset(config.accOffsetX);
+    //mpu6050.setYAccelOffset(config.accOffsetY);
+    //mpu6050.setZAccelOffset(config.accOffsetZ);
+    //mpu6050.setXGyroOffset(config.gyroOffsetX);
+    //mpu6050.setYGyroOffset(config.gyroOffsetY);
+    //mpu6050.setZGyroOffset(config.gyroOffsetZ);
+    
     mpu6050.setDLPFMode(MPU6050_DLPF_BW_188);
     //mpu6050.setDLPFMode(MPU6050_DLPF_BW_10);
     //printf("dlpfMode= %d\n", mpu6050.getDLPFMode() );
@@ -127,19 +129,20 @@ void MPU::calibrationExecute()  //
     sleep_us(100);
     mpu6050.initialize();
     
-    mpu6050.CalibrateGyro(6);
-    mpu6050.CalibrateAccel(6);
+    // not used anymore with new calibration
+    //mpu6050.CalibrateGyro(6);
+    //mpu6050.CalibrateAccel(6);
     // put the offsets in config.h
-    config.accOffsetX = mpu6050.getXAccelOffset();
-    config.accOffsetY = mpu6050.getYAccelOffset();
-    config.accOffsetZ = mpu6050.getZAccelOffset();
-    config.gyroOffsetX = mpu6050.getXGyroOffset();
-    config.gyroOffsetY = mpu6050.getYGyroOffset();
-    config.gyroOffsetZ = mpu6050.getZGyroOffset();
+    //config.accOffsetX = mpu6050.getXAccelOffset();
+    //config.accOffsetY = mpu6050.getYAccelOffset();
+    //config.accOffsetZ = mpu6050.getZAccelOffset();
+    //config.gyroOffsetX = mpu6050.getXGyroOffset();
+    //config.gyroOffsetY = mpu6050.getYGyroOffset();
+    //config.gyroOffsetZ = mpu6050.getZGyroOffset();
     
     //printf("Acc & gyro after old calibration\n");
     //printConfigOffsets() ;
-    //calibrateAccelGyro();
+    calibrateAccelGyro(); // fill config offsets with the retrieved values
     //printf("Acc & gyro after new calibration\n");
     //printConfigOffsets() ;
     
@@ -280,13 +283,13 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         printf("Read error for MPU6050\n");
         return false;
     }     
-    ax = (buffer[0] << 8 | buffer[1]);
-    ay = (buffer[2] << 8 | buffer[3]);
-    az = (buffer[4] << 8 | buffer[5]);
+    ax = ((int16_t) (buffer[0] << 8 | buffer[1])) - config.accOffsetX ;
+    ay = ((int16_t) (buffer[2] << 8 | buffer[3])) - config.accOffsetY ;
+    az = ((int16_t) (buffer[4] << 8 | buffer[5])) - config.accOffsetZ ;
     //printf("az=%.0f\n", (float) az ); 
-    gx = (buffer[8] << 8 | buffer[9]);
-    gy = (buffer[10] << 8 | buffer[11]);
-    gz = (buffer[12] << 8 | buffer[13]);
+    gx = ((int16_t) (buffer[8] << 8 | buffer[9])) - config.gyroOffsetX ;
+    gy = ((int16_t) (buffer[10] << 8 | buffer[11])) - config.gyroOffsetY ;
+    gz = ((int16_t) (buffer[12] << 8 | buffer[13])) - config.gyroOffsetZ ;
     now = microsRp();
     deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
     last = now;
@@ -300,8 +303,6 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     sumAccZ += accVert;
     //printf("aaw=%.0f acc=%.0f  az=%.0f\n", (float) aaWorld.z , accVert, (float) az);
     //acc *= 0.9807f; // in cm/s/s, assuming ax, ay, az are in milli-Gs
-	
-
     countAccZ++;
         //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
