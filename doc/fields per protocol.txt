@@ -178,13 +178,13 @@ Roll       degree            Same as above                                 Not t
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
-VOLT1       0.001V           V1 pin is defined                            EXTERNAL_VOLTAGE           0.1V
+VOLT1       0.001V           V1 pin is defined                            EXTERNAL_VOLTAGE           0.01V
 VOLT2       0.001V=0.001A    V2 pin is defined                            BAT_CURR                   0.01A
 Capacity    mAh              V2 pin is defined (reset after power down)   FUEL                       mAh
 VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
-            represent temp   V3 pin is defined & TEMP=1 or =2             TEMPERATURE                degree
+            represent temp   V3 pin is defined & TEMP=1 or =2             TEMPERATURE                0.1 degree
 VOLT4       0.001V           V4 pin is defined                            not transmitted currently
-            represent temp   V4 pin is defined & TEMP=2                   TEMPERATURE                degree
+            represent temp   V4 pin is defined & TEMP=2                   TEMPERATURE                0.1 degree
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    ALT                        cm
 Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_RATE                 cm/sec
                              if a MP6050 is installed, Vpeed use it too

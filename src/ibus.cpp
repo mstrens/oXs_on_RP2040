@@ -401,10 +401,19 @@ bool formatIbusValue( uint8_t ibusAdr){
     ibusValue= fields[fieldId].value ; // default do not use conversion
     switch (fieldId) {
         case MVOLT:
-            ibusValue= fields[fieldId].value / 100; // from mvolt to 0.1V
+            ibusValue= fields[fieldId].value / 10; // from mvolt to 0.01V
             break;
         case CURRENT:
             ibusValue= fields[fieldId].value / 10; // from mamp to 0.01A
+            break;
+        case NUMSAT:
+            ibusValue= fields[fieldId].value * 256; // it seems that openTx discard the lowest byte
+            break;
+        case TEMP1:
+            ibusValue= (fields[fieldId].value * 10) + 400; // from ° to 0.1°; it seems that openTx uses an offset of 400
+            break;
+        case TEMP2:
+            ibusValue= (fields[fieldId].value * 10) + 400; // from ° to 0.1°; it seems that openTx uses an offset of 400
             break;
         //case CAPACITY:
         //    value= fields[fieldId].value ; // from mah to mah
