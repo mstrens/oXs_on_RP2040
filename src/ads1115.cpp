@@ -20,8 +20,8 @@
 //#define DEBUG_FORCE_ADS_VOLT_1_4_WITHOUT_ADS1115
 //#define DEBUG_AIRSPEED_WITH_DUMMY_ADS_DATA
 
-//extern unsigned long micros( void ) ;
-//extern unsigned long millis( void ) ;
+//extern unsigned long microsRp( void ) ;
+//extern unsigned long millisRp( void ) ;
 //extern void delay(unsigned long ms) ;
 
 extern CONFIG config;
@@ -71,7 +71,7 @@ void ADS1115::begin() {
 /*********************    *******************************************************/
 bool ADS1115::readSensor() {  // return true when there is a new average data to calculate
     if ( ! adsInstalled) return false;  
-    if ( ( millis() - ads_MilliAskConv ) <= (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 2) ) return false;
+    if ( ( millisRp() - ads_MilliAskConv ) <= (uint32_t) ( (  0x88 >> ads_Rate[ads_idx][ads_CurrentIdx]) + 2) ) return false;
     // when delay of conversion expires (NB delay is 137 msec when ads_rate = 0, and goes down up to 3ms then is divided by 2 for each increase ) 
     if( I2CErrorCodeAds1115 != 0 ) { // if there is an error on previous I2C request for a conversion
         printf("Write error ads1115 in previous request conversion\n");
@@ -90,6 +90,9 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
         return false;
     }
     if ( ( adsConfigMsb & 0X80) == 0) return false; // conversion is not yet done
+    //printf("conversion ads115 in %d ms\n", (millisRp() - ads_MilliAskConv)); 
+    
+    // at this stage conversion is done
     uint8_t adsReg = 0X0; // 0X0 = adress of conversion register
     uint8_t data[2]; // buffer to read adc
     // send the Address, 0 = conversion register (in order to be able to read the conversion register)
@@ -103,7 +106,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
     }
     uint16_t valueAdc ;
     valueAdc = data[0] << 8 | data[1] ;
-    //printf("idx=%d : %d adc at%d\n", ads_CurrentIdx , (int) valueAdc , (int) millis());
+    //printf("idx=%d : %d adc at%d\n", ads_CurrentIdx , (int) valueAdc , (int) millisRp());
     ads_SumOfConv[ads_CurrentIdx] +=   (int16_t) valueAdc ;
     ads_Counter[ads_CurrentIdx]-- ;
     if ( ads_Counter[ads_CurrentIdx] == 0 ) {
@@ -114,7 +117,7 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
             adcToMvoltScaling =  6144  / 32768.0 ;  // When ads_Gain[] = 0, it means that 32768 = 6144 mvolt
         }
         ads_Value[ads_CurrentIdx] = round( ((float) ads_SumOfConv[ads_CurrentIdx] / (float) ads_MaxCount[ads_idx][ads_CurrentIdx] * adcToMvoltScaling ) * ads_Scale[ads_idx][ads_CurrentIdx] ) + ads_Offset[ads_idx][ads_CurrentIdx];
-        //printf("Adc=%d pin=%d : %d mVolt at%d\n", ads_idx , ads_CurrentIdx , ads_Value[ads_CurrentIdx], millis());
+        //printf("Adc=%d pin=%d : %d mVolt at%d\n", ads_idx , ads_CurrentIdx , ads_Value[ads_CurrentIdx], millisRp());
         ads_Available[ads_CurrentIdx] = true ;
         ads_SumOfConv[ads_CurrentIdx] = 0 ;            // reset the sum 
         ads_Counter[ads_CurrentIdx] = ads_MaxCount[ads_idx][ads_CurrentIdx] ;   // reset the counter to the number of count before averaging
@@ -156,12 +159,12 @@ void ADS1115::ads_requestNextConv(void) {
     //I2CErrorCodeAds1115 = I2c.write((uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // send the Address, 1 = config register , 2 bytes , pointer to the data to write
 //    if ( I2CErrorCodeAds1115 ) I2CErrorCodeAds1115 = I2c.write( (uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // retry once if there is an error (probably we should add a clear of I2C bus in between)
 #ifdef DEBUGADS1115REQUESTCONV  
-      printer->print(F("At ")); printer->print(millis()) ;
+      printer->print(F("At ")); printer->print(millisRp()) ;
       printer->print(F(" cmd=")); printer->print(dataToWrite[0], HEX) ;
       printer->print(F(" ")); printer->print( dataToWrite[1] , HEX ) ;
       printer->println(" ");
 #endif
-    ads_MilliAskConv = millis() ;
+    ads_MilliAskConv = millisRp() ;
     //printf("request %x %x %x idx=%d at%d  ",ads_CurrentIdx , dataToWrite[1] , dataToWrite[2], ads_CurrentIdx , ads_MilliAskConv );
     
 } // end of Ads_requestNextConv
@@ -176,7 +179,7 @@ void OXS_ADS1115::ads_calculateCurrent(void) {
     static uint32_t lastCurrentMillis ;
     sumCurrent +=  ads_Conv[ads_CurrentIdx].value ;
     cnt++ ;
-    milliTmp = millis() ;
+    milliTmp = millisRp() ;
   if  (lastCurrentMillis == 0)  {
     lastCurrentMillis = milliTmp ;
   }
@@ -226,7 +229,7 @@ void OXS_ADS1115::ads_calculate_airspeed( int16_t ads_difPressureAdc ) {
 //#define DEBUG_AIRSPEED_WITH_DUMMY_ADS_DATA
 #ifdef DEBUG_AIRSPEED_WITH_DUMMY_ADS_DATA
   static int16_t dummy_ads_value ; 
-  ads_difPressureAdc = ((millis() / 1000 ) % (100) ) * 300 ; 
+  ads_difPressureAdc = ((millisRp() / 1000 ) % (100) ) * 300 ; 
 #endif 
   if ( calibrated7002 == false) {
        calibrateCount7002++ ;
@@ -272,7 +275,7 @@ void OXS_ADS1115::ads_calculate_airspeed( int16_t ads_difPressureAdc ) {
              if ( ads_smoothDifPressureAdc < 0 ) ads_smoothAirSpeed = - ads_smoothAirSpeed ; // apply the sign
       
   }  // end of test on calibration
-  ads_airSpeedMillis = millis() ;
+  ads_airSpeedMillis = millisRp() ;
   if ( ads_airSpeedMillis  > ads_nextAirSpeedMillis){ // publish airspeed only once every xx ms
               ads_nextAirSpeedMillis = ads_airSpeedMillis + 200 ;
 //              if ( ads_smoothAirSpeed >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
@@ -313,7 +316,7 @@ void OXS_ADS1115::ads_calculate_airspeed( int16_t ads_difPressureAdc ) {
 
 
  
-  } // end test on millis()
+  } // end test on millisRp()
   
 }
 #endif // end of conditional compiling for calculate airspeed.

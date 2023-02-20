@@ -172,7 +172,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
                 if ( crc == data){
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, crsfBufferRcChannels , RC_PAYLOAD_LENGTH) ;
-                    lastRcChannels = millis();
+                    lastRcChannels = millisRp();
                     lastPriChannelsMillis = lastRcChannels ;
                     #ifdef DEBUGPRIM
                     printf("Prim= ");
@@ -237,7 +237,7 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                 if ( crc == data){
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, crsf2BufferRcChannels , RC_PAYLOAD_LENGTH) ;
-                    lastRcChannels = millis();
+                    lastRcChannels = millisRp();
                     lastSecChannelsMillis = lastRcChannels ; 
                     //printf("S\n");
                     #ifdef DEBUGSEC

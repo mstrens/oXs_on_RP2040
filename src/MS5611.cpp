@@ -148,7 +148,7 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
 int MS5611::getAltitude() // Try to get a new pressure ; 
 {
   if ( ! baroInstalled) return -1;     // do not process if there is no baro; -1 = no new data
-  if ( (micros() - _lastConversionRequest) < 9500 ) // it take about 9000 usec for a conversion
+  if ( (microsRp() - _lastConversionRequest) < 9500 ) // it take about 9000 usec for a conversion
     return -1;
   //printf("state=%X\n",_state);  
   switch (_state) 
@@ -157,7 +157,7 @@ int MS5611::getAltitude() // Try to get a new pressure ;
     command(0x48); // ask for pressure conversion in high resolution
     if (_result) return _result;
     _state = WAIT_FOR_PRESSURE ;
-    _lastConversionRequest = micros() ;      
+    _lastConversionRequest = microsRp() ;      
     break;
   case WAIT_FOR_PRESSURE :   
     _D1 = readADC(); // read pressure, return 0 in case of error; _result =0 if OK.
@@ -165,7 +165,7 @@ int MS5611::getAltitude() // Try to get a new pressure ;
     command(0x58); // ask immediately for temperature conversion in high resolution
     if (_result) return _result;
     _state = WAIT_FOR_TEMPERATURE ;
-    _lastConversionRequest = micros() ;
+    _lastConversionRequest = microsRp() ;
     _lastTempRequest = _lastConversionRequest; 
     break ;  
   case WAIT_FOR_TEMPERATURE : 
@@ -176,7 +176,7 @@ int MS5611::getAltitude() // Try to get a new pressure ;
     command(0x48); // ask for pressure conversion in high resolution
     if (_result) return _result;
     _state = WAIT_FOR_PRESSURE ;
-    _lastConversionRequest = micros() ;      
+    _lastConversionRequest = microsRp() ;      
     calculateAltitude();
     return 0 ; // new data available
     break;

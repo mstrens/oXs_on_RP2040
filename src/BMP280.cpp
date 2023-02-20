@@ -16,8 +16,8 @@ extern CONFIG config;
 #endif
 //#define DEBUG_BMP280
 
-extern unsigned long micros( void ) ;
-extern unsigned long millis( void ) ;
+extern unsigned long microsRp( void ) ;
+extern unsigned long millisRp( void ) ;
 extern void delay(unsigned long ms) ;
 
 static BMP280_CALIB_DATA _bmp280_coeffs;   // Last read calibration data will be available here
@@ -139,7 +139,7 @@ void BMP280::begin() {
 int BMP280::getAltitude() {
     //static uint32_t lastBMP280ReadMicro ;
     //bool newVSpeedCalculated  = false ; 
-    if ( ( micros() - _lastConversionRequest ) < 20000) return -1;
+    if ( ( microsRp() - _lastConversionRequest ) < 20000) return -1;
     int32_t adc_T = 0 ;
     int32_t adc_P = 0 ;
     int32_t t_fine; // t_fine carries fine temperature as global value
@@ -158,7 +158,7 @@ int BMP280::getAltitude() {
     adc_P = adc_P >> 4 ;
     adc_T = (buffer[3]<<16) | (buffer[4]<<8) | (buffer[5]) ;
     adc_T = adc_T >> 4 ;
-    _lastConversionRequest = micros() ;
+    _lastConversionRequest = microsRp() ;
         //errorI2C = I2c.read( _address , (uint8_t) 0xF7 , (uint8_t) 6) ; // read 6 bytes starting from register F7
         //  adc_P = I2c.receive() ;
         //  adc_P <<= 8 ;
@@ -172,7 +172,7 @@ int BMP280::getAltitude() {
         //  adc_T <<= 8 ;
         //  adc_T |= I2c.receive()  ;
         //  adc_T = adc_T >> 4 ;
-        //  varioData.lastCommandMicros = micros() ;
+        //  varioData.lastCommandMicros = microsRp() ;
 
 // Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
 // t_fine carries fine temperature as global value

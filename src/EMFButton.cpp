@@ -15,7 +15,7 @@ void EMFButton::tick() {
   _clicksEnd = 0;
   _clicksWithHeld = 0;
   _clicksWithHold = 0;
-  uint32_t t = millis();
+  uint32_t t = millisRp();
   //bool reading = digitalRead(_pin) == (_pinmode) ? HIGH : LOW;
   bool reading = get_bootsel_button();
   if (reading != _lastState) {

@@ -56,9 +56,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
 };
 
 
-uint32_t millis() ;
+uint32_t millisRp() ;
 
-uint32_t micros();
+uint32_t microsRp();
 
 void waitUs(uint32_t delayUs);
 

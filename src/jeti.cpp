@@ -114,8 +114,11 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
     listOfJetiFieldsIdx = 1 ; // 0 is not used for a value, because - for text- it contains the name of the sensor (e.g. openXsensor)
     if ( config.pinVolt[0] != 255) {
         listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
-    }    
-    // here we could add other voltage parameter (current, ...)
+    }
+    if ( config.pinVolt[1] != 255) {
+        listOfJetiFields[listOfJetiFieldsIdx++] = CURRENT ;
+        listOfJetiFields[listOfJetiFieldsIdx++] = CAPACITY ;
+    }
     if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
@@ -153,6 +156,18 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
       case  MVOLT :
           if ( ! fields[fieldId].available ) return 0;
           * fieldValue =  fields[fieldId].value  / 10 ; 
+          * dataType = JETI14_2D ;
+          fields[fieldId].available  = false ;
+          break ;
+      case  CURRENT :
+          if ( ! fields[fieldId].available ) return 0;
+          * fieldValue =  fields[fieldId].value  / 10 ; // converted in A with 2 decimals
+          * dataType = JETI14_2D ;
+          fields[fieldId].available  = false ;
+          break ;
+      case  CAPACITY :
+          if ( ! fields[fieldId].available ) return 0;
+          * fieldValue =  fields[fieldId].value  / 10 ; // converted in Ah with 2 decimals
           * dataType = JETI14_2D ;
           fields[fieldId].available  = false ;
           break ;
@@ -350,6 +365,12 @@ void fillJetiBufferWithText() {
     case  MVOLT :
         mergeLabelUnit( textIdx, "Accu. volt", "V"  ) ;
         break ;
+    case  CURRENT :
+        mergeLabelUnit( textIdx, "Current", "A"  ) ;
+        break ;
+    case  CAPACITY :
+        mergeLabelUnit( textIdx, "Consumtion", "Ah"  ) ;
+        break ;
       case HEADING :
         mergeLabelUnit( textIdx, "Course", degreeChar  ) ;
         break ;
@@ -384,14 +405,14 @@ void handleJetiTx()    // when there is more than 20mses since sending last fram
 {
   if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
   static  uint8_t jetiSendDataFrameCount ;
-  //printf("Jeti State %x time %" PRIu32 "\n", jetiState , millis() -jetiStartReceiving);
+  //printf("Jeti State %x time %" PRIu32 "\n", jetiState , millisRp() -jetiStartReceiving);
   if (jetiState == JETI_SENDING){
       if ( dma_channel_is_busy(jeti_dma_chan) )return ; // skip if the DMA is still sending data
       jetiState = JETI_RECEIVING ;
-      jetiStartReceiving = millis();
+      jetiStartReceiving = millisRp();
       return;  
   } else if (jetiState == JETI_RECEIVING){
-      if ( ( millis() -  jetiStartReceiving ) <= 35 ) return; //skip if there is less than 20 msec since end of transmit
+      if ( ( millisRp() -  jetiStartReceiving ) <= 35 ) return; //skip if there is less than 20 msec since end of transmit
                                                  // 35 because dma become free about 15 msec before the end                 
       jetiState = JETI_IDLE;
   }    

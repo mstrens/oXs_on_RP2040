@@ -58,24 +58,24 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
 }
 
 
-uint32_t millis(){
+uint32_t millisRp(){
     return  to_ms_since_boot( get_absolute_time());
 }
 
-uint32_t micros() {
+uint32_t microsRp() {
     return  to_us_since_boot(get_absolute_time ());
 }
 
 void waitUs(uint32_t delayUs){
-    uint32_t nowUs = micros();
-    while (( micros() - nowUs) < delayUs) {micros();}
+    uint32_t nowUs = microsRp();
+    while (( microsRp() - nowUs) < delayUs) {microsRp();}
 }
 
 void enlapsedTime(uint8_t idx){
     static uint32_t prevTime[10] = {0};
     uint32_t currTime;
     if (idx >= sizeof(prevTime)) return ;
-    currTime = micros() ;
+    currTime = microsRp() ;
     printf("Eus%d=%d\n", idx , currTime-prevTime[idx]);
     prevTime[idx]=currTime;
 }
@@ -83,12 +83,12 @@ void enlapsedTime(uint8_t idx){
 uint32_t startAtUs[10] = {0};
 void startTimerUs(uint8_t idx){
     if (idx >= sizeof(startAtUs)) return ;
-    startAtUs[idx] = micros() ;
+    startAtUs[idx] = microsRp() ;
 }
 
 void getTimerUs(uint8_t idx){
     if (idx >= sizeof(startAtUs)) return ;
-    printf("FSus%d=%d\n", idx , micros()-startAtUs[idx]);
+    printf("FSus%d=%d\n", idx , microsRp()-startAtUs[idx]);
 }
 
 void sent2Core0( uint8_t fieldType, int32_t value){

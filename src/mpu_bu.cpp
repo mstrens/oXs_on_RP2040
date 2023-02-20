@@ -40,7 +40,7 @@ uint32_t countAccZ=0;
 //float KFClimbrateCps ; // Vspeed calculated by kalman filter
 //float KFAltitudeCm2; // heigh calculated by kalman filter
 //float KFClimbrateCps2 ; // Vspeed calculated by kalman filter
-uint32_t lastKfUs = micros(); 
+uint32_t lastKfUs = microsRp(); 
 uint32_t kfUs ;
     
 
@@ -330,7 +330,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
     
     //printf("mpu\n"); 
     mpu6050_read_raw(acceleration, gyro);
-    Now = micros();
+    Now = microsRp();
     deltat = ((Now - lastUpdate) / 1000000.0f); // set integration time by time elapsed since last filter update
     lastUpdate = Now;
   //    if(lastUpdate - firstUpdate > 10000000uL) {
@@ -382,7 +382,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
 
 
   // Serial print and/or display at 0.5 s rate independent of data rates
-    delt_t = millis() - count;
+    delt_t = millisRp() - count;
     if (delt_t > 500) { // update LCD once per half-second independent of read rate
         //printf("aworld: %d,\t %d,\t %d, \t %d  \t %f  \t %f\n", aaWorld.x, aaWorld.y, aaWorld.z, -(acceleration[2]+16384), zTrack, vTrack);
         //printf("aworldz : %d\n", aaWorld.z);
@@ -399,7 +399,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; ead the IMU
 
         //printf("Yaw, Pitch, Roll: %5.0f %5.0f %5.0f\n", yaw, pitch, roll); 
         printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack2, vario1.climbRateFloat);//  Serial.print("ypr ");
-        count = millis();
+        count = millisRp();
     }
     return false; 
 }
@@ -423,7 +423,7 @@ float Axyz[3];
 float Gxyz[3];
 
 static float deltat = 0;  //loop time in seconds
-static unsigned long now = 0, last = 0; //micros() timers
+static unsigned long now = 0, last = 0; //microsRp() timers
 
 
 // GLOBALLY DECLARED, required for Mahony filter
@@ -435,7 +435,7 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 float Kp = 30.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
 float Ki = 0.0;  // on same site, it is set on 2
 
-unsigned long now_ms, last_ms = 0; //millis() timers
+unsigned long now_ms, last_ms = 0; //millisRp() timers
 
 float yaw, pitch, roll; //Euler angle output
 
@@ -674,8 +674,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     static float vSpeedAcc3;
     static float lowPass = 0;        //initialization of EMA S
     static uint32_t lastMpuUs;
-    if ( ( micros() - lastMpuUs) < 2000) return false ; // perfor calculation only every 2 msec 
-    lastMpuUs = micros();
+    if ( ( microsRp() - lastMpuUs) < 2000) return false ; // perfor calculation only every 2 msec 
+    lastMpuUs = microsRp();
  
  
 
@@ -716,7 +716,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
   //  snprintf(s,sizeof(s),"mpu raw %d,%d,%d,%d,%d,%d",ax,ay,az,gx,gy,gz);
   //  Serial.println(s);
 
-  now = micros();
+  now = microsRp();
   deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
   last = now;
 
@@ -764,7 +764,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
 
 
         //kalman2.Update((float) vario1.rawRelAltitudeCm , azWorldAverage /16384.0 * 981.0 ,  &zTrack2, &vTrack2);
-        kfUs = micros(); 
+        kfUs = microsRp(); 
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
         lastKfUs = kfUs;  
         kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /16384.0 * 981.0 , (float*) &zTrack , (float*)&vTrack);
@@ -780,7 +780,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         }    
         sent2Core0( VSPEED , (int32_t) prevVTrack) ; 
     }
-    now_ms = millis(); //time to print?
+    now_ms = millisRp(); //time to print?
     if (now_ms - last_ms >= 500) {
         last_ms = now_ms;
         roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));

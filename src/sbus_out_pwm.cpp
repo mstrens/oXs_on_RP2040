@@ -75,7 +75,7 @@ void setupSbusOutPio(){
 }
 
 void setLedState(){
-    uint32_t now = millis();
+    uint32_t now = millisRp();
     bool priFailsafe = sbusPriFailsafeFlag; // we first try to use the sbus flags
     bool secFailsafe = sbusSecFailsafeFlag;
     if (config.protocol == 'C'){   // overwrite when protocol is CRSF because we have to take care of last receiving timestamp
@@ -122,10 +122,10 @@ void fillSbusFrame(){
     if (config.pinSbusOut == 255) return; // skip when pin is not defined
     // normally we should test if previous dma has finished sending all previous sbus frame. 
 
-    if ( (millis() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
-        lastSbusSentMillis = millis();   
+    if ( (millisRp() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
+        lastSbusSentMillis = millisRp();   
         sbusFrame.synchro = 0x0F ; 
-        if ( ( millis()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, we apply failsafe
+        if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, we apply failsafe
             sbusFrame.flag = 0x10; // indicates a failsafe
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         } else {
@@ -188,9 +188,9 @@ void updatePWM(){
     uint16_t pwmValue;
     if ( pwmIsUsed == false) return ; // skip when PWM is not used
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
-    if ( (millis() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
-        lastPwmMillis = millis();
-        if ( ( millis()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
+    if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
+        lastPwmMillis = millisRp();
+        if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
         rcSbusOutChannels[0] = (uint16_t) sbusFrame.rcChannelsData.ch0 ;
@@ -263,9 +263,9 @@ void setupPioPwm(){
 void updatePioPwm(){
     static uint32_t lastPioPwmMillis = 0 ;
     if ( ! lastRcChannels) return ;
-    if ( (millis() - lastPioPwmMillis) > 20 ){ // we update once every 6 msec to avoid blocking the loop due to a full fifo
-        lastPioPwmMillis = millis();
-        if ( ( millis()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
+    if ( (millisRp() - lastPioPwmMillis) > 20 ){ // we update once every 6 msec to avoid blocking the loop due to a full fifo
+        lastPioPwmMillis = millisRp();
+        if ( ( millisRp()- lastRcChannels) > 500 ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
         uint16_t pwmValue;

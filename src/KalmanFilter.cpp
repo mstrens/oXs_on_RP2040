@@ -34,7 +34,7 @@ void KalmanFilter::Update(float z, float a ,  float* pZ, float* pV) {           
 #define DT4DIV4  (DT2DIV2 * DT2DIV2)
 
 #ifdef DEBUG_KALMAN_TIME
-unsigned long enterKalman = micros() ;
+unsigned long enterKalman = microsRp() ;
 #endif
 
 	// Predict state
@@ -75,7 +75,7 @@ unsigned long enterKalman = micros() ;
 	t22 = Paa_;
 
 #ifdef DEBUG_KALMAN_TIME
-  delayKalman[0] =  micros() - enterKalman ;
+  delayKalman[0] =  microsRp() - enterKalman ;
 #endif  
 	Pzz_ = t00 + DT*t01 - DT2DIV2*t02;
 //  Pzz_ +=  dt*Pvz_ - dt2div2*Paz_ + dt*t01 - dt2div2*t02;
@@ -93,7 +93,7 @@ unsigned long enterKalman = micros() ;
 	Paa_ = t22;
 
 #ifdef DEBUG_KALMAN_TIME
-  delayKalman[1] =  micros() - enterKalman ;
+  delayKalman[1] =  microsRp() - enterKalman ;
 #endif
 
     Pzz_ += DT4DIV4*ZACCEL_VARIANCE;
@@ -109,7 +109,7 @@ unsigned long enterKalman = micros() ;
 	float sInv = 1.0f / (Pzz_ + Z_VARIANCE);  
 
 #ifdef DEBUG_KALMAN_TIME
-  delayKalman[2] =  micros() - enterKalman ;
+  delayKalman[2] =  microsRp() - enterKalman ;
 #endif
     // Kalman gains
 	float kz = Pzz_ * sInv;  
@@ -124,7 +124,7 @@ unsigned long enterKalman = micros() ;
 	*pZ = z_;
 	*pV = v_;
 #ifdef DEBUG_KALMAN_TIME
-  delayKalman[3] =  micros() - enterKalman ;
+  delayKalman[3] =  microsRp() - enterKalman ;
 #endif
 	// Update state covariance matrix
 	Pzz_ -= kz * Pzz_;
@@ -139,6 +139,6 @@ unsigned long enterKalman = micros() ;
 	Pav_ -= ka * Pzv_;
 	Paa_ -= ka * Pza_;
 #ifdef DEBUG_KALMAN_TIME
-  delayKalman[4] =  micros() - enterKalman ;  
+  delayKalman[4] =  microsRp() - enterKalman ;  
 #endif
 	}

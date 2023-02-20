@@ -77,7 +77,7 @@ void fillCRSFFrame(){
     static uint8_t crsf_last_frame_idx = 0 ;
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     if ( dma_channel_is_busy(crsf_dma_chan) )return ; // skip if the DMA is still sending data
-    uint32_t _millis = millis();
+    uint32_t _millis = millisRp();
     for (uint8_t i = 0 ; i< FRAME_TYPES_MAX ; i++ ){
          crsf_last_frame_idx++;
          if (crsf_last_frame_idx >= FRAME_TYPES_MAX) crsf_last_frame_idx = 0;
@@ -165,7 +165,7 @@ void fillFrameBattery(uint8_t idx){
     fillBufferU8(crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     
     fields[MVOLT].available = false ;
-    crsfFrameNextMillis[idx] = millis() + VOLTAGE_FRAME_INTERVAL;
+    crsfFrameNextMillis[idx] = millisRp() + VOLTAGE_FRAME_INTERVAL;
     if ( debugTlm == 'Y' ){
         printf("Bat: ");
         for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
@@ -185,7 +185,7 @@ void fillFrameVario(uint8_t idx){
     //printf("vspeed=%d\n", ((int16_t) fields[VSPEED].value) );
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_VARIO_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[VSPEED].available = false ;
-    crsfFrameNextMillis[idx] = millis() + VARIO_FRAME_INTERVAL;
+    crsfFrameNextMillis[idx] = millisRp() + VARIO_FRAME_INTERVAL;
     if ( debugTlm == 'Y' ){
         printf("Vario: ");
         for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
@@ -207,7 +207,7 @@ void fillFrameBaroAltitude(uint8_t idx){
     // So when alt is more than 2000m; we can discard this situation
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_BARO_ALTITUDE_PAYLOAD_SIZE + 1) ) ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
     fields[RELATIVEALT].available = false ;
-    crsfFrameNextMillis[idx] = millis() + BARO_ALTITUDE_FRAME_INTERVAL;
+    crsfFrameNextMillis[idx] = millisRp() + BARO_ALTITUDE_FRAME_INTERVAL;
     if ( debugTlm == 'Y' ){
         printf("Alt: ");
         for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
@@ -241,7 +241,7 @@ void fillFrameAttitude(uint8_t idx){
     fields[RPM].available = false ;
     fields[PITCH].available = false ;
     fields[ROLL].available = false ;
-    crsfFrameNextMillis[idx] = millis() + ATTITUDE_FRAME_INTERVAL;
+    crsfFrameNextMillis[idx] = millisRp() + ATTITUDE_FRAME_INTERVAL;
         //printf("Attitude: ");
         //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
         //printf("\n");
@@ -286,7 +286,7 @@ void fillFrameGps(uint8_t idx){
     //}
     fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_GPS_PAYLOAD_SIZE + 1) )  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
 
-    crsfFrameNextMillis[idx] = millis() + GPS_FRAME_INTERVAL;
+    crsfFrameNextMillis[idx] = millisRp() + GPS_FRAME_INTERVAL;
     //printf("GPS height:%" PRIu32 "\n",gps.GPS_altitude);
     //CRSFBufferLength = sizeof(gpsFrame);
     //

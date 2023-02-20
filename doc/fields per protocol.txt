@@ -115,8 +115,8 @@ Roll       degree            Same as above
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
 VOLT1       0.001V           V1 pin is defined                            Accu volt                  0.01V
-VOLT2       0.001V=0.001A    V2 pin is defined                            not transmitted currently
-Capacity    mAh              V2 pin is defined (reset after power down)   not transmitted currently
+VOLT2       0.001V=0.001A    V2 pin is defined                            Current                    0.01A
+Capacity    mAh              V2 pin is defined (reset after power down)   Consumption                0.01Ah
 VOLT3       0.001V           V3 pin is defined                            not transmitted currently
 VOLT4       0.001V           V4 pin is defined                            not transmitted currently
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Rel. Altitude              dm
@@ -170,5 +170,40 @@ RPM        ?????             RPM pin is defined                            Index
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       degree            Same as above                                 Not transmitted 
+
+
+
+******************************************************************************************************************
+**                                        Ibus (Flysky) protocol                                                **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            EXTERNAL_VOLTAGE           0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            BAT_CURR                   0.01A
+Capacity    mAh              V2 pin is defined (reset after power down)   FUEL                       mAh
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
+            represent temp   V3 pin is defined & TEMP=1 or =2             TEMPERATURE                degree
+VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+            represent temp   V4 pin is defined & TEMP=2                   TEMPERATURE                degree
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    ALT                        cm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_RATE                 cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree 7decimals
+GPS lat                      Same as above                                 GPS_LAT                   degree 7decimals
+GPS speed  cm/sec            Same as above                                 GROUND_SPEED              cm/s
+GPS course degree            Same as above                                 CMP_HEAD                  degree
+GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   cm
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              GPS_STATUS                no unit
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 COG                       degree
+GPS distance from home       Same as above                                 GPS_DIST                  m
+RPM        ?????             RPM pin is defined                            RPM                       ???
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       degree            Same as above                                 Not transmitted 
+
 
 

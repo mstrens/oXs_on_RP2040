@@ -27,7 +27,7 @@ float prevVTrack; // use to check hysteresis.
 float sumAccZ = 0; // used to calculate an average of AccZ
 uint32_t countAccZ=0;
 
-uint32_t lastKfUs = micros(); 
+uint32_t lastKfUs = microsRp(); 
 uint32_t kfUs ;
 
 MPU::MPU(int a)
@@ -42,15 +42,6 @@ float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> 
 
 // ^^^^^^^^^^^^^^^^^^^ VERY VERY IMPORTANT ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-int16_t ax, ay, az;
-int16_t gxh, gyh, gzh;
-  //scaled data as vector
-float Axyz[3];
-float Gxyz[3];
-
-static float deltat = 0;  //loop time in seconds
-static unsigned long now = 0, last = 0; //micros() timers
-
 
 // GLOBALLY DECLARED, required for Mahony filter
 // vector to hold quaternion
@@ -61,7 +52,7 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 float Kp = 30.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
 float Ki = 0.0;  // on same site, it is set on 0
 
-unsigned long now_ms, last_ms = 0; //millis() timers
+unsigned long now_ms, last_ms = 0; //millisRp() timers
 
 float yaw, pitch, roll; //Euler angle output
 
@@ -153,7 +144,7 @@ void MPU::calibrationExecute()  //
     //mpu6050.PrintActiveOffsets() ;
     //testDevicesOffsetX();
 }
-
+/*
 void GetGravity(VectorFloat *v, Quaternion *q) {
     v -> x = 2 * (q -> x*q -> z - q -> w*q -> y);
     v -> y = 2 * (q -> w*q -> x + q -> y*q -> z);
@@ -177,7 +168,7 @@ void GetLinearAccelInWorld(VectorInt16 *v, VectorInt16 *vReal, Quaternion *q) {
     memcpy(v, vReal, sizeof(VectorInt16));
     v -> rotate(q);
 }
-
+*/
 
 
 //--------------------------------------------------------------------------------------------------
@@ -266,6 +257,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         return false;
     }
     uint8_t buffer[14];
+    int16_t ax, ay, az; // accel from MPU (raw values)
+    int16_t gx, gy, gz; // gyro from MPU (raw values)
+    
+    static float deltat = 0;  //loop time in seconds
+    static unsigned long now = 0, last = 0; //microsRp() timers
     static float sumAz;
     static float azWorldAverage;
     static float azAverage; 
@@ -278,12 +274,9 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     static float vSpeedAcc3;
     static float lowPass = 0;        //initialization of EMA S
     static uint32_t lastMpuUs;
-    if ( ( micros() - lastMpuUs) < 2000) return false ; // perform calculation only every 2 msec 
-    lastMpuUs = micros();
+    if ( ( microsRp() - lastMpuUs) < 2000) return false ; // perform calculation only every 2 msec 
+    lastMpuUs = microsRp();
  
- 
-
-
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = 0x3B;
     i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
@@ -295,55 +288,38 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     ay = (buffer[2] << 8 | buffer[3]);
     az = (buffer[4] << 8 | buffer[5]);
     //printf("az=%.0f\n", (float) az ); 
-    gxh = (buffer[8] << 8 | buffer[9]);
-    gyh = (buffer[10] << 8 | buffer[11]);
-    gzh = (buffer[12] << 8 | buffer[13]);
-  //scaled data as vector
-  float Axyz[3];
-  float Gxyz[3];
-  Axyz[0] = (float) ax;
-  Axyz[1] = (float) ay;
-  Axyz[2] = (float) az;
-
-  //  printf("AX Gx = %i %i\n", ax , gxh);
-  //apply offsets and scale factors from Magneto
-  //for (int i = 0; i < 3; i++) Axyz[i] = (Axyz[i] - A_cal[i]) * A_cal[i + 3];
-
-  //Gxyz[0] = ((float) gxh - G_off[0]) * gscale; //250 LSB(d/s) default to radians/s
-  //Gxyz[1] = ((float) gyh - G_off[1]) * gscale;
-  //Gxyz[2] = ((float) gzh - G_off[2]) * gscale;
-    Gxyz[0] = ((float) gxh) * gscale; //250 LSB(d/s) default to radians/s
-    Gxyz[1] = ((float) gyh) * gscale;
-    Gxyz[2] = ((float) gzh) * gscale;
-
-
-  //  snprintf(s,sizeof(s),"mpu raw %d,%d,%d,%d,%d,%d",ax,ay,az,gx,gy,gz);
-  //  Serial.println(s);
-
-  now = micros();
+    gx = (buffer[8] << 8 | buffer[9]);
+    gy = (buffer[10] << 8 | buffer[11]);
+    gz = (buffer[12] << 8 | buffer[13]);
+  now = microsRp();
   deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
   last = now;
-
-  Mahony_update(Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], deltat);
-    
+  Mahony_update( (float) ax, (float) ay, (float) az , ((float) gx) * gscale, ((float) gy) * gscale , ((float) gz) * gscale, deltat);
+    /*
     // at this stage, quaternion q is updated based on acceleration and gyro
     qq.w = qh[0];
     qq.x = qh[1];
     qq.y = qh[2];
     qq.z = qh[3];
-    GetGravity(&gravity, &qq);
-    aa.x = ax;
+    GetGravity(&gravity, &qq);   // gravity is a float based only on quaternion (so no dimension)
+    aa.x = ax;   // aa is a vector I16 bits
     aa.y = ay;
     aa.z = az;
-    GetLinearAccel(&aaReal, &aa, &gravity);
-    //printf("%d,\t %d\n", aa.z - 16384 , aaReal.z);
-    
+    GetLinearAccel(&aaReal, &aa, &gravity);   // aareal = gravity * 16384 (= value of 1G when accelerometer is on 2G range)
     GetLinearAccelInWorld(&aaWorld, &aaReal, &qq);
-    //printf("%d,\t %d\n", ((int32_t) az) - 16384 ,  aaWorld.z );
-    
-//    kalman2.Update((float) baro1.altitude/100  , ((float) (aaWorld.z)) /16384.0 * 981.0 ,  &zTrack2, &vTrack2);  // Altitude and acceleration are in cm
-    //sumAz += (float) az;
     sumAccZ += (float) aaWorld.z;
+    */
+    // this formula ti calculate vertical accz comes from
+    // https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO/blob/b0157b91902fe4d2de13a3198160438307d71662/src/sensor/imu.cpp
+    // in imu_gravityCompensatedAccel()
+    // and gives the same result as previous formula
+    float accVert = 2.0*(qh[1]*qh[3] - qh[0]*qh[2])*( (float) ax) + 2.0f*(qh[0]*qh[1] + qh[2]*qh[3])*((float)ay)
+     + (qh[0]*qh[0] - qh[1]*qh[1] - qh[2]*qh[2] + qh[3]*qh[3])*((float)az) - 16384.0f; // 16384 = 1g to be substracted
+    sumAccZ += accVert;
+    printf("aaw=%.0f acc=%.0f  az=%.0f\n", (float) aaWorld.z , accVert, (float) az);
+    //acc *= 0.9807f; // in cm/s/s, assuming ax, ay, az are in milli-Gs
+	
+
     countAccZ++;
         //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
@@ -368,7 +344,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
 
 
         //kalman2.Update((float) vario1.rawRelAltitudeCm , azWorldAverage /16384.0 * 981.0 ,  &zTrack2, &vTrack2);
-        kfUs = micros(); 
+        kfUs = microsRp(); 
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
         lastKfUs = kfUs;  
         kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /16384.0 * 981.0 , (float*) &zTrack , (float*)&vTrack);
@@ -384,7 +360,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         }    
         sent2Core0( VSPEED , (int32_t) prevVTrack) ; 
     }
-    now_ms = millis(); //time to print?
+    now_ms = millisRp(); //time to print?
     if (now_ms - last_ms >= 500) {
         last_ms = now_ms;
         roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));

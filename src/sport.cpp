@@ -310,7 +310,7 @@ void sportPioRxHandlerIrq(){    // when a byte is received on the Sport, read th
      uint8_t c = pio_sm_get (sportPio , sportSmRx) >> 24;         // read the data
      //printf("c%x\n", c);
      queue_try_add (&sportRxQueue, &c);          // push to the queue
-    //sportRxMillis = millis();                    // save the timestamp.
+    //sportRxMillis = millisRp();                    // save the timestamp.
   }
 }
 
@@ -327,7 +327,7 @@ void handleSportRxTx(void){   // main loop : restore receiving mode , wait for t
     uint8_t data;
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     if ( restoreSportPioToReceiveMillis) {            // put sm back in receive mode after some delay
-        if (millis() > restoreSportPioToReceiveMillis){
+        if (millisRp() > restoreSportPioToReceiveMillis){
             sport_uart_tx_program_stop(sportPio, sportSmTx, config.pinTlm );
             sport_uart_rx_program_restart(sportPio, sportSmRx, config.pinTlm, true);  // true = inverted
             restoreSportPioToReceiveMillis = 0 ;
@@ -354,7 +354,7 @@ void sendNextSportFrame(){ // search for the next data to be sent
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
     }
-    //uint32_t _millis = millis();
+    //uint32_t _millis = millisRp();
     uint32_t currentPollingNr = ++sportPoolingNr;
     uint8_t _fieldId; 
     // first we search the first field 
@@ -465,6 +465,6 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     dma_channel_set_trans_count (sport_dma_chan, sportLength, true) ;
     // we need a way to set the pio back in receive mode when all bytes are sent 
     // this will be done in the main loop after some ms (here 6ms)
-    restoreSportPioToReceiveMillis = millis() + 6;   
+    restoreSportPioToReceiveMillis = millisRp() + 6;   
 }
 

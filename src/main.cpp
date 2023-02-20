@@ -16,12 +16,14 @@
 #include "sbus_out_pwm.h"
 #include "sbus_in.h"
 #include "hardware/watchdog.h"
+#include "tools.h"
 #include "sport.h"
 #include "jeti.h"
 #include "hott.h"
 #include "mpx.h"
+#include "ibus.h"
 #include "param.h"
-#include "tools.h"
+
 #include "ws2812.h"
 #include "rpm.h"
 #include "EMFButton.h"
@@ -201,7 +203,7 @@ void mergeSeveralSensors(void){
 }
 
 void setColorState(){    // set the colors based on the RF link
-    lastBlinkMillis = millis(); // reset the timestamp for blinking
+    lastBlinkMillis = millisRp(); // reset the timestamp for blinking
     switch (ledState) {
         case STATE_OK:
             setRgbColorOn(0, 10, 0); //green
@@ -225,24 +227,24 @@ void handleBootButton(){
     // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
     static uint32_t bootArmedMillis = 0;
     btn.tick();
-    if ( ( btn.hasClicks() == 2) && ( (millis() - lastRcChannels ) < 100 ) ) { // double click + a recent frame exist
-        bootArmedMillis = millis();
+    if ( ( btn.hasClicks() == 2) && ( (millisRp() - lastRcChannels ) < 100 ) ) { // double click + a recent frame exist
+        bootArmedMillis = millisRp();
         bootButtonState =  ARMED;
         setRgbColorOn(0, 0, 10); //blue
         //printf("armed\n");
     } else if (bootButtonState == ARMED) {
-        if (btn.hasOnlyHeld() && ( (millis() - lastRcChannels ) < 100 )) {     // saved when long hold + recent frame exist
+        if (btn.hasOnlyHeld() && ( (millisRp() - lastRcChannels ) < 100 )) {     // saved when long hold + recent frame exist
             bootButtonState =  SAVED;
             setRgbColorOn(5, 5, 5);
-            bootArmedMillis = millis();
+            bootArmedMillis = millisRp();
             cpyChannelsAndSaveConfig();   // copy the channels values and save them into the config.
             //printf("saving failsafe\n");
-        } else if ( (millis() - bootArmedMillis) > 5000) {
+        } else if ( (millisRp() - bootArmedMillis) > 5000) {
             bootButtonState =  NOT_ARMED;  // reset if no hold withing the 5 sec
             setColorState();               // restore colors based on RF link
             //printf("loosing armed\n");
         }
-    } else if ((bootButtonState == SAVED) && ((millis() - bootArmedMillis) > 2000) ){
+    } else if ((bootButtonState == SAVED) && ((millisRp() - bootArmedMillis) > 2000) ){
         bootButtonState =  NOT_ARMED;  // reset after 2 sec
         setColorState();               // restore colors based on RF link 
         //printf("done\n");
@@ -281,15 +283,15 @@ void setup() {
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); 
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
-      uint32_t setup1StartUs = micros();  
+      uint32_t setup1StartUs = microsRp();  
       while (! core1SetupDone){
         sleep_us(100000);
-        if ((micros() - setup1StartUs) > 2000000) {
+        if ((microsRp() - setup1StartUs) > 2000000) {
             printf("Attention: setup on core 1 did not ended within timeout\n");
             break   ;
         }
       }
-      printf("Setup1 takes %d usec\n",micros() - setup1StartUs);
+      printf("Setup1 takes %d usec\n",microsRp() - setup1StartUs);
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
@@ -310,6 +312,10 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupMpx();
+      } else if (config.protocol == 'I') {
+        setupSbusIn();
+        setupSbus2In();
+        setupIbus();
       }
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
@@ -387,6 +393,11 @@ void loop() {
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
+      } else if (config.protocol == 'I') {
+        handleIbusRxTx();
+        handleSbusIn();
+        handleSbus2In();
+        fillSbusFrame();
       } 
       watchdog_update();
       updatePWM();
@@ -414,9 +425,9 @@ void loop() {
     //printf(" %d\n ",ledState);
     prevLedState = ledState;
     setColorState();     
-  } else if ( blinking && (( millis() - lastBlinkMillis) > 300 ) ){
+  } else if ( blinking && (( millisRp() - lastBlinkMillis) > 300 ) ){
     toggleRgb();
-    lastBlinkMillis = millis();
+    lastBlinkMillis = millisRp();
   }
   //if (get_bootsel_button()) {
   //  printf("p\n");

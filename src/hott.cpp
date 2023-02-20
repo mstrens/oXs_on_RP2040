@@ -83,8 +83,8 @@ extern OXS_4525 oXs_4525 ;
 extern OXS_SDP3X oXs_sdp3x;
 
 
-extern unsigned long micros( void ) ;
-extern unsigned long millis( void ) ;
+extern unsigned long microsRp( void ) ;
+extern unsigned long millisRp( void ) ;
 extern void delay(unsigned long ms) ;
 */
 
@@ -159,7 +159,7 @@ void hottPioRxHandlerIrq(){    // when a byte is received on the tlm pin, read t
      uint8_t c = pio_sm_get (hottPio , hottSmRx) >> 24;         // read the data
      //printf("%x", c);
      queue_try_add (&hottRxQueue, &c);          // push to the queue
-    //hottRxMillis = millis();                    // save the timestamp.
+    //hottRxMillis = millisRp();                    // save the timestamp.
   }
 }
 
@@ -174,11 +174,11 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
     switch (hottState) {
         case RECEIVING :
             #ifdef DEBUG_HOTT_WITHOUT_RX  // simulate a RX sending a GAM polling every 200 msec 
-            if ( (millis() - lastHottRequest) > 200)  { // to debug simulate a request once per 200msec
+            if ( (millisRp() - lastHottRequest) > 200)  { // to debug simulate a request once per 200msec
                 hottState = WAIT_FOR_SENDING;
-                hottStartWaiting = micros();
+                hottStartWaiting = microsRp();
                 data = HOTT_TELEMETRY_GAM_SENSOR_ID;
-                lastHottRequest = millis();
+                lastHottRequest = millisRp();
             }
             break;
             #endif
@@ -188,17 +188,17 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
                 if ( ( previous ==  HOTT_BINARY_MODE_REQUEST_ID) &&
                      ( (data == HOTT_TELEMETRY_GAM_SENSOR_ID) || (data == HOTT_TELEMETRY_GPS_SENSOR_ID) ) ){
                     hottState = WAIT_FOR_SENDING;
-                    hottStartWaiting = micros(); 
+                    hottStartWaiting = microsRp(); 
                     //printf("r\n");
                 }
                 previous = data;
             }        
             break;
         case WAIT_FOR_SENDING :
-            if ( ( micros() - hottStartWaiting) > HOTTV4_REPLY_DELAY){
+            if ( ( microsRp() - hottStartWaiting) > HOTTV4_REPLY_DELAY){
                 if (sendHottFrame(data) ) { // data must be GAM or GPS; return true when a frame is really being sent
                     hottState = SENDING;
-                    hottStartWaiting = micros();
+                    hottStartWaiting = microsRp();
                     //printf("s\n");
                 } else { 
                     hottState = RECEIVING;
@@ -209,12 +209,12 @@ void handleHottRxTx(void){   // main loop : restore receiving mode , wait for tl
         case SENDING :   // wait that dma have sent all data (but the last bytes are not yet sent)
             if ( ! dma_channel_is_busy( hott_dma_chan)	){
                 hottState = WAIT_END_OF_SENDING;
-                hottStartWaiting = micros();
+                hottStartWaiting = microsRp();
             }
             break;         
         
         case WAIT_END_OF_SENDING :
-            if ( ( micros() - hottStartWaiting) > ( HOTTV4_END_SENDING_DELAY) ){
+            if ( ( microsRp() - hottStartWaiting) > ( HOTTV4_END_SENDING_DELAY) ){
                 hott_uart_tx_program_stop(hottPio, hottSmTx, config.pinTlm );
                 hott_uart_rx_program_restart(hottPio, hottSmRx, config.pinTlm, false );  // false = not inverted
                 hottState = RECEIVING ;
@@ -417,18 +417,18 @@ bool fillHottGpsFrame(){
      static uint8_t current_warning;
       // In order not to flood the transmitter with warnings, we transmit our warnings only every 3 seconds.
       // If the dead time is over, fall back into the idle state.
-     if (state == DEADTIME && millis() - warning_start_time > 3000)  state = W_IDLE;
+     if (state == DEADTIME && millisRp() - warning_start_time > 3000)  state = W_IDLE;
       // State WARNING indicates that we just started to transmit a warning.
       // Repeat it for 500ms to make sure the transmitter can receive it.
       // After 500ms we stop transmitting the warning and disable new warnings for a while.
-     if (state == WARNING && millis() - warning_start_time > 500) {
+     if (state == WARNING && millisRp() - warning_start_time > 500) {
        state = DEADTIME;
        current_warning = 0;
      }
      // In the idle state, we are ready to accept new warnings.
      if (state == W_IDLE) {
         if (voltageData->mVoltCellMin < CELL_UNDERVOLTAGE_WARNING) {
-            warning_start_time = millis();
+            warning_start_time = millisRp();
             state = WARNING;
             current_warning = 17; /* Cell undervoltage warning */
         }

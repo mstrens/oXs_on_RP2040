@@ -2763,7 +2763,7 @@ void MPU6050::getFIFOBytes(uint8_t *data, uint8_t length) {
  int8_t MPU6050::GetCurrentFIFOPacket(uint8_t *data, uint8_t length) { // overflow proof
      int16_t fifoC;
      // This section of code is for when we allowed more than 1 packet to be acquired
-     //uint32_t BreakTimer = micros();
+     //uint32_t BreakTimer = microsRp();
      uint32_t BreakTimer = time_us_32();
      do {
          if ((fifoC = getFIFOCount())  > length) {

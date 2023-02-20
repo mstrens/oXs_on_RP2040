@@ -70,7 +70,7 @@ private:
     //int sensitivityMin ;
     
 
-    unsigned long extended2Micros ; // used to temporarilly save micros() >> 1
+    unsigned long extended2Micros ; // used to temporarilly save microsRp() >> 1
     unsigned long pressureMicros ; // save time when program send command asking the MS5611 to get the pressure
     unsigned long pressureMicrosPrev1 ; // save the previous pressureMicros
     unsigned long pressureMicrosPrev2 ; // save the previous of the previous pressureMicros

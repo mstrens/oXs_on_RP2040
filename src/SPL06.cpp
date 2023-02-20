@@ -163,7 +163,7 @@ void SPL06::getTemperature(){
 int SPL06::getAltitude() // Try to get a new pressure ; 
 {
   if ( ! baroInstalled) return -1;     // do not process if there is no baro; -1 = no new data
-  if ( (micros() - _lastConversionRequest) < 9000 ) // at oversampling 4, it takes 8.4 msec to get a conversion
+  if ( (microsRp() - _lastConversionRequest) < 9000 ) // at oversampling 4, it takes 8.4 msec to get a conversion
     return -1;
   switch (_state) 
   {
@@ -171,7 +171,7 @@ int SPL06::getAltitude() // Try to get a new pressure ;
     requestPressure(); // ask for pressure conversion in high resolution
     if (_result) return _result;
     _state = SPL06_WAIT_FOR_PRESSURE ;
-    _lastConversionRequest = micros() ;      
+    _lastConversionRequest = microsRp() ;      
     break;
   case SPL06_WAIT_FOR_PRESSURE :   
     getPressure(); // read pressure, return 0 in case of error; _result =0 if OK.
@@ -179,7 +179,7 @@ int SPL06::getAltitude() // Try to get a new pressure ;
     requestTemperature(); // ask immediately for temperature conversion in high resolution
     if (_result) return _result;
     _state = SPL06_WAIT_FOR_TEMPERATURE ;
-    _lastConversionRequest = micros() ;
+    _lastConversionRequest = microsRp() ;
     _lastTempRequest = _lastConversionRequest; 
     break ;  
   case SPL06_WAIT_FOR_TEMPERATURE : 
@@ -188,7 +188,7 @@ int SPL06::getAltitude() // Try to get a new pressure ;
     requestPressure(); // ask for pressure conversion in high resolution
     if (_result) return _result;
     _state = SPL06_WAIT_FOR_PRESSURE ;
-    _lastConversionRequest = micros() ;      
+    _lastConversionRequest = microsRp() ;      
     calculateAltitude();
     return 0 ; // new data available
     break;

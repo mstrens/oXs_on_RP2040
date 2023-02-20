@@ -42,9 +42,9 @@ void VOLTAGE::getVoltages(void){
     static uint32_t enlapsedMillis =0;
     float value;
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    enlapsedMillis = millis() - lastVoltagemillis; 
+    enlapsedMillis = millisRp() - lastVoltagemillis; 
     if ( enlapsedMillis > VOLTAGEINTERVAL ) {
-        lastVoltagemillis = millis() ;
+        lastVoltagemillis = millisRp() ;
         for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
             if ( config.pinVolt[cntInit] != 255) {
                 adc_select_input(cntInit); // select the pin

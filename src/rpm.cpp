@@ -35,7 +35,7 @@ void setupRpmPio(){
     // setup the PIO for RPM
         uint offsetRpm = pio_add_program(pioRpm, &rpm_program);
         rpm_program_init(pioRpm, smRpm, offsetRpm, config.pinRpm);
-        previousRpmUsec = micros();
+        previousRpmUsec = microsRp();
         previousRpmCounter = getRpmCounter();
 
 }
@@ -43,7 +43,7 @@ void readRpm(){
     if (config.pinRpm == 255) return; // skip when pin is not defined
     //printf("read rpm\n");
     if (rpmScaling != 0.0){
-        currentRpmUsec = micros();
+        currentRpmUsec = microsRp();
         if ( ( currentRpmUsec - previousRpmUsec ) > RPM_COUNTER_INTERVAL_USEC ) {
             currentRpmCounter = getRpmCounter();
             uint32_t rpm = ((previousRpmCounter - currentRpmCounter) * rpmScaling ) / ( ( currentRpmUsec - previousRpmUsec )) ;

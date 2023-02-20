@@ -118,10 +118,10 @@ void handleSbusIn(){
   uint8_t c;
   if (config.pinPrimIn ==255) return ; // skip when pinPrimIn is not defined
   while (! queue_is_empty (&sbusQueue) ){
-    if ( (millis() - lastSbusMillis ) > 2 ){
+    if ( (millisRp() - lastSbusMillis ) > 2 ){
       sbusState = NO_SBUS_FRAME ;
     }
-    lastSbusMillis = millis();
+    lastSbusMillis = millisRp();
     queue_try_remove ( &sbusQueue , &c);
     //printf(" %X\n",c);
     switch (sbusState) {
@@ -154,10 +154,10 @@ void handleSbus2In(){
   uint8_t c;
 if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
   while (! queue_is_empty (&sbus2Queue) ){
-    if ( (millis() - lastSbus2Millis ) > 2 ){
+    if ( (millisRp() - lastSbus2Millis ) > 2 ){
       sbus2State = NO_SBUS_FRAME ;
     }
-    lastSbus2Millis = millis();
+    lastSbus2Millis = millisRp();
     queue_try_remove ( &sbus2Queue , &c);
     //printf(" %X\n",c);
     switch (sbus2State) {
@@ -189,10 +189,10 @@ void storeSbusFrame(){
     sbusPriFailsafeFlag = (runningSbusFrame[23] >> 3) & 0X01;
     if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   
         ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
-        ( ( millis() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
+        ( ( millisRp() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
         memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbusFrame[1], 22);
     }
-    lastRcChannels = millis();
+    lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);
@@ -204,10 +204,10 @@ void storeSbus2Frame(){
     sbusSecFailsafeFlag = (runningSbus2Frame[23] >> 3) & 0X01;
     if ((( sbusSecMissingFlag == false) && (sbusSecFailsafeFlag == false))  ||                               // copy when frame is OK   
         (( sbusSecMissingFlag == true) && (sbusSecFailsafeFlag == false) && (sbusPriFailsafeFlag == true)) || // or previous PRI is failsafe and SEC is only missing
-        (( millis() - lastPriChannelsMillis )  > 50 )) {                                                      // or PRI do not exist           
+        (( millisRp() - lastPriChannelsMillis )  > 50 )) {                                                      // or PRI do not exist           
         memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbus2Frame[1], 22);
     }
-    lastRcChannels = millis();
+    lastRcChannels = millisRp();
     lastSecChannelsMillis =  lastRcChannels; 
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);

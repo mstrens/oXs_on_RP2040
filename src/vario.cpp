@@ -22,7 +22,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   static int32_t prev_baro_altitude;
   
   if (firstCalc) {
-    //if (firstCalcCounter == 100) printf("start alt at millis %" PRIu32 "\n", millis() );
+    //if (firstCalcCounter == 100) printf("start alt at millis %" PRIu32 "\n", millisRp() );
     if (firstCalcCounter > 10){  // skip the first reading in order to get a better value as first Altitude
         firstCalcCounter--;
         return;
@@ -30,7 +30,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
       altitude += baro_altitude;    // at power on, we will calculate the average
       return; 
     } else {
-        //printf("first alt at millis %" PRIu32 "\n", millis() );
+        //printf("first alt at millis %" PRIu32 "\n", millisRp() );
         firstCalc = false;
         prev_baro_altitude = baro_altitude;
         altitudeLowPass = altitudeHighPass = altitude =  altitude / 10 ; // all in cm *100 and in int32
@@ -78,7 +78,7 @@ void VARIO::calculateAltVspeed(int32_t baro_altitude , int32_t baro_altIntervalM
   // AltitudeAvailable is set to true only once every 100 msec in order to give priority to climb rate on SPORT
   //if (altOffset == 0) altOffset = altitude* 0.01 ; // altitude is in 1/100 of cm 
   relativeAlt =   altitude* 0.01 -  rawOffsetAltitudeCm; 
-  altMillis = millis() ;
+  altMillis = millisRp() ;
   if ( (altMillis - lastAltMillis) > 100){
     lastAltMillis = altMillis;
     sensitivityAvailable = true ;
