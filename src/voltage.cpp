@@ -40,10 +40,11 @@ void VOLTAGE::getVoltages(void){
     static uint8_t sumCount = 0;
     static uint32_t lastVoltagemillis = 0 ;
     static uint32_t enlapsedMillis =0;
+    static uint32_t lastConsumedMillis = millisRp();
     float value;
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
     enlapsedMillis = millisRp() - lastVoltagemillis; 
-    if ( enlapsedMillis > VOLTAGEINTERVAL ) {
+    if ( enlapsedMillis > VOLTAGEINTERVAL ) {  // every 2 msec performs 1...4 conversions
         lastVoltagemillis = millisRp() ;
         for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
             if ( config.pinVolt[cntInit] != 255) {
@@ -52,7 +53,7 @@ void VOLTAGE::getVoltages(void){
             }    
         }
         sumCount++;
-        if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {
+        if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {   // after XX conversions, calculates averages
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
@@ -69,7 +70,9 @@ void VOLTAGE::getVoltages(void){
                             sent2Core0( cntInit + MVOLT, (int32_t) value ); // save as MVOLT, CURRENT, RESERVE1 or RESERVE2
                         }
                         if (cntInit == 1) { // when we are calculating a current we calculate also the consumption
-                            consumedMah += value * enlapsedMillis  / 3600000.0 ;  // in mah.
+                            
+                            consumedMah += (value * (millisRp() - lastConsumedMillis)) / 3600000.0 ;  // in mah.
+                            lastConsumedMillis =  millisRp(); 
                             sent2Core0( CAPACITY, (int32_t) consumedMah );
                         }
                         //fields[cntInit + MVOLT].available = true ;
