@@ -73,19 +73,27 @@ void BMP280::begin() {
     //errorI2C = I2c.write( _address , (uint8_t) 0xF4 , (uint8_t) 0x33 ) ;
     writeCmd[0] = 0xF4 ;  // Register ctrl meas
     writeCmd[1] = 0X33 ; // it means oversampling temperature 1 X , oversampling pressure 8 X and normal mode = continue 
-    if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) return ;  
-  
+    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ){
+      printf("Write error for BMP280\n");
+      return ;  
+    }
 
 // write in register 0xF5 value 0x00 (it means 0.5msec between sampling, no filter, I2C protocol )
     //errorI2C = I2c.write( _address , (uint8_t) 0xF5 , (uint8_t) 0x00 ) ;
     writeCmd[0] = 0xF5 ;  // Register config
     writeCmd[1] = 0X00 ; // OX00 means 0.5msec between sampling, no filter, I2C protocol
-    if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) return ;  
-
+    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false,1000) <0) {
+        printf("Write error for BMP280\n");
+        return ;  
+    }
  // read and check the device ID (in principe = 0X58 for a bmp280) 
     regToRead = BMP280_CHIP_ID_REG ;  // chipid address
-    if ( i2c_write_blocking(i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-    if ( i2c_read_timeout_us(i2c1 , _address , &readValue , 1 , false, 1500) == PICO_ERROR_TIMEOUT) {
+    if ( i2c_write_timeout_us(i2c1 , _address, &regToRead , 1 , false,1000) <0) {
+        printf("Write error for BMP280\n");
+        return ; // command to get access to one register '0xA0 + 2* offset
+    }
+
+    if ( i2c_read_timeout_us(i2c1 , _address , &readValue , 1 , false, 1500) <0) {
         printf("Read error for BMP280\n");
         return ;
     }     
@@ -101,9 +109,12 @@ void BMP280::begin() {
     //   errorI2C =  I2c.read( _addr , 0x86 + i*2, 2 ) ; //read 2 bytes from the device after sending the register to be read (first register = 0x86 (=register AC1)
         uint8_t readBuffer[2];
         rxdata = 0x86 + i * 2 ; // this is the address to be read
-        if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
+        if ( i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false,1000) <0) {
+            printf("Write error for BMP280\n");
+            return ; // command to get access to one register '0xA0 + 2* offset
+        }
         sleep_ms(1);
-        if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) == PICO_ERROR_TIMEOUT) {
+        if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) <0) {
             printf("Read error for BMP280\n");
             return ;
         }
@@ -149,8 +160,11 @@ int BMP280::getAltitude() {
     uint32_t p; // pressure in pascal
     uint8_t buffer[6];
     uint8_t regToRead = 0xF7 ;  // address reg of the first byte of conversion
-    if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return -1; // command to get access to one register '0xA0 + 2* offset
-    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 6 , false, 1500) == PICO_ERROR_TIMEOUT){
+    if ( i2c_write_timeout_us (i2c1 , _address, &regToRead , 1 , false,1000) <0){ 
+        printf("Write error for BMP280\n");
+        return -1; // command to get access to one register '0xA0 + 2* offset
+    }
+    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 6 , false, 1500) <0){
         printf("Read error on BMP280\n");
          return -1; 
     }

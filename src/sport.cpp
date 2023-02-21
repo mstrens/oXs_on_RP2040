@@ -134,7 +134,7 @@ void setupSportList(){     // table used by sport
     sportFieldId[CURRENT] = CURR_FIRST_ID;
     sportFieldId[RESERVE1] = DIY_VOLT3;
     sportFieldId[RESERVE2] = DIY_VOLT4;
-    sportFieldId[CAPACITY] = FUEL_FIRST_ID;
+    sportFieldId[CAPACITY] = DIY_CAPACITY;
     sportFieldId[TEMP1] = T1_FIRST_ID; 
     sportFieldId[TEMP2] = T2_FIRST_ID ;
     sportFieldId[VSPEED] = VARIO_FIRST_ID;

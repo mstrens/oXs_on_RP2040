@@ -88,7 +88,7 @@ void startTimerUs(uint8_t idx){
 
 void getTimerUs(uint8_t idx){
     if (idx >= sizeof(startAtUs)) return ;
-    printf("FSus%d=%d\n", idx , microsRp()-startAtUs[idx]);
+    printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);
 }
 
 void sent2Core0( uint8_t fieldType, int32_t value){

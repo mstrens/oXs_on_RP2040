@@ -925,7 +925,7 @@ void requestMpuCalibration()  //
         return ;
     }
     uint8_t data = 0X01; // 0X01 = execute calibration
-    printf("Before calibration:\n");
+    printf("Before calibration:");
     printConfigOffsets();
     sleep_ms(1000); // wait that message is printed
     queue_try_add(&qSendCmdToCore1 , &data);
@@ -934,8 +934,8 @@ void requestMpuCalibration()  //
 
 void printConfigOffsets(){
     printf("\nOffset Values in config:\n");
-	printf("Acc. X = %d, Y = %d, Z = %d\n", config.accOffsetX , config.accOffsetY, config.accOffsetZ);    
-    printf("Gyro. X = %d, Y = %d, Z = %d\n", config.gyroOffsetX , config.gyroOffsetY, config.gyroOffsetZ);
+	printf("Acc. X = %d, Y = %d, Z = %d\n", (int32_t) config.accOffsetX , (int32_t) config.accOffsetY, (int32_t) config.accOffsetZ);    
+    printf("Gyro. X = %d, Y = %d, Z = %d\n", (int32_t) config.gyroOffsetX , (int32_t) config.gyroOffsetY, (int32_t) config.gyroOffsetZ);
 }
 
 void printFieldValues(){

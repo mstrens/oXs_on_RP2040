@@ -69,7 +69,10 @@ void MPU::begin()  // initialise MPU6050
     // Two byte reset. First byte register, second byte data
     // There are a load more options to set up the device in different ways that could be added here
     uint8_t buf[] = {0x6B, 0x00};
-    if ( i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false) == PICO_ERROR_GENERIC) return ;
+    if ( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false, 1000) <0) {
+        printf("Write error for msp6050 on reset\n");
+        return ;
+    }
     sleep_us(100);
     mpu6050.initialize();
     // set offsets with values saved in config
@@ -125,7 +128,10 @@ void MPU::calibrationExecute()  //
     //printf("Acc & gyro before calibration\n");
     //printConfigOffsets() ;
     uint8_t buf[] = {0x6B, 0x00};
-    if ( i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false) == PICO_ERROR_GENERIC) return ;
+    if ( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS , buf, 2, false,1000) <0) {
+        printf("Write error for msp6050 on begin of calibration\n");
+        return ;
+    }
     sleep_us(100);
     mpu6050.initialize();
     
@@ -142,15 +148,19 @@ void MPU::calibrationExecute()  //
     
     //printf("Acc & gyro after old calibration\n");
     //printConfigOffsets() ;
-    calibrateAccelGyro(); // fill config offsets with the retrieved values
-    //printf("Acc & gyro after new calibration\n");
-    //printConfigOffsets() ;
-    
-    //printf("Calibration done: parameters will be saved\n");
-    //sleep_ms(3000);
-    sent2Core0(0XFF, 0XFFFFFFFF); // use a dummy type to give a command; here a cmd to save the config
+    if (calibrateAccelGyro() ) { // fill config offsets with the retrieved values
+        //printf("Acc & gyro after new calibration\n");
+        //printConfigOffsets() ;
+        
+        //printf("Calibration done: parameters will be saved\n");
+        //sleep_ms(3000);
+        sent2Core0(0XFF, 0XFFFFFFFF); // use a dummy type to give a command; here a cmd to save the config
+    } else {
+        printf("error while calibrating mp6050\n");
+    }
     //mpu6050.PrintActiveOffsets() ;
     //testDevicesOffsetX();
+
 }
 /*
 void GetGravity(VectorFloat *v, Quaternion *q) {
@@ -278,8 +288,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
  
     // Start reading acceleration registers from register 0x3B for 6 bytes
     uint8_t val = 0x3B;
-    i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-    if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 2500) == PICO_ERROR_TIMEOUT){
+    if (i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true, 1000)< 0) { // true to keep master control of bus
+        printf("Write error for MPU6050\n");
+        return false;
+    }
+    if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 2500) <0){
         printf("Read error for MPU6050\n");
         return false;
     }     
@@ -349,32 +362,46 @@ void MPU::printOffsets() {
 
 #define ACCEL_NUM_AVG_SAMPLES	50
 bool MPU::calibrateAccelGyro(void){
-	int16_t az1g;
+	int16_t ax,ay,az, az1g ;
+    int16_t gx,gy,gz ;
 	int32_t axAccum, ayAccum, azAccum;
 	axAccum = ayAccum = azAccum = 0;
     int32_t gxAccum, gyAccum, gzAccum;
 	gxAccum = gyAccum = gzAccum = 0;
 	// use a lower dlpf
     uint8_t val = MPU6050_DLPF_BW_20; // 0X04
-    i2c_write_blocking(i2c1, MPU6050_RA_CONFIG , &val, 1, false); // true to keep master control of bus
-    sleep_ms(500);
+    if( i2c_write_timeout_us(i2c1, MPU6050_RA_CONFIG , &val, 1, false,1000)<0){ // true to keep master control of bus
+        printf("Write error for MPU6050 calibration\n");
+        return false;
+    }   
+    sleep_ms(10);
     for (int inx = 0; inx < ACCEL_NUM_AVG_SAMPLES; inx++){
-        sleep_us(10000); // take 8 msec with dlpf = 20 
+        sleep_ms(10); // take 8 msec with dlpf = 20 
         // Start reading acceleration registers from register 0x3B for 14 bytes (acc, temp, gyro)
         uint8_t val = 0x3B;
         uint8_t buffer[14]; 
-        i2c_write_blocking(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true); // true to keep master control of bus
-        if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 2500) == PICO_ERROR_TIMEOUT){
-            printf("Read error for MPU6050\n");
+        if (i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true,1000)<0) { // true to keep master control of bus
+            printf("Write error for MPU6050 calibration\n");
+            return false;
+        }   
+        if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 3500) <0){
+            printf("Read error for MPU6050 calibration\n");
             return false;
         }     
-        axAccum += (int32_t) (buffer[0] << 8 | buffer[1]);
-        ayAccum += (int32_t) (buffer[2] << 8 | buffer[3]);
-        azAccum += (int32_t) (buffer[4] << 8 | buffer[5]);
+        ax= (buffer[0] << 8 | buffer[1]);
+        ay= (buffer[2] << 8 | buffer[3]);
+        az= (buffer[4] << 8 | buffer[5]);
         //printf("az=%.0f\n", (float) az ); 
-        gxAccum += (buffer[8] << 8 | buffer[9]);
-        gyAccum += (buffer[10] << 8 | buffer[11]);
-        gzAccum += (buffer[12] << 8 | buffer[13]);
+        gx= (buffer[8] << 8 | buffer[9]);
+        gy= (buffer[10] << 8 | buffer[11]);
+        gz= (buffer[12] << 8 | buffer[13]);
+        axAccum += (int32_t) ax;
+        ayAccum += (int32_t) ay;
+        azAccum += (int32_t) az;
+        //printf("az=%.0f\n", (float) az ); 
+        gxAccum += gx;
+        gyAccum += gy;
+        gzAccum += gz;
     }
 	config.accOffsetX = (int16_t)(axAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.accOffsetY = (int16_t)(ayAccum / ACCEL_NUM_AVG_SAMPLES);
@@ -384,6 +411,10 @@ bool MPU::calibrateAccelGyro(void){
 	config.gyroOffsetY = (int16_t)(gyAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.gyroOffsetZ = (int16_t)(gzAccum / ACCEL_NUM_AVG_SAMPLES);
     val = MPU6050_DLPF_BW_188; // 0X01
-    i2c_write_blocking(i2c1, MPU6050_RA_CONFIG , &val, 1, false); // true to keep master control of bus
+    if (i2c_write_timeout_us(i2c1, MPU6050_RA_CONFIG , &val, 1, false, 1000)<0){
+        printf("Write error for msp6050 end calibration\n");
+        return false;
+    }; 
+    sleep_ms(10);
     return true;
 }

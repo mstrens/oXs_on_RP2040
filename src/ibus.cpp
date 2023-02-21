@@ -244,9 +244,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(HEADING) ;
         addToIbus(ALTITUDE) ;    
     }
-    #define DEBUG_IBUS_LIST
-    #ifdef DEBUG_IBUS_LIST
-    sleep_ms(5000);
+    #ifdef DEBUG
     printf("List of ibus fields : ");
     for (uint8_t i = 0; i<= maxIbusFieldsIdx ; i++){
         printf(" %d ", listOfIbusFields[i]);

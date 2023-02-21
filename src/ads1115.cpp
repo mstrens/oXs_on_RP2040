@@ -81,11 +81,11 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
     // read the config status to see if conversion is really done
     uint8_t adsConfigReg  = 0x01;
     uint8_t adsConfigMsb;
-    if (i2c_write_blocking (i2c1 , ads_Addr, &adsConfigReg , 1 , false) == PICO_ERROR_GENERIC ) { 
+    if (i2c_write_timeout_us (i2c1 , ads_Addr, &adsConfigReg , 1 , false, 1000) <0) { 
         printf("Write error ads1115"); //if there is no error on previous I2C request
         return false;
     }  
-    if (i2c_read_timeout_us (i2c1 , ads_Addr , &adsConfigMsb , 1 , false , 1500) == PICO_ERROR_TIMEOUT) {
+    if (i2c_read_timeout_us (i2c1 , ads_Addr , &adsConfigMsb , 1 , false , 1500) <0) {
         printf("read error ads1115"); //if there is no error on previous I2C request
         return false;
     }
@@ -96,11 +96,11 @@ bool ADS1115::readSensor() {  // return true when there is a new average data to
     uint8_t adsReg = 0X0; // 0X0 = adress of conversion register
     uint8_t data[2]; // buffer to read adc
     // send the Address, 0 = conversion register (in order to be able to read the conversion register)
-    if (i2c_write_blocking (i2c1 , ads_Addr, &adsReg , 1 , false) == PICO_ERROR_GENERIC ) { 
+    if (i2c_write_timeout_us (i2c1 , ads_Addr, &adsReg , 1 , false, 1000) <0 ) { 
         printf("Write error ads1115"); //if there is no error on previous I2C request
         return false;
     }  
-    if (i2c_read_timeout_us (i2c1 , ads_Addr , &data[0] , 2 , false , 1500) == PICO_ERROR_TIMEOUT) {
+    if (i2c_read_timeout_us (i2c1 , ads_Addr , &data[0] , 2 , false , 1500) <0) {
         printf("read error ads1115"); //if there is no error on previous I2C request
         return false;
     }
@@ -155,7 +155,10 @@ void ADS1115::ads_requestNextConv(void) {
     dataToWrite[2] = ( ads_Rate[ads_idx][ads_CurrentIdx] << 5 | 0B11 );
         // bit 15 says that a conversion is requested, bit 8 says on shot mode, bits 0 and 1 = 11 says comparator is disabled.
     
-    if (i2c_write_blocking (i2c1 , ads_Addr , &dataToWrite[0] , 3 , false) == PICO_ERROR_GENERIC ) I2CErrorCodeAds1115 = -1; // -1 shows an error
+    if (i2c_write_timeout_us (i2c1 , ads_Addr , &dataToWrite[0] , 3 , false,1000) < 0 ) {
+        printf("Write error for ads1115\n");
+        I2CErrorCodeAds1115 = -1; // -1 shows an error
+    }    
     //I2CErrorCodeAds1115 = I2c.write((uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // send the Address, 1 = config register , 2 bytes , pointer to the data to write
 //    if ( I2CErrorCodeAds1115 ) I2CErrorCodeAds1115 = I2c.write( (uint8_t) ads_Addr , (uint8_t) 0X01 , (uint8_t) 2 , &dataToWrite[0] ) ; // retry once if there is an error (probably we should add a clear of I2C bus in between)
 #ifdef DEBUGADS1115REQUESTCONV  

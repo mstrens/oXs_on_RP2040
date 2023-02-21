@@ -70,7 +70,8 @@ void MS5611::begin()  // return true when baro exist
   uint8_t rxdata;
   rxdata = MS5611_CMD_RESET ;
   //printf("before baro reset\n");
-  if (i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC ) {// ask for a reset
+  if (i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false, 1000 ) <0 ) {// ask for a reset
+    printf("error write reset MS5611\n");
     return;
   }  
   sleep_ms(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
@@ -83,12 +84,12 @@ void MS5611::begin()  // return true when baro exist
       uint8_t readBuffer[2];
       _calibrationData[reg] = 0;
       rxdata = MS5611_CMD_READ_PROM + (reg <<1) ; // this is the address to be read
-      if ( i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) == PICO_ERROR_GENERIC) {
-        //printf("error write calibration\n");
+      if ( i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false , 1000) <0 ) {
+        printf("error write calibration MS5611\n");
         return ; // command to get access to one register '0xA0 + 2* offset
     //  sleep_ms(1);
       }
-      if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) == PICO_ERROR_TIMEOUT)  {
+      if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {
         printf("error read calibration MS5611\n");
         return ;
       }  
@@ -109,8 +110,8 @@ void MS5611::command(const uint8_t command) // send a command. return 0 if succe
 {
   uint8_t cmd = command;
   _result = 0 ;
-  if ( i2c_write_blocking (i2c1 , _address, &cmd , 1 , false) == PICO_ERROR_GENERIC) { // i2c_write return the number of byte written or an error code
-     //printf("error write cmd\n");
+  if ( i2c_write_timeout_us (i2c1 , _address, &cmd , 1 , false, 1000) <0 ) { // i2c_write return the number of byte written or an error code
+     printf("error write MS5611 cmd\n");
     _result = -1 ;  // Error
   } 
 }

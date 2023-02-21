@@ -109,7 +109,7 @@ uint32_t lastBlinkMillis;
 
 queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
-bool core1SetupDone = false;
+volatile bool core1SetupDone = false;
 void core1_main(); // prototype of core 1 main function
 
 
@@ -157,21 +157,43 @@ void setupI2c(){
 }
 
 void setupSensors(){     // this runs on core1!!!!!!!!
+      
+      //sleep_ms(3000);
+      //printf("start core1 setup\n");
+      //startTimerUs(0); //xxxxx to debug only 
       voltage.begin();      
+      //printf("voltage done\n");
       setupI2c();      // setup I2C
+      //printf("i2C done\n");
       baro1.begin();  // check MS5611; when ok, baro1.baroInstalled  = true
-      baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
-      baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
+      //printf("baro1 done\n");
+      if (! baro1.baroInstalled) {
+        baro2.begin();  // check SPL06;  when ok, baro2.baroInstalled  = true
+        //printf("baro2 done\n");
+      }
+      if (! ( baro1.baroInstalled or baro2.baroInstalled)) {
+        baro3.begin(); // check BMP280;  when ok, baro3.baroInstalled  = true
+        //printf("baro3 done\n");
+      }
       adc1.begin() ; 
+      //printf("adc1 done\n");
       adc2.begin() ;
+      //printf("adc2 done\n");
       mpu.begin(); 
+      //printf("mpu done\n");
     //blinkRgb(0,10,0);
       gps.setupGps();  //use a Pio
+      //printf("gps done\n");
+      
       #ifdef USEDS18B20
       ds18b20Setup(); 
       #endif
       setupRpm(); // this function perform the setup of pio Rpm
+      //printf("rpm done\n");
+      
       core1SetupDone = true;
+      //printf("end core1 setup\n") ;    
+      //getTimerUs(0);   // xxxxx
 }
 
 void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
@@ -280,17 +302,21 @@ void setup() {
         fields[i].available= false;
       }  
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
-      queue_init(&qSendCmdToCore1, 1, 10); 
+      queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
+      #ifdef DEBUG
+      sleep_ms(4000); // xxxxxxxxxxx to remove after debug
+      #endif
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
       uint32_t setup1StartUs = microsRp();  
-      while (! core1SetupDone){
-        sleep_us(100000);
-        if ((microsRp() - setup1StartUs) > 2000000) {
-            printf("Attention: setup on core 1 did not ended within timeout\n");
-            break   ;
-        }
+      while ( core1SetupDone == false) {
+            if ((microsRp() - setup1StartUs) > (2 * 1000000)) {
+                sleep_ms(3000);
+                printf("Attention: setup on core 1 did not ended within timeout\n");
+                break   ;
+            }
       }
-      printf("Setup1 takes %d usec\n",microsRp() - setup1StartUs);
+      uint32_t core1SetupUs = microsRp() - setup1StartUs ; 
+      printf("Setup1 takes %d usec\n",core1SetupUs) ;
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
@@ -322,7 +348,6 @@ void setup() {
       setupPwm();
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
-  
   printConfig(); // config is not valid
   setRgbColorOn(10,0,0); // set color on red (= no signal)
   
@@ -338,7 +363,7 @@ void getSensorsFromCore1(){
                 if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
                     watchdog_enable(15000,false);
                     sleep_ms(1000);
-                    printf("Calibration has been done\n");
+                    printf("\nCalibration has been done");
                     printConfigOffsets();
                     printf("\nConfig will be saved\n\n");
                     sleep_ms(1000);

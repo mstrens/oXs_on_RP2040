@@ -31,13 +31,18 @@ void SPL06::begin()  // baroInstalled = true when baro exist
   writeCmd[1] = 0X89 ; // OX89 means clear fifo and soft reset
   sleep_ms(40);
   //printf("before baro reset\n");
-  if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) return ;  
-  sleep_ms(40) ; // wait that data are loaded from eprom to memory (40 msec in data sheet)
+  if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ) {
+    printf("write error spl06\n");
+    return ;  
+  }sleep_ms(40) ; // wait that data are loaded from eprom to memory (40 msec in data sheet)
   //printf("before reading baro config\n");
   
   regToRead = SPL06_CHIP_ID_REG ;  // chipid address
-  if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
-  if ( i2c_read_timeout_us (i2c1 , _address , &readValue , 1 , false, 1500) == PICO_ERROR_TIMEOUT)
+  if ( i2c_write_timeout_us (i2c1 , _address, &regToRead , 1 , false,1000) <0) {
+    printf("write error for spl06\n");
+    return ; // command to get access to one register '0xA0 + 2* offset
+  }
+  if ( i2c_read_timeout_us (i2c1 , _address , &readValue , 1 , false, 1500) <0)
   {
         printf("Read error for SPL06\n");
         return ;
@@ -50,7 +55,10 @@ void SPL06::begin()  // baroInstalled = true when baro exist
   // read factory calibrations from EEPROM.
   uint8_t caldata[SPL06_CALIB_COEFFS_LEN];    
   regToRead = SPL06_CALIB_COEFFS_START ; // this is the address to be read
-  if ( i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC) return ; // command to get access to one register '0xA0 + 2* offset
+  if ( i2c_write_timeout_us (i2c1 , _address, &regToRead , 1 , false,1000) <0){
+        printf("Write error for calibration SPL06\n");
+        return ; // command to get access to one register '0xA0 + 2* offset
+  }
   if ( i2c_read_timeout_us (i2c1 , _address , &caldata[0] , SPL06_CALIB_COEFFS_LEN , false, 1500) == PICO_ERROR_TIMEOUT){
         printf("Read error for calibration SPL06\n");
         return ;
@@ -73,10 +81,16 @@ void SPL06::begin()  // baroInstalled = true when baro exist
     // for temperature, we use a rate of 32 and oversampling of 4
   writeCmd[0] = SPL06_PRESSURE_CFG_REG ;  
   writeCmd[1] = SPL06_PRESSURE_OVERSAMPLING ;
-  if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) return ;  
+  if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ){
+   printf("Write error for SPL06\n");
+   return ;  
+  }
   writeCmd[0] = SPL06_TEMPERATURE_CFG_REG ;  
   writeCmd[1] = SPL06_TEMP_USE_EXT_SENSOR | SPL06_TEMPERATURE_OVERSAMPLING ;
-  if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) return ;  
+  if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ) {
+    printf("Write error for SPL06\n"); 
+    return ;
+  }  
 // do not yet activate pressure and temperature ( do not run continously)
 //  writeCmd[0] = SPL06_MODE_AND_STATUS_REG ;  
 //  writeCmd[1] = 0SPL06_MEAS_PRESSURE | SPL06_MEAS_TEMPERATURE ;
@@ -107,7 +121,10 @@ void SPL06::requestPressure(){ // return true when cmd is successful
   uint8_t writeCmd[2];
   writeCmd[0] = SPL06_MODE_AND_STATUS_REG ;  
   writeCmd[1] = SPL06_MEAS_PRESSURE ;
-  if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
+  if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false,1000) <0 ){
+    printf("Write error for SPL06\n");
+    _result = -1; // _1 shows an error
+  }  
 }
 
 void SPL06::getPressure(){
@@ -115,9 +132,11 @@ void SPL06::getPressure(){
     uint8_t data[SPL06_PRESSURE_LEN];
     int32_t spl06_pressure;
     uint8_t regToRead = SPL06_PRESSURE_START_REG ;  
-    if (i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
-    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_PRESSURE_LEN , false , 500) == PICO_ERROR_TIMEOUT)
-    {
+    if (i2c_write_timeout_us (i2c1 , _address, &regToRead , 1 , false, 1000) <0 ) {
+        printf("Write error for SPL06\n");
+        _result = -1; // _1 shows an error
+    }
+    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_PRESSURE_LEN , false , 500) == PICO_ERROR_TIMEOUT){
         printf("Read error for pressure on SPL06\n");
         _result = -1 ;
     }      
@@ -132,7 +151,10 @@ void SPL06::requestTemperature(){
   uint8_t writeCmd[2];
   writeCmd[0] = SPL06_MODE_AND_STATUS_REG ;  
   writeCmd[1] = SPL06_MEAS_TEMPERATURE ;
-  if (i2c_write_blocking (i2c1 , _address, &writeCmd[0] , 2 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
+  if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0) {
+    printf("Write error for SPL06\n");
+    _result = -1; // _1 shows an error
+  }  
 }
 
 void SPL06::getTemperature(){
@@ -140,9 +162,11 @@ void SPL06::getTemperature(){
     uint8_t data[SPL06_TEMPERATURE_LEN];
     int32_t spl06_temperature;
     uint8_t regToRead = SPL06_TEMPERATURE_START_REG ;  
-    if (i2c_write_blocking (i2c1 , _address, &regToRead , 1 , false) == PICO_ERROR_GENERIC ) _result = -1; // _1 shows an error
-    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_TEMPERATURE_LEN , false, 1500) == PICO_ERROR_TIMEOUT)
-    {
+    if (i2c_write_timeout_us (i2c1 , _address, &regToRead , 1 , false, 1000) < 0) {
+        printf("Write error for SPL06\n");
+        _result = -1; // _1 shows an error
+    }
+    if (i2c_read_timeout_us (i2c1 , _address , &data[0] , SPL06_TEMPERATURE_LEN , false, 1500) <0){
         printf("Read error for temperature on SPL06\n");
         _result = -1 ;
     }      

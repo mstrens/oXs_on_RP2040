@@ -144,6 +144,7 @@ void sendOneSport(uint8_t idx);
 #define DIY_PITCH              0X5120
 #define DIY_ROLL               0X5121
 #define DIY_YAW                0X5122
+#define DIY_CAPACITY           0X5123
 
 #define DIY_ADS_1_1             0X5131
 #define DIY_ADS_1_2             0X5132
