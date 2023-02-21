@@ -306,7 +306,7 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                     printf("ibus pooling with checksum error %x %x %x %x \n", data[0] , data[1], data[2], data[3]);
                     return; // skip if checksum is wrong
                 }
-                printf("ibus get %x %x %x %x\n", data[0] , data[1], data[2], data[3]);
+                //printf("ibus get %x %x %x %x\n", data[0] , data[1], data[2], data[3]);
                 ibusCmd = data[1] >> 4;
                 ibusAdr =  data[1] & 0X0F ;
                 ibusType = ibusTypes[listOfIbusFields[ibusAdr]]; // type of field being sent
@@ -365,11 +365,11 @@ void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tl
                         break;    
                 } // end switch about a ibus request
                 // at this point, a frame is prepared and can be sent    
-                printf("ibus frame sent:");
-                for (uint8_t i = 0 ; i < ibusTxBuffer[0]; i++){
-                    printf(" %x ", ibusTxBuffer[i]);
-                }
-                printf("\n");
+                //printf("ibus frame sent:");
+                //for (uint8_t i = 0 ; i < ibusTxBuffer[0]; i++){
+                //    printf(" %x ", ibusTxBuffer[i]);
+                //}
+                //printf("\n");
                 sleep_us(100);
                 ibus_uart_rx_program_stop(ibusPio, ibusSmRx, config.pinTlm); // stop receiving
                 ibus_uart_tx_program_start(ibusPio, ibusSmTx, config.pinTlm, false); // prepare to transmit
