@@ -135,6 +135,7 @@ void MPU::calibrationExecute()  //
     sleep_us(100);
     mpu6050.initialize();
     
+    //sleep_us(100);
     // not used anymore with new calibration
     //mpu6050.CalibrateGyro(6);
     //mpu6050.CalibrateAccel(6);
@@ -369,9 +370,9 @@ bool MPU::calibrateAccelGyro(void){
     int32_t gxAccum, gyAccum, gzAccum;
 	gxAccum = gyAccum = gzAccum = 0;
 	// use a lower dlpf
-    uint8_t val = MPU6050_DLPF_BW_20; // 0X04
-    if( i2c_write_timeout_us(i2c1, MPU6050_RA_CONFIG , &val, 1, false,1000)<0){ // true to keep master control of bus
-        printf("Write error for MPU6050 calibration\n");
+    uint8_t buffer[2] = {MPU6050_RA_CONFIG , MPU6050_DLPF_BW_20};
+    if( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &buffer[0], 2, false,30000)<0){ // true to keep master control of bus
+        printf("Write error for MPU6050 calibration DLPF\n");
         return false;
     }   
     sleep_ms(10);
@@ -381,7 +382,7 @@ bool MPU::calibrateAccelGyro(void){
         uint8_t val = 0x3B;
         uint8_t buffer[14]; 
         if (i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true,1000)<0) { // true to keep master control of bus
-            printf("Write error for MPU6050 calibration\n");
+            printf("Write error for MPU6050 calibration at 0X3B\n");
             return false;
         }   
         if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 3500) <0){
@@ -410,11 +411,12 @@ bool MPU::calibrateAccelGyro(void){
     config.gyroOffsetX = (int16_t)(gxAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.gyroOffsetY = (int16_t)(gyAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.gyroOffsetZ = (int16_t)(gzAccum / ACCEL_NUM_AVG_SAMPLES);
-    val = MPU6050_DLPF_BW_188; // 0X01
-    if (i2c_write_timeout_us(i2c1, MPU6050_RA_CONFIG , &val, 1, false, 1000)<0){
-        printf("Write error for msp6050 end calibration\n");
+    // restore dlpf
+    uint8_t buffer2[2] = {MPU6050_RA_CONFIG , MPU6050_DLPF_BW_188};
+    if( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &buffer2[0], 2, false,30000)<0){ // true to keep master control of bus
+        printf("Write error for MPU6050 calibration DLPF\n");
         return false;
-    }; 
+    }   
     sleep_ms(10);
     return true;
 }

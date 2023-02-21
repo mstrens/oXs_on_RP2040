@@ -368,7 +368,7 @@ void getSensorsFromCore1(){
                     printf("\nConfig will be saved\n\n");
                     sleep_ms(1000);
                     saveConfig();
-                    printf("config has been saved\n");  
+                    printf("Config has been saved\n");  
                     printf("Device will reboot\n\n");
                     watchdog_enable(1500,false);
                     sleep_ms(1000);
