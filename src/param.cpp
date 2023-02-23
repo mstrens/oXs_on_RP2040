@@ -934,8 +934,8 @@ void requestMpuCalibration()  //
 
 void printConfigOffsets(){
     printf("\nOffset Values in config:\n");
-	printf("Acc. X = %d, Y = %d, Z = %d\n", (int32_t) config.accOffsetX , (int32_t) config.accOffsetY, (int32_t) config.accOffsetZ);    
-    printf("Gyro. X = %d, Y = %d, Z = %d\n", (int32_t) config.gyroOffsetX , (int32_t) config.gyroOffsetY, (int32_t) config.gyroOffsetZ);
+	printf("Acc. X = %d, Y = %d, Z = %d\n", (int) config.accOffsetX , (int) config.accOffsetY, (int) config.accOffsetZ);    
+    printf("Gyro. X = %d, Y = %d, Z = %d\n", (int) config.gyroOffsetX , (int) config.gyroOffsetY, (int) config.gyroOffsetZ);
 }
 
 void printFieldValues(){
@@ -950,16 +950,16 @@ void printFieldValues(){
                     printf("GPS Longitude = %.7f degree\n", ((float) fields[i].value) / 10000000.0);
                     break;
                 case GROUNDSPEED:
-                    printf("GPS Groundspeed = %d cm/s\n", fields[i].value) ;
+                    printf("GPS Groundspeed = %d cm/s\n", (int) fields[i].value) ;
                     break;
                 case HEADING:
                     printf("GPS Heading = %f degree\n", ((float) fields[i].value) / 100.0) ;
                     break;
                 case ALTITUDE:
-                    printf("GPS Altitude = %d cm\n", fields[i].value) ;
+                    printf("GPS Altitude = %d cm\n", (int) fields[i].value) ;
                     break;
                 case NUMSAT:
-                    printf("GPS Num sat. = %d cm\n", fields[i].value) ;
+                    printf("GPS Num sat. = %d cm\n", (int) fields[i].value) ;
                     break;
                 case GPS_DATE:
                     printf("GPS Date J M A = %d %d %d \n", (uint8_t) (fields[i].value >>8) , (uint8_t) (fields[i].value >> 16) ,

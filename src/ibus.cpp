@@ -67,7 +67,7 @@ uint8_t ibusTxBuffer[8];
 
 enum IBUSSTATES {
     RECEIVING,
-    WAIT_FOR_SENDING,
+    //WAIT_FOR_SENDING,
     SENDING,
     WAIT_END_OF_SENDING
 };
@@ -229,7 +229,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(TEMP2) ;
     } 
     // here we could add other voltage parameter (current, ...)
-    if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
+    if ( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled) {
         addToIbus(RELATIVEALT) ; 
         addToIbus(VSPEED) ;
     }

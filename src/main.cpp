@@ -315,7 +315,7 @@ void setup() {
             }
       }
       uint32_t core1SetupUs = microsRp() - setup1StartUs ; 
-      printf("Setup1 takes %d usec\n",core1SetupUs) ;
+      printf("Setup1 takes %d usec\n",(int) core1SetupUs) ;
       if ( config.protocol == 'C'){
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
