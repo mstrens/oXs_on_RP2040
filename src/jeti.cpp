@@ -225,7 +225,7 @@ uint32_t formatGpsLongLat (int32_t longLat, bool isLong ) { // return the long o
   uint32_t degree ;
   uint16_t minX1000 ;
   uint32_t longLatE7P ;
-  longLatE7P = (longLat >= 0 ? longLat : longLat ) ;
+  longLatE7P = (longLat >= 0 ? longLat : -longLat ) ;
   degree =  (uint16_t) (longLatE7P / 10000000) ; // remove 7 decimal from original value
   minX1000 =  (uint16_t ) ( (longLatE7P - (degree * 10000000)) * 6 / 1000 ) ; // keep 3 decimals to minutes
   gps.valueInteger = 0;

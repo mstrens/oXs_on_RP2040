@@ -40,7 +40,6 @@
 //         add switching 8 gpio from one channel
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         try to detect MS5611 and other I2C testing the different I2C addresses
-//         in readme add the wiring of GPS and of other I2C devices+ comments about MP6050
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
