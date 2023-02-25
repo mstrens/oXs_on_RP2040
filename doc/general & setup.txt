@@ -37,15 +37,17 @@ This board can be connected to:
       note : a voltage can be used to measure e.g. a current or a temperature when some external devices are use to generate an analog voltage 
 
 ----------Wiring --------------------
-FRSKY/ELRS/JETI receiver, MS5611 and GPS must share the same Gnd
+FRSKY/ELRS/JETI/... receiver, MS5611, GPS and other sensors must share the same Gnd
 Connect a 5V source to the Vcc pin of RP2040 board ( RP2040-zero board does not accept more than 5.5V on Vcc pin !! )
 There is no default affectation of the RP2040 pins so user has to specify it with some parameters after flashing the firmware (see below)
 When used with a ELRS receiver:
    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
    - Connect TLM pin to the Rx pin from ELRS receiver that is supposed to transmit telemetry data (this wire transmits the telemetry data)
-When used with a FRSKY/JETI receiver:
-   - Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin from Frsky/Jeti receiver (this wire transmit the RC channels)
-   - Connect TLM pin via a 1k resistor to the Sport pin from Frsky receiver or EX pin from Jeti receiver (this wire transmits the telemetry data)
+When used with a FRSKY/JETI/FLYSKY/MPX/FUTABA receiver:
+   - Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin (from Frsky/Jeti/FLYSKY/Futaba receiver); this wire transmit the RC channels
+   - Connect TLM pin via a 1k resistor to the Sport/Ex/Ibus/Mlink pin from the receiver; this wire transmits the telemetry data
+   Note : for Futaba telemetry, the Sbus2 pin is used for both functions (receiving Rc channels and sending telemetry).
+          Then the 1k resistor is connected between the TLM pin and the PRIM pin and it is only the PRI pin that is connected to the Rx Sbus2 pin
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
@@ -77,7 +79,7 @@ GPS_RX = 0/29                 (for GPS)
 PRI = 5 ,9, 21 ,25            (for primary RC channel input)
 SEC = 1, 13 , 17 ,29          (for secondary RC channel input)
 SBUS_OUT = 0/29               (for Sbus output)
-TLM = 0/29                    (for telemetry data)
+TLM = 0/29                    (for telemetry data) (! for futaba Sbus2, this pin must be equal to PRI pin - 1)
 VOLT1= 26/29 ... VOLT4 = 26/29  (for voltage measurements)
 SDA = 2, 6, 10, 14, 18, 22, 26  (for baro)
 SCL = 3, 7, 11, 15, 19, 23, 27  (for baro)
@@ -88,7 +90,7 @@ LED = 16                        (internal led of RP2040-zero)
    This software has been developped using the RP2040 SDK provided by Rapsberry.
    It uses as IDE platformio and the WIZIO extension (to be found on internet here : https://github.com/Wiz-IO/wizio-pico )
    Developers can compile and flash this software with those tools.
-   Still if you just want to use it, there is no need to install/use those tools.
+   Still if you just want to use it, there is (in most cases) no need to install/use those tools.
    On github, in uf2 folder, there is already a compiled version of this software that can be directly uploaded and configured afterwards
    To upload this compiled version, the process is the folowing:
        - download the file in folder uf2 on your pc
@@ -109,6 +111,11 @@ The RP2040 send the telemetry data to the ELRS receiver at some speed.
 This speed (=baud rate) must be the same as the baudrate defined on the receiver
 Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels signal to the flight controller and to get the telemetry data.
 Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly
+
+You have to compile your self the firmware if you want to change some values in the config.h file in order e.g. to:
+- change the setup of the ADS1115
+- allocate other slots for Sbus2 in Futaba protocol
+- allocate another physical ID for Sport in Sport protocol
 
 ------------- telemetry fields being measured and transmitted -----------------------
 

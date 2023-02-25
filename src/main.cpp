@@ -22,7 +22,7 @@
 #include "hott.h"
 #include "mpx.h"
 #include "ibus.h"
-#include "param.h"
+//#include "param.h"
 
 #include "ws2812.h"
 #include "rpm.h"

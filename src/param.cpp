@@ -34,7 +34,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
-// PROTOCOL = C, F, J , M , I
+// PROTOCOL = C, S, J , M , I , F
 // for RP2040_zero, pin 16 = LED
 // When no config is found in memory, a default config is loaded (defined in config.h)
 // When a pin is not used, value = 0xFF
@@ -125,7 +125,8 @@ void processCmd(){
         printf("- To disable a function, set pin number to 255\n\n");
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
-        printf("-To change the protocol, enter PROTOCOL=x where x=S for Sport, C for CRSF/ELRS, J for Jeti, H for Hott, M for Mpx or I for IBus\n");
+        printf("-To change the protocol, enter PROTOCOL=x where");
+        printf("          x=S(Sport), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , F(Futaba) or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
@@ -394,11 +395,14 @@ void processCmd(){
         } else if (strcmp("M", pvalue) == 0) {
             config.protocol = 'M';
             updateConfig = true;
+        } else if (strcmp("F", pvalue) == 0) {
+            config.protocol = 'F';
+            updateConfig = true;
         } else if (strcmp("I", pvalue) == 0) {
             config.protocol = 'I';
             updateConfig = true;
         } else  {
-            printf("Error : protocol must be S (Sport), C (CRSF=ELRS), J (Jeti), H (Hott), M (Mpx) or I (Ibus)\n");
+            printf("Error : protocol must be S(Sport), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), F(Futaba) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -641,6 +645,14 @@ void checkConfig(){
         printf("Error in parameters: when 2 temperature sensors are used (TEMP = 2), a pin for V3 and for V4 must be defined too)\n");
         configIsValid=false;
     }
+    if (config.protocol == 'F' && config.pinPrimIn == 255){
+        printf("Error in parameters: For Futaba protocol, a pin must be defined for Primary channels input (PRI)\n");
+        configIsValid=false;
+    }
+    if (config.protocol == 'F' && config.pinTlm != 255 && ( config.pinTlm != (config.pinPrimIn - 1)) ){
+        printf("Error in parameters: For Futaba protocol, TLM pin (when defined) must be equal to (PRI pin -1) \n");
+        configIsValid=false;
+    }
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
@@ -680,6 +692,8 @@ void printConfig(){
             printf("\nProtocol is Mpx\n")  ;    
         } else if (config.protocol == 'I'){
             printf("\nProtocol is ibus(Flysky)\n")  ;    
+        } else if (config.protocol == 'F'){
+            printf("\nProtocol is Sbus2(Futaba)\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.3.4"
+#define VERSION "1.4.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -30,6 +30,21 @@
 #define ATTITUDE_FRAME_INTERVAL 500 // This should normally contains pitch, roll and yaw.
 #define BARO_ALTITUDE_FRAME_INTERVAL 500 // This frame contains only barometric relative altitude
 
+
+// -------------- for Futaba Sbus2 protocol -----------------------
+// For temperature, oXs emulates a SBS/01T
+// For RPM, oXs emulates a SBS/01RO or 01RM
+// For vario, oXs emulates a F1672 or F1712
+// For Volt, current,capacity, oXs emulates SBS/01C
+// For GPS, oXs emulates a SBS/01G
+
+// here you can define the slot being used by different sensors
+#define SBUS2_SLOT_GPS_8  8   // this must be 8,16 or 24 because GPS requires 8 slots
+#define SBUS2_SLOT_VARIO_2 16 // Vario requires 2 lots (Alt and Vspeed)
+#define SBUS2_SLOT_BATTERY_3 18  // Battery requires 3 slots (volt, current, capacity)
+#define SBUS2_SLOT_TEMP1_1 21    // Temp1 requires 1 slot
+#define SBUS2_SLOT_TEMP2_1 22    // Temp2 requires 1 slot
+#define SBUS2_SLOT_RPM_1 23    // Temp2 requires 1 slot
 
 
 // -------- Parameters for the vario -----

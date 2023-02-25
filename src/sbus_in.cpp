@@ -8,6 +8,7 @@
 #include "tools.h"
 #include <string.h> // used by memcpy
 #include "param.h"
+#include "sbus2_tlm.h"
 
 
 #define SBUS_UART_ID uart1
@@ -75,7 +76,7 @@ void setupSbusIn(){
     
     uart_init(SBUS_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
     uart_set_hw_flow(SBUS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-    uart_set_fifo_enabled(SBUS_UART_ID, false);    // Turn on FIFO's 
+    uart_set_fifo_enabled(SBUS_UART_ID, false);    // Turn off FIFO's 
     uart_set_format (SBUS_UART_ID, 8, 1 ,UART_PARITY_EVEN ) ;
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
@@ -96,7 +97,7 @@ void setupSbus2In(){
     
     uart_init(SBUS2_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
     uart_set_hw_flow(SBUS2_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-    uart_set_fifo_enabled(SBUS2_UART_ID, false);    // Turn on FIFO's 
+    uart_set_fifo_enabled(SBUS2_UART_ID, false);    // Turn off FIFO's 
     uart_set_format (SBUS2_UART_ID, 8, 1 ,UART_PARITY_EVEN ) ;
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
@@ -138,6 +139,9 @@ void handleSbusIn(){
             //printf("fs=%X\n", c);
             sbusState = NO_SBUS_FRAME;
           } else {
+            // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
+            if ( (config.protocol == 'F') && ( config.pinTlm != 255) &&
+                ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
             storeSbusFrame();
             sbusState = NO_SBUS_FRAME;
           }
