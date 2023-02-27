@@ -399,10 +399,10 @@ bool formatIbusValue( uint8_t ibusAdr){
     ibusValue= fields[fieldId].value ; // default do not use conversion
     switch (fieldId) {
         case MVOLT:
-            ibusValue= fields[fieldId].value / 10; // from mvolt to 0.01V
+            ibusValue= int_round(fields[fieldId].value , 10); // from mvolt to 0.01V
             break;
         case CURRENT:
-            ibusValue= fields[fieldId].value / 10; // from mamp to 0.01A
+            ibusValue= int_round(fields[fieldId].value , 10); // from mamp to 0.01A
             break;
         case NUMSAT:
             ibusValue= fields[fieldId].value * 256; // it seems that openTx discard the lowest byte

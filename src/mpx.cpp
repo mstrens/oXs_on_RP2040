@@ -325,10 +325,10 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
     mpxTxBuffer[0] = (data_id << 4) | convertMpxAddToUnit[data_id] ; // 2X 4 bits (address and units)
     switch (fieldId) {
         case MVOLT:
-            mpxValue= fields[fieldId].value / 100; // from mvolt to 0.1V
+            mpxValue= int_round(fields[fieldId].value , 100) ; // from mvolt to 0.1V
             break;
         case CURRENT:
-            mpxValue= fields[fieldId].value / 100; // from mamp to 0.1A
+            mpxValue= int_round(fields[fieldId].value , 100); // from mamp to 0.1A
             break;
         case CAPACITY:
             mpxValue= fields[fieldId].value ; // from mah to mah
@@ -337,7 +337,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             mpxValue= fields[fieldId].value * 10; // from ° to 0.1°
             break;
         case VSPEED:
-            mpxValue= fields[fieldId].value / 10; // from cm/sec to 0.1m/sec
+            mpxValue= int_round(fields[fieldId].value , 10); // from cm/sec to 0.1m/sec
             break;
         case GROUNDSPEED:
             mpxValue= fields[fieldId].value * 3600/ 100 /100; // from cm/sec to 0.1 km/h
@@ -349,10 +349,10 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             mpxValue= fields[fieldId].value *10 ; // from  deg  to 0.1 deg
             break;
         case GPS_HOME_DISTANCE:
-            mpxValue= fields[fieldId].value /100 ; // from  m  to 0.1km
+            mpxValue= int_round(fields[fieldId].value ,100) ; // from  m  to 0.1km
             break;     
         case RELATIVEALT:
-            mpxValue= fields[fieldId].value /100; // from cm to m
+            mpxValue= int_round(fields[fieldId].value ,100) ; // from cm to m
             break;            
     }
     if (mpxValue > 16383)

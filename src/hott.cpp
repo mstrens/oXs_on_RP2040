@@ -259,13 +259,13 @@ bool fillHottGamFrame(){
     // TxHottData.gamMsg.cell[4] =  voltageData->mVoltCell[4] /20 ; // Volt Cell 5 (in 2 mV increments, 210 == 4.20 V)
     // TxHottData.gamMsg.cell[5] =  voltageData->mVoltCell[5] /20 ; // Volt Cell 6 (in 2 mV increments, 210 == 4.20 V)
     if( fields[MVOLT].available ) {
-              TxHottData.gamMsg.Battery1 = fields[MVOLT].value / 100;   //battery 1 voltage  0.1V steps. 55 = 5.5V only pos. voltages
+              TxHottData.gamMsg.Battery1 = int_round(fields[MVOLT].value , 100);   //battery 1 voltage  0.1V steps. 55 = 5.5V only pos. voltages
               #ifdef DEBUG_HOTT_WITHOUT_RX
               if (TxHottData.gamMsg.Battery1 == 0) TxHottData.gamMsg.Battery1 = 0XFF;
               #endif
     }
     if( fields[RESERVE1].available ) {  // = volt3
-              TxHottData.gamMsg.Battery2 = fields[RESERVE1].value / 100; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
+              TxHottData.gamMsg.Battery2 = int_round( fields[RESERVE1].value ,  100) ; }    //battery 2 voltage  0.1V steps. 55 = 5.5V only pos. voltages
     if ( ( fields[TEMP1].available) && (fields[TEMP1].value > -20) ) {
         TxHottData.gamMsg.temperature1 = fields[TEMP1].value + 20 ; // Hott applies an offset of 20. A value of 20 = 0°C
     } else {
@@ -277,9 +277,9 @@ bool fillHottGamFrame(){
         TxHottData.gamMsg.temperature2 = 20 ; // Hott applies an offset of 20. A value of 20 = 0°C    
     }
     if( fields[RPM].available )
-        {TxHottData.gamMsg.rpm = fields[RPM].value / 10;}    //#22 RPM in 10 RPM steps. 300 = 3000rpm
+        {TxHottData.gamMsg.rpm = int_round(fields[RPM].value , 10);}    //#22 RPM in 10 RPM steps. 300 = 3000rpm
     if( fields[RELATIVEALT].available ) {
-        TxHottData.gamMsg.altitude = ( fields[RELATIVEALT].value / 100 ) +500 ;//altitude in meters. offset of 500, 500 = 0m
+        TxHottData.gamMsg.altitude = ( int_round(fields[RELATIVEALT].value , 100) ) +500 ;//altitude in meters. offset of 500, 500 = 0m
     } else { TxHottData.gamMsg.altitude =  500 ; }                             //altitude in meters. offset of 500, 500 = 0m
     if( fields[VSPEED].available ) {
         TxHottData.gamMsg.climbrate_L = ( fields[VSPEED].value ) +30000 ;//climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
@@ -287,12 +287,12 @@ bool fillHottGamFrame(){
     } else { TxHottData.gamMsg.climbrate_L =  30000 ; }           //climb rate in 0.01m/s. Value of 30000 = 0.00 m/s
     TxHottData.gamMsg.climbrate3s = 120 ;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
     if( fields[CURRENT].available) {
-        TxHottData.gamMsg.current =  fields[CURRENT].value /100; }              //current in 0.1A steps 100 == 10,0A
+        TxHottData.gamMsg.current =  int_round(fields[CURRENT].value , 100) ; }              //current in 0.1A steps 100 == 10,0A
     if( fields[RESERVE2].available ){ //Volt4
-        TxHottData.gamMsg.main_voltage = fields[RESERVE2].value / 100;          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
+        TxHottData.gamMsg.main_voltage = int_round(fields[RESERVE2].value , 100);          //Main power voltage using 0.1V steps 100 == 10,0V] / 100
     }
     if( fields[CAPACITY].available ){
-         TxHottData.gamMsg.batt_cap = fields[CAPACITY].value / 10 ;   // used battery capacity in 10mAh steps
+         TxHottData.gamMsg.batt_cap = int_round(fields[CAPACITY].value , 10) ;   // used battery capacity in 10mAh steps
     }
     // TxHottData.gamMsg.speed =  airSpeedData->airSpeed.value  ;                  //  Km/h 
     // TxHottData.gamMsg.min_cell_volt =  voltageData->mVoltCellMin /20 ; // minimum cell voltage in 2mV steps. 124 = 2,48V

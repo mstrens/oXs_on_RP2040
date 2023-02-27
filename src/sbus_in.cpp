@@ -75,9 +75,14 @@ void setupSbusIn(){
     queue_init(&sbusQueue , 1 ,256) ;// queue for sbus uart with 256 elements of 1
     
     uart_init(SBUS_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
+    uart_get_hw(SBUS_UART_ID)->cr = 0;    // disable uart    // this seems required when uart is not 8N1 (bug in sdk)
+    while ( uart_get_hw(SBUS_UART_ID)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
+    uart_set_format(SBUS_UART_ID, 8, 2, UART_PARITY_EVEN);        // format may be changed only when uart is disabled and not busy
+    uart_get_hw(uart1)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
+    
     uart_set_hw_flow(SBUS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
     uart_set_fifo_enabled(SBUS_UART_ID, false);    // Turn off FIFO's 
-    uart_set_format (SBUS_UART_ID, 8, 1 ,UART_PARITY_EVEN ) ;
+    //uart_set_format (SBUS_UART_ID, 8, 2 ,UART_PARITY_EVEN ) ;
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
     gpio_set_function( config.pinPrimIn , GPIO_FUNC_UART);
@@ -96,9 +101,12 @@ void setupSbus2In(){
     queue_init(&sbus2Queue , 1 ,256) ;// queue for sbus uart with 256 elements of 1
     
     uart_init(SBUS2_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
+    uart_get_hw(uart1)->cr = 0;                              // this seems required when uart is not 8N1 (bug in sdk)
+    while ( uart_get_hw(uart1)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
+    uart_set_format(SBUS_UART_ID, 8, 2, UART_PARITY_EVEN);
+    uart_get_hw(uart1)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
     uart_set_hw_flow(SBUS2_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
     uart_set_fifo_enabled(SBUS2_UART_ID, false);    // Turn off FIFO's 
-    uart_set_format (SBUS2_UART_ID, 8, 1 ,UART_PARITY_EVEN ) ;
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
     gpio_set_function( config.pinSecIn , GPIO_FUNC_UART);
@@ -113,43 +121,48 @@ void setupSbus2In(){
 }  // end setup sbus
    
 void handleSbusIn(){
-  static SBUS_STATE sbusState = NO_SBUS_FRAME ;
-  static uint8_t sbusCounter = 0;
-  static uint32_t lastSbusMillis = 0;
-  uint8_t c;
-  if (config.pinPrimIn ==255) return ; // skip when pinPrimIn is not defined
-  while (! queue_is_empty (&sbusQueue) ){
-    if ( (millisRp() - lastSbusMillis ) > 2 ){
-      sbusState = NO_SBUS_FRAME ;
-    }
-    lastSbusMillis = millisRp();
-    queue_try_remove ( &sbusQueue , &c);
-    //printf(" %X\n",c);
-    switch (sbusState) {
-      case NO_SBUS_FRAME :
-        if (c == 0x0F) {
-          sbusCounter = 1;
-          sbusState = RECEIVING_SBUS ;
+    static SBUS_STATE sbusState = NO_SBUS_FRAME ;
+    static uint8_t sbusCounter = 0;
+    static uint32_t lastSbusMillis = 0;
+    uint8_t c;
+    if (config.pinPrimIn ==255) return ; // skip when pinPrimIn is not defined
+    while (! queue_is_empty (&sbusQueue) ){
+        if ( (millisRp() - lastSbusMillis ) > 2 ){
+        sbusState = NO_SBUS_FRAME ;
         }
-      break;
-      case RECEIVING_SBUS :
-        runningSbusFrame[sbusCounter++] = c;
-        if (sbusCounter == 25 ) {  // 25 because SbusCounter is already pointing to next byte 
-          if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
-            //printf("fs=%X\n", c);
-            sbusState = NO_SBUS_FRAME;
-          } else {
-            // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
-            if ( (config.protocol == 'F') && ( config.pinTlm != 255) &&
-                ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
-            storeSbusFrame();
-            sbusState = NO_SBUS_FRAME;
-          }
-        }
-      break;      
-    }
-  }     
-}
+        lastSbusMillis = millisRp();
+        queue_try_remove ( &sbusQueue , &c);
+        //printf(" %X\n",c);
+        switch (sbusState) {
+        case NO_SBUS_FRAME :
+            if (c == 0x0F) {
+            sbusCounter = 1;
+            sbusState = RECEIVING_SBUS ;
+            }
+        break;
+        case RECEIVING_SBUS :
+            runningSbusFrame[sbusCounter++] = c;
+            if (sbusCounter == 25 ) {  // 25 because SbusCounter is already pointing to next byte 
+            if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
+                //printf("fs=%X\n", c);
+                sbusState = NO_SBUS_FRAME;
+            } else {
+                // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
+                if ( (config.protocol == 'F') && ( config.pinTlm != 255) &&
+                    ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
+                storeSbusFrame();
+                sbusState = NO_SBUS_FRAME;
+            }
+            }
+        break;      
+        }  
+    } // end while
+    #ifdef SIMULATE_SBUS2_ON_PIN
+    //printf("h sbus in\n");
+    generateSbus2RcPacket();
+    #endif     
+  }
+  
 
 void handleSbus2In(){
   static SBUS_STATE sbus2State = NO_SBUS_FRAME ;
@@ -217,3 +230,4 @@ void storeSbus2Frame(){
     //printf("rc1 = %f\n", rc1/2);
     //printf("sbus received\n");
 }  
+

@@ -221,8 +221,8 @@ VOLT4       0.001V           V4 pin is defined                            not tr
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    ALT                        m
 Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_RATE                 0.1m/sec
                              if a MP6050 is installed, Vpeed use it too
-GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree 7decimals
-GPS lat                      Same as above                                 GPS_LAT                   degree 7decimals
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree ?decimals
+GPS lat                      Same as above                                 GPS_LAT                   degree ?decimals
 GPS speed  cm/sec            Same as above                                 GROUND_SPEED              km/h
 GPS course degree            Same as above                                 not transmitted
 GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   m

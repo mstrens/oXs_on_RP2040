@@ -143,7 +143,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
    switch (fieldId) {
     case RELATIVEALT :
       if ( ! fields[fieldId].available ) return 0 ;
-      * fieldValue = fields[fieldId].value / 10 ; // Altitude converted from cm to dm
+      * fieldValue = int_round(fields[fieldId].value , 10) ; // Altitude converted from cm to dm
       * dataType = JETI22_1D ;
       fields[fieldId].available = false ;
       break ;
@@ -155,26 +155,26 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
         break ;
       case  MVOLT :
           if ( ! fields[fieldId].available ) return 0;
-          * fieldValue =  fields[fieldId].value  / 10 ; 
+          * fieldValue =  int_round(fields[fieldId].value  , 10) ; 
           * dataType = JETI14_2D ;
           fields[fieldId].available  = false ;
           break ;
       case  CURRENT :
           if ( ! fields[fieldId].available ) return 0;
-          * fieldValue =  fields[fieldId].value  / 10 ; // converted in A with 2 decimals
+          * fieldValue =  int_round(fields[fieldId].value  , 10) ; // converted in A with 2 decimals
           * dataType = JETI14_2D ;
           fields[fieldId].available  = false ;
           break ;
       case  CAPACITY :
           if ( ! fields[fieldId].available ) return 0;
-          * fieldValue =  fields[fieldId].value  / 10 ; // converted in Ah with 2 decimals
+          * fieldValue =  int_round(fields[fieldId].value  , 10) ; // converted in Ah with 2 decimals
           * dataType = JETI14_2D ;
           fields[fieldId].available  = false ;
           break ;
       case HEADING :
         if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
-        * fieldValue = fields[fieldId].value  / 100000 ; // convert from degree * 100000 to degree
+        * fieldValue = int_round(fields[fieldId].value  , 100000) ; // convert from degree * 100000 to degree
         * dataType = JETI14_0D ;
         fields[fieldId].available  = false ;
         break ;
@@ -188,7 +188,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
       case ALTITUDE : 
         if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
-        * fieldValue  = fields[fieldId].value / 1000 ;                        // convert from mm to m 
+        * fieldValue  = int_round(fields[fieldId].value , 1000) ;                        // convert from mm to m 
         * dataType = JETI14_0D ;
         fields[fieldId].available  = false ;
         break ;
