@@ -55,7 +55,7 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       NUMBER_MAX_IDX, // used to count the number of entries       32
 };
 
-uint32_t int_round(int32_t n, uint32_t d);
+int32_t int_round(int32_t n, uint32_t d);
 
 uint32_t millisRp() ;
 

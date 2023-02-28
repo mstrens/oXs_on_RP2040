@@ -57,7 +57,7 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
     return button_state;
 }
 
-uint32_t int_round(int32_t n, uint32_t d)
+int32_t int_round(int32_t n, uint32_t d)
 {
     int32_t offset = ((n < 0) ? d : -d) / 2;
     return (n + offset) / d;

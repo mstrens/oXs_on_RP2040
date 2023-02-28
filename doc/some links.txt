@@ -14,4 +14,7 @@ https://github.com/ExpressLRS/ExpressLRS/tree/master/src/lib/CrsfProtocol
 https://github.com/iNavFlight/inav/blob/master/src/main/telemetry/crsf.c
 
 
+Futaba SBUS2
+https://github.com/BrushlessPower/SBUS2-Telemetry/blob/master/src/SBUS2.cpp
+
 
