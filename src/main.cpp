@@ -23,6 +23,7 @@
 #include "mpx.h"
 #include "ibus.h"
 #include "sbus2_tlm.h"
+#include "fport.h"
 //#include "param.h"
 
 #include "ws2812.h"
@@ -345,6 +346,10 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupSbus2Tlm();
+      } else if (config.protocol == '2') {
+        setupFport();
+        setupSbus2In();
+        //setupSbus2Tlm();
       }
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
@@ -430,6 +435,10 @@ void loop() {
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
+      } else if (config.protocol == '2') {
+        handleFportRxTx();
+        handleSbus2In();
+        //fillSbusFrame();
       } 
       watchdog_update();
       updatePWM();

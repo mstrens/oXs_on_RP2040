@@ -13,11 +13,11 @@ VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           DIY (0
 VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           DIY (0X5114)               0.001V
                              V4 pin is defined & TEMP=2                   T2 (0X410)                  degree
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Altitude (0X100)           cm
-Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            kts
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed (0X0110)            cm/s
                              if a MP6050 is installed, Vpeed use it too
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
 GPS lat                      Same as above                                 lat (0x0800)           special format
-GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 km/h
+GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 kts/h
 GPS course degree            Same as above                                 GPS heading (0X840)       0.01 degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
                              Note : some handsets calculate a relative alt

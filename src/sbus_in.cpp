@@ -201,7 +201,7 @@ if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
 
 }
 
-void storeSbusFrame(){
+void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, channels are coded from byte [0]
     sbusPriMissingFlag = (runningSbusFrame[23] >> 2) & 0X01;
     sbusPriFailsafeFlag = (runningSbusFrame[23] >> 3) & 0X01;
     if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   

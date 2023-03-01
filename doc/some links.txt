@@ -14,7 +14,22 @@ https://github.com/ExpressLRS/ExpressLRS/tree/master/src/lib/CrsfProtocol
 https://github.com/iNavFlight/inav/blob/master/src/main/telemetry/crsf.c
 
 
+SBUS
+https://www.ordinoscope.net/index.php/Electronique/Protocoles/SBUS
+Sbus has is a baudrate = 100000, 8 bytes, 2 stops , even parity.
+The frame contains 25 bytes; 
+first byte = 0X0F, then 22 bytes for 16 channels, then 1 flag byte (2 channels+missing&failsafe flags) + 0x00 (for sbus) or 0x04,...0x34 (for sbus2)
+
+
 Futaba SBUS2
 https://github.com/BrushlessPower/SBUS2-Telemetry/blob/master/src/SBUS2.cpp
+
+
+fport(2)
+
+https://www.propwashed.com/wp-content/uploads/2018/01/F.Port_.protocol.betaFlight.V2.1.2017.11.21.pdf
+https://github.com/betaflight/betaflight/blob/master/src/main/rx/fport.c
+https://github.com/betaflight/betaflight/blob/master/src/main/telemetry/smartport.c
+
 
 
