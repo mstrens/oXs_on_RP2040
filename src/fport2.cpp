@@ -35,6 +35,12 @@ Sensor response:
 0x00 0x00 Two bytes AppID
 0x00 0x00 0x00 0x00 Four bytes Data
 0xC0 CRC
+
+FBUS runs at 460800 bauds
+1 bytes takes 20 usec
+The polling bytes follow immediately the RC channels bytes
+There is 8msec between the begin of 2 RC channels frames
+
 */
 
 
@@ -347,9 +353,8 @@ void handleFportRxTx(void){   // main loop : restore receiving mode , wait for t
             // so reset the buffer and process the byte
             if (data & 0X8000) {
                 fportRxBufferIdx = 0; 
-            } else {
-                processNextInputByte( (uint8_t) data); // process the incoming byte
             } 
+            processNextInputByte( (uint8_t) data); // process the incoming byte 
         } // end while
     }           
 }
@@ -399,7 +404,7 @@ bool processNextInputByte( uint8_t c){
     }
 
     if (fportRxBufferIdx == 1) {
-        if (!fportIsDownlink && c != FRAME_TYPE_CHANNEL) { // for a Rc channel, byte must be FF, 
+        if ( (fportIsDownlink==false) && (c != FRAME_TYPE_CHANNEL)) { // for a Rc channel, byte must be FF, 
             // not channel data
             printf("fport2: second pos not = FF for channel frame\n");
             fportRxBufferIdx = 0;

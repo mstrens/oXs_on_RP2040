@@ -244,7 +244,7 @@ void fillBattery(uint8_t slot8){   // emulate SBS/01C ; Current from mA to 0.1A;
     uint32_t local = 0;
    // CURRENT
    if ( fields[CURRENT].value > 0 ) {
-        value = (uint16_t) int_round(fields[CURRENT].value, 100);
+        value = (uint16_t) int_round(fields[CURRENT].value, 10);
    } else {
         value = 0;
    }       
@@ -257,7 +257,7 @@ void fillBattery(uint8_t slot8){   // emulate SBS/01C ; Current from mA to 0.1A;
 
    //VOLTAGE
    if ( fields[MVOLT].value > 0 ){
-         value = (uint16_t) int_round(fields[MVOLT].value, 100);
+         value = (uint16_t) int_round(fields[MVOLT].value, 10);
    } else {
         value = 0;
    }  
