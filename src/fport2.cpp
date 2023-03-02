@@ -348,7 +348,8 @@ void handleFportRxTx(void){   // main loop : restore receiving mode , wait for t
         while (! queue_is_empty(&fportRxQueue)) {
             // we get the value in the queue
             queue_try_remove (&fportRxQueue,&data);
-            printf("%x\n", (uint8_t) data);
+            //printf("%x\n", (uint8_t) data);
+            
             // if bit 15 = 1, it means that the value has been received after x usec from previous and so it must be a synchro 
             // so reset the buffer and process the byte
             if (data & 0X8000) {
@@ -587,13 +588,12 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
     // copy and convert bytes
     // Byte in frame has value 0x7E is changed into 2 bytes: 0x7D 0x5E
     // Byte in frame has value 0x7D is changed into 2 bytes: 0x7D 0x5D
-    if (debugTlm == 'Y') {
-        printf("Fport= ");
-        for (uint8_t j = 0 ; j < 9 ; j++ ){
+        printf("Fport2 :Tlm= ");
+        for (uint8_t j = 0 ; j < 10 ; j++ ){
             printf(" %02X" , fportTxBuffer[j]);
         }
-        printf("/n");    
-    }
+        printf("\n");    
+    
     //sleep_us(100) ;
     sport_uart_rx_program_stop(fportPio, fportSmRx, config.pinPrimIn); // stop receiving
     sport_uart_tx_program_start(fportPio, fportSmTx, config.pinPrimIn, true); // prepare to transmit
