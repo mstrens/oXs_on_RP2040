@@ -342,6 +342,7 @@ void handleFportRxTx(void){   // main loop : restore receiving mode , wait for t
         while (! queue_is_empty(&fportRxQueue)) {
             // we get the value in the queue
             queue_try_remove (&fportRxQueue,&data);
+            printf("%x\n", (uint8_t) data);
             // if bit 15 = 1, it means that the value has been received after x usec from previous and so it must be a synchro 
             // so reset the buffer and process the byte
             if (data & 0X8000) {
@@ -392,6 +393,7 @@ bool processNextInputByte( uint8_t c){
             break;
         default:
             // definately not FPort2, missing header byte
+            printf("fport2: first pos not a valid length frame\n");
             return false;
         }
     }
@@ -399,6 +401,7 @@ bool processNextInputByte( uint8_t c){
     if (fportRxBufferIdx == 1) {
         if (!fportIsDownlink && c != FRAME_TYPE_CHANNEL) { // for a Rc channel, byte must be FF, 
             // not channel data
+            printf("fport2: second pos not = FF for channel frame\n");
             fportRxBufferIdx = 0;
             return false;
         }
@@ -409,20 +412,28 @@ bool processNextInputByte( uint8_t c){
     //const FPort2_Frame *frame = (const FPort2_Frame *)&byte_input.buf[0];
 
     if (fportLen > 2 && fportRxBufferIdx == fportLen) { //when all bytes have been received
+        for (uint8_t i=0; i<fportLen; i++ ){
+            printf(" %x", fportRxBuffer[i]);
+        }
+        printf(" \n");
         if (! check_checksum()) {                   // check 
             fportRxBufferIdx = 0;
+            printf("fport2 : frame with wrong checksum\n");
             return false;
         }
         if ( chanCount != 16) { // at this stage we manage only 16 channels
             fportRxBufferIdx = 0;
+            printf("fport2 : oXs supports only 16 channels\n");
             return false;
         }
         if (fportIsDownlink) {
             if( (fportRxBuffer[1] == SPORT_DEVICEID) && // reply only the physical id = oXs device ID
                     (fportRxBuffer[2] == 0X10) ) {          // and type = 0X10 = polling for DATA          
+                printf("fport2: a pooling has been received\n");
                 sendNextFportFrame() ;   // send telemetry
             }    
         } else {           
+                printf("fport2: RC received\n");
                 fportDecodeRcChannels() ; // manage the RC channels frame                   
         }
         fportRxBufferIdx = 0; 
