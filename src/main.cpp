@@ -23,7 +23,7 @@
 #include "mpx.h"
 #include "ibus.h"
 #include "sbus2_tlm.h"
-#include "fport.h"
+#include "fport2.h"
 //#include "param.h"
 
 #include "ws2812.h"
@@ -45,6 +45,8 @@
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
+//         solve led blinking for Fport2 because it does not use config.pinPrimIn
+//         check in param if we can accept SEC without PRI for FPORT2
 
 
 // Look at file in folder "doc" for more details

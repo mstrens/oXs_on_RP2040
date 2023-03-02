@@ -68,20 +68,60 @@ void on_sbus2_uart_rx() {
     }
 }
 
+#include "hardware/address_mapped.h"
+#include "hardware/platform_defs.h"
+#include "hardware/uart.h"
+
+#include "hardware/structs/uart.h"
+#include "hardware/resets.h"
+#include "hardware/clocks.h"
+#include "hardware/timer.h"
+#include "pico/assert.h"
+#include "pico.h"
+
+
+uint uart_init_extended(uart_inst_t *uart, uint baudrate , uint data_bits, uint stop_bits, uart_parity_t parity, bool fifoEnabled) {
+    invalid_params_if(UART, uart != uart0 && uart != uart1);
+
+    if (clock_get_hz(clk_peri) == 0)
+        return 0;
+    reset_block(uart_get_index(uart) ? RESETS_RESET_UART1_BITS : RESETS_RESET_UART0_BITS);
+    unreset_block_wait(uart_get_index(uart) ? RESETS_RESET_UART1_BITS : RESETS_RESET_UART0_BITS);
+    
+#if PICO_UART_ENABLE_CRLF_SUPPORT
+    uart_set_translate_crlf(uart, PICO_UART_DEFAULT_CRLF);
+#endif
+    // Any LCR writes need to take place before enabling the UART
+    uint baud = uart_set_baudrate(uart, baudrate);
+    uart_set_format(uart, data_bits, stop_bits, parity);
+    // Enable/disable FIFOs
+    uart_set_fifo_enabled(uart, fifoEnabled);
+    // Always enable DREQ signals -- no harm in this if DMA is not listening
+    uart_get_hw(uart)->dmacr = UART_UARTDMACR_TXDMAE_BITS | UART_UARTDMACR_RXDMAE_BITS;
+    // Enable the UART, both TX and RX
+    uart_get_hw(uart)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS;
+    
+    return baud;
+}
+/// \end::uart_init[]
+
+
 
 void setupSbusIn(){
     uint8_t dummy;
     if (config.pinPrimIn == 255) return ; // skip when pinPrimIn is not defined
     queue_init(&sbusQueue , 1 ,256) ;// queue for sbus uart with 256 elements of 1
     
-    uart_init(SBUS_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
-    uart_get_hw(SBUS_UART_ID)->cr = 0;    // disable uart    // this seems required when uart is not 8N1 (bug in sdk)
-    while ( uart_get_hw(SBUS_UART_ID)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
-    uart_set_format(SBUS_UART_ID, 8, 2, UART_PARITY_EVEN);        // format may be changed only when uart is disabled and not busy
-    uart_get_hw(uart1)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
+    uart_init_extended(SBUS_UART_ID, SBUS_BAUDRATE , 8, 2, UART_PARITY_EVEN, false);   // setup UART at 100000 baud, 8 bits, 2 stops, EVEN, no fifo
+    //uart_get_hw(SBUS_UART_ID)->cr = 0;    // disable uart    // this seems required when uart is not 8N1 (bug in sdk)
+    //sleep_us(100);
+    //while ( uart_get_hw(SBUS_UART_ID)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
+    //uart_set_format(SBUS_UART_ID, 8, 2, UART_PARITY_EVEN);        // format may be changed only when uart is disabled and not busy
     
-    uart_set_hw_flow(SBUS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-    uart_set_fifo_enabled(SBUS_UART_ID, false);    // Turn off FIFO's 
+    //uart_set_hw_flow(SBUS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
+    //uart_set_fifo_enabled(SBUS_UART_ID, false);    // Turn off FIFO's 
+    // uart_get_hw(uart1)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
+   
     //uart_set_format (SBUS_UART_ID, 8, 2 ,UART_PARITY_EVEN ) ;
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
@@ -100,13 +140,13 @@ void setupSbus2In(){
     if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
     queue_init(&sbus2Queue , 1 ,256) ;// queue for sbus uart with 256 elements of 1
     
-    uart_init(SBUS2_UART_ID, SBUS_BAUDRATE);   // setup UART at 100000 baud
-    uart_get_hw(uart1)->cr = 0;                              // this seems required when uart is not 8N1 (bug in sdk)
-    while ( uart_get_hw(uart1)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
-    uart_set_format(SBUS_UART_ID, 8, 2, UART_PARITY_EVEN);
-    uart_get_hw(uart1)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
-    uart_set_hw_flow(SBUS2_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-    uart_set_fifo_enabled(SBUS2_UART_ID, false);    // Turn off FIFO's 
+    uart_init_extended(SBUS2_UART_ID, SBUS_BAUDRATE , 8, 2, UART_PARITY_EVEN, false);   // setup UART at 100000 baud, 8 bits, 2 stops, EVEN, no fifo
+    //uart_get_hw(SBUS2_UART_ID)->cr = 0;                              // this seems required when uart is not 8N1 (bug in sdk)
+    //while ( uart_get_hw(SBUS2_UART_ID)->fr & UART_UARTFR_BUSY_BITS) {}; // wait that UART is not busy 
+    //uart_set_format(SBUS2_UART_ID, 8, 2, UART_PARITY_EVEN);
+    //uart_set_hw_flow(SBUS2_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
+    //uart_set_fifo_enabled(SBUS2_UART_ID, false);    // Turn off FIFO's 
+    //uart_get_hw(SBUS2_UART_ID)->cr = UART_UARTCR_UARTEN_BITS | UART_UARTCR_TXE_BITS | UART_UARTCR_RXE_BITS; // this seems required when uart is not 8N1 (bug in sdk)    
     
     //gpio_set_function(SBUS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART 
     gpio_set_function( config.pinSecIn , GPIO_FUNC_UART);

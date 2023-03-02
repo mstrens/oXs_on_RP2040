@@ -656,12 +656,12 @@ void checkConfig(){
         printf("Error in parameters: For Futaba protocol, TLM pin (when defined) must be equal to (PRI pin -1) \n");
         configIsValid=false;
     }
-    if (config.protocol == '2' && config.pinTlm == 255  ){
-        printf("Error in parameters: For Fport2, TLM pin must be defined\n");
+    if (config.protocol == '2' && config.pinPrimIn == 255  ){
+        printf("Error in parameters: For Fport2, a pin must be defined for Primary channels input (PRI)\n");
         configIsValid=false;
     }
-    if (config.protocol == '2' && config.pinPrimIn != 255  ){
-        printf("Error in parameters: For Fport2, primary channel input (PRI) pin may not be defined (but TLM must be defined)\n");
+    if (config.protocol == '2' && config.pinTlm != 255  ){
+        printf("Error in parameters: For Fport2, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
     if ( configIsValid == false) {

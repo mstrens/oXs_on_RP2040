@@ -50,11 +50,10 @@ Sensor response:
 #include "sport.h" // common for some #define
 #include <string.h> // used by memcpy
 
-#include "fport.h"
+#include "fport2.h"
 #include "tools.h"
 #include "config.h"
 #include "param.h"
-#include "fport.h"
 
 
 
@@ -294,7 +293,7 @@ void setupFport() {
     );
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     fportOffsetTx = pio_add_program(fportPio, &sport_uart_tx_program);
-    sport_uart_tx_program_init(fportPio, fportSmTx, fportOffsetTx, config.pinTlm, 115200 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
+    sport_uart_tx_program_init(fportPio, fportSmTx, fportOffsetTx, config.pinPrimIn, 115200 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
 
 // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO0_IRQ_0 , fportPioRxHandlerIrq) ;
@@ -302,7 +301,7 @@ void setupFport() {
 
 // Set up the state machine we're going to use to receive them.
     fportOffsetRx = pio_add_program(fportPio, &sport_uart_rx_program);
-    sport_uart_rx_program_init(fportPio, fportSmRx, fportOffsetRx, config.pinTlm, 115200 , true);  
+    sport_uart_rx_program_init(fportPio, fportSmRx, fportOffsetRx, config.pinPrimIn, 115200 , true);  
 }
 
 
@@ -332,11 +331,11 @@ void handleFportRxTx(void){   // main loop : restore receiving mode , wait for t
     static uint8_t previous = 0;
     
     uint16_t data;
-    if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
+    if (config.pinPrimIn == 255) return ; // skip when Tlm is not foreseen
     if ( restoreFportPioToReceiveMillis) {            // put sm back in receive mode after some delay
         if (millisRp() > restoreFportPioToReceiveMillis){
-            sport_uart_tx_program_stop(fportPio, fportSmTx, config.pinTlm );
-            sport_uart_rx_program_restart(fportPio, fportSmRx, config.pinTlm, true);  // true = inverted
+            sport_uart_tx_program_stop(fportPio, fportSmTx, config.pinPrimIn );
+            sport_uart_rx_program_restart(fportPio, fportSmRx, config.pinPrimIn, true);  // true = inverted
             restoreFportPioToReceiveMillis = 0 ;
         }
     } else {                             // when we are in receive mode
@@ -580,8 +579,8 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
         printf("/n");    
     }
     //sleep_us(100) ;
-    sport_uart_rx_program_stop(fportPio, fportSmRx, config.pinTlm); // stop receiving
-    sport_uart_tx_program_start(fportPio, fportSmTx, config.pinTlm, true); // prepare to transmit
+    sport_uart_rx_program_stop(fportPio, fportSmRx, config.pinPrimIn); // stop receiving
+    sport_uart_tx_program_start(fportPio, fportSmTx, config.pinPrimIn, true); // prepare to transmit
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (fport_dma_chan, &fportTxBuffer[0], false);
     dma_channel_set_trans_count (fport_dma_chan, 9, true) ;
