@@ -293,7 +293,7 @@ void setupFport() {
     );
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     fportOffsetTx = pio_add_program(fportPio, &sport_uart_tx_program);
-    sport_uart_tx_program_init(fportPio, fportSmTx, fportOffsetTx, config.pinPrimIn, 115200 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
+    sport_uart_tx_program_init(fportPio, fportSmTx, fportOffsetTx, config.pinPrimIn, 460800 , true); // we use the same pin and baud rate for tx and rx, true means thet UART is inverted 
 
 // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO0_IRQ_0 , fportPioRxHandlerIrq) ;
@@ -301,7 +301,7 @@ void setupFport() {
 
 // Set up the state machine we're going to use to receive them.
     fportOffsetRx = pio_add_program(fportPio, &sport_uart_rx_program);
-    sport_uart_rx_program_init(fportPio, fportSmRx, fportOffsetRx, config.pinPrimIn, 115200 , true);  
+    sport_uart_rx_program_init(fportPio, fportSmRx, fportOffsetRx, config.pinPrimIn, 460800 , true);  
 }
 
 
