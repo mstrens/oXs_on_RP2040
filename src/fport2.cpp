@@ -374,7 +374,7 @@ void handleFportRxTx(void){   // main loop : restore receiving mode , wait for t
 
             
 bool processNextInputByte( uint8_t c){
-    bool fportIsDownlink ; // buffer is currently being filled with a downlink frame
+    static bool fportIsDownlink ; // buffer is currently being filled with a downlink frame
     if (fportRxBufferIdx == 0) {
         switch (c) {
         case FRAME_LEN_8:
