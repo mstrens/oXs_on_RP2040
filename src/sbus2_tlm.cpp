@@ -326,7 +326,22 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     if (fields[LONGITUDE].available) lon = int_round( fields[LONGITUDE].value * 6 , 100); 
     if (fields[LATITUDE].available) lat = int_round( fields[LATITUDE].value * 6 , 100);
     float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
-    if (fields[ALTITUDE].available) altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
+    uint32_t prevAltitudeMetersMs;
+    if (fields[ALTITUDE].available){
+        //altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
+        if (altitudeMeters == 0) { 
+            altitudeMeters = 1000;
+            prevAltitudeMetersMs = millisRp() ;
+        }
+        if ( (millisRp() - prevAltitudeMetersMs) > 10000){
+            if (altitudeMeters == 1000) {
+                altitudeMeters = 4000;
+            } else {
+                altitudeMeters = 1000;
+            }
+            prevAltitudeMetersMs = millisRp() ;    
+        }
+    }    
     uint16_t speed = 0; //km/h (valid range 0 to 511)
     if (fields[GROUNDSPEED].available) speed = fields[GROUNDSPEED].value * 36 / 1000; 
     float gpsVario = 0 ;
