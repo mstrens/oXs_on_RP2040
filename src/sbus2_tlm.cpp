@@ -325,6 +325,19 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     // from Degree with 7 dec to min with 4 dec; so *60 / 10.000.000 * 10.000 = *6/100
     if (fields[LONGITUDE].available) lon = int_round( fields[LONGITUDE].value * 6 , 100); 
     if (fields[LATITUDE].available) lat = int_round( fields[LATITUDE].value * 6 , 100);
+    // scale latitude/longitude (add 0.5 for correct rounding)  
+    if (lat < 0) {
+        lat = -lat;
+        // toggle south bit = bit 26
+        lat |= 0x4000000;
+    }
+    if (lon < 0) {
+        lon = -lon;
+        // toggle west bit
+        lon |= 0x8000000;
+    }
+    
+    
     float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
     uint32_t prevAltitudeMetersMs;
     if (fields[ALTITUDE].available){
@@ -345,17 +358,6 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     uint16_t speed = 0; //km/h (valid range 0 to 511)
     if (fields[GROUNDSPEED].available) speed = fields[GROUNDSPEED].value * 36 / 1000; 
     float gpsVario = 0 ;
-    // scale latitude/longitude (add 0.5 for correct rounding)
-    if (lat < 0) {
-        lat = -lat;
-        // toggle south bit = bit 26
-        lat |= 0x4000000;
-    }
-    if (lon < 0) {
-        lon = -lon;
-        // toggle west bit
-        lon |= 0x8000000;
-    }
     // convert altitude (add 0.5 for correct rounding)
     uint16_t alt = (altitudeMeters>=-820 && altitudeMeters<=4830) ?(1.25*(altitudeMeters+820)) + 0.5  : 0;
     // error check speed
@@ -366,6 +368,8 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     else {
         speed = 0;
     }
+    lat= 0X2000000;
+    lon= 0X4000000;
     // initialize buffer
     uint8_t bytes[3] = {0x03, 0x00, 0x00 };
     // slot 0 (utc)
