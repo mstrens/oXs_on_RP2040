@@ -338,7 +338,7 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     }
     
     
-    float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
+    static float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
     uint32_t prevAltitudeMetersMs;
     if (fields[ALTITUDE].available){
         //altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
