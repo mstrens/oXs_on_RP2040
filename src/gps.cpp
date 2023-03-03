@@ -119,10 +119,44 @@ void GPS::gpsInitRx(){
         _step = 0 ;
 }
 
+volatile uint32_t baudMinInterval = 1000000;
+uint32_t prevRxChangeUs = 0;
+// interrupt to calculate the delay between 2 edges
+void gpioBaudrateCallback(uint gpio, uint32_t events) {
+    uint32_t now = microsRp();
+    uint32_t intervalUs = now - prevRxChangeUs;
+    if ((intervalUs < baudMinInterval )  && (intervalUs > 5) ) baudMinInterval = intervalUs;
+    prevRxChangeUs = now;
+    //printf("\n");
+}
+
+uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
+void detectBaudrate(){
+    printf("Start detecting baudrate\n");
+    gpio_init(config.pinGpsTx);
+    gpio_set_dir(config.pinGpsTx, false); // input
+    //gpio_pull_up(config.pinGpsRx);
+    gpio_set_irq_enabled_with_callback(config.pinGpsTx, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpioBaudrateCallback);
+    sleep_ms(600);
+    irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
+    gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
+    if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
+    if ( ( baudMinInterval > 23 ) && ( baudMinInterval <30 ) ) gpsBaudrate = 38400; // 26
+    if ( ( baudMinInterval > 48 ) && ( baudMinInterval <58 ) ) gpsBaudrate = 19200; //52
+    if ( ( baudMinInterval > 100 ) && ( baudMinInterval <110 ) ) gpsBaudrate = 9600; //104
+    if (gpsBaudrate == 0){
+        printf("gps baudrate not detected; will be set on 9600\n");
+        gpsBaudrate = 9600;
+    } else {
+        printf("gps baudrate detected = %d\n", (uint) gpsBaudrate) ;
+    }
+}
+
 void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending the configuration cmd)            
+    detectBaudrate();    // autodetect the baudrate
     // setup the PIO for TX UART
     uint gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program);
-    uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
+    uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, gpsBaudrate);
     /*
             //!!!!!!!!!!!! this part used pio0 and should be change for pio1
             // Configure a dma channel to write the same word (8 bits) repeatedly to PIO0
@@ -193,7 +227,7 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
             0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
                                 0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
         }  ;   
-        busy_wait_us(750000) ; // wait to be sure that GPS has started (otherwise first bytes are lost)
+        //busy_wait_ms(100) ; // wait to be sure that GPS has started (otherwise first bytes are lost) // already done in autodetect
         uint8_t initGpsIdx = 0 ;
         while (initGpsIdx < sizeof( initGps1)) {
     //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
