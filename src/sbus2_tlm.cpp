@@ -351,23 +351,28 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
         // toggle south bit = bit 26
         lat |= 0x4000000;
     }
-    static float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
+    float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
+    if (fields[ALTITUDE].available) altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
+    /*
+    static float altitudeMeters2 = 0 ;    // meters (valid range: -1050 to 4600)
     static uint32_t prevAltitudeMetersMs;
     if (fields[ALTITUDE].available){
         //altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
-        if (altitudeMeters == 0) { 
-            altitudeMeters = 1000;
+        if (altitudeMeters2 == 0) { 
+            altitudeMeters2 = 1000;
             prevAltitudeMetersMs = millisRp() ;
         }
         if ( (millisRp() - prevAltitudeMetersMs) > 10000){
-            if (altitudeMeters == 1000) {
-                altitudeMeters = 4000;
+            if (altitudeMeters2 == 1000) {
+                altitudeMeters2 = 4000;
             } else {
-                altitudeMeters = 1000;
+                altitudeMeters2 = 1000;
             }
             prevAltitudeMetersMs = millisRp() ;    
         }
-    }    
+    } 
+    altitudeMeters = altitudeMeters2;
+    */
     uint16_t speed = 0; //km/h (valid range 0 to 511)
     if (fields[GROUNDSPEED].available) speed = fields[GROUNDSPEED].value * 36 / 1000; 
     float gpsVario = 0 ;
@@ -381,8 +386,6 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     else {
         speed = 0;
     }
-    lat= 0X2000000;
-    lon= 0X4000000;
     // initialize buffer
     uint8_t bytes[3] = {0x03, 0x00, 0x00 };
     // slot 0 (utc)
