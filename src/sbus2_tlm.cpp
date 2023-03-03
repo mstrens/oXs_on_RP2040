@@ -321,25 +321,38 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     }
     uint32_t utc = (hours*3600) + (minutes*60) + seconds;
     int32_t lat = 0;
-    int32_t lon = 0 ; 
+    int32_t lon = 0 ;
+    int64_t lon64; 
+    int64_t lat64;  
     // from Degree with 7 dec to min with 4 dec; so *60 / 10.000.000 * 10.000 = *6/100
-    if (fields[LONGITUDE].available) lon = int_round( fields[LONGITUDE].value * 6 , 100); 
-    if (fields[LATITUDE].available) lat = int_round( fields[LATITUDE].value * 6 , 100);
-    // scale latitude/longitude (add 0.5 for correct rounding)  
-    if (lat < 0) {
-        lat = -lat;
-        // toggle south bit = bit 26
-        lat |= 0x4000000;
-    }
+    if (fields[LONGITUDE].available){
+        lon64 = ((int64_t) fields[LONGITUDE].value) * 6;
+        if (lon64 >= 0) {
+            lon= (lon64 + 50) /100;
+        } else {
+            lon= (lon64 - 50) /100;
+        }
+    }        
     if (lon < 0) {
         lon = -lon;
         // toggle west bit
         lon |= 0x8000000;
     }
-    
-    
+    if (fields[LATITUDE].available){
+        lat64 = ((int64_t) fields[LATITUDE].value) * 6;
+        if (lat64 >= 0) {
+            lat= (lat64 + 50) /100;
+        } else {
+            lat= (lat64 - 50) /100;
+        }
+    }
+    if (lat < 0) {
+        lat = -lat;
+        // toggle south bit = bit 26
+        lat |= 0x4000000;
+    }
     static float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
-    uint32_t prevAltitudeMetersMs;
+    static uint32_t prevAltitudeMetersMs;
     if (fields[ALTITUDE].available){
         //altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
         if (altitudeMeters == 0) { 

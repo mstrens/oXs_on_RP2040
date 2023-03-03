@@ -59,7 +59,9 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
 
 int32_t int_round(int32_t n, uint32_t d)
 {
-    int32_t offset = ((n > 0) ? d : -d) / 2;
+    int32_t offset;
+    offset = ((n >= 0) ? d : -d) / 2;
+    printf("n=%d   d=%d   offset %d  return %d", n , d , offset, (n+offset)/d);
     return (n + offset) / d;
 }
 
