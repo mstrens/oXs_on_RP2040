@@ -279,7 +279,7 @@ void fillBattery(uint8_t slot8){   // emulate SBS/01C ; Current from mA to 0.1A;
 
 
 void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM 
-    uint32_t value =  fields[CAPACITY].value * 10;
+    uint32_t value =  fields[RPM].value * 10;
     if(value > 0xffff){
     value = 0xffff;
     }
@@ -289,6 +289,18 @@ void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM
 }
 
 void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from ??? to m ; vario to m/s
+//UTC stored in seconds
+//LATitude stored in 1/12e5 degrees Negative sign for South.
+//LoNGitude stored in 1/6e5 degrees Negative sign for West.
+//SPeeD Range 511Km/Hr; resolution 1Km/Hr
+//GPS FIX 1 = fix; 0 = no fix.
+//SATellites unspecified; 0, 1, 2 or 3.
+//XXX Unresolved Set to ‘0’ as would crash my Transmitter when ‘1’ Recent release resolved issue.
+//BAROmeter 0.0 to 1638.3
+//ALTitude Range 6553.3m. -1638.3m to 4915.2m for 0x0000 0xFFFF Transmitter sets 0 for first reading and each step is 0.1m
+//VARIOmeter Range -150.0m/s to +259.5m/s ; resolution 0.1m/s
+//BARO OK must be 1 for barometric functions to  have data reported
+
 //    uint16_t hours,          // 0 to 24
 //    uint16_t minutes,        // 0 to 60
 //    uint16_t seconds,        // 0 to 60
@@ -299,40 +311,33 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
 //    float gpsVario)          // m/s (valid range: -150 to 260)
    
     //setup the data in format used by the original code
-    uint16_t hours = 0;
-    uint16_t minutes = 0;
-    uint16_t seconds = 0;
+    uint32_t hours = 0;
+    uint32_t minutes = 0;
+    uint32_t seconds = 0;
     if (fields[GPS_TIME].available) {
-        hours = fields[GPS_TIME].value >> 24 ;
-        minutes = fields[GPS_TIME].value >> 16 ;
-        seconds = fields[GPS_TIME].value >> 8 ;
+        hours = fields[GPS_TIME].value >> 24 & 0xFF;
+        minutes = fields[GPS_TIME].value >> 16 & 0xFF;
+        seconds = fields[GPS_TIME].value >> 8 & 0xFF;
     }
     uint32_t utc = (hours*3600) + (minutes*60) + seconds;
-    float latitude = 0;
-    float longitude = 0 ; 
-    if (fields[LONGITUDE].available) longitude = (float) fields[LONGITUDE].value;
-    if (fields[LATITUDE].available) latitude = (float) fields[LATITUDE].value;
+    int32_t lat = 0;
+    int32_t lon = 0 ; 
+    // from Degree with 7 dec to min with 4 dec; so *60 / 10.000.000 * 10.000 = *6/100
+    if (fields[LONGITUDE].available) lon = int_round( fields[LONGITUDE].value * 6 , 100); 
+    if (fields[LATITUDE].available) lat = int_round( fields[LATITUDE].value * 6 , 100);
     float altitudeMeters = 0 ;    // meters (valid range: -1050 to 4600)
-    if (fields[ALTITUDE].available) altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ;
+    if (fields[ALTITUDE].available) altitudeMeters = ((float) fields[ALTITUDE].value)*0.01 ; 
     uint16_t speed = 0; //km/h (valid range 0 to 511)
     if (fields[GROUNDSPEED].available) speed = fields[GROUNDSPEED].value * 36 / 1000; 
     float gpsVario = 0 ;
-
-    uint32_t lat, lon;
     // scale latitude/longitude (add 0.5 for correct rounding)
-    if (latitude > 0) {
-        lat = (600000.0*latitude) + 0.5;
-    }
-    else {
-        lat = (-600000.0*latitude) + 0.5;
-        // toggle south bit
+    if (lat < 0) {
+        lat = -lat;
+        // toggle south bit = bit 26
         lat |= 0x4000000;
     }
-    if (longitude > 0) {
-        lon = (600000.0*longitude) + 0.5;
-    }
-    else {
-        lon = (-600000.0*longitude) + 0.5;
+    if (lon < 0) {
+        lon = -lon;
         // toggle west bit
         lon |= 0x8000000;
     }
@@ -340,7 +345,7 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     uint16_t alt = (altitudeMeters>=-820 && altitudeMeters<=4830) ?(1.25*(altitudeMeters+820)) + 0.5  : 0;
     // error check speed
     if (speed < 512) {
-        // set speed enable bit
+        // set speed enable bit ;In other doc, this bit is documented as GPS fix
         speed |= 0x200;
     }
     else {
@@ -350,32 +355,32 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
     uint8_t bytes[3] = {0x03, 0x00, 0x00 };
     // slot 0 (utc)
     slotAvailable[0] = true;
-    slotValueByte1[0] = (utc&0x00ff);
-    slotValueByte2[0] = (utc&0xff00)>>8;
+    slotValueByte1[0] = (utc&0x00ff);    // UTC bits 8...0 
+    slotValueByte2[0] = (utc&0xff00)>>8;  // UTC bits 15...8
     // slot 1 (latitude & utc)
     slotAvailable[1] = true;
-    slotValueByte1[1] = ((lat&0x007f)<<1) | ((utc&0x10000)>>16);
-    slotValueByte2[1] =  (lat&0x7f80)>>7;
+    slotValueByte1[1] = ((lat&0x007f)<<1) | ((utc&0x10000)>>16);   // Lat bit6...0 + UTC bit 16
+    slotValueByte2[1] =  (lat&0x7f80)>>7;  // lat bits 14...7
     // slot 2 (latitude & longitude)
     slotAvailable[2] = true;
-    slotValueByte1[2] =  (lat&0x07f8000)>>15;
-    slotValueByte2[2] = ((lat&0x7800000)>>23) | (lon&0x0f)<<4;
+    slotValueByte1[2] =  (lat&0x07f8000)>>15;   // lat bits 22...15
+    slotValueByte2[2] = ((lat&0x7800000)>>23) | (lon&0x0f)<<4; // lon bits 3...0 + lat sign + lat bits 25...23
     // slot 3 (longitude)
     slotAvailable[3] = true;
-    slotValueByte1[3] = (lon&0x00ff0)>>4;
-    slotValueByte2[3] = (lon&0xff000)>>12;
+    slotValueByte1[3] = (lon&0x00ff0)>>4;  // lon bits 11...4
+    slotValueByte2[3] = (lon&0xff000)>>12;  // lon bits 19...12
     // slot 4 (longitude & speed)
     slotAvailable[4] = true;
-    slotValueByte1[4] = ((lon&0xff00000)>>20);
-    slotValueByte2[4] = (speed&0xff);
+    slotValueByte1[4] = ((lon&0xff00000)>>20); // lon sign + lon bit 26...20
+    slotValueByte2[4] = (speed&0xff); // speed bits 7...0
     // slot 5 (pressure & speed)
     slotAvailable[5] = true;
-    slotValueByte1[5] = ((speed&0x300)>>8);
-    slotValueByte2[5] = 0x00;
+    slotValueByte1[5] = ((speed&0x300)>>8);  // (baro bits 2...0 + BARO??? + SAT bits 1...0 +) speed valid (or fix?) + speed bit 8 
+    slotValueByte2[5] = 0x00; // not used (baro bits 10...3)
     // slot 6 (altitude & pressure)
     slotAvailable[6] = true;
-    slotValueByte1[6] = ((alt&0x003)<<6);
-    slotValueByte2[6] =  (alt&0x3fc)>>2;
+    slotValueByte1[6] = ((alt&0x003)<<6);   // !!!! does not match: here 2 bits while other doc says Alt 5 bits4...0 + baro bits 13..11
+    slotValueByte2[6] =  (alt&0x3fc)>>2;    // !!!! does not match: other doc says Alt bits 12...5
     // slot (7 (vario & altitude)
     uint16_t vario;
     // error check vario
@@ -389,8 +394,8 @@ void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from
         vario = 0;
     }
     slotAvailable[7] = true;
-    slotValueByte1[7] = ((vario&0x001f)<<3) | ((alt&0x1c00)>>10);
-    slotValueByte2[7] =  (vario&0x1fe0)>>5;
+    slotValueByte1[7] = ((vario&0x001f)<<3) | ((alt&0x1c00)>>10); // vario bits 4...0 + alt bits 15...13 (!!! does not match)
+    slotValueByte2[7] =  (vario&0x1fe0)>>5; // does not match other doc that says BARO OK= bit 7, other bits= vario bits 11...5
 }
 
 #ifdef SIMULATE_SBUS2_ON_PIN
