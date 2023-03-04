@@ -137,7 +137,7 @@ void detectBaudrate(){
     gpio_set_dir(config.pinGpsTx, false); // input
     //gpio_pull_up(config.pinGpsRx);
     gpio_set_irq_enabled_with_callback(config.pinGpsTx, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpioBaudrateCallback);
-    sleep_ms(600);
+    sleep_ms(3000);
     irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
     gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
     if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
