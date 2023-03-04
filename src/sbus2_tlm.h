@@ -14,6 +14,8 @@ void fillVario(uint8_t slot8);
 void fillBattery(uint8_t slot8);
 void fillTemp1(uint8_t slot8);
 void fillTemp2(uint8_t slot8);
+void fillReserve1(uint8_t slot8);
+void fillReserve2(uint8_t slot8);
 void fillRpm(uint8_t slot8);
 void fillGps(uint8_t slot8);
 

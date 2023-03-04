@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.4.19"
+#define VERSION "1.5.0"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -37,6 +37,7 @@
 // For vario, oXs emulates a F1672 or F1712
 // For Volt, current,capacity, oXs emulates SBS/01C
 // For GPS, oXs emulates a SBS/01G
+// V3 and V4 can be get using F125 or F1713 
 
 // here you can define the slot being used by different sensors
 #define SBUS2_SLOT_GPS_8  8   // this must be 8,16 or 24 because GPS requires 8 slots
@@ -44,7 +45,9 @@
 #define SBUS2_SLOT_BATTERY_3 18  // Battery requires 3 slots (volt, current, capacity)
 #define SBUS2_SLOT_TEMP1_1 21    // Temp1 requires 1 slot
 #define SBUS2_SLOT_TEMP2_1 22    // Temp2 requires 1 slot
-#define SBUS2_SLOT_RPM_1 23    // Temp2 requires 1 slot
+#define SBUS2_SLOT_RESERVE1_1 23    // V3 requires 1 slot
+#define SBUS2_SLOT_RESERVE2_1 24    // V4 requires 1 slot
+#define SBUS2_SLOT_RPM_1 25    // Rpm requires 1 slot
 
 
 // -------- Parameters for the vario -----

@@ -175,6 +175,12 @@ void fill8Sbus2Slots (uint8_t slotGroup){
     if (( (fields[MVOLT].available) || (fields[CURRENT].available) ) && ( slotGroup == (SBUS2_SLOT_BATTERY_3 >>3))){
         fillBattery( SBUS2_SLOT_BATTERY_3 & 0x07);
     }
+    if ((fields[RESERVE1].available) && ( slotGroup == (SBUS2_SLOT_RESERVE1_1 >>3))){
+        fillReserve1(SBUS2_SLOT_RESERVE1_1 & 0x07); // keep 3 last bits as slot index
+    }
+    if ((fields[RESERVE2].available) && ( slotGroup == (SBUS2_SLOT_RESERVE2_1 >>3))){
+        fillReserve1(SBUS2_SLOT_RESERVE2_1 & 0x07); // keep 3 last bits as slot index
+    }
     if ((fields[TEMP1].available) && ( slotGroup == (SBUS2_SLOT_TEMP1_1 >>3))){
         fillTemp1(SBUS2_SLOT_TEMP1_1 & 0x07); // keep 3 last bits as slot index
     }
@@ -224,6 +230,24 @@ void fillTemp2(uint8_t slot8){
     slotValueByte2[slot8] = value >> 8;
 
 }
+
+void fillReserve1(uint8_t slot8){ // emulate F1713
+    int16_t value=  fields[RESERVE1].value;
+    value |= 0x4000;
+    slotAvailable[slot8] = true;
+    slotValueByte1[slot8] = value >> 8;
+    slotValueByte2[slot8] = value;
+}
+
+void fillReserve2(uint8_t slot8){ // emulate F1713
+    int16_t value=  fields[RESERVE2].value;
+    value |= 0x4000;
+    slotAvailable[slot8] = true;
+    slotValueByte1[slot8] = value >> 8;
+    slotValueByte2[slot8] = value;
+}
+
+
 
 void fillVario(uint8_t slot8){ // emulate F1672 ; Alt from cm to m ; Vspeed from cm/s to 0.1m/s
     // Vspeed
