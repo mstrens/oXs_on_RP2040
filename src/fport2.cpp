@@ -576,11 +576,11 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
         fportTxBuffer[7] = uintValue >> 16 ;  
         fportTxBuffer[8] = uintValue >> 24; // value
     } else {
-        fportTxBuffer[2] = 0X10 ; 
-        fportTxBuffer[3] = 0X10 ; 
-        fportTxBuffer[4] = 0X02 ; 
-        fportTxBuffer[5] = 0X3F ;  
-        fportTxBuffer[6] = 0X03 ;  
+        fportTxBuffer[2] = 0 ; 
+        fportTxBuffer[3] = 0 ; 
+        fportTxBuffer[4] = 0 ; 
+        fportTxBuffer[5] = 0 ;  
+        fportTxBuffer[6] = 0 ;  
         fportTxBuffer[7] = 0 ;  
         fportTxBuffer[8] = 0 ;
     }
@@ -599,7 +599,7 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
     sport_uart_tx_program_start(fportPio, fportSmTx, config.pinPrimIn, true); // prepare to transmit
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (fport_dma_chan, &fportTxBuffer[0], false);
-    dma_channel_set_trans_count (fport_dma_chan, 9, true) ;
+    dma_channel_set_trans_count (fport_dma_chan, 10, true) ;
     // we need a way to set the pio back in receive mode when all bytes are sent 
     // this will be done in the main loop after some ms (here 2ms)
     restoreFportPioToReceiveMillis = millisRp() + 2;   
