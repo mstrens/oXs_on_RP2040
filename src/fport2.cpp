@@ -418,10 +418,10 @@ bool processNextInputByte( uint8_t c){
     //const FPort2_Frame *frame = (const FPort2_Frame *)&byte_input.buf[0];
 
     if (fportLen > 2 && fportRxBufferIdx == fportLen) { //when all bytes have been received
-        for (uint8_t i=0; i<fportLen; i++ ){
-            printf(" %x", fportRxBuffer[i]);
-        }
-        printf(" \n");
+        //for (uint8_t i=0; i<fportLen; i++ ){
+        //    printf(" %x", fportRxBuffer[i]);
+        //}
+        //printf(" \n");
         if (! check_checksum()) {                   // check 
             fportRxBufferIdx = 0;
             printf("fport2 : frame with wrong checksum\n");
@@ -435,11 +435,11 @@ bool processNextInputByte( uint8_t c){
         if (fportIsDownlink) {
             if( (fportRxBuffer[1] == SPORT_DEVICEID) && // reply only the physical id = oXs device ID
                     (fportRxBuffer[2] == 0X10) ) {          // and type = 0X10 = polling for DATA          
-                printf("fport2: a pooling has been received\n");
+                //printf("fport2: a pooling has been received\n");
                 sendNextFportFrame() ;   // send telemetry
             }    
         } else {           
-                printf("fport2: RC received\n");
+                //printf("fport2: RC received\n");
                 fportDecodeRcChannels() ; // manage the RC channels frame                   
         }
         fportRxBufferIdx = 0; 
@@ -489,7 +489,7 @@ void sendNextFportFrame(){ // search for the next data to be sent
     // oXs search (in the sequence defined by priority) for a field that has not been sent since more or equal than max
     // if not found, it search for a field that has not been sent since more or equal than min
     // if not found, it sent a frame with all 0
-    waitUs(400); // wait a little before replying to a pooling
+    waitUs(250); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(fport_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
@@ -588,11 +588,11 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
     // copy and convert bytes
     // Byte in frame has value 0x7E is changed into 2 bytes: 0x7D 0x5E
     // Byte in frame has value 0x7D is changed into 2 bytes: 0x7D 0x5D
-        printf("Fport2 :Tlm= ");
-        for (uint8_t j = 0 ; j < 10 ; j++ ){
-            printf(" %02X" , fportTxBuffer[j]);
-        }
-        printf("\n");    
+        //printf("Fport2 :Tlm= ");
+        //for (uint8_t j = 0 ; j < 10 ; j++ ){
+        //    printf(" %02X" , fportTxBuffer[j]);
+        //}
+        //printf("\n");    
     
     //sleep_us(100) ;
     sport_uart_rx_program_stop(fportPio, fportSmRx, config.pinPrimIn); // stop receiving
