@@ -465,12 +465,12 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len)
 }
 
 void fportDecodeRcChannels(){             // this code is similar to Sbus in
-    sbusPriMissingFlag = (fportRxBuffer[23] >> 2) & 0X01;
-    sbusPriFailsafeFlag = (fportRxBuffer[23] >> 3) & 0X01;
+    sbusPriMissingFlag = (fportRxBuffer[24] >> 2) & 0X01;
+    sbusPriFailsafeFlag = (fportRxBuffer[24] >> 3) & 0X01;
     if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   
         ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
         ( ( millisRp() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
-        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &fportRxBuffer[1], 22); // copy the 22 bytes of RC channels
+        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &fportRxBuffer[2], 22); // copy the 22 bytes of RC channels
     }
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
