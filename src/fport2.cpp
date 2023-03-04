@@ -576,11 +576,11 @@ void sendOneFport(uint8_t idx){  // fill one frame and send it
         fportTxBuffer[7] = uintValue >> 16 ;  
         fportTxBuffer[8] = uintValue >> 24; // value
     } else {
-        fportTxBuffer[2] = 0 ; 
-        fportTxBuffer[3] = 0 ; 
-        fportTxBuffer[4] = 0 ; 
-        fportTxBuffer[5] = 0 ;  
-        fportTxBuffer[6] = 0 ;  
+        fportTxBuffer[2] = 0X10 ; 
+        fportTxBuffer[3] = 0X10 ; 
+        fportTxBuffer[4] = 0X02 ; 
+        fportTxBuffer[5] = 0X3F ;  
+        fportTxBuffer[6] = 0X03 ;  
         fportTxBuffer[7] = 0 ;  
         fportTxBuffer[8] = 0 ;
     }

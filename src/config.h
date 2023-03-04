@@ -1,14 +1,14 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.5.1"
+#define VERSION "1.5.2"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
 // -----------  for Sport protocol -------------------------------
-#define SPORT_DEVICEID    DATA_ID_VARIO  // this line defines the physical ID used by sport. 
+#define SPORT_DEVICEID    DATA_ID_FAS  // this line defines the physical ID used by sport. 
 
 // default SPORT_SENSOR_ID use by some original frsky sensors
 #define DATA_ID_VARIO  0x00  // = sensor 0 used for Vspeed, GPS long and lat as P1

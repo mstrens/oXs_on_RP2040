@@ -288,6 +288,11 @@ void setup() {
     toggleRgb();
     }
   sleep_ms(2000);
+  //uint8_t fport2frame[10] = { 0X08, 0X22, 0X10 , 0X10, 0X02, 0X3F, 0X03, 0X00, 0X00, 0X79};
+  //uint8_t crc;
+  //crc = crc_sum8( &fport2frame[1], 8);
+  //printf("crc expected= %x   real=%x\n", fport2frame[9] , crc);
+
   #endif
   
   if (watchdog_caused_reboot()) {
@@ -306,7 +311,7 @@ void setup() {
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
       #ifdef DEBUG
-      sleep_ms(4000); // xxxxxxxxxxx to remove after debug
+      sleep_ms(2000); // xxxxxxxxxxx to remove after debug
       #endif
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
       uint32_t setup1StartUs = microsRp();  
