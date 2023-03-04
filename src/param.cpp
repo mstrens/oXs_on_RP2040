@@ -126,7 +126,7 @@ void processCmd(){
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
-        printf("     S(Sport), 2(Fport2), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , F(Futaba) or I(IBus/Flysky)\n");
+        printf("     S(Sport), 2(Fbus), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , F(Futaba) or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
@@ -405,7 +405,7 @@ void processCmd(){
             config.protocol = '2';
             updateConfig = true;
         } else  {
-            printf("Error : protocol must be S(Sport), 2(Fport2), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), F(Futaba) or I(Ibus/Flysky)\n");
+            printf("Error : protocol must be S(Sport), 2(Fbus), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), F(Futaba) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -657,11 +657,11 @@ void checkConfig(){
         configIsValid=false;
     }
     if (config.protocol == '2' && config.pinPrimIn == 255  ){
-        printf("Error in parameters: For Fport2, a pin must be defined for Primary channels input (PRI)\n");
+        printf("Error in parameters: For Fbus, a pin must be defined for Primary channels input (PRI)\n");
         configIsValid=false;
     }
     if (config.protocol == '2' && config.pinTlm != 255  ){
-        printf("Error in parameters: For Fport2, TLM pin may not be defined (but PRI must be defined)\n");
+        printf("Error in parameters: For Fbus, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
     if ( configIsValid == false) {
@@ -706,7 +706,7 @@ void printConfig(){
         } else if (config.protocol == 'F'){
             printf("\nProtocol is Sbus2(Futaba)\n")  ;    
         } else if (config.protocol == '2'){
-            printf("\nProtocol is Fport2(Frsky)\n")  ;    
+            printf("\nProtocol is Fbus(Frsky)\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }

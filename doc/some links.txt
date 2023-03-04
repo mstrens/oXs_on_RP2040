@@ -25,7 +25,7 @@ Futaba SBUS2
 https://github.com/BrushlessPower/SBUS2-Telemetry/blob/master/src/SBUS2.cpp
 
 
-fport(2)
+fbus(fport2)
 
 https://www.propwashed.com/wp-content/uploads/2018/01/F.Port_.protocol.betaFlight.V2.1.2017.11.21.pdf
 https://github.com/betaflight/betaflight/blob/master/src/main/rx/fport.c

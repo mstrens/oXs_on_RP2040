@@ -23,7 +23,7 @@
 #include "mpx.h"
 #include "ibus.h"
 #include "sbus2_tlm.h"
-#include "fport2.h"
+#include "fbus.h"
 //#include "param.h"
 
 #include "ws2812.h"
@@ -38,15 +38,14 @@
 
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
-//         support Frsky Fport on top of sbus+sport protocol
+//         support Frsky Fbus on top of sbus+sport protocol
 //         add switching 8 gpio from one channel
 //         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
-//         remove many printf from fport2
-//         rename fport2 to Fbus
+//         remove many printf from fbus
 
 // Look at file in folder "doc" for more details
 //
@@ -288,10 +287,10 @@ void setup() {
     toggleRgb();
     }
   sleep_ms(2000);
-  //uint8_t fport2frame[10] = { 0X08, 0X22, 0X10 , 0X10, 0X02, 0X3F, 0X03, 0X00, 0X00, 0X79};
+  //uint8_t fbusFrame[10] = { 0X08, 0X22, 0X10 , 0X10, 0X02, 0X3F, 0X03, 0X00, 0X00, 0X79};
   //uint8_t crc;
-  //crc = crc_sum8( &fport2frame[1], 8);
-  //printf("crc expected= %x   real=%x\n", fport2frame[9] , crc);
+  //crc = crc_sum8( &fbusFrame[1], 8);
+  //printf("crc expected= %x   real=%x\n", fbusFframe[9] , crc);
 
   #endif
   
@@ -353,7 +352,7 @@ void setup() {
         setupSbus2In();
         setupSbus2Tlm();
       } else if (config.protocol == '2') {
-        setupFport();
+        setupFbus();
         setupSbus2In();
         //setupSbus2Tlm();
       }
@@ -442,9 +441,9 @@ void loop() {
         handleSbus2In();
         fillSbusFrame();
       } else if (config.protocol == '2') {
-        handleFportRxTx();
+        handleFbusRxTx();
         handleSbus2In();
-        //fillSbusFrame();
+        fillSbusFrame();
       } 
       watchdog_update();
       updatePWM();
