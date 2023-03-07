@@ -108,7 +108,7 @@ uint32_t restoreFbusPioToReceiveMillis = 0; // when 0, the pio is normally in re
 extern field fields[];  // list of all telemetry fields that are measured
 
 
-uint16_t fbusFieldId[NUMBER_MAX_IDX]; // contains the code to be used in fbus to identify the field
+extern uint16_t sportFieldId[NUMBER_MAX_IDX]; // contains the code to be used in fbus to identify the field
 extern uint8_t sportPriority[NUMBER_MAX_IDX]; // contains the list of fields in priority sequence (first = highest) 
 extern uint8_t sportMaxPooling[NUMBER_MAX_IDX]; // contains the max number of polling allowed between 2 transmissions
 extern uint8_t sportMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
@@ -574,8 +574,8 @@ void sendOneFbus(uint8_t idx){  // fill one frame and send it
     fbusTxBuffer[1] = SPORT_DEVICEID ;   
     if ( idx != NO_SPORT_DATA) {
         fbusTxBuffer[2] = 0X10 ; // type of packet : data
-        fbusTxBuffer[3] = fbusFieldId[idx]    ; // 0x0110 = Id for vario data
-        fbusTxBuffer[4] = fbusFieldId[idx] >> 8 ; // 0x0110 = Id for vario data
+        fbusTxBuffer[3] = sportFieldId[idx]    ; // 0x0110 = Id for vario data
+        fbusTxBuffer[4] = sportFieldId[idx] >> 8 ; // 0x0110 = Id for vario data
         fbusTxBuffer[5] = uintValue >> 0 ; // value 
         fbusTxBuffer[6] = uintValue >> 8 ;  
         fbusTxBuffer[7] = uintValue >> 16 ;  
