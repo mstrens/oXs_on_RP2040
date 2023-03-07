@@ -59,13 +59,15 @@ GPS::GPS( void) {}
 
 void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( config.gpsType == 'U') setupGpsUblox(); // send cmd to gps to configure it
-    gpsInitRx(); // this part is common for both types of gps
+    if ( config.gpsType == 'U') {
+        setupGpsUblox(); // send cmd to gps to configure it
+    } else {
+        gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
+    }
 }
 void GPS::readGps(){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( queue_is_empty (&gpsRxQueue)) return;
-    if ( config.gpsType == 'U') readGpsUblox();
+    if ( config.gpsType == 'U') handleGpsUblox();
     if ( config.gpsType == 'C') readGpsCasic();    
 }
 
@@ -120,6 +122,7 @@ void GPS::gpsInitRx(){
 }
 
 volatile uint32_t baudMinInterval = 1000000;
+volatile uint32_t baudrateCount = 0;
 uint32_t prevRxChangeUs = 0;
 // interrupt to calculate the delay between 2 edges
 void gpioBaudrateCallback(uint gpio, uint32_t events) {
@@ -127,16 +130,12 @@ void gpioBaudrateCallback(uint gpio, uint32_t events) {
     uint32_t intervalUs = now - prevRxChangeUs;
     if ((intervalUs < baudMinInterval )  && (intervalUs > 5) ) baudMinInterval = intervalUs;
     prevRxChangeUs = now;
+    baudrateCount++; 
     //printf("\n");
 }
 
 uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
 void detectBaudrate(){
-    printf("Start detecting baudrate\n");
-    gpio_init(config.pinGpsTx);
-    gpio_set_dir(config.pinGpsTx, false); // input
-    //gpio_pull_up(config.pinGpsRx);
-    gpio_set_irq_enabled_with_callback(config.pinGpsTx, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpioBaudrateCallback);
     sleep_ms(3000);
     irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
     gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
@@ -238,9 +237,116 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
         busy_wait_us(10000); 
 }  // end setupGPSUblox;
 
-    
+const static uint8_t initGps1[] = { 
+        // send command to GPS to change the setup
+        // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
+        
+            0xB5,0x62,0x06,0x3E, 0x3C, 0x00, // GNSS + number of bytes= 60 dec = 003C in HEx
+            0x00, 0x00, 0x20, 0x07,  // GNSS / min / max / enable
+            0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01, // GPS / 8 / 16 / Y
+            0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01, // SBAS / 1 / 3 / Y
+            0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, // Galileo / 4 / 8 / Y
+            0x03, 0x08, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01, // BeiDou / 8 / 16 / N
+            0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x01, // IMES / 0 / 8 / N
+            0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x01, // QZSS / 0 / 3 / N
+            0x06, 0x08, 0x0e, 0x00, 0x01, 0x00, 0x01, 0x01, // GLONASS / 8 / 14 / Y
+            0x30, 0xD8, // checksum
+
+    // Here the code to activate SBAS for Europe (This has not yet been tested and is based on I-NAV code)
+            0xB5,0x62,0x06,0x16, 0x08, 0x00, // SBAS + number of bytes = 8
+            0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
+            0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
+            0x86, 0x2C, //checksum
+        
+    // Here other code        
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
+
+    #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
+            0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
+    #elif defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 10)
+            0xB5,0x62,0x06,0x08,0x06,0x00,0x64,0x00,0x01,0x00,0x01,0x00,0x7A,0x12, // NAV-RATE for 10 hz
+    #else
+            0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A, // NAV-RATE for 5 hz
+    #endif
+            0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
+        }  ;   
+
+void GPS::handleGpsUblox(){
+    static uint32_t lastActionUs;
+    if (config.pinGpsTx == 255) return;
+    switch (gpsState){
+        case GPS_TO_SETUP:
+            printf("Start detecting baudrate\n");
+            // start an irq on a gpio
+            gpio_init(config.pinGpsTx);
+            gpio_set_dir(config.pinGpsTx, false); // input
+            //gpio_pull_up(config.pinGpsRx);
+            gpio_set_irq_enabled_with_callback(config.pinGpsTx, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpioBaudrateCallback);
+            lastActionUs = microsRp();
+            gpsState = GPS_IN_AUTOBAUD_DETECTION;        
+            break;
+        case GPS_IN_AUTOBAUD_DETECTION:
+            if ( ( baudrateCount > 1000) || ( ( microsRp() - lastActionUs) > 30000000)) {
+                // we count or wait long enoug
+                irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
+                gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
+                if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
+                if ( ( baudMinInterval > 23 ) && ( baudMinInterval <30 ) ) gpsBaudrate = 38400; // 26
+                if ( ( baudMinInterval > 48 ) && ( baudMinInterval <58 ) ) gpsBaudrate = 19200; //52
+                if ( ( baudMinInterval > 100 ) && ( baudMinInterval <110 ) ) gpsBaudrate = 9600; //104
+                if (gpsBaudrate == 0){
+                    printf("gps baudrate not detected; will be set on 9600\n");
+                    gpsBaudrate = 9600;
+                } else {
+                    printf("gps baudrate detected = %d\n", (uint) gpsBaudrate) ;
+                }
+                // setup the PIO for TX UART
+                uint gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program);
+                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, gpsBaudrate);
+
+                lastActionUs = microsRp();
+                gpsState = GPS_IN_RECONFIGUARTION;        
+            }   
+            break;
+        case GPS_IN_RECONFIGUARTION:
+            if ((microsRp() - lastActionUs ) > 5000) { // wait 5 ms between 2 commands
+                if ( initGpsIdx >= sizeof( initGps1)) { // when all bytes have been sent
+                    gpsInitRx();                        // setup the reception of GPS char.
+                    gpsState = GPS_CONFIGURED;
+                }  else {
+                    while (initGpsIdx < sizeof( initGps1)) {
+                        if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
+                            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx] );   
+                            //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
+                            if (initGps1[initGpsIdx] == 0XB5) {
+                                initGpsIdx++;
+                                lastActionUs = microsRp();
+                                break; // quit the while loop
+                            } else {
+                                initGpsIdx++; // point to next char
+                            }
+                        }
+                    } // end while
+                }
+            }
+            break;
+        case GPS_CONFIGURED:
+            readGpsUblox() ;   
+            break;
+    } // end of switch
+}
+
 void GPS::readGpsUblox(){
     uint8_t data;
+    if ( queue_is_empty (&gpsRxQueue)) return;
     while (!queue_is_empty(&gpsRxQueue)){
         if (queue_try_remove ( &gpsRxQueue , &data ) ){
             //printf(" %X" , data);
@@ -487,6 +593,7 @@ void GPS::setupGpsCasic(void){    // for casic gps
 void GPS::readGpsCasic() { // read and process GPS data. do not send them.// for casic gps
     uint8_t data;
     static uint8_t _idx;
+    if ( queue_is_empty (&gpsRxQueue)) return;
     if (queue_try_remove ( &gpsRxQueue , &data ) ) {
     //    if (data == 0xBA) printf("\n"); // new line when sync byte is received
     //    printf(" %x " , data );

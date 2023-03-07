@@ -109,9 +109,9 @@ extern field fields[];  // list of all telemetry fields that are measured
 
 
 uint16_t fbusFieldId[NUMBER_MAX_IDX]; // contains the code to be used in fbus to identify the field
-uint8_t fbusPriority[NUMBER_MAX_IDX]; // contains the list of fields in priority sequence (first = highest) 
-uint8_t fbusMaxPooling[NUMBER_MAX_IDX]; // contains the max number of polling allowed between 2 transmissions
-uint8_t fbusMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
+extern uint8_t sportPriority[NUMBER_MAX_IDX]; // contains the list of fields in priority sequence (first = highest) 
+extern uint8_t sportMaxPooling[NUMBER_MAX_IDX]; // contains the max number of polling allowed between 2 transmissions
+extern uint8_t sportMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
 uint32_t fbusLastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each field
 uint32_t fbusPoolingNr= 0; // contains the current Pooling nr
 
@@ -128,7 +128,7 @@ extern uint32_t lastSecChannelsMillis;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
-
+/*
 void setupFbusList(){     // table used by fbus
     uint8_t temp[] = { // sequence of fields (first = highest priority to sent on fbus)
         VSPEED,      // baro       in cm/s    5
@@ -273,10 +273,11 @@ void setupFbusList(){     // table used by fbus
     //}
 
 } 
+*/
 
 void setupFbus() {
 // configure some table to manage priorities and fbus fields codes used bu fbus    
-    setupFbusList();
+    setupSportList(); // reuse the set up list from sport
 // configure the queue to get the data from fbus in the irq handle
     queue_init (&fbusRxQueue, sizeof(uint16_t), 250);
 
@@ -499,9 +500,9 @@ void sendNextFbusFrame(){ // search for the next data to be sent
     uint8_t _fieldId; 
     // first we search the first field 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
-         _fieldId = fbusPriority[i]; // retrieve field ID to be checked
+         _fieldId = sportPriority[i]; // retrieve field ID to be checked
          if (fields[_fieldId].available) {
-            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + fbusMaxPooling[_fieldId])){
+            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
                 sendOneFbus(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 fbusLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
@@ -511,9 +512,9 @@ void sendNextFbusFrame(){ // search for the next data to be sent
     } // end for
     // repeat base on min 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
-         _fieldId = fbusPriority[i]; // retrieve field ID to be checked
+         _fieldId = sportPriority[i]; // retrieve field ID to be checked
          if (fields[_fieldId].available) {
-            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + fbusMinPooling[_fieldId])){
+            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
                 sendOneFbus(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 fbusLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 

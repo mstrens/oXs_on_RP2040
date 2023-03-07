@@ -30,7 +30,7 @@
 class BMP280 {
 public:
   bool    baroInstalled = false;
-  int32_t altitude  ; // in cm * 100 
+  int32_t altitudeCm  ; // in cm  
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa 
   int32_t altIntervalMicros; // enlapstime between 2 calculations of altitude

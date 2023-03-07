@@ -81,13 +81,15 @@ uint32_t sportPoolingNr= 0; // contains the current Pooling nr
 
 void setupSportList(){     // table used by sport
     uint8_t temp[] = { // sequence of fields (first = highest priority to sent on sport)
-        VSPEED,      // baro       in cm/s    5
+        VSPEED,      // baro       in cm/s    8
+        AIRSPEED_COMPENSATED_VSPEED,  // compensated airspeed 8
         LATITUDE,  //  GPS special format     10
         LONGITUDE,    //  GPS special format  10
         GROUNDSPEED , //  GPS cm/s            20
         RELATIVEALT , // baro      in cm      20
         PITCH,       // 20 imu        in degree  20
         ROLL,        // imu           in degree  20 
+        AIRSPEED,    //       in cm/s
         HEADING,      //  GPS 0.01 degree        50
         ALTITUDE ,    //  GPS cm                 50
         GPS_HOME_BEARING, // GPS degree          50
@@ -151,11 +153,13 @@ void setupSportList(){     // table used by sport
     sportFieldId[ADS_2_2] = DIY_ADS_2_2;
     sportFieldId[ADS_2_3] = DIY_ADS_2_3;
     sportFieldId[ADS_2_4] = DIY_ADS_2_4;
+    sportFieldId[AIRSPEED] = AIR_SPEED_FIRST_ID;
+    sportFieldId[AIRSPEED_COMPENSATED_VSPEED] = VARIO_LAST_ID;
     
 
-    sportMaxPooling[LATITUDE] = 10;
-    sportMaxPooling[LONGITUDE] = 10;
-    sportMaxPooling[GROUNDSPEED] = 20;
+    sportMaxPooling[LATITUDE] = 20;
+    sportMaxPooling[LONGITUDE] = 20;
+    sportMaxPooling[GROUNDSPEED] = 30;
     sportMaxPooling[HEADING] = 50;
     sportMaxPooling[ALTITUDE] = 50;
     sportMaxPooling[NUMSAT] = 200;
@@ -171,7 +175,7 @@ void setupSportList(){     // table used by sport
     sportMaxPooling[CAPACITY] = 200;
     sportMaxPooling[TEMP1] = 50;
     sportMaxPooling[TEMP2] = 50;
-    sportMaxPooling[VSPEED] = 5;
+    sportMaxPooling[VSPEED] = 8;
     sportMaxPooling[RELATIVEALT] = 20;
     sportMaxPooling[PITCH] = 20;
     sportMaxPooling[ROLL] = 20;
@@ -185,6 +189,8 @@ void setupSportList(){     // table used by sport
     sportMaxPooling[ADS_2_2] = 200;
     sportMaxPooling[ADS_2_3] = 200;
     sportMaxPooling[ADS_2_4] = 200;
+    sportMaxPooling[AIRSPEED] = 30;
+    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 8;
 
     sportMinPooling[LATITUDE] = 5;
     sportMinPooling[LONGITUDE] = 5;
@@ -218,7 +224,9 @@ void setupSportList(){     // table used by sport
     sportMinPooling[ADS_2_2] = 50;
     sportMinPooling[ADS_2_3] = 50;
     sportMinPooling[ADS_2_4] = 50;
-    
+    sportMaxPooling[AIRSPEED] = 10;
+    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 3;
+
     /*
     fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;
     fields[LONGITUDE].sportDeviceId = SPORT_DEVICEID_P1;
@@ -395,29 +403,34 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     int32_t intValue = fields[idx].value ;
     // change some formats just before sending e.g. for longitude and latitude
     switch (idx) {
-    case LONGITUDE:
-        uintValue = (( ((((uint32_t)( intValue < 0 ? -intValue : intValue)) /10 ) * 6 ) / 10 ) & 0x3FFFFFFF)  | 0x80000000;  
-        if(intValue < 0) uintValue |= 0x40000000;
-        break;
-    case LATITUDE:
-        uintValue = ((  ((((uint32_t)( intValue < 0 ? -intValue : intValue)) / 10 ) * 6 )/ 10 ) & 0x3FFFFFFF ) ;
-        if(intValue < 0) uintValue |= 0x40000000;
-        break;
-    case HEADING:
-        uintValue =  intValue / 1000 ; // convert from degree * 100000 to degree * 100
-        break;
-    case GROUNDSPEED:  // to do : test for the right value
-        //uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
-        uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)
-        break;
-    case MVOLT:
-        uintValue =  ( ((uint32_t) uintValue) /10 ) ;// voltage in mv is divided by 10 because SPORT expect it (volt * 100)
-        break;    
-    case CURRENT:
-        uintValue =  ( ((uint32_t) uintValue) /100 ) ;// voltage in mv is divided by 100 because SPORT expect it (Amp * 10)
-        break;    
+        case LONGITUDE:
+            uintValue = (( ((((uint32_t)( intValue < 0 ? -intValue : intValue)) /10 ) * 6 ) / 10 ) & 0x3FFFFFFF)  | 0x80000000;  
+            if(intValue < 0) uintValue |= 0x40000000;
+            break;
+        case LATITUDE:
+            uintValue = ((  ((((uint32_t)( intValue < 0 ? -intValue : intValue)) / 10 ) * 6 )/ 10 ) & 0x3FFFFFFF ) ;
+            if(intValue < 0) uintValue |= 0x40000000;
+            break;
+        case HEADING:
+            uintValue =  intValue / 1000 ; // convert from degree * 100000 to degree * 100
+            break;
+        case GROUNDSPEED:  // to do : test for the right value
+            //uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
+            uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)
+            break;
+        case MVOLT:
+            uintValue =  ( ((uint32_t) uintValue) /10 ) ;// voltage in mv is divided by 10 because SPORT expect it (volt * 100)
+            break;    
+        case CURRENT:
+            uintValue =  ( ((uint32_t) uintValue) /100 ) ;// voltage in mv is divided by 100 because SPORT expect it (Amp * 10)
+            break;    
+        case AIRSPEED:
+            uintValue =  (uint32_t)( ((float) intValue) * 0.194384 ) ;// from cm/s to 0.1kts/h
+            if (intValue < 0) uintValue = 0; 
+            break;    
     }
-    uint16_t crc ;
+    
+    uint16_t crc = 0;
     uint8_t tempBuffer[10]= {0};
     if ( idx != NO_SPORT_DATA) {
         tempBuffer[counter++] = 0X10 ; // type of packet : data

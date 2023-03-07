@@ -185,6 +185,13 @@ struct __attribute__((__packed__)) casic_nav_pv_info {
 
 #define    NAV_STATUS_FIX_VALID  1
 
+enum {
+    GPS_TO_SETUP = 0,
+    GPS_IN_AUTOBAUD_DETECTION,
+    GPS_IN_RECONFIGUARTION,
+    GPS_CONFIGURED,
+};
+
 
 class GPS {
 public:
@@ -192,6 +199,9 @@ public:
     // GPS data being read
     // **********************
     bool gpsInstalled = false;
+    uint8_t gpsState = GPS_TO_SETUP;
+    uint8_t initGpsIdx = 0 ; // index of the bytes to be sent to configure the GPS
+            
     //int32_t GPS_lon;               // longitude in degree with 7 decimals, (neg for S)
     //bool    GPS_lonAvailable = false ; 
     //int32_t GPS_lat;               // latitude   in degree with 7 decimals, (neg for ?)
@@ -234,6 +244,7 @@ public:
     void gpsInitRx();
     void pioRxHandlerIrq();
     void setupGpsUblox() ;
+    void handleGpsUblox();
     //void setupGpsCasic() ;
     void readGps();
     void readGpsUblox();

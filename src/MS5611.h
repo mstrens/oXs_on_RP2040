@@ -43,7 +43,7 @@ class MS5611
 {
 public:
   bool    baroInstalled = false; 
-  int32_t altitude  ; // in 1/100 of cm 
+  float altitudeCm  ; // in cm 
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
   

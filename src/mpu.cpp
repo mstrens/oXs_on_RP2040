@@ -320,8 +320,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     countAccZ++;
         //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
-    if (vario1.newClimbRateAvailable){   // here once per about 20 msec
-        vario1.newClimbRateAvailable = false; // reset the flag that says a new relative alt is available
+    if (vario1.newClimbRateAvailableForMpu){   // here once per about 20 msec
+        vario1.newClimbRateAvailableForMpu = false; // reset the flag that says a new relative alt is available
         azWorldAverage = (sumAccZ/countAccZ);
         kfUs = microsRp(); 
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);

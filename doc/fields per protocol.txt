@@ -1,7 +1,7 @@
 Here the list of fields being calculated and transmitted per protocol
 
 ******************************************************************************************************************
-**                                          Sport protocol                                                      **
+**                                          Sport or Fport protocol                                             **
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
@@ -31,10 +31,8 @@ RPM        ?????             RPM pin is defined                            RPM (
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     DIY (0X5131 / 0X5138)    mVolt
 Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
 Roll       degree            Same as above                                 DIY (05121)              degree
-
-Note: to test if openTx/edge is able to discover the "DIY" sensor ID's
-
-
+Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed (0X0A00)        0.1 kts/h
+Comp.Vspeed cm/s             a Baro + a MS4525 are installed               Vspeed (0X011F)          cm/s
 
 ******************************************************************************************************************
 **                                       ELRS/CRSF protocol                                                     **

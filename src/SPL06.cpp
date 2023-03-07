@@ -10,6 +10,7 @@
 #include "param.h"
 
 extern CONFIG config;
+extern float actualPressurePa; // used to calculate airspeed
 
 /////////////////////////////////////////////////////
 //
@@ -236,13 +237,14 @@ void SPL06::calculateAltitude(){
     const double p_temp_comp = t_raw_sc * ((double)spl06_cal.c01 + p_raw_sc * ((double)spl06_cal.c11 + p_raw_sc * (double) spl06_cal.c21));
 
     const double pressure_comp =  pressure_cal + p_temp_comp; // pressure in Pa
+    actualPressurePa = pressure_comp;  // in Pa
     //printf("pres_raw %f  ",(float) spl06_pressure_raw);
     //printf("pres_raw_sc %f  ",(float) p_raw_sc);
     //printf("press_cal %f  ", (float) pressure_cal);
     //printf("p_temp_cmp %f ", (float) p_temp_comp);
     //printf("pressure_comp %f  ", (float) pressure_comp) ;
 
-    altitude = 443300000.0 * (1.0 - pow(pressure_comp / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
+    altitudeCm = 4433000.0 * (1.0 - pow( actualPressurePa / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm
     altIntervalMicros = _lastTempRequest - _prevAltMicros;
     _prevAltMicros = _lastTempRequest ;
     //printf("Alt %f\n", (float) altitude); 

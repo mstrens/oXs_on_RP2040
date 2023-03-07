@@ -5,6 +5,7 @@
 #include "MS5611.h"
 #include "SPL06.h"
 #include "BMP280.h"
+#include "ms4525.h"
 #include <vario.h>
 #include <voltage.h>
 #include <gps.h>
@@ -46,6 +47,7 @@
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
 //         remove many printf from fbus
+//         make baudrate autodetect a non blocking process.
 
 // Look at file in folder "doc" for more details
 //
@@ -82,6 +84,8 @@ BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0
 
 ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin connected to grnd)
 ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
+
+MS4525 ms4525 ( (uint8_t) MS4525_ADDRESS ) ; // 0x28 is the default I2C adress of a 4525DO sensor)
 
 VARIO vario1;
 
@@ -185,7 +189,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
     //blinkRgb(0,10,0);
       gps.setupGps();  //use a Pio
       //printf("gps done\n");
-      
+      ms4525.begin();
       #ifdef USEDS18B20
       ds18b20Setup(); 
       #endif
@@ -201,21 +205,23 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   voltage.getVoltages();
   if ( baro1.baroInstalled){
     if ( baro1.getAltitude() == 0) { // if an altitude is calculated
-      vario1.calculateAltVspeed(baro1.altitude , baro1.altIntervalMicros ); // Then calculate Vspeed ... 
+      vario1.calculateAltVspeed(baro1.altitudeCm , baro1.altIntervalMicros ); // Then calculate Vspeed ...   
     }
   } else if ( baro2.baroInstalled){
     if ( baro2.getAltitude() == 0) { // if an altitude is calculated
-      vario1.calculateAltVspeed(baro2.altitude , baro2.altIntervalMicros); // Then calculate Vspeed ... 
+      vario1.calculateAltVspeed(baro2.altitudeCm , baro2.altIntervalMicros); // Then calculate Vspeed ... 
     }
   } else if (baro3.baroInstalled) {
     if ( baro3.getAltitude() == 0) { // if an altitude is calculated
-      vario1.calculateAltVspeed(baro3.altitude , baro3.altIntervalMicros); // Then calculate Vspeed ... 
+      vario1.calculateAltVspeed(baro3.altitudeCm , baro3.altIntervalMicros); // Then calculate Vspeed ... 
     }
   }
   adc1.readSensor(); 
   adc2.readSensor();
   mpu.getAccZWorld();  
   gps.readGps();
+  ms4525.getAirspeed();
+  if (ms4525.airspeedInstalled) vario1.calculateVspeedDte();
   readRpm();
   #ifdef USE_DS18B20
   ds18b20Read(); 
@@ -323,35 +329,35 @@ void setup() {
       }
       uint32_t core1SetupUs = microsRp() - setup1StartUs ; 
       printf("Setup1 takes %d usec\n",(int) core1SetupUs) ;
-      if ( config.protocol == 'C'){
+      if ( config.protocol == 'C'){   //crsf
         setupCrsfIn();  // setup one/two uart and the irq handler (for primary Rx) 
         setupCrsf2In();  // setup one/two uart and the irq handler (for secondary Rx) 
         setupCrsfOut(); //  setup 1 pio/sm (for TX ) and the DMA (for TX)   
-      } else if (config.protocol == 'S') {
+      } else if (config.protocol == 'S') { // sport
         setupSbusIn();
         setupSbus2In();
         setupSport();
-      } else if (config.protocol == 'J') {
+      } else if (config.protocol == 'J') {   //jeti
         setupSbusIn();
         setupSbus2In();
         setupJeti();
-      } else if (config.protocol == 'H') {
+      } else if (config.protocol == 'H') {   //hott
         setupSbusIn();
         setupSbus2In();
         setupHott();
-      } else if (config.protocol == 'M') {
+      } else if (config.protocol == 'M') {   //Mpx
         setupSbusIn();
         setupSbus2In();
         setupMpx();
-      } else if (config.protocol == 'I') {
+      } else if (config.protocol == 'I') {  // ibus
         setupSbusIn();
         setupSbus2In();
         setupIbus();
-      } else if (config.protocol == 'F') {
+      } else if (config.protocol == '2')  {  // Sbus2 futaba
         setupSbusIn();
         setupSbus2In();
         setupSbus2Tlm();
-      } else if (config.protocol == '2') {
+      } else if (config.protocol == 'F') {   // fBus frsky
         setupFbus();
         setupSbus2In();
         //setupSbus2Tlm();
@@ -436,11 +442,11 @@ void loop() {
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == 'F') {
+      } else if (config.protocol == '2') { // Sbus2 Futaba
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == '2') {
+      } else if (config.protocol == 'F') {  // Fbus frsky
         handleFbusRxTx();
         handleSbus2In();
         fillSbusFrame();

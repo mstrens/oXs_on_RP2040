@@ -8,6 +8,7 @@
 #include "param.h"
 
 extern CONFIG config;
+extern float actualPressurePa; // used to calculate airspeed
 
 #ifdef DEBUG
 //#define DEBUGI2CBMP280
@@ -222,8 +223,9 @@ int BMP280::getAltitude() {
             var1 = (((int32_t)_bmp280_coeffs.dig_P9) * ((int32_t)(((p>>3) * (p>>3))>>13)))>>12;
             var2 = (((int32_t)(p>>2)) * ((int32_t)_bmp280_coeffs.dig_P8))>>13;
             rawPressure = (uint32_t)((int32_t)p + ((var1 + var2 + _bmp280_coeffs.dig_P7) >> 4)) ;  // in pascal
-          }  
-          altitude = 443300000.0 * (1.0 - pow( ( (double) rawPressure)  / 101325.0, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
+          }
+          actualPressurePa = (float) rawPressure ;    
+          altitudeCm = 4433000.0 * (1.0 - pow( ( (double) actualPressurePa)  / 101325.0, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm *100
         altIntervalMicros = _lastConversionRequest - _prevAltMicros;
         _prevAltMicros = _lastConversionRequest ;
         #ifdef DEBUG_BMP280  

@@ -126,7 +126,7 @@ void processCmd(){
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
-        printf("     S(Sport), 2(Fbus), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , F(Futaba) or I(IBus/Flysky)\n");
+        printf("     S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , 2(Sbus2 Futaba) or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
@@ -405,7 +405,7 @@ void processCmd(){
             config.protocol = '2';
             updateConfig = true;
         } else  {
-            printf("Error : protocol must be S(Sport), 2(Fbus), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), F(Futaba) or I(Ibus/Flysky)\n");
+            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), 2(Sbus2 Futaba) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -648,20 +648,20 @@ void checkConfig(){
         printf("Error in parameters: when 2 temperature sensors are used (TEMP = 2), a pin for V3 and for V4 must be defined too)\n");
         configIsValid=false;
     }
-    if (config.protocol == 'F' && config.pinPrimIn == 255){
-        printf("Error in parameters: For Futaba protocol, a pin must be defined for Primary channels input (PRI)\n");
+    if (config.protocol == '2' && config.pinPrimIn == 255){
+        printf("Error in parameters: For Futaba Sbus2 protocol, a pin must be defined for Primary channels input (PRI)\n");
         configIsValid=false;
     }
-    if (config.protocol == 'F' && config.pinTlm != 255 && ( config.pinTlm != (config.pinPrimIn - 1)) ){
-        printf("Error in parameters: For Futaba protocol, TLM pin (when defined) must be equal to (PRI pin -1) \n");
+    if (config.protocol == '2' && config.pinTlm != 255 && ( config.pinTlm != (config.pinPrimIn - 1)) ){
+        printf("Error in parameters: For Futaba SBUS2 protocol, TLM pin (when defined) must be equal to (PRI pin -1) \n");
         configIsValid=false;
     }
-    if (config.protocol == '2' && config.pinPrimIn == 255  ){
-        printf("Error in parameters: For Fbus, a pin must be defined for Primary channels input (PRI)\n");
+    if (config.protocol == 'F' && config.pinPrimIn == 255  ){
+        printf("Error in parameters: For Frsky Fbus, a pin must be defined for Primary channels input (PRI)\n");
         configIsValid=false;
     }
-    if (config.protocol == '2' && config.pinTlm != 255  ){
-        printf("Error in parameters: For Fbus, TLM pin may not be defined (but PRI must be defined)\n");
+    if (config.protocol == 'F' && config.pinTlm != 255  ){
+        printf("Error in parameters: For Frsky Fbus, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
     if ( configIsValid == false) {
@@ -703,9 +703,9 @@ void printConfig(){
             printf("\nProtocol is Mpx\n")  ;    
         } else if (config.protocol == 'I'){
             printf("\nProtocol is ibus(Flysky)\n")  ;    
-        } else if (config.protocol == 'F'){
-            printf("\nProtocol is Sbus2(Futaba)\n")  ;    
         } else if (config.protocol == '2'){
+            printf("\nProtocol is Sbus2(Futaba)\n")  ;    
+        } else if (config.protocol == 'F'){
             printf("\nProtocol is Fbus(Frsky)\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;

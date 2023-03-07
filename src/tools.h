@@ -52,7 +52,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       
       ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
       ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
-      NUMBER_MAX_IDX, // used to count the number of entries       32
+      AIRSPEED,
+      AIRSPEED_COMPENSATED_VSPEED,      
+      NUMBER_MAX_IDX, // used to count the number of entries       34
 };
 
 int32_t int_round(int32_t n, uint32_t d);

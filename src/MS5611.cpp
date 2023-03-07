@@ -6,6 +6,7 @@
 #include "tools.h"
 #include "param.h"
 #include "hardware/watchdog.h"
+#include "pico/double.h"
 
 // datasheet page 10
 #define MS5611_CMD_READ_ADC       0x00
@@ -15,6 +16,7 @@
 #define MS5611_CMD_CONVERT_D2     0x50
 
 extern CONFIG config;
+extern float actualPressurePa; // used to calculate airspeed
 
 /////////////////////////////////////////////////////
 //
@@ -186,86 +188,22 @@ int MS5611::getAltitude() // Try to get a new pressure ;
 }
 
 void MS5611::calculateAltitude(){
-  //printf("+\n");
-  //printf("testInit=%d\n", testInit);
-  if (_D2Prev == 0)
-  {
-    _D2Prev = _D2;
-    _prevAltMicros = _lastTempRequest ;
-     
-  }
-  //printf("%" PRIu32 " %" PRIu32 "\n",_D1,_D2) ;
-  //printf("%x  %x %x %x %x %x\n",_calibrationData[1], _calibrationData[2], _calibrationData[3], _calibrationData[4] ,_calibrationData[5] ,_calibrationData[6]  ); 
-  //      _D2 = 0X825AF8;
-  //      _D2Prev = _D2;
-  //      _D1 = 0X80777E;  
-  int64_t dT = ((int64_t)((_D2+ _D2Prev) >> 1 )) - (( (uint64_t)_calibrationData[5]) << 8) ;
-  int32_t TEMP = 2000 + ((dT * ((int64_t)_calibrationData[6])) >> 23)  ;
-  temperature = TEMP;
-  _D2Prev = _D2 ;
-  int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((((int64_t)_calibrationData[4]) * dT) >> 7);
-  int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((((int64_t)_calibrationData[3]) * dT) >> 8);
-  int64_t rawPressure= (((((((int64_t) _D1) * SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
-  
-  //printf("%d\n", temperature);
-  //#define DEBUG_MS5611_ALT 
-  #ifdef DEBUG_MS5611_ALT  
-  static bool first = true ;
-  if (first ) { 
-        printf("dT=%X%X\n" , (uint32_t)((dT >> 32) & 0xFFFFFFFF) , (uint32_t)(dT & 0xFFFFFFFF) );
-        printf("temp=%X%X\n" , (uint32_t)((temperature >> 32) & 0xFFFFFFFF) , (uint32_t)(temperature & 0xFFFFFFFF) ); 
-        printf("OFF=%X%X\n" , (uint32_t)((OFF >> 32) & 0xFFFFFFFF) , (uint32_t)(OFF & 0xFFFFFFFF) );
-        printf("SENS=%x%x\n" , (uint32_t)((SENS >> 32) & 0xFFFFFFFF),(uint32_t)(SENS & 0xFFFFFFFF) );
-        printf("pressure=%X%X\n" , (uint32_t)((rawPressure >> 32) & 0xFFFFFFFF) , (uint32_t)(rawPressure & 0xFFFFFFFF) );
-        first = false;
-  }
-  #endif  
-
-        // altitude = 44330 * (1.0 - pow(pressure /sealevelPressure,0.1903));
-      // other alternative (faster) = 1013.25 = 0 m , 954.61 = 500m , etc...
-      //      Pressure	Alt (m)	Ratio
-      //      101325	0	0.08526603
-      //      95461	500	0.089525515
-      //      89876	1000	0.094732853
-      //      84598	1500	0.098039216
-      //      79498	2000	0.103906899
-      //      74686	2500	0.109313511
-      //      70112	3000	0.115101289
-      //      65768	3500	0.121270919
-      //      61645	4000	0.127811861
-      //      57733	4500	0.134843581
-      //      54025	5000	
-  //printf("D1: %" PRIi32 "   ", _D1);
-  //printf("D2: %" PRIi32 "   ", _D2);
-  //printf("temp: %" PRIi32 "   ", TEMP);
-  float rp = rawPressure / 1000000.0;
-  if ( rawPressure > 954610000) {
-    altitude = ( 1013250000 - rawPressure ) * 0.08526603 ; // = 500 / (101325 - 95461)  // returned value 1234567 means 123,4567 m (temp is fixed to 15 degree celcius)
-    //printf("-");
-  } else if ( rawPressure > 898760000) {
-    altitude = 5000000 + ( 954610000 - rawPressure ) * 0.089525515  ; 
-  } else if ( rawPressure > 845980000) {
-    altitude = 10000000 + ( 898760000 - rawPressure ) * 0.094732853  ; 
-  } else if ( rawPressure > 794980000) {
-    altitude = 15000000 + ( 845980000 - rawPressure ) *  0.098039216 ; 
-  } else if ( rawPressure > 746860000) {
-    altitude = 20000000 + ( 794980000 - rawPressure ) *  0.103906899 ; 
-  } else if ( rawPressure > 701120000) {
-    altitude = 25000000 + ( 746860000 - rawPressure ) *  0.109313511 ; 
-  } else if ( rawPressure > 657680000) {
-    altitude = 30000000 + ( 701120000 - rawPressure ) *  0.115101289 ; 
-  } else if ( rawPressure > 616450000) {
-    altitude = 35000000 + ( 657680000 - rawPressure ) *  0.121270919 ; 
-  } else if ( rawPressure > 577330000) {
-    altitude = 40000000 + ( 616450000 - rawPressure ) *  0.127811861 ;
-  } else {    altitude = 45000000 + ( 577330000 - rawPressure ) *  0.134843581 ;
-  }
-  //printf("raw %f\n",rp);
-  //printf("  alt:  %" PRId32 "\n"   ,  altitude/10000);
-  //printf("  alt:  %f\n"   ,  ((float) altitude)/10000);
-  //printf("calib: %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16 " %" PRIu16  " %" PRIu16 "\n" , 
-  //  _calibrationData[1] , _calibrationData[2] ,_calibrationData[3] ,_calibrationData[4] , _calibrationData[5], _calibrationData[6]);
-  altIntervalMicros = _lastTempRequest - _prevAltMicros;
-  _prevAltMicros = _lastTempRequest ; 
+    if (_D2Prev == 0)
+    {
+        _D2Prev = _D2;
+        _prevAltMicros = _lastTempRequest ;    
+    }
+    int64_t dT = ((int64_t)((_D2+ _D2Prev) >> 1 )) - (( (uint64_t)_calibrationData[5]) << 8) ;
+    int32_t TEMP = 2000 + ((dT * ((int64_t)_calibrationData[6])) >> 23)  ;
+    temperature = TEMP;
+    _D2Prev = _D2 ;
+    int64_t OFF  = (((int64_t)_calibrationData[2]) << 16) + ((((int64_t)_calibrationData[4]) * dT) >> 7);
+    int64_t SENS = (((int64_t)_calibrationData[1]) << 15) + ((((int64_t)_calibrationData[3]) * dT) >> 8);
+    int64_t rawPressure= (((((((int64_t) _D1) * SENS) >> 21) - OFF) * 10000 ) >> 15) ; // 1013.25 mb gives 1013250000 is a factor to keep higher precision (=1/100 cm).
+    actualPressurePa = ((float) (rawPressure))* 0.0001 ; 
+    // altitude (m) = 44330 * (1.0 - pow(pressure in pa /sealevelPressure , 0.1903));
+    altitudeCm = 4433000.0 * (1.0 - pow( (double) actualPressurePa / 101325.0, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm
+    altIntervalMicros = _lastTempRequest - _prevAltMicros;
+    _prevAltMicros = _lastTempRequest ; 
 }
 
