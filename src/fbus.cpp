@@ -276,7 +276,7 @@ void setupFbusList(){     // table used by fbus
 */
 
 void setupFbus() {
-// configure some table to manage priorities and fbus fields codes used bu fbus    
+// configure some table to manage priorities and fbus fields codes used by fbus    
     setupSportList(); // reuse the set up list from sport
 // configure the queue to get the data from fbus in the irq handle
     queue_init (&fbusRxQueue, sizeof(uint16_t), 250);
@@ -419,10 +419,10 @@ bool processNextInputByte( uint8_t c){
     //const fbus_Frame *frame = (const fbus_Frame *)&byte_input.buf[0];
 
     if (fbusLen > 2 && fbusRxBufferIdx == fbusLen) { //when all bytes have been received
-        //for (uint8_t i=0; i<fbusLen; i++ ){
-        //    printf(" %x", fbusRxBuffer[i]);
-        //}
-        //printf(" \n");
+        for (uint8_t i=0; i<fbusLen; i++ ){
+            printf(" %x", fbusRxBuffer[i]);
+        }
+        printf(" \n");
         if (! check_checksum()) {                   // check 
             fbusRxBufferIdx = 0;
             printf("fbus : frame with wrong checksum\n");
@@ -565,6 +565,10 @@ void sendOneFbus(uint8_t idx){  // fill one frame and send it
     case CURRENT:
         uintValue =  ( ((uint32_t) uintValue) /100 ) ;// voltage in mv is divided by 100 because Fbus expect it (Amp * 10)
         break;    
+    case AIRSPEED:
+        uintValue =  (uint32_t)( ((float) intValue) * 0.194384 ) ;// from cm/s to 0.1kts/h
+        if (intValue < 0) uintValue = 0; 
+        break; 
     }
     fbusTxBuffer[0] = 0X08 ; // fix frame length 
     fbusTxBuffer[1] = SPORT_DEVICEID ;   
@@ -589,11 +593,11 @@ void sendOneFbus(uint8_t idx){  // fill one frame and send it
     // copy and convert bytes
     // Byte in frame has value 0x7E is changed into 2 bytes: 0x7D 0x5E
     // Byte in frame has value 0x7D is changed into 2 bytes: 0x7D 0x5D
-        //printf("fbus :Tlm= ");
-        //for (uint8_t j = 0 ; j < 10 ; j++ ){
-        //    printf(" %02X" , fbusTxBuffer[j]);
-        //}
-        //printf("\n");    
+        printf("fbus :Tlm= ");
+        for (uint8_t j = 0 ; j < 10 ; j++ ){
+            printf(" %02X" , fbusTxBuffer[j]);
+        }
+        printf("\n");    
     
     //sleep_us(100) ;
     sport_uart_rx_program_stop(fbusPio, fbusSmRx, config.pinPrimIn); // stop receiving
