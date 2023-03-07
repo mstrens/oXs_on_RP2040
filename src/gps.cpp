@@ -40,9 +40,11 @@ union {
         uint8_t bytes[sizeof(casic_nav_pv_info)];
     } __attribute__((__packed__)) _casicBuffer;
 
-volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
-volatile uint32_t baudrateCount = 0;
+//volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
+//volatile uint32_t baudrateCount = 0;
 uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
+uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ; 
+uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;
 
@@ -106,13 +108,15 @@ void on_uart_rx() {
     }
 }
 */
+uint gpsOffsetTx; 
 
 GPS::GPS( void) {}
 
 void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
     if ( config.gpsType == 'U') {
-        //setupGpsUblox(); // send cmd to gps to configure it
+        gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
+        uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, baudrateList[baudIdx]);
     } else {
         gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
     }
@@ -169,6 +173,7 @@ void GPS::gpsInitRx(){
         _step = 0 ;
 }
 
+/*
 // interrupt to calculate the delay between 2 edges
 void gpioBaudrateCallback(uint gpio, uint32_t events) {
     uint32_t now = microsRp();
@@ -178,7 +183,7 @@ void gpioBaudrateCallback(uint gpio, uint32_t events) {
     baudrateCount++; 
     //printf("\n");
 }
-
+*/
 /*
 void detectBaudrate(){
     sleep_ms(3000);
@@ -248,8 +253,56 @@ void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending th
 */
 
 void GPS::handleGpsUblox(){
-    static uint32_t lastActionUs;
+    static uint32_t lastActionUs = 0;
     if (config.pinGpsTx == 255) return;
+    switch (gpsState){
+        case GPS_WAIT_END_OF_RESET:
+            if (millisRp() > 1000) { //after x msec
+                gpsState = GPS_IN_RECONFIGURATION;
+                lastActionUs = 0;
+                baudIdx = 0;        
+            }
+            break;
+        case GPS_IN_RECONFIGURATION:
+            if (lastActionUs == 0) {  // last action = 0 means that baudrate has to be rconfigure
+                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, baudrateList[baudIdx]);
+                initGpsIdx = 0; // reset on the first char of the first command to be sent
+                lastActionUs = microsRp();        
+            }
+            if ((microsRp() - lastActionUs ) > 5000) { // wait 5 ms between 2 commands
+                if ( initGpsIdx >= sizeof( initGps1)) { // when all bytes have been sent
+                    baudIdx++;  // use next baudrate
+                    if ( baudIdx >= 4){   // if text has been sent with all baudrate, we can continue
+                        gpsInitRx();                        // setup the reception of GPS char.
+                        gpsState = GPS_CONFIGURED;
+                    } else {
+                        lastActionUs = 0;  // force setting again the baudrate (with next value)
+                    }    
+                }  else { // when not end of all commands
+                    while (initGpsIdx < sizeof( initGps1)) {
+                        if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
+                            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx] );   
+                            //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
+                            if (initGps1[initGpsIdx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
+                                initGpsIdx++;
+                                lastActionUs = microsRp();
+                                break; // quit the while loop
+                            } else {
+                                initGpsIdx++; // point to next char
+                            }
+                        }
+                    } // end while
+                }
+            }
+            break;
+        case GPS_CONFIGURED:
+            readGpsUblox() ;   
+            break;
+    } // end of switch
+}
+
+/*
+    
     switch (gpsState){
         case GPS_TO_SETUP:
             printf("Start detecting baudrate\n");
@@ -262,10 +315,13 @@ void GPS::handleGpsUblox(){
             gpsState = GPS_IN_AUTOBAUD_DETECTION;        
             break;
         case GPS_IN_AUTOBAUD_DETECTION:
-            if ( ( baudrateCount > 1000) || ( ( microsRp() - lastActionUs) > 30000000)) {
+            if ( ( baudrateCount > 2000) || ( ( microsRp() - lastActionUs) > 30000000)) {
                 // we count or wait long enoug
                 irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
                 gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
+                printf("baudrateCount= %d\n", baudrateCount);
+                printf("after %d\n",microsRp() - lastActionUs );
+                printf("baudminInterval %d\n",baudMinInterval );
                 if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
                 if ( ( baudMinInterval > 23 ) && ( baudMinInterval <30 ) ) gpsBaudrate = 38400; // 26
                 if ( ( baudMinInterval > 48 ) && ( baudMinInterval <58 ) ) gpsBaudrate = 19200; //52
@@ -306,11 +362,9 @@ void GPS::handleGpsUblox(){
                 }
             }
             break;
-        case GPS_CONFIGURED:
-            readGpsUblox() ;   
-            break;
-    } // end of switch
-}
+
+*/
+
 
 void GPS::readGpsUblox(){
     uint8_t data;
