@@ -188,7 +188,7 @@ void handleSbusIn(){
                 sbusState = NO_SBUS_FRAME;
             } else {
                 // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
-                if ( (config.protocol == 'F') && ( config.pinTlm != 255) &&
+                if ( (config.protocol == '2') && ( config.pinTlm != 255) &&
                     ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
                 storeSbusFrame();
                 sbusState = NO_SBUS_FRAME;

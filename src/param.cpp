@@ -1067,7 +1067,14 @@ void printFieldValues(){
                     break;        
                 case ADS_2_4:
                     printf("Ads 2 4 = %d mVolt\n", fields[i].value) ;
-                    break;        
+                    break;
+                case AIRSPEED:
+                    printf("Airspeed = %d cm/s\n", fields[i].value) ;
+                    break;
+                case AIRSPEED_COMPENSATED_VSPEED:
+                    printf("Compensated Vspeed = %d cm/s\n", fields[i].value) ;
+                    break;
+                            
             } // end switch
         }
     }
