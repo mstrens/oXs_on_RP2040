@@ -11,6 +11,8 @@ For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional)
    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
    - the altitude and the vertical speed when connected to a pressure sensor (optional)
+   - the airspeed when connected to a differential pressure sensor (and a pitot tube) (optional)
+   - compensated vertical speed when connected to a baro + a differentil pressure sensor 
    - Pitch and Roll when conncted to a MP6050 sensor (optional); 
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
@@ -28,6 +30,7 @@ This project requires a board with a RP2040 processor (like the rapsberry pi pic
 A better alternative is the RP2040-Zero (same processor but smaller board)
 This board can be connected to:
    - a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
+   - a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx differential pressure sensor
    - a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
    - a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware
@@ -36,6 +39,17 @@ This board can be connected to:
    - some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
       note : a voltage can be used to measure e.g. a current or a temperature when some external devices are use to generate an analog voltage 
 
+About the SDP31, SDP32, SDP33 , SDP810:
+     Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
+     Those sensors exists in 3 versions which differs by the maximum differential pressure (and so the max speed) they can measure
+     SDP31 (or SDP810-500) can measure up to 500 Pa = 105 km/h
+     SDP32 (or SDP810-125) can measure up to 125 Pa = 52 km/h
+     SDP33 can measure up to 1500 Pa = 189 km/h
+     The difference between SDP3x and SDP800 series is mainly the size of the sensor.
+        SDP3x are very small (5mm) and require soldering on small pin
+        SDP810 are bigger (25 mm) and have a 4 pin connector
+     Currently oXs code is written for SDP3x serie but using a SDP810 requires only to change the I2C address in the config.h file.
+ 
 ----------Wiring --------------------
 FRSKY/ELRS/JETI/... receiver, MS5611, GPS and other sensors must share the same Gnd
 Connect a 5V source to the Vcc pin of RP2040 board ( RP2040-zero board does not accept more than 5.5V on Vcc pin !! )
@@ -63,6 +77,11 @@ When a MS5611/SPL06/BMP280 (baro sensor) and/or MP5060 is used:
            Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
       Connect SCL from baro sensor to the pin selected as SCL in parameter for RP2040
       Connect SDA from baro sensor to the pin selected as SDA in parameter for RP2040
+
+When a differential pressure sensor is used, you should connect SCL/SDA like for a baro sensor.
+    Vcc is connected to 5V or 3.3V depending on the chip you selected
+    If the module you are using does not have pullup resistors and if you do not use other I2C modules,
+        than you must use pullup resistor (4.7K) connected between SCL/SDA and 3.3V
 
 When a GPS is used:
    Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS

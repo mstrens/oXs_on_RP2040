@@ -10,6 +10,16 @@
 
 extern CONFIG config;
 float actualPressurePa = 101325.0; // this value is updated when baro1,2 or 3 is installed
+extern float difPressureAirspeedSumPa; // calculate a moving average on x values
+extern uint32_t difPressureAirspeedCount;
+extern float difPressureCompVspeedSumPa; // calculate a moving average on x values
+extern uint32_t difPressureCompVspeedCount;
+extern float temperatureKelvin;     // in Kelvin , used when airspeed is calculated
+
+
+
+
+
 
 MS4525::MS4525(uint8_t deviceAddress)
 {
@@ -20,38 +30,28 @@ MS4525::MS4525(uint8_t deviceAddress)
 void MS4525::begin() {
     airspeedInstalled = false;
     if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
-    
-    calibrated4525 = false ;
-    calibrateCount4525 = 0 ;
-    airspeedReset = true ; // set on true to force a reset the first time the 100 ms part is entered
-    smoothDifPressureAdc = 0 ; 
-    offset4525 = 0 ; 
-    difPressureSum = 0 ;
-    temperatureAdc =0 ;
-    smoothAirSpeedCmS = 0 ;
-    prevReadUs = 0; // avoid to read to often the sensor (e.g. read once per 2000 usec)
-    prevAirspeedMsAvailable =  0 ; // use to publish a new value once per 200 ms
-
     // read the sensor to get the initial temperature
     if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 4 , false, 1500) < 0)  {
         printf("error read MS4525 (airspeed sensor) at startup \n");
     return ;
-    }  
-    if ( ( readBuffer[0] & 0xC0 ) == 0) {  
+    }
+    int32_t temperatureAdc ;   // in steps ADC  
+    if ( ( readBuffer[0] & 0xC0 ) == 0) { // msb bit must be 1 when a conversion is available  
         temperatureAdc =    (readBuffer[2] << 8) + readBuffer[3] ;
         temperatureAdc = (0xFFE0 & temperatureAdc) >> 5;
         temperatureKelvin = (0.097703957f * (float) temperatureAdc)  + 223.0 ; // in kelvin 
     } else { 
         temperatureKelvin = 300 ;
     }
-    airspeedInstalled = true; 
+    airspeedInstalled = true;
+    prevReadUs = microsRp(); 
 }  //end of begin
 
 
 /****************************************************************************/
 /* readSensor - Read differential pressure + calculate airspeed             */
 /****************************************************************************/
-void MS4525::getAirspeed() {
+void MS4525::getDifPressure() {
     if ( ! airspeedInstalled) return ;     // do not process if there is no sensor
     uint32_t now = microsRp(); 
     if ( (now - prevReadUs) < 2000 ) return ;// it take about 500 usec for a conversion
@@ -59,22 +59,38 @@ void MS4525::getAirspeed() {
     prevReadUs = now;
     if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {
         printf("error read MS4525 (airspeed sensor)\n");
-    }  else {   // no I2C error in reading the pressure
-        if ( ( readBuffer[0] & 0xC0 ) == 0) {  
-            difPressureAdc =  ( ( (readBuffer[0] << 8) + readBuffer[1] ) & 0x3FFF) - 0x2000  ; // substract in order to have a zero value 
-//               difPressureAdc = 14745 - 8192 ; // test should give 1 psi = 6894 pa = 105 m/sec = 370 km/h
-            //difPressureAdc = 1638 - 8192 ; // test should give -1 psi = 6894 pa
-            if ( calibrated4525 == false) {
-                calibrateCount4525++ ;
-                if (calibrateCount4525 == 256 ) { // after 256 reading , we can calculate the offset 
-                    offset4525 =  (  ((float) difPressureSum) / 128.0 ) ; //there has been 128 reading (256-128)                     
-                    calibrated4525 = true ;
-                } else if  (calibrateCount4525 >= 128  ){ // after 128 reading, we can start cummulate the ADC values in order to calculate the offset 
-                    difPressureSum += difPressureAdc ;
-                } // end calibration
-            }  else { // sensor is calibrated
-                difPressureAdc_0 = ((float) difPressureAdc) - offset4525 ;
-                // calculate a moving average on x values ( used only for vspeed compensation )                 
+        return; 
+    }  
+    // no I2C error in reading the pressure
+    int32_t difPressureAdc; 
+    if ( ( readBuffer[0] & 0xC0 ) == 0) {  
+        difPressureAdc =  ( ( (readBuffer[0] << 8) + readBuffer[1] ) & 0x3FFF) - 0x2000  ; // substract in order to have a zero value 
+        // difPressureAdc = 14745 - 8192 ; // test should give 1 psi = 6894 pa = 105 m/sec = 370 km/h
+        // difPressureAdc = 1638 - 8192 ; // test should give -1 psi = 6894 pa
+        if ( calibrated4525 == false) {
+            calibrateCount++ ;
+            if (calibrateCount == 256 ) { // after 256 reading , we can calculate the offset 
+                offset =  (  ((float) difPressureCalSum) / 128.0 ) ; //there has been 128 reading (256-128)                     
+                calibrated4525 = true ;
+            } else if  (calibrateCount >= 128  ){ // after 128 reading, we can start cummulate the ADC values in order to calculate the offset 
+                difPressureCalSum += difPressureAdc ;
+            } // end calibration
+        }  else { // sensor is calibrated
+            // with MS4525DO_001 a range of 2 PSI gives 80% of 16383 (= max of 14bits);
+            // 1 PSI = 6894,76 Pascal ; so 1 unit of ADC = 2/ (80% * 16383) * 6894,76) 
+            // differantial_pressure_Pa =  ((DifPressureAdc  ) * 1.052) ; 
+            #define MS4525_ADC_TO_PA 1.052
+            difPressurePa = (((float) difPressureAdc) - offset) * MS4525_ADC_TO_PA ;
+            difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
+            difPressureAirspeedCount++;                // count the number of conversion
+            difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values
+            difPressureCompVspeedCount++;                // count the number of conversion
+                            
+        }    
+    }
+}            
+
+/*
                 difPressureAdc_0SumValue += difPressureAdc_0;
                 difPressureAdc_0SumCount++ ; 
                 #define FILTERING4525_ADC_MIN        0.001   // 
@@ -84,13 +100,13 @@ void MS4525::getAirspeed() {
                 abs_deltaDifPressureAdc =  difPressureAdc_0 - smoothDifPressureAdc ;
                 if (abs_deltaDifPressureAdc < 0) abs_deltaDifPressureAdc = - abs_deltaDifPressureAdc;
                 if (abs_deltaDifPressureAdc <= FILTERING4525_ADC_MIN_AT) {
-                    expoSmooth4525_adc_auto = FILTERING4525_ADC_MIN ;  
+                    expoSmoothFactor = FILTERING4525_ADC_MIN ;  
                 } else if (abs_deltaDifPressureAdc >= FILTERING4525_ADC_MAX_AT)  {
-                    expoSmooth4525_adc_auto = FILTERING4525_ADC_MAX ; 
+                    expoSmoothFactor = FILTERING4525_ADC_MAX ; 
                 } else {
-                    expoSmooth4525_adc_auto = FILTERING4525_ADC_MIN + ( FILTERING4525_ADC_MAX - FILTERING4525_ADC_MIN) * (abs_deltaDifPressureAdc - FILTERING4525_ADC_MIN_AT) / (FILTERING4525_ADC_MAX_AT - FILTERING4525_ADC_MIN_AT) ;
+                    expoSmoothFactor = FILTERING4525_ADC_MIN + ( FILTERING4525_ADC_MAX - FILTERING4525_ADC_MIN) * (abs_deltaDifPressureAdc - FILTERING4525_ADC_MIN_AT) / (FILTERING4525_ADC_MAX_AT - FILTERING4525_ADC_MIN_AT) ;
                 }
-                smoothDifPressureAdc += expoSmooth4525_adc_auto * ( difPressureAdc_0 - smoothDifPressureAdc ) ; 
+                smoothDifPressureAdc += expoSmoothFactor * ( difPressureAdc_0 - smoothDifPressureAdc ) ; 
                 float abs_smoothDifPressureAdc;
                 if ( smoothDifPressureAdc >= 0) {abs_smoothDifPressureAdc = smoothDifPressureAdc;
                 } else { abs_smoothDifPressureAdc = -smoothDifPressureAdc;
@@ -135,3 +151,4 @@ void MS4525::getAirspeed() {
  
 
 } // End of readSensor
+*/

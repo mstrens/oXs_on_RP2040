@@ -8,23 +8,9 @@
 #include "pico/double.h"
 #include "param.h"
 
-#ifdef DEBUG
-  //#define DEBUGADS1115SCAN
-  //#define DEBUGADS1115EACHREAD
-  //#define DEBUGADS1115REQUESTCONV
-  //#define DEBUGADS1115MVOLT
-  //#define DEBUGADSAIRSPEEDDATA
-  //#define DEBUGCURRENT 
-#endif
-
-//#define DEBUG_FORCE_ADS_VOLT_1_4_WITHOUT_ADS1115
-//#define DEBUG_AIRSPEED_WITH_DUMMY_ADS_DATA
-
-//extern unsigned long microsRp( void ) ;
-//extern unsigned long millisRp( void ) ;
-//extern void delay(unsigned long ms) ;
 
 extern CONFIG config;
+
 
 
 

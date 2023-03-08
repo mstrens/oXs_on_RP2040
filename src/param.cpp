@@ -7,6 +7,8 @@
 #include "SPL06.h"
 #include "BMP280.h"
 #include "ads1115.h"
+#include "ms4525.h"
+#include "sdp3x.h"
 #include <string.h>
 #include <ctype.h>
 #include "gps.h"
@@ -63,6 +65,9 @@ extern field fields[];  // list of all telemetry fields and parameters used by S
 extern MS5611 baro1 ;
 extern SPL06  baro2 ;
 extern BMP280 baro3 ; 
+
+extern MS4525 ms4525;
+extern SDP3X  sdp3x;
 
 extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
@@ -744,6 +749,13 @@ void printConfig(){
     } else {
        printf("Acc/Gyro is not detected\n")  ;     
     }
+    if (ms4525.airspeedInstalled) {
+        printf("Aispeed sensor is detected using MS4525\n")  ;        
+    } else if (sdp3x.airspeedInstalled) {
+        printf("Airspeed sensor is detected using SDP3X\n")  ;
+    } else {
+        printf("Airspeed sensor is not detected\n")  ;
+    }    
     if (adc1.adsInstalled) {
         printf("First analog to digital sensor is detected using ads1115\n")  ;
         printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[0][0], ads_Measure[0][1], ads_Measure[0][2], ads_Measure[0][3]) ;

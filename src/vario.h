@@ -23,8 +23,8 @@ public:
     
     float prev_baroAltitudeCm;
     
-    float altitudeLowPass ;
-    float altitudeHighPass;
+    float altitudeLowPassCm ;
+    float altitudeHighPassCm;
     float intervalSmoothUs;  
     float smoothRelAltitudeCm ;
     
@@ -52,6 +52,9 @@ public:
     bool switchClimbRateAvailable ; // use to say to the readsensors loop that that a climbrate is available (to select the one being send)  
     bool newClimbRateAvailableForMpu = false;
     bool newClimbRateAvailableForCompensation = false; 
+
+    
+    float compensatedClimbRateCmS = 0;
 
     void calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMicros);
     void calculateVspeedDte();

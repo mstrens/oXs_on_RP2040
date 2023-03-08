@@ -3,16 +3,24 @@
 #include "vario.h"
 #include "MS5611.h"
 #include "ms4525.h"
+#include "sdp3x.h"
 #include "stdio.h"
 #include <inttypes.h>
 #include "tools.h"
 #include "mpu.h"
+#include "math.h"
 //#include <stdlib.h>     /* abs */
 
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MPU mpu;
 extern MS4525 ms4525;
+extern SDP3X sdp3x;
 extern float actualPressurePa; // used to calculate airspeed
+
+extern float difPressureCompVspeedSumPa  ; // calculate a moving average on x values
+extern uint32_t difPressureCompVspeedCount ;
+extern float temperatureKelvin;
+uint32_t prevCompVspeedAvailableMs;
 
 
 uint32_t abs1(int32_t value){
@@ -36,7 +44,7 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
             //printf("first alt at millis %" PRIu32 "\n", millisRp() );
             firstCalc = false;
             rawOffsetAltitudeCm =  altitudeSum * 0.1 ; // all in cm and in float // average of 10 values
-            prev_baroAltitudeCm = altitudeLowPass = altitudeHighPass =  rawOffsetAltitudeCm ;
+            prev_baroAltitudeCm = altitudeLowPassCm = altitudeHighPassCm =  rawOffsetAltitudeCm ;
             intervalSmoothUs = 20000 ; // perhaps not required
         }
     }
@@ -51,11 +59,11 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
     // smooth altitude
     smoothRelAltitudeCm += 0.04 * ( rawRelAltitudeCm - smoothRelAltitudeCm) ;    
     
-    altitudeLowPass += 0.085 * ( rawRelAltitudeCm - altitudeLowPass) ;
-    altitudeHighPass += 0.1 * ( rawRelAltitudeCm - altitudeHighPass) ;
+    altitudeLowPassCm += 0.085 * ( rawRelAltitudeCm - altitudeLowPassCm) ;
+    altitudeHighPassCm += 0.1 * ( rawRelAltitudeCm - altitudeHighPassCm) ;
     intervalSmoothUs += 0.1 * (baro_altIntervalMicros - intervalSmoothUs) ; //delay between 2 measures  only if there is no overflow of pressureMicos
     //printf("inter= %" PRIu32 "\n", baro_altIntervalMicros);
-    climbRate2AltFloat = ( (float) (altitudeHighPass - altitudeLowPass )  * 566668.5 ) / (float) intervalSmoothUs; // climbRate is in cm/sec 
+    climbRate2AltFloat = ( (float) (altitudeHighPassCm - altitudeLowPassCm )  * 566668.5 ) / (float) intervalSmoothUs; // climbRate is in cm/sec 
     abs_deltaClimbRate =  abs(climbRate2AltFloat - climbRateFloat) ;
     if ( sensitivityPpm  > 0) sensitivityMin =   sensitivityPpm ; 
     if ( (abs_deltaClimbRate <= SENSITIVITY_MIN_AT) || (sensitivityMin >= SENSITIVITY_MAX) ) {
@@ -95,57 +103,49 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
 
 void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each time that an altitude is available
     
-    float difPressureAdc_zero;
-    float rawCompensation ;
-    float rawTotalEnergy ;
-    static float totalEnergyLowPass ;
-    static float totalEnergyHighPass ;
-    //static float intervalSmoothDteUs = 20000;
-    
-    static float rawCompensatedClimbRate;
-    static float abs_deltaCompensatedClimbRate ;
-    static float smoothingDteMin =  SMOOTHING_DTE_MIN ;
-    static float expoSmoothDte_auto ;
-    static float smoothCompensatedClimbRate ;
-    float compensatedClimbRate = 0; 
+    float totalEnergyLowPassCm ;
+    float totalEnergyHighPassCm ;
+    static float smoothCompensatedClimbRateCmS ;
+     
 
     // for 4525:
-        //  difPressure (in PSI) = difPressureAdc * 0.0001525972 because 1 PSI = (8192 - 1638) = 6554 steps
-        //  difPressure (Pa) =  difPressure (in PSI) * 6894.757f  = difPressureAdc * 6894.757 *  0.0001525972 = difPressureAdc * 1.0520
         // airspeed = sqr(2 * differential_pressure / air_density) ; air density = pressure  pa / (287.05 * (Temp celcius + 273.15))
-        // so airspeed m/sec =sqr( 2 * 287.05 * differential_pressure pa * (temperature Celsius + 273.15) / pressure pa )
-        // total energy = (m * g * altitude) + (m * airspeed * airspeed / 2) => m * 9.81 * (altitude + airspeed * airspeed / 2 /9.81)
-        // compensation (m/sec) = airspeed * airspeed / 2 / 9.81 =
-        //                      = 2 * 287.05 * difPressureAdc * 1.0520  * (temperature Celsius + 273.15) / pressure pa /2 /9.81 (m/sec) = 30.78252803 * difPressureAdc * Temp(kelv) / Press (Pa)
-        // compensation (cm/sec) =  3078.252803 * difPressureAdc * Temp(kelv) / Press (Pa)
-    if (ms4525.airspeedInstalled == false) return; // skip when no MS4525 is installed
+        // so airspeed m/sec =sqrt( 2 * 287.05 * differential_pressure pa * (temperature Celsius + 273.15) / pressure pa )
+        // total energy = (m * g * altitude) + (m * airspeed * airspeed / 2) 
+        //    energy => m * 9.81 * (altitude + airspeed * airspeed / 2 /9.81)
+        // compensation (m) = airspeed * airspeed / 2 / 9.81 =
+        //                  = 2 * 287.05 * difPressurePa * (temperature Celsius + 273.15) / pressure pa /2 /9.81 (m/sec) = 29.26 * difPressureAdc * Temp(kelv) / Press (Pa)
+        // compensation (cm) =  2926.0 * difPressureAdc * Temp(kelv) / Press (Pa)
+    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled) return; // skip when no MS4525/sdp3x is installed
     if (newClimbRateAvailableForCompensation == false) return; // skip when no new Vspeed is available
     // calculate average diff of pressure because MS4525 is read more ofen than Vspeed
-    difPressureAdc_zero = ms4525.difPressureAdc_0SumValue / ms4525.difPressureAdc_0SumCount ;
-    ms4525.difPressureAdc_0SumCount = 0;
-    ms4525.difPressureAdc_0SumValue = 0; // reset the values used for averaging  
-    rawCompensation = 307825 * difPressureAdc_zero * ms4525.temperatureKelvin /  actualPressurePa    ; // 3078.25 = comp = 2 * 287.05 / 2 / 9.81 * 1.0520 * 100 * Temp / Pressure  
-    rawTotalEnergy =  rawRelAltitudeCm + rawCompensation * DTE_COMPENSATION_FACTOR ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
-    if (totalEnergyLowPass == 0) { // initiaise smoothing 
-        totalEnergyLowPass = totalEnergyHighPass = rawTotalEnergy ; 
+    float difPressureAvgPa = difPressureCompVspeedSumPa / difPressureCompVspeedCount ;
+    difPressureCompVspeedSumPa = 0;
+    difPressureCompVspeedCount = 0; // reset the values used for averaging  
+    float rawCompensationCm = 2926.0 * difPressureAvgPa * temperatureKelvin /  actualPressurePa    ; 
+    float rawTotalEnergyCm =  rawRelAltitudeCm + rawCompensationCm * DTE_COMPENSATION_FACTOR ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
+    if (totalEnergyLowPassCm == 0) { // initiaise smoothing 
+        totalEnergyLowPassCm = totalEnergyHighPassCm = rawTotalEnergyCm ; 
     }
-    totalEnergyLowPass += 0.085 * ( rawTotalEnergy - totalEnergyLowPass) ;
-    totalEnergyHighPass += 0.1 * ( rawTotalEnergy - totalEnergyHighPass) ;
+    totalEnergyLowPassCm += 0.085 * ( rawTotalEnergyCm - totalEnergyLowPassCm) ;
+    totalEnergyHighPassCm += 0.1 * ( rawTotalEnergyCm - totalEnergyHighPassCm) ;
     //intervalSmoothDteUs += 0.1 * (baro_altIntervalMicros - intervalSmoothDteUs) ; //delay between 2 measures  only if there is no overflow of pressureMicos
-  //printf("inter= %" PRIu32 "\n", baro_altIntervalMicros);
-    rawCompensatedClimbRate = ((totalEnergyHighPass - totalEnergyLowPass )  * 566667.0 ) / intervalSmoothUs; // 0.566667 is the parameter to be used for 0.085 and 0.1 filtering if delay is in sec
-    abs_deltaCompensatedClimbRate =  abs(rawCompensatedClimbRate - smoothCompensatedClimbRate) ;
+    //printf("inter= %" PRIu32 "\n", baro_altIntervalMicros);
+    float rawCompensatedClimbRateCmS = ((totalEnergyHighPassCm - totalEnergyLowPassCm )  * 566667.0 ) / intervalSmoothUs; // 0.566667 is the parameter to be used for 0.085 and 0.1 filtering if delay is in sec
+    float abs_deltaCompensatedClimbRateCmS =  abs(rawCompensatedClimbRateCmS - smoothCompensatedClimbRateCmS) ;
+    float smoothingDteMin =  SMOOTHING_DTE_MIN ;
+    float expoSmoothDte_auto ;
     if ( sensitivityPpm  > 0) smoothingDteMin =   sensitivityPpm  ; // a value of sensitivityPpmMapped = 50 becomes a smoothing factor 0.1
-        if ( (abs_deltaCompensatedClimbRate <= SMOOTHING_DTE_MIN_AT) || (smoothingDteMin >= SMOOTHING_DTE_MAX ) ){
+        if ( (abs_deltaCompensatedClimbRateCmS <= SMOOTHING_DTE_MIN_AT) || (smoothingDteMin >= SMOOTHING_DTE_MAX ) ){
         expoSmoothDte_auto = smoothingDteMin ;  
-    } else if (abs_deltaCompensatedClimbRate >= SMOOTHING_DTE_MAX_AT)  {
+    } else if (abs_deltaCompensatedClimbRateCmS >= SMOOTHING_DTE_MAX_AT)  {
         expoSmoothDte_auto = SMOOTHING_DTE_MAX ; 
     } else {
-        expoSmoothDte_auto = smoothingDteMin + ( SMOOTHING_DTE_MAX - smoothingDteMin ) * (abs_deltaCompensatedClimbRate - SMOOTHING_DTE_MIN_AT) / (SMOOTHING_DTE_MAX_AT - SMOOTHING_DTE_MIN_AT) ;
+        expoSmoothDte_auto = smoothingDteMin + ( SMOOTHING_DTE_MAX - smoothingDteMin ) * (abs_deltaCompensatedClimbRateCmS - SMOOTHING_DTE_MIN_AT) / (SMOOTHING_DTE_MAX_AT - SMOOTHING_DTE_MIN_AT) ;
     }
-    smoothCompensatedClimbRate += expoSmoothDte_auto * (  rawCompensatedClimbRate -  smoothCompensatedClimbRate ) * 0.001; 
-    if ( abs( ((int32_t)  smoothCompensatedClimbRate) - compensatedClimbRate) > VARIOHYSTERESIS ) {
-        compensatedClimbRate = smoothCompensatedClimbRate  ;
+    smoothCompensatedClimbRateCmS += expoSmoothDte_auto * (  rawCompensatedClimbRateCmS -  smoothCompensatedClimbRateCmS ) * 0.001; 
+    if ( abs( ((int32_t)  smoothCompensatedClimbRateCmS) - compensatedClimbRateCmS) > VARIOHYSTERESIS ) {
+        compensatedClimbRateCmS = smoothCompensatedClimbRateCmS  ;
     } 
-    sent2Core0( AIRSPEED_COMPENSATED_VSPEED , (int32_t) compensatedClimbRate) ; 
+    sent2Core0( AIRSPEED_COMPENSATED_VSPEED , (int32_t) compensatedClimbRateCmS) ; 
 } // end calculateVspeedDte

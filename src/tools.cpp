@@ -4,7 +4,10 @@
 #include "stdio.h"
 #include "pico/util/queue.h"
 #include "pico/multicore.h"
+#include "math.h"
 #include "sport.h"
+#include "ms4525.h"
+#include "sdp3x.h"
 
 extern queue_t qSensorData; 
 
@@ -108,3 +111,52 @@ void sent2Core0( uint8_t fieldType, int32_t value){
 }
 
 
+float difPressureAirspeedSumPa = 0 ; // calculate a moving average on x values
+uint32_t difPressureAirspeedCount = 0 ;
+float difPressureCompVspeedSumPa = 0 ; // calculate a moving average on x values
+uint32_t difPressureCompVspeedCount = 0 ;
+float temperatureKelvin;
+uint32_t prevAirspeedCalculatedUs;
+uint32_t prevAirspeedAvailableMs;
+//uint32_t prevCompVspeedCalculatedUs;
+//uint32_t prevCompVspeedAvailableMs;
+float smoothAirspeedCmS;
+extern MS4525 ms4525;
+extern SDP3X sdp3x;
+extern float actualPressurePa;
+
+
+void calculateAirspeed(){
+    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false ) return; // skip if no sensor installed
+    uint32_t nowUs = microsRp(); 
+    if ( ( nowUs - prevAirspeedCalculatedUs) < 20000 ) return; // skip if there is less than 20 msec
+    prevAirspeedCalculatedUs = nowUs;
+    float difPressureAvg = difPressureAirspeedSumPa / difPressureAirspeedCount ; // calculate a moving average on x values
+    difPressureAirspeedSumPa = 0 ;  // reset 
+    difPressureAirspeedCount = 0 ;
+    if ( difPressureAvg < 0 ) difPressureAvg = 0;
+    // calculate airspeed based on pressure, altitude and temperature
+    // airspeed (m/sec) = sqr(2 * differential_pressure_in_Pa / air_mass_kg_per_m3) 
+    // air_mass_kg_per_m3 = pressure_in_pa / (287.05 * (Temp celcius + 273.15))
+    // so airspeed m/sec =sqr( 2 * 287.05 * differential_pressure_pa * (temperature Celsius + 273.15) / pressure_in_pa )
+    // rawAirSpeed cm/sec =  23,96 * 100 * sqrt( (float) abs(smoothDifPressureAdc) * temperature4525  /  actualPressurePa) ); // in cm/sec ;
+    // actual pressure must be in pa (so 101325 about at sea level)
+    
+    //#ifdef AIRSPEED_AT_SEA_LEVEL_AND_15C
+    //smoothAirSpeed =  131.06 * sqrt( (float) ( abs_smoothDifPressureAdc ) ); // indicated airspeed is calculated at 15 Celsius and 101325 pascal
+    float rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / actualPressurePa );
+    
+    #define EXPOSMOOTH_AIRSPEED_FACTOR 0.1
+    smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
+    // publish the new value every 200 ms
+    if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
+        prevAirspeedAvailableMs = millisRp();
+        //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
+        sent2Core0(RELATIVEALT, (int32_t) smoothAirspeedCmS); 
+    }
+} 
+// check if offset must be reset
+//              if (airSpeedData.airspeedReset) { // adjust the offset if a reset command is received from Tx
+//                    offset4525 =  offset4525  + smoothDifPressureAdc ;
+//                    airSpeedData.airspeedReset = false ; // avoid that offset is changed again and again if PPM do not send a command
+//              }

@@ -7,50 +7,46 @@
 
 #include "stdint.h"
 
+extern float difPressureAirspeedSumPa; // calculate a moving average on x values
+extern uint32_t difPressureAirspeedCount;
+extern float difPressureCompVspeedSumPa; // calculate a moving average on x values
+extern uint32_t difPressureCompVspeedCount;
+extern float temperatureKelvin;     // in Kelvin , used when compensation is calculated
 
-//#define CALCULATEINTEGER
-
-extern float actualPressure ;
 
 class MS4525 {
 public:
     MS4525(uint8_t deviceAddress);
     bool  airspeedInstalled = false;
-    float temperatureKelvin;     // in Kelvin , used when compensation is calculated
-    int32_t airSpeedKmH ;        // in km/h (no decimal)
-    bool airspeedReset ;
-    float smoothAirSpeedCmS ;    //cm/sec ; use in glider ratio
-    float difPressureAdc_zero ; 
-    float difPressureAdc_0SumValue;
-    uint32_t difPressureAdc_0SumCount;
     
-
     void begin();
-    void getAirspeed();
+    void getDifPressure();
 private:
     uint8_t  _address;    
-    uint8_t readBuffer[4];
-    uint32_t prevReadUs ;
-    uint32_t prevAirspeedMsAvailable ;     
+    uint8_t readBuffer[4]; // read the I2C
     
-    bool calibrated4525 ;
-    int calibrateCount4525 ;
-    int32_t difPressureSum ;
-   
-   int32_t difPressureAdc;          // in steps ADC 
-   int32_t temperatureAdc ;   // in steps ADC
-   
-   float offset4525 ; 
-   float difPressureAdc_0 ;
-   float abs_deltaDifPressureAdc ;
-   float smoothDifPressureAdc ;  // in steps ADC/
-
-   float expoSmooth4525_adc_auto ;
-//   float smoothAirSpeed ;    //cm/sec
-//  float rawAirSpeed ;       // cm/sec
-
-   unsigned long  airSpeedMillis ; //save time when airspeed is made available
-   unsigned long  nextAirSpeedMillis ; //next time that airspeed must be available
-  
+    bool calibrated4525 = false;
+    int32_t difPressureCalSum = 0;  // use to calibrate the sensor at reset
+    int calibrateCount = 0;
+    
+    uint32_t prevReadUs ;
+    float offset ;
+    float difPressurePa; 
+    
 }; // end class OXS_4525
 
+    //    uint32_t prevAirspeedMsAvailable ;      
+   //float difPressureAdc_0 ;
+   //float abs_deltaDifPressureAdc ;
+   //float smoothDifPressureAdc ;  // in steps ADC/
+   //float expoSmoothFactor ;  // smoothing factor
+
+   //unsigned long  nextAirSpeedMillis ; //next time that airspeed must be available
+
+    //int32_t airSpeedKmH ;        // in km/h (no decimal)
+    //bool airspeedReset = true;   // force a reset (recalibration)
+    //float smoothAirSpeedCmS ;    //cm/sec ; use in glider ratio
+    //float difPressureAdc_zero ; 
+    //float difPressureAdc_0SumValue;
+    //uint32_t difPressureAdc_0SumCount;
+    

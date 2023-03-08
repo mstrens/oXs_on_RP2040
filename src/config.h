@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.6.7"
+#define VERSION "1.6.8"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -83,6 +83,14 @@
 #define ADS2_RATE  MS5 , MS5, MS5 , MS5 // select between MS137, MS69, MS35, MS18, MS9, MS5, MS3 , MS2
 #define ADS2_AVERAGING_ON 10 , 10, 10, 10 // number of values used for averaging (must be between 1 and 254) 
 
+// --------- Parameters for MS4525 ----------------
+
+#define MS4525_ADDRESS 0X28 // 0x28 is the default I2C adress of a 4525DO sensor
+
+// --------- Parameters for SDP3x ----------------
+
+#define SDPXX_ADDRESS 0X21 // 0x21 is the default I2C adress of a SDP3X sensor
+//#define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
 
 // --------- Reserve for developer. ---------
 

@@ -78,3 +78,5 @@ void sent2Core0( uint8_t fieldType, int32_t value);
 void enlapsedTime(uint8_t idx);
 void startTimerUs(uint8_t idx); 
 void getTimerUs(uint8_t idx);
+
+void calculateAirspeed();

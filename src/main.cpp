@@ -6,6 +6,7 @@
 #include "SPL06.h"
 #include "BMP280.h"
 #include "ms4525.h"
+#include "sdp3x.h"
 #include <vario.h>
 #include <voltage.h>
 #include <gps.h>
@@ -86,6 +87,7 @@ ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin 
 ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
 
 MS4525 ms4525 ( (uint8_t) MS4525_ADDRESS ) ; // 0x28 is the default I2C adress of a 4525DO sensor)
+SDP3X sdp3x( (uint8_t) SDPXX_ADDRESS) ;      // 0X21 is the default I2C address of asdp31,... sensor (diffrent for sdp8xx)
 
 VARIO vario1;
 
@@ -190,6 +192,9 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       gps.setupGps();  //use a Pio
       //printf("gps done\n");
       ms4525.begin();
+      if (! ms4525.airspeedInstalled) {
+        sdp3x.begin();
+      }
       #ifdef USEDS18B20
       ds18b20Setup(); 
       #endif
@@ -220,8 +225,16 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   adc2.readSensor();
   mpu.getAccZWorld();  
   gps.readGps();
-  ms4525.getAirspeed();
-  if (ms4525.airspeedInstalled) vario1.calculateVspeedDte();
+  if (ms4525.airspeedInstalled){
+    ms4525.getDifPressure();
+    calculateAirspeed( );
+    vario1.calculateVspeedDte();
+  }
+  if (ms4525.airspeedInstalled){
+    sdp3x.getDifPressure();
+    calculateAirspeed( );
+    vario1.calculateVspeedDte();
+  } 
   readRpm();
   #ifdef USE_DS18B20
   ds18b20Read(); 
