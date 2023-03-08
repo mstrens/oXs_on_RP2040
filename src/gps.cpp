@@ -43,6 +43,7 @@ union {
 //volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
 //volatile uint32_t baudrateCount = 0;
 uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
+//uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
 uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ; 
 uint8_t baudIdx = 0 ;
 
@@ -51,6 +52,11 @@ uint32_t prevRxChangeUs = 0;
 PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
 uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
 uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
+
+//const uint8_t initGps0[] = {
+//                0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+//                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
+//};
 
 const uint8_t initGps1[] = { 
         // send command to GPS to change the setup
@@ -283,12 +289,13 @@ void GPS::handleGpsUblox(){
                         if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
                             pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx] );   
                             //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
+                            initGpsIdx++;
                             if (initGps1[initGpsIdx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
-                                initGpsIdx++;
+                                //initGpsIdx++;
                                 lastActionUs = microsRp();
                                 break; // quit the while loop
                             } else {
-                                initGpsIdx++; // point to next char
+                                //initGpsIdx++; // point to next char
                             }
                         }
                     } // end while
