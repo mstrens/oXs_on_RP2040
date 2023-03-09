@@ -306,11 +306,17 @@ void setup() {
     toggleRgb();
     }
   sleep_ms(2000);
-  //uint8_t fbusFrame[10] = { 0X08, 0X22, 0X10 , 0X10, 0X02, 0X3F, 0X03, 0X00, 0X00, 0X79};
-  //uint8_t crc;
-  //crc = crc_sum8( &fbusFrame[1], 8);
-  //printf("crc expected= %x   real=%x\n", fbusFframe[9] , crc);
-
+  // test
+  //int32_t testValue = -10;
+  //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);
+  //testValue = -60;
+  //printf("rounding -60 = %d\n" , ( int_round(testValue , 100) ) +500);
+  //testValue = -200;
+  //printf("rounding -200 = %d\n" , ( int_round(testValue , 100) ) +500);
+  //testValue = +10;
+  //printf("rounding +10 = %d\n" , ( int_round(testValue , 100) ) +500);
+  //testValue = +60;
+  //printf("rounding +60 = %d\n" , ( int_round(testValue , 100) ) +500);
   #endif
   
   if (watchdog_caused_reboot()) {
