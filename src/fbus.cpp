@@ -1,12 +1,12 @@
 
 // fbus run on a pio uart at a baud rate of 115200 8N1 inverted
-// Rx sent a frame once every 9msec (with byte stuffing)
-// it contains:  0X7E LEN(=0X19 if no stuff)  X000 + a sbus signal + a CRC (one byte) 7E
+// Rx sent a frame once every 9msec (without byte stuffing)
+// it contains:  0X7E LEN(=0X19)  X000 + a sbus signal + a CRC (one byte) 7E
 // it can be immediately followed by a downlink frame with 
-//   0X7E LEN(=0X08 if no stuff)  0X01 PRI APP1 APP2 DATA1...DATA4 + CRC + 7E
+//   0X7E LEN(=0X08)  0X01 PRI APP1 APP2 DATA1...DATA4 + CRC + 7E
 // sensor reply within 3msec with
-//   LEN(0X08 if no stuff)  0X81 PRI (= 0X10 id data or OX00 if there is no valid data) APP1 APP1 + DATA1...DATA4 + CRC
-// Note :LEN does not include Header, LEN and CRC, TRAILER
+//   LEN(0X08)  0X81 PRI (= 0X10 id data or OX00 if there is no valid data) APP1 APP2 + DATA1...DATA4 + CRC
+// Note :LEN does not include Header, LEN and CRC, trailer
 
 
 //CRC byte : this byte is summed from Len field to the byte in front of CRC with carry should be 0xFF.

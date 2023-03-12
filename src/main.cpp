@@ -26,6 +26,7 @@
 #include "ibus.h"
 #include "sbus2_tlm.h"
 #include "fbus.h"
+#include "srxl2.h"
 //#include "param.h"
 
 #include "ws2812.h"
@@ -380,6 +381,10 @@ void setup() {
         setupFbus();
         setupSbus2In();
         //setupSbus2Tlm();
+      } else if (config.protocol == 'L') {   // srxl2 Spektrum
+        setupSrxl2();
+        //setupSbus2In(); // to do add a second input
+        //setupSbus2Tlm();
       }
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
@@ -469,7 +474,11 @@ void loop() {
         handleFbusRxTx();
         handleSbus2In();
         fillSbusFrame();
-      } 
+      } else if (config.protocol == 'L') {  // SRXL2 Spektrum
+        handleSrxl2RxTx();
+        //handleSbus2In();  // to do processa second inpunt
+        fillSbusFrame();
+      }
       watchdog_update();
       updatePWM();
             //updatePioPwm();

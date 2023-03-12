@@ -36,7 +36,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
-// PROTOCOL = C, S, J , M , I , F, 2
+// PROTOCOL = C, S, J , M , I , F, 2, L
 // for RP2040_zero, pin 16 = LED
 // When no config is found in memory, a default config is loaded (defined in config.h)
 // When a pin is not used, value = 0xFF
@@ -409,8 +409,11 @@ void processCmd(){
         } else if (strcmp("2", pvalue) == 0) {
             config.protocol = '2';
             updateConfig = true;
+        } else if (strcmp("L", pvalue) == 0) {
+            config.protocol = 'L';
+            updateConfig = true;
         } else  {
-            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), 2(Sbus2 Futaba) or I(Ibus/Flysky)\n");
+            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), 2(Sbus2 Futaba), L(SRXL2 Spektrum) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -669,6 +672,14 @@ void checkConfig(){
         printf("Error in parameters: For Frsky Fbus, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
+    if (config.protocol == 'L' && config.pinPrimIn == 255  ){
+        printf("Error in parameters: For Spektrum SRXL2, a pin must be defined for Primary channels input (PRI)\n");
+        configIsValid=false;
+    }
+    if (config.protocol == 'L' && config.pinTlm != 255  ){
+        printf("Error in parameters: For Spektrum SRXL2, TLM pin may not be defined (but PRI must be defined)\n");
+        configIsValid=false;
+    }
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
@@ -712,6 +723,8 @@ void printConfig(){
             printf("\nProtocol is Sbus2(Futaba)\n")  ;    
         } else if (config.protocol == 'F'){
             printf("\nProtocol is Fbus(Frsky)\n")  ;    
+        } else if (config.protocol == 'L'){
+            printf("\nProtocol is SRXL2 (Spektrum)\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
@@ -1009,82 +1022,82 @@ void printFieldValues(){
                         (uint8_t) (fields[i].value >> 8) ) ;
                     break;
                 case GPS_PDOP:
-                    printf("GPS Pdop = %d \n", fields[i].value) ;
+                    printf("GPS Pdop = %d \n", (int) fields[i].value) ;
                     break;
                 case GPS_HOME_BEARING:
-                    printf("GPS Home bearing = %d degree\n", fields[i].value) ;
+                    printf("GPS Home bearing = %d degree\n", (int) fields[i].value) ;
                     break;
                 case GPS_HOME_DISTANCE:
-                    printf("GPS Home distance = %d m\n", fields[i].value) ;
+                    printf("GPS Home distance = %d m\n", (int) fields[i].value) ;
                     break;
                 case MVOLT:
-                    printf("Volt 1 = %d mVolt\n", fields[i].value) ;
+                    printf("Volt 1 = %d mVolt\n", (int) fields[i].value) ;
                     break;
                 case CURRENT:
-                    printf("Current (Volt 2) = %d mA\n", fields[i].value) ;
+                    printf("Current (Volt 2) = %d mA\n", (int) fields[i].value) ;
                     break;
                 case RESERVE1:
-                    printf("Volt 3 = %d mVolt\n", fields[i].value) ;
+                    printf("Volt 3 = %d mVolt\n", (int) fields[i].value) ;
                     break;
                 case RESERVE2:
-                    printf("Volt 4 = %d mVolt\n", fields[i].value) ;
+                    printf("Volt 4 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case CAPACITY:
-                    printf("Capacity (using current) = %d mAh\n", fields[i].value) ;
+                    printf("Capacity (using current) = %d mAh\n", (int) fields[i].value) ;
                     break;        
                 case TEMP1:
-                    printf("Temp 1 (Volt 3) = %d degree\n", fields[i].value) ;
+                    printf("Temp 1 (Volt 3) = %d degree\n", (int) fields[i].value) ;
                     break;        
                 case TEMP2:
-                    printf("Temp 2 (Volt 4) = %d degree\n", fields[i].value) ;
+                    printf("Temp 2 (Volt 4) = %d degree\n", (int) fields[i].value) ;
                     break;        
                 case VSPEED:
-                    printf("Vspeed = %d cm/s\n", fields[i].value) ;
+                    printf("Vspeed = %d cm/s\n", (int) fields[i].value) ;
                     break;        
                 case RELATIVEALT:
-                    printf("Baro Rel altitude = %d cm\n", fields[i].value) ;
+                    printf("Baro Rel altitude = %d cm\n", (int) fields[i].value) ;
                     break;        
                 case PITCH:
-                    printf("Pitch = %d degree\n", fields[i].value) ;
+                    printf("Pitch = %d degree\n", (int) fields[i].value) ;
                     break;        
                 case ROLL:
-                    printf("Roll = %d degree\n", fields[i].value) ;
+                    printf("Roll = %d degree\n", (int) fields[i].value) ;
                     break;        
                 case YAW:
-                    printf("Yaw = %d degree\n", fields[i].value) ;
+                    printf("Yaw = %d degree\n", (int) fields[i].value) ;
                     break;        
                 case RPM:
-                    printf("RPM = %d Hertz\n", fields[i].value) ;
+                    printf("RPM = %d Hertz\n", (int) fields[i].value) ;
                     break;
                 case ADS_1_1:
-                    printf("Ads 1 1 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 1 1 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_1_2:
-                    printf("Ads 1 2 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 1 2 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_1_3:
-                    printf("Ads 1 3 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 1 3 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_1_4:
-                    printf("Ads 1 4 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 1 4 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_2_1:
-                    printf("Ads 2 1 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 2 1 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_2_2:
-                    printf("Ads 2 2 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 2 2 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_2_3:
-                    printf("Ads 2 3 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 2 3 = %d mVolt\n", (int) fields[i].value) ;
                     break;        
                 case ADS_2_4:
-                    printf("Ads 2 4 = %d mVolt\n", fields[i].value) ;
+                    printf("Ads 2 4 = %d mVolt\n", (int) fields[i].value) ;
                     break;
                 case AIRSPEED:
-                    printf("Airspeed = %d cm/s\n", fields[i].value) ;
+                    printf("Airspeed = %d cm/s\n", (int) fields[i].value) ;
                     break;
                 case AIRSPEED_COMPENSATED_VSPEED:
-                    printf("Compensated Vspeed = %d cm/s\n", fields[i].value) ;
+                    printf("Compensated Vspeed = %d cm/s\n", (int) fields[i].value) ;
                     break;
                             
             } // end switch

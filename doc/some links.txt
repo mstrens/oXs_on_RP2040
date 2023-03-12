@@ -31,5 +31,8 @@ https://www.propwashed.com/wp-content/uploads/2018/01/F.Port_.protocol.betaFligh
 https://github.com/betaflight/betaflight/blob/master/src/main/rx/fport.c
 https://github.com/betaflight/betaflight/blob/master/src/main/telemetry/smartport.c
 
+srxl2 (spektrum)
+https://github.com/SpektrumRC/SpektrumDocumentation/tree/master/Telemetry
+https://github.com/SpektrumRC/SRXL2
 
 

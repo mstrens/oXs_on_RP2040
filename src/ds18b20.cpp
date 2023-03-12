@@ -173,7 +173,7 @@ int onewire_reset(struct owobj *owobj) {
 /* Wait for idle state to be reached. This is only
 //   useful when you know that all but the last bit
 //   have been processe (after having checked fifos)
-/*
+//
 void onewire_wait_for_idle(struct owobj *owobj) {
     int ret;
     PIO pio = owobj->pio;

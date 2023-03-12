@@ -68,7 +68,7 @@ uint8_t ibusTxBuffer[8];
 enum IBUSSTATES {
     RECEIVING,
     //WAIT_FOR_SENDING,
-    SENDING,
+    //SENDING,
     WAIT_END_OF_SENDING
 };
 

@@ -47,8 +47,8 @@ void kalmanFilter4d_update(float zm, float am, float* pz, float* pv);
 
 
 // *********************  extract from common.h in original github source ************************************
-#define MIN(x,y)                 ((x) < (y) ? (x) : (y))
-#define MAX(x,y)                 ((x) > (y) ? (x) : (y))
+//#define MIN(x,y)                 ((x) < (y) ? (x) : (y))
+//#define MAX(x,y)                 ((x) > (y) ? (x) : (y))
 #define ABS(x)                   ((x) < 0 ? -(x) : (x))
 #define CLAMP(x,mn,mx)           {if (x <= (mn)) x = (mn); else if (x >= (mx)) x = (mx);}
 #define CORE(x,t)                {if (ABS(x) <= (t)) x = 0;}

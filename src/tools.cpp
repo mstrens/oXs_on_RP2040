@@ -154,7 +154,7 @@ void calculateAirspeed(){
     if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
         prevAirspeedAvailableMs = millisRp();
         //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
-        sent2Core0(RELATIVEALT, (int32_t) smoothAirspeedCmS); 
+        sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS); 
     }
 } 
 // check if offset must be reset
