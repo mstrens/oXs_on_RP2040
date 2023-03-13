@@ -199,7 +199,7 @@ public:
     // **********************
     bool gpsInstalled = false;
     uint8_t gpsState = GPS_WAIT_END_OF_RESET;
-    uint8_t initGpsIdx = 0 ; // index of the bytes to be sent to configure the GPS
+    uint16_t initGpsIdx = 0 ; // index of the bytes to be sent to configure the GPS
             
     //int32_t GPS_lon;               // longitude in degree with 7 decimals, (neg for S)
     //bool    GPS_lonAvailable = false ; 

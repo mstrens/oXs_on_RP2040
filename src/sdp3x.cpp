@@ -44,7 +44,7 @@ void SDP3X::begin() {
     sleep_ms(20); // wait 20msec in order to get the first data (datasheet says 8 msec) 
     }
     uint8_t readBuffer[9];
-    if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 1500) < 0)  {
+    if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
     printf("error read first values from sdp3x\n");
     return ;
     }  

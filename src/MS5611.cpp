@@ -89,7 +89,7 @@ void MS5611::begin()  // return true when baro exist
       if ( i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false , 1000) <0 ) {
         printf("error write calibration MS5611\n");
         return ; // command to get access to one register '0xA0 + 2* offset
-    //  sleep_ms(1);
+      //sleep_ms(1);
       }
       if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {
         printf("error read calibration MS5611\n");

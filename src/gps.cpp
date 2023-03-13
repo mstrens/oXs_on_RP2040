@@ -43,8 +43,8 @@ union {
 //volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
 //volatile uint32_t baudrateCount = 0;
 uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
-//uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
-uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ; 
+uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
+//uint32_t baudrateList[4] = {  9600, 9600 , 9600, 9600} ; 
 uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;
@@ -266,7 +266,7 @@ void GPS::handleGpsUblox(){
             if (millisRp() > 1000) { //after x msec
                 gpsState = GPS_IN_RECONFIGURATION;
                 lastActionUs = 0;
-                baudIdx = 0;        
+                baudIdx = 0;       
             }
             break;
         case GPS_IN_RECONFIGURATION:
@@ -280,6 +280,7 @@ void GPS::handleGpsUblox(){
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 4){   // if text has been sent with all baudrate, we can continue
                         gpsInitRx();                        // setup the reception of GPS char.
+                        //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
                     } else {
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
