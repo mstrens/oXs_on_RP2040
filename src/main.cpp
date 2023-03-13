@@ -48,8 +48,9 @@
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
-//         add airspeed field and compensated Vspeed to all protocols
-//         add spektrum protocol
+//         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
+//         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
+//         add command to force to prefill fields[] with some values
 
 // Look at file in folder "doc" for more details
 //
@@ -120,7 +121,7 @@ queue_t qSendCmdToCore1;
 volatile bool core1SetupDone = false;
 void core1_main(); // prototype of core 1 main function
 
-
+uint8_t forcedFields = 0; // use to debug a protocol; force the values when = 'P' (positive) or 'N' (negative)
 
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
@@ -231,7 +232,7 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
     calculateAirspeed( );
     vario1.calculateVspeedDte();
   }
-  if (ms4525.airspeedInstalled){
+  if (sdp3x.airspeedInstalled){
     sdp3x.getDifPressure();
     calculateAirspeed( );
     vario1.calculateVspeedDte();
@@ -428,6 +429,7 @@ void getSensorsFromCore1(){
             }    
         }
     }
+    if ((forcedFields == 1) || (forcedFields == 2)) fillFields(forcedFields); // force dummy vallues for debuging a protocol
 }
 
 void loop() {

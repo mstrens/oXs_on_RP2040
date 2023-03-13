@@ -80,3 +80,5 @@ void startTimerUs(uint8_t idx);
 void getTimerUs(uint8_t idx);
 
 void calculateAirspeed();
+
+void fillFields( uint8_t forcedFields);

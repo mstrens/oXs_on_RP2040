@@ -34,6 +34,8 @@ void SDP3X::begin() {
   temperatureKelvin = 273.15 + temperatureCelsius ; // in Kelvin
   dpScaleSdp3x =  966.0 / 1013.0 / 60 ; //60=SDP31 , 240=SDP32
 #else // not a simulation
+    printf("trying to read sdpXX sensor with i2c adress = %X\n", _address);
+    
     // set the sensor in continous mode with averaging (send a command 0X3615)
     uint8_t cmdData[2] = { 0X36 , 0X15} ; 
     if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , false , 1000) <0 ) {
@@ -54,6 +56,7 @@ void SDP3X::begin() {
     dpScaleSdp3x =  966.0 / 1013.25 / ((float)((int16_t)readBuffer[6] << 8 | readBuffer[7]));
     // datasheet says that we have to apply a correction of 966/actual pressure in mbar; it is estimated with 1013
 #endif // endif for simulation
+    printf("sdp3x has been succesfuly detected\n");
     airspeedInstalled = true;
     prevReadUs = microsRp(); 
 }  //end of setup

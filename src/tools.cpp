@@ -10,7 +10,7 @@
 #include "sdp3x.h"
 
 extern queue_t qSensorData; 
-
+extern field fields[];
 
 
 // useful for button but moved to button2.cpp
@@ -162,3 +162,107 @@ void calculateAirspeed(){
 //                    offset4525 =  offset4525  + smoothDifPressureAdc ;
 //                    airSpeedData.airspeedReset = false ; // avoid that offset is changed again and again if PPM do not send a command
 //              }
+
+
+int32_t posFieldValues[] = {    
+    891234567L, //  LATITUDE ,  //  GPS special format
+    1781234567L, //  LONGITUDE =     //  GPS special format
+    2468,        //GROUNDSPEED =  //  GPS cm/s
+    17912,      //  HEADING =,      //  GPS 0.01 degree
+    135721,     //  ALTITUDE ,    //  GPS cm
+    23,         //  NUMSAT ,      //  5 GPS no unit   
+    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
+    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    123,         //  GPS_PDOP ,    // GPS no unit
+    179,         //  GPS_HOME_BEARING, // GPS degree
+
+    234,         //  GPS_HOME_DISTANCE, // 10 GPS  in m
+    7321,       //  MVOLT,        // volt1   in mVolt
+    89321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
+    45321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    56321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+      
+    34321,      //  CAPACITY,    // based on current (volt2) in mAh
+    136,        //  TEMP1,       // = Volt3 but saved as temp in degree
+    148,        //  TEMP2,       // = Volt4 but saved as temp in degree
+    258,        //  VSPEED,      // baro       in cm/s
+    246821,     //  RELATIVEALT , // baro      in cm
+      
+    89,         //  PITCH,       // 20 imu        in degree 
+    78,         //  ROLL,        // imu           in degree
+    67,         //  YAW ,        // not used to save data  in degree
+    369,        //  RPM ,        // RPM sensor    in Herzt
+    11111,      //    ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+
+    12121,      //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+    13131,      //  ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+    13141,      //  ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+    21212,      //  ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
+    22222,      //  ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
+      
+    23232,      //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
+    24242,      //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
+    15151,      //  AIRSPEED,    cm/s
+    167         //     AIRSPEED_COMPENSATED_VSPEED,      
+};
+
+int32_t negFieldValues[] = {    
+    -891234567L, //  LATITUDE ,  //  GPS special format
+    -1781234567L, //  LONGITUDE =     //  GPS special format
+    0,        //GROUNDSPEED =  //  GPS cm/s
+    -17912,      //  HEADING =,      //  GPS 0.01 degree
+    -56721,     //  ALTITUDE ,    //  GPS cm
+    0,         //  NUMSAT ,      //  5 GPS no unit   
+    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
+    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    03,         //  GPS_PDOP ,    // GPS no unit
+    -179,         //  GPS_HOME_BEARING, // GPS degree
+
+    0,         //  GPS_HOME_DISTANCE, // 10 GPS  in m
+    -7321,       //  MVOLT,        // volt1   in mVolt
+    -89321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
+    -45321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    -56321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+      
+    0,      //  CAPACITY,    // based on current (volt2) in mAh
+    -19,        //  TEMP1,       // = Volt3 but saved as temp in degree
+    -21,        //  TEMP2,       // = Volt4 but saved as temp in degree
+    -258,        //  VSPEED,      // baro       in cm/s
+    -46821,     //  RELATIVEALT , // baro      in cm
+      
+    -89,         //  PITCH,       // 20 imu        in degree 
+    -78,         //  ROLL,        // imu           in degree
+    -67,         //  YAW ,        // not used to save data  in degree
+    0,        //  RPM ,        // RPM sensor    in Herzt
+    -11111,      //    ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+
+    -12121,      //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+    -13131,      //  ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+    -13141,      //  ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+    -21212,      //  ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
+    -22222,      //  ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
+      
+    -23232,      //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
+    -24242,      //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
+    0,      //  AIRSPEED,    cm/s
+    -167         //     AIRSPEED_COMPENSATED_VSPEED,      
+};
+// fill all fields with dummy values (useful to test a protocol)
+ void fillFields( uint8_t forcedFields){
+    //printf("entering fillFields with %d\n", forcedFields);
+    if (forcedFields == 1)  {   // force positive values
+        for (uint8_t i = 0; i <  (sizeof(posFieldValues)/sizeof(*posFieldValues)) ; i++){
+            fields[i].value = posFieldValues[i];
+            fields[i].available = true;
+            fields[i].onceAvailable = true;
+            //printf("filling for %d\n", i);
+        }
+    }
+    if (forcedFields == 2)  {   // force negative values
+        for (uint8_t i = 0; i <  (sizeof(negFieldValues)/sizeof(*negFieldValues)) ; i++){
+            fields[i].value = negFieldValues[i];
+            fields[i].available = true;
+            fields[i].onceAvailable = true; 
+        }
+    }
+ }

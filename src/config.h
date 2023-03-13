@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.7.0"
+#define VERSION "1.7.1"
 
-//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 

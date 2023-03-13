@@ -75,6 +75,7 @@ extern ADS1115 adc2 ;
 extern MPU mpu;
 extern queue_t qSendCmdToCore1;
 
+extern uint8_t forcedFields;
 
 void handleUSBCmd(void){
     int c;
@@ -147,6 +148,9 @@ void processCmd(){
     //    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
         printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
+        printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
+        printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
+        printf("        for dummy positive values, enter POS; for dummy negative values, enter NEG\n")  ;
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         return;  
@@ -381,7 +385,27 @@ void processCmd(){
             printFieldValues();
             return;
     }
-    
+    // force dummy positive value
+    if ( strcmp("FVP", pkey) == 0 ) { 
+            forcedFields = 1;
+            fillFields(forcedFields);
+            printFieldValues();
+            printf("Internal telemetry fields are now filled with POSITIVE dummy values\n");
+            printf("To get real values again, you have to power down\n");
+            
+            return;
+    }
+// force dummy negative value
+    if ( strcmp("FVN", pkey) == 0 ) { 
+            forcedFields = 2;
+            fillFields(forcedFields);
+            printFieldValues();
+            printf("Internal telemetry fields are now filled with NEGATIVE dummy values\n");
+            printf("To get real values again, you have to power down\n");
+            return;
+    }
+
+
 
     // change protocol
     if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
@@ -1011,7 +1035,7 @@ void printFieldValues(){
                     printf("GPS Altitude = %d cm\n", (int) fields[i].value) ;
                     break;
                 case NUMSAT:
-                    printf("GPS Num sat. = %d cm\n", (int) fields[i].value) ;
+                    printf("GPS Num sat. = %d\n", (int) fields[i].value) ;
                     break;
                 case GPS_DATE:
                     printf("GPS Date J M A = %d %d %d \n", (uint8_t) (fields[i].value >>8) , (uint8_t) (fields[i].value >> 16) ,
