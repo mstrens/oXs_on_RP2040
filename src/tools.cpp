@@ -133,7 +133,7 @@ void calculateAirspeed(){
     uint32_t nowUs = microsRp(); 
     if ( ( nowUs - prevAirspeedCalculatedUs) < 20000 ) return; // skip if there is less than 20 msec
     prevAirspeedCalculatedUs = nowUs;
-    float difPressureAvg = difPressureAirspeedSumPa / difPressureAirspeedCount ; // calculate a moving average on x values
+    float difPressureAvg = difPressureAirspeedSumPa / (float) difPressureAirspeedCount ; // calculate a moving average on x values
     difPressureAirspeedSumPa = 0 ;  // reset 
     difPressureAirspeedCount = 0 ;
     if ( difPressureAvg < 0 ) difPressureAvg = 0;
@@ -152,6 +152,8 @@ void calculateAirspeed(){
     smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
     // publish the new value every 200 ms
     if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
+        printf("difP= %f tmp=%f p=%f rs=%f  ss=%f\n" , (float) difPressureAvg , (float)  temperatureKelvin ,
+             (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS );
         prevAirspeedAvailableMs = millisRp();
         //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
         sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS); 
