@@ -12,7 +12,7 @@ class SDP3X {
 public:
     SDP3X(uint8_t deviceAddress) ;
     bool  airspeedInstalled = false;
-    float temperatureCelsius;
+    float temperatureCelsius = 0;
 
     void begin();
     void getDifPressure();

@@ -41,6 +41,7 @@ void MS4525::begin() {
         temperatureAdc = (0xFFE0 & temperatureAdc) >> 5;
         temperatureKelvin = (0.097703957f * (float) temperatureAdc)  + 223.0 ; // in kelvin 
     } else { 
+        printf("error reading temperature : %x\n", readBuffer[0]);
         temperatureKelvin = 300 ;
     }
     airspeedInstalled = true;
@@ -87,7 +88,10 @@ void MS4525::getDifPressure() {
             difPressureCompVspeedCount++;                // count the number of conversion
                             
         }    
+    } else {
+        printf("first byte of read MS4525 = %x  at %d\n", readBuffer[0] , (int) now );  
     }
+
 }            
 
 /*

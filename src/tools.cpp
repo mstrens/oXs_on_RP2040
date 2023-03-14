@@ -122,7 +122,7 @@ uint32_t prevAirspeedCalculatedUs;
 uint32_t prevAirspeedAvailableMs;
 //uint32_t prevCompVspeedCalculatedUs;
 //uint32_t prevCompVspeedAvailableMs;
-float smoothAirspeedCmS;
+float smoothAirspeedCmS = 0;
 extern MS4525 ms4525;
 extern SDP3X sdp3x;
 extern float actualPressurePa;
@@ -133,10 +133,15 @@ void calculateAirspeed(){
     uint32_t nowUs = microsRp(); 
     if ( ( nowUs - prevAirspeedCalculatedUs) < 20000 ) return; // skip if there is less than 20 msec
     prevAirspeedCalculatedUs = nowUs;
+    if (difPressureAirspeedCount == 0) return ; // skip if there is no value (normally because it is not yet calibrated)
     float difPressureAvg = difPressureAirspeedSumPa / (float) difPressureAirspeedCount ; // calculate a moving average on x values
     difPressureAirspeedSumPa = 0 ;  // reset 
     difPressureAirspeedCount = 0 ;
-    if ( difPressureAvg < 0 ) difPressureAvg = 0;
+    //printf("p=%.2f\n", difPressureAvg);
+    float rawAirspeedPa;
+    if ( difPressureAvg < 0 ) {
+        rawAirspeedPa = -2396 *  sqrt( -difPressureAvg * temperatureKelvin / (float) actualPressurePa );
+    } else {   
     // calculate airspeed based on pressure, altitude and temperature
     // airspeed (m/sec) = sqr(2 * differential_pressure_in_Pa / air_mass_kg_per_m3) 
     // air_mass_kg_per_m3 = pressure_in_pa / (287.05 * (Temp celcius + 273.15))
@@ -146,17 +151,17 @@ void calculateAirspeed(){
     
     //#ifdef AIRSPEED_AT_SEA_LEVEL_AND_15C
     //smoothAirSpeed =  131.06 * sqrt( (float) ( abs_smoothDifPressureAdc ) ); // indicated airspeed is calculated at 15 Celsius and 101325 pascal
-    float rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / actualPressurePa );
-    
+    float rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / (float) actualPressurePa );
+    }
     #define EXPOSMOOTH_AIRSPEED_FACTOR 0.1
     smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
     // publish the new value every 200 ms
     if ( (millisRp() - prevAirspeedAvailableMs) > 200) { // make the new value available once per 200 msec
-        printf("difP= %f tmp=%f p=%f rs=%f  ss=%f\n" , (float) difPressureAvg , (float)  temperatureKelvin ,
-             (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS );
+        //printf("difP= %f tmp=%f p=%f rs=%f  ss=%f\n" , (float) difPressureAvg , (float)  temperatureKelvin ,
+        //     (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS *0.036 );
         prevAirspeedAvailableMs = millisRp();
         //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
-        sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS); 
+            sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS);     
     }
 } 
 // check if offset must be reset

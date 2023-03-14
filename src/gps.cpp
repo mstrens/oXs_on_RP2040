@@ -43,8 +43,8 @@ union {
 //volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
 //volatile uint32_t baudrateCount = 0;
 uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
-uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
-//uint32_t baudrateList[4] = {  9600, 9600 , 9600, 9600} ; 
+//uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
+uint32_t baudrateList[4] = {  115200, 115200 , 115200, 115200} ; 
 uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;

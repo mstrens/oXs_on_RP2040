@@ -44,10 +44,28 @@ void SDP3X::begin() {
     sleep_ms(20); // wait 20msec in order to get the first data (datasheet says 8 msec) 
     }
     uint8_t readBuffer[9];
-    if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
-    printf("error read first values from sdp3x\n");
-    return ;
-    }  
+    int32_t i2cError;
+    //if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
+    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 1 , false, 5500);   
+    printf("read 1 byte from sdp3x = %d \n", (int) i2cError);
+    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 5500) ;    
+    printf("read 2 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 3 , false, 5500) ;    
+    printf("read 3 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 4 , false, 5500) ;    
+    printf("read 4 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 5 , false, 5500) ;    
+    printf("read 5 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 6 , false, 5500);    
+    printf("read 6 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 7 , false, 5500) ;    
+    printf("read 7 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 8 , false, 5500) ;    
+    printf("read 8 bytes from sdp3x = %d \n", (int) i2cError);
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) ;    
+    printf("read 9 bytes from sdp3x = %d \n", (int) i2cError);
+    if (i2cError < 0) return ; // skip if there is an error
+      
     // first 2 bytes = pressure, byte 3 = CRC, byte 4 & 5 = temp,  bytes 6, 7, 8 = scale factor
     //nextPressureReadMillis = millisRp() + 2;    //
     //nextAirSpeedMillis  = nextPressureReadMillis + 200 ; 
