@@ -47,8 +47,15 @@ void SDP3X::begin() {
     if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , true , 1000) <0 ) {
     printf("error write command to sdp3x\n");
     return ; 
-    sleep_ms(20); // wait 20msec in order to get the first data (datasheet says 8 msec) 
+    sleep_ms(100); // wait 20msec in order to get the first data (datasheet says 8 msec) 
     }
+    sleep_ms(100);
+    if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , true , 1000) <0 ) {
+    printf("error second write command to sdp3x\n");
+    return ; 
+    sleep_ms(100); // wait 20msec in order to get the first data (datasheet says 8 msec) 
+    }
+
     //if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
     /*
     i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 1 , true, 5500);   
