@@ -38,7 +38,7 @@ void SDP3X::begin() {
     
     // set the sensor in continous mode with averaging (send a command 0X3615)
     uint8_t cmdData[2] = { 0X36 , 0X15} ; 
-    if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , false , 1000) <0 ) {
+    if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , true , 1000) <0 ) {
     printf("error write command to sdp3x\n");
     return ; 
     sleep_ms(20); // wait 20msec in order to get the first data (datasheet says 8 msec) 
@@ -46,23 +46,25 @@ void SDP3X::begin() {
     uint8_t readBuffer[9];
     int32_t i2cError;
     //if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
-    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 1 , false, 5500);   
+    /*
+    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 1 , true, 5500);   
     printf("read 1 byte from sdp3x = %d \n", (int) i2cError);
-    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 5500) ;    
+    i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , true, 5500) ;    
     printf("read 2 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 3 , false, 5500) ;    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 3 , true, 5500) ;    
     printf("read 3 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 4 , false, 5500) ;    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 4 , true, 5500) ;    
     printf("read 4 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 5 , false, 5500) ;    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 5 , true, 5500) ;    
     printf("read 5 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 6 , false, 5500);    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 6 , true, 5500);    
     printf("read 6 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 7 , false, 5500) ;    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 7 , true, 5500) ;    
     printf("read 7 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 8 , false, 5500) ;    
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 8 , true, 5500) ;    
     printf("read 8 bytes from sdp3x = %d \n", (int) i2cError);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) ;    
+    */
+    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , true, 5500) ;    
     printf("read 9 bytes from sdp3x = %d \n", (int) i2cError);
     if (i2cError < 0) return ; // skip if there is an error
       
@@ -89,7 +91,7 @@ void SDP3X::getDifPressure() {
     if ( (now - prevReadUs) < 2000 ) return ;// it take about 500 usec for a conversion
     // read a new pressure
     prevReadUs = now;
-    if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {
+    if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , true, 1500) < 0)  {
         printf("error read sdp3x (airspeed sensor)\n");
         return;
     }

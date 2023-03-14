@@ -170,7 +170,6 @@ void calculateAirspeed(){
 //                    airSpeedData.airspeedReset = false ; // avoid that offset is changed again and again if PPM do not send a command
 //              }
 
-
 int32_t posFieldValues[] = {    
     891234567L, //  LATITUDE ,  //  GPS special format
     1781234567L, //  LONGITUDE =     //  GPS special format
