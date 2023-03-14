@@ -55,7 +55,7 @@ void MS4525::begin() {
 void MS4525::getDifPressure() {
     if ( ! airspeedInstalled) return ;     // do not process if there is no sensor
     uint32_t now = microsRp(); 
-    if ( (now - prevReadUs) < 2000 ) return ;// it take about 500 usec for a conversion
+    if ( (now - prevReadUs) < 5000 ) return ;// it take about 500 usec for a conversion
     // read a new pressure
     prevReadUs = now;
     if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {

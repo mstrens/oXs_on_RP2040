@@ -103,10 +103,10 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
 
 void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each time that an altitude is available
     
-    float totalEnergyLowPassCm ;
-    float totalEnergyHighPassCm ;
-    static float smoothCompensatedClimbRateCmS ;
-     
+    float totalEnergyLowPassCm =0 ;
+    float totalEnergyHighPassCm =0 ;
+    static float smoothCompensatedClimbRateCmS = 0;
+    float difPressureAvgPa = 0; 
 
     // for 4525:
         // airspeed = sqr(2 * differential_pressure / air_density) ; air density = pressure  pa / (287.05 * (Temp celcius + 273.15))
@@ -116,14 +116,14 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
         // compensation (m) = airspeed * airspeed / 2 / 9.81 =
         //                  = 2 * 287.05 * difPressurePa * (temperature Celsius + 273.15) / pressure pa /2 /9.81 (m/sec) = 29.26 * difPressureAdc * Temp(kelv) / Press (Pa)
         // compensation (cm) =  2926.0 * difPressureAdc * Temp(kelv) / Press (Pa)
-    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled) return; // skip when no MS4525/sdp3x is installed
+    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false) return; // skip when no MS4525/sdp3x is installed
     if (newClimbRateAvailableForCompensation == false) return; // skip when no new Vspeed is available
     // calculate average diff of pressure because MS4525 is read more ofen than Vspeed
-    float difPressureAvgPa = difPressureCompVspeedSumPa / difPressureCompVspeedCount ;
+    if (difPressureCompVspeedCount > 0) difPressureAvgPa = difPressureCompVspeedSumPa / (float) difPressureCompVspeedCount ;
     difPressureCompVspeedSumPa = 0;
     difPressureCompVspeedCount = 0; // reset the values used for averaging  
     float rawCompensationCm = 2926.0 * difPressureAvgPa * temperatureKelvin /  actualPressurePa    ; 
-    float rawTotalEnergyCm =  rawRelAltitudeCm + rawCompensationCm * DTE_COMPENSATION_FACTOR ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
+    float rawTotalEnergyCm =  rawRelAltitudeCm + (rawCompensationCm * DTE_COMPENSATION_FACTOR) ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
     if (totalEnergyLowPassCm == 0) { // initiaise smoothing 
         totalEnergyLowPassCm = totalEnergyHighPassCm = rawTotalEnergyCm ; 
     }
