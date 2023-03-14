@@ -38,24 +38,13 @@ void SDP3X::begin() {
     uint8_t readBuffer[9];
     int32_t i2cError;
     
-    printf("trying to read sdpXX sensor with i2c adress = %X\n", _address);
-    i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 3 , true, 5500) ;    
-    printf("read 3 bytes before the first write; return code  = %d \n", (int) i2cError);
-    
     // set the sensor in continous mode with averaging (send a command 0X3615)
     uint8_t cmdData[2] = { 0X36 , 0X15} ; 
     if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , true , 1000) <0 ) {
-    printf("error write command to sdp3x\n");
-    return ; 
-    sleep_ms(100); // wait 20msec in order to get the first data (datasheet says 8 msec) 
+        printf("error write command to sdp3x\n");
+        return ; 
     }
-    sleep_ms(100);
-    if ( i2c_write_timeout_us (i2c1 , _address, &cmdData[0] , 2 , true , 1000) <0 ) {
-    printf("error second write command to sdp3x\n");
-    return ; 
     sleep_ms(100); // wait 20msec in order to get the first data (datasheet says 8 msec) 
-    }
-
     //if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , false, 5500) < 0)  {
     /*
     i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 1 , true, 5500);   
@@ -76,9 +65,10 @@ void SDP3X::begin() {
     printf("read 8 bytes from sdp3x = %d \n", (int) i2cError);
     */
     i2cError =  i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 9 , true, 5500) ;    
-    printf("read 9 bytes from sdp3x = %d \n", (int) i2cError);
-    if (i2cError < 0) return ; // skip if there is an error
-      
+    if (i2cError < 0) {
+        printf("read 9 bytes from sdp3x = %d \n", (int) i2cError);    
+        return ; // skip if there is an error
+    }  
     // first 2 bytes = pressure, byte 3 = CRC, byte 4 & 5 = temp,  bytes 6, 7, 8 = scale factor
     //nextPressureReadMillis = millisRp() + 2;    //
     //nextAirSpeedMillis  = nextPressureReadMillis + 200 ; 
@@ -91,7 +81,6 @@ void SDP3X::begin() {
     airspeedInstalled = true;
     prevReadUs = microsRp(); 
 }  //end of setup
-
 
 /****************************************************************************/
 /* readSensor - Read differential pressure                                  */
