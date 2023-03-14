@@ -271,3 +271,5 @@ private:
     //#endif
 
 };
+
+void uboxChecksum();

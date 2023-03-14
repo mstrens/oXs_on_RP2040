@@ -97,8 +97,34 @@ const uint8_t initGps1[] = {
             0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A, // NAV-RATE for 5 hz
     #endif
             0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
+                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
+            0xB5,0x62,0x06,0x8A,
+                        13, 0,  //length 4 + payload here after
+                        0x00,0x01,0x00,0x00,  // in ram
+                        0x10,0x73,0x00,0x02,  // key
+                        0x00 , 
+                        0X23 , 0X7D
         }  ;   
+
+void uboxChecksum(){
+    uint8_t buffer[]= { 0xB5,0x62,0x06,0x8A,
+                        13, 0,  //length 4 + payload here after
+                        0x00,0x01,0x00,0x00,  // in ram
+                        0x10,0x73,0x00,0x02,  // key
+                        0x00                  // value
+                        };
+    uint8_t c1= 0;
+    uint8_t c2 = 0;
+    uint16_t len = sizeof(buffer);
+    printf(" check sum for  ");
+    for (uint16_t i= 2; i< sizeof(buffer);i++){
+        c1 += buffer[i];
+        c2 += c1;
+        printf(" %x ",buffer[i]);
+    }
+    printf("\n is %X  %x\n", c1, c2);
+    printf("lenght to specify is %d\n", (int) (len - 2) );
+}
 
 
 /*
@@ -282,6 +308,7 @@ void GPS::handleGpsUblox(){
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
+                        //uboxChecksum();
                     } else {
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
                     }    
