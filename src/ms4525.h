@@ -2,7 +2,7 @@
 
 
 #ifndef MS4525_ADDRESS
-#define MS4525_ADDRESS 0X28 // 0x28 is the default I2C adress of a 4525DO sensor
+#define MS4525_ADDRESS  0X28 // 0x28 is the default I2C adress of a 4525DO sensor
 #endif
 
 #include "stdint.h"

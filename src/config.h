@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.7.13"
+#define VERSION "1.8.0"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -85,7 +85,7 @@
 
 // --------- Parameters for MS4525 ----------------
 
-#define MS4525_ADDRESS 0X28 // 0x28 is the default I2C adress of a 4525DO sensor
+#define MS4525_ADDRESS 0X28 // 0x28 is the default I2C adress of a 4525DO sensor ; 0X46 is an alternative
 
 // --------- Parameters for SDP3x ----------------
 

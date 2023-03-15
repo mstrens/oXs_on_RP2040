@@ -4,26 +4,35 @@
 // when the handshake has the same device ID as oXs, oXs replies with a handshake
 // After having received all handshake msg from all device, Rx sent one more handshake with destination = FF (broadcast)
 // oXs handle this handshake to adapt the masterDeviceID and the baudrate (in theory)
-// after this Rx send control data frame once every x?msec 
+// after this Rx send control data frame once every 11 or 22msec 
 // This frame contains a byte that says what is the content of the payload (Rc channels, failsafe, VTX)
 // It contains also the device id that can reply
 // When this id match the Id of oXs, oXs send a telemetry frame (always a payload of 16 bytes)
 // There are different formats of payload depending on the data to be sent
-// Note : to isentify that an incoming frame is complete, oXs has to detect that no byte are received during at least the time to get 2 char. 
+// Note : to identify that an incoming frame is complete, oXs has to detect that no byte are received during at least the time to get 2 char. 
+// Normally the Rx does not initiate the handshake. If no one device on the bus initiates the handshake there would be no activity on the bus
+// So if oXS does not see activity on the bus, it has to initiate the handshake.
+// If oXs takes a quite long time to statup, there could already be some activity on the bus.
+// In this case oXs has to detect the baudrate (115200 or 400000), wait for a control data frame with replyId =0 and then send a telemetry frame with the destination Id = 0
+//    This will request the master to start again a handshake process.
+
+
+
 
 //- setup :  comme pour fbus, initialise le pio pour TX & Rx but not inverted 
 //- an ISR receives incoming char , put the char in a queue and save the timestamp (to allow main task to detect inactivity)
 //- handleSrxl2TxRx (called by main loop):
-//     store all char from the queue into the buffer
+//     store all char from the queue into the buffer (loose char if queue is full)
 //     if there is more than x msec since last received char,
 //        check the content of buffer (is it valid or not) and process it if valid
+//        if it is a handshake or a control data, store the baudrate (it is at least valid)
 //        if it is a handshake with same device id, send a handshake to reply
 //        if it is a handshake with device FF, save the masterid and baudrate (normally should be 0)
 //        if it is a control data with command = channels, save the channels
 //        if it is a control data with command = failsafe, save the failsafes
 //        if it is a control data (any type) and the deviceid = oXs and masterid is known,
 //             then make a telemetry frame, send it,     
-//When sending, switch to transmit, fill dma param and set an alarm to switch back to receive mode at the end of transmit
+// When sending, switch to transmit, fill dma param and set an alarm to switch back to receive mode at the end of transmit
 
 // handshake frame contains:
 // 0XA6 + 0X21 + 14 (length) + SourceID + DestinationID + priority(=10) + Baudrate(0=115200) + info + UID (4 bytes) + CRC (2 bytes)
@@ -90,6 +99,8 @@ uint8_t srxl2RxBuffer[SRXL2_BUFFER_LENGTH]; // 80
 uint8_t srxl2RxBufferIdx = 0 ;
 uint8_t srxl2Len = 0; // length of frame
 //uint8_t chanCount ;   // says the number of channels (8,16 or 24) in Rc frame
+bool srxl2BaudrateIsValid = false; // become true when a valid frame is received at least one with current baudrate
+bool srxl2IsConnected = false; // become true when a handshake is received and replied; set false again when no frame is receive for 50 msec
 
 uint8_t srxl2TxBuffer[SRXL2_BUFFER_LENGTH]; // 80
 
@@ -186,7 +197,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
     } 
     if ((( microsRp() - srxl2LastRxUs) > SRXL2_DETECT_IDLE_RX ) && (srxl2RxBufferIdx > 0)){
         // expect a full frame has been received; check it and save it.
-        if (srxl2FrameIsvalid() == false) {
+        if (srxl2FrameIsvalid() == false) {  // if frame, is valid, at least baudrateValid = true
             // discard invalid frame or frame that are not for oXS
             srxl2RxBufferIdx = 0; 
         } else {   // if the frame is valid, process it
@@ -200,22 +211,30 @@ bool srxl2FrameIsvalid(){
     // srxl2RxBuffer[] contains the incomming buffer
     // srxl2RxBufferIdx contains the number of char in the buffer
     
-    // check that first by is 0xA6
+    // check that first byte is 0xA6
     #define SRXL2_HEADER_BYTE1 0XA6
-    if (srxl2RxBuffer[0] !=  SRXL2_HEADER_BYTE1 ) return false;
+    if (srxl2RxBuffer[0] !=  SRXL2_HEADER_BYTE1 ) return false; 
+    if ( srxl2RxBufferIdx < 5) return false; // frame is to short
     // check that length is correct
     if (srxl2RxBuffer[2] !=  srxl2RxBufferIdx ) return false;
     // check that type of frame is Handsake or control data
     #define SRXL2_HANDSHAKE_CODE 0X21
     #define SRXL2_CONTROL_DATA_CODE   0XCD
     if ((srxl2RxBuffer[1] !=  SRXL2_HANDSHAKE_CODE ) && (srxl2RxBuffer[1] !=  SRXL2_CONTROL_DATA_CODE )) return false;
-    // If it is a handshake, check that Destination code ID = oXs Id or 0XFF
-    #define SRXL2_BROADCAST_ID 0xFF
-    #define SRXL2_OXS_ID 00
-    if ( (srxl2RxBuffer[1] ==  SRXL2_HANDSHAKE_CODE ) && 
-             ( srxl2RxBuffer[4] != SRXL2_OXS_ID) &&  ( srxl2RxBuffer[4] != SRXL2_BROADCAST_ID)  ) return false;
+    // check that CRC is OK
+    uint16_t crc16Expected = srxl2CalculateCrc( &srxl2RxBuffer[0],srxl2RxBufferIdx - 2) ; // calculate CRC
+    uint16_t crc16Received = ((uint16_t) srxl2RxBuffer[srxl2RxBufferIdx-2])  << 8;
+    crc16Received |= srxl2RxBuffer[srxl2RxBufferIdx-1];
+    if (crc16Expected != crc16Received) return false ; 
+    // if crc is valid, at least the baud rate is valid
+    srxl2BaudrateIsValid = true;     
     return true;  // frame is valid; it has still to be processed         
 }         
+    
+#define SRXL2_BROADCAST_ID 0xFF
+#define SRXL2_OXS_ID 0X00
+#define SRXL2_NO_REPLY 0X00
+#define SRXL2_REQUEST_HANDSHAKE_IDX 0XFF // dummy index to ask the function to fill a telemetry frame to request a (new) handshake
 
 void srxl2ProcessIncomingFrame(){
     // we process only handshake and control data frames
@@ -240,19 +259,26 @@ void srxl2ProcessIncomingFrame(){
             srxl2TxBuffer[12] = crc16 >> 8;
             srxl2TxBuffer[13] = crc16;
             srxl2SendFrame(SRXL2_HANDSHAKE_FRAME_LENGTH); // send 14 bytes
-        } else { // when destination = FF = broadcast, we do not have to reply
+            srxl2IsConnected = true;
+        } else if ( srxl2RxBuffer[4] == SRXL2_BROADCAST_ID) {   // when destination = FF = broadcast, we do not have to reply
             srxl2MasterId = srxl2RxBuffer[3]; // we save the master ID
                                               // to do : change baudrate if required
             srxl2MasterIdIsValid = true; // from now we can reply to control data frame
-        }
+        } 
+        // we do not have to reply to other handshake frame
     } else {  // we got a control data frame
 // 0XA6 + 0XCD + lenght + command (0=channels, 1=failsafe) + ReplyId + payload + CRC (2 bytes)
 //         payload for channels= RSSI(I8) + frameLosses(U16) + channel mask(U32) + n*channel(U16) (n depends on mask)
 //         payload for Failsafe= RSSI(I8) + hold(U16) + channel mask(U32) + n*channel(U16) (n depends on mask) 
-        #define SRXL2_CONTROL_DATA_FRAME_LENGTH 22
+        #define SRXL2_TELEMETRY_FRAME_LENGTH 22
+        // when we get a control data for oXs, we reply with a telemetry frame (if data are available)
         if ( srxl2RxBuffer[4] == SRXL2_OXS_ID) {
-            if ( srxl2FillTelemetryFrame() ) srxl2SendFrame(SRXL2_CONTROL_DATA_FRAME_LENGTH); // send 22 bytes if a buffer has been filled with telemetry
-        } 
+            if ( srxl2FillTelemetryFrame() ) srxl2SendFrame(SRXL2_TELEMETRY_FRAME_LENGTH); // send 22 bytes if a buffer has been filled with telemetry
+        } else if ((srxl2RxBuffer[4] == SRXL2_NO_REPLY) && (srxl2BaudrateIsValid) && (srxl2IsConnected == false) ){
+            // when there is no reply needed and if we are not yet connected and if baudrate is known, then we request an handshake with a telemetry frame 
+            srxl2FillTXBuffer(SRXL2_REQUEST_HANDSHAKE_IDX);
+            srxl2SendFrame(SRXL2_TELEMETRY_FRAME_LENGTH);
+        }
         // decode rc channels (but not other types of data)
         #define SRXL2_RC_CHANNELS 0
         if (srxl2RxBuffer[3] == SRXL2_RC_CHANNELS){
@@ -283,15 +309,15 @@ void fbusDecodeRcChannels(){             // this code is similar to Sbus in
 */
 
 // supported spektrum telemetry formats are:
-// 0X02 temerature (1X)
-// 0X03  Amp + capacity + Volt
 // 0X26 GPS binary
 // 0X40 Vspeed + alt
 // 0x11 Airspeed
 // 0X7E RPM
 // User defined : several 0X50 + ...
 // we can use the same logic as Sport based on a list where frame are in some sequence based on priority
-
+// we use also a dummy value SRXL2_REQUEST_HANDSHAKE_IDX = TELE_DEVICE_RSV_06 to request a handshake
+#define SRXL2_REQUEST_HANDSHAKE_IDX 0XFF
+#define TELE_DEVICE_RSV_06
 
 uint8_t srxl2PriorityList[] = { TELE_DEVICE_VARIO_S , TELE_DEVICE_GPS_BINARY , TELE_DEVICE_AIRSPEED , TELE_DEVICE_RPM,
                                  TELE_DEVICE_RX_MAH, TELE_DEVICE_TEMPERATURE };
@@ -463,8 +489,14 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
         case 5: //TELE_DEVICE_TEMPERATURE
             
             break;
-        default:
-            
+        
+        case 0XFF: //request new handshake (it is a dummy value I use)
+            srxl2TxBuffer[3] = 0XFF ; // overwrite destination ID with FF to ask for a request
+            for (uint8_t i=4; i< 22; i++){
+                srxl2TxBuffer[i] = 0X00;
+            }
+            break;
+        default:    
             break;    
     }
     uint16_t crc16 = srxl2CalculateCrc( &srxl2TxBuffer[0], 20) ; // calculate CRC

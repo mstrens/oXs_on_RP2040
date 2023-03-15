@@ -151,7 +151,7 @@ void calculateAirspeed(){
     
     //#ifdef AIRSPEED_AT_SEA_LEVEL_AND_15C
     //smoothAirSpeed =  131.06 * sqrt( (float) ( abs_smoothDifPressureAdc ) ); // indicated airspeed is calculated at 15 Celsius and 101325 pascal
-    float rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / (float) actualPressurePa );
+        rawAirspeedPa = 2396 *  sqrt( difPressureAvg * temperatureKelvin / (float) actualPressurePa );
     }
     #define EXPOSMOOTH_AIRSPEED_FACTOR 0.1
     smoothAirspeedCmS += ( EXPOSMOOTH_AIRSPEED_FACTOR * ( rawAirspeedPa - smoothAirspeedCmS )) ; 
@@ -161,7 +161,7 @@ void calculateAirspeed(){
         //     (float) actualPressurePa , (float) rawAirspeedPa , (float) smoothAirspeedCmS *0.036 );
         prevAirspeedAvailableMs = millisRp();
         //if ( smoothAirSpeedCmS >  0) {  // normally send only if positive and greater than 300 cm/sec , otherwise send 0 but for test we keep all values to check for drift  
-            sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS);     
+        sent2Core0(AIRSPEED, (int32_t) smoothAirspeedCmS);     
     }
 } 
 // check if offset must be reset

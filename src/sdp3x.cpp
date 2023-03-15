@@ -95,7 +95,7 @@ void SDP3X::getDifPressure() {
         printf("error read sdp3x (airspeed sensor)\n");
         return;
     }
-    difPressurePa =  ((float)((int16_t) (readBuffer[0] << 8) + readBuffer[1] )) * dpScaleSdp3x     ; // diffPressure in pa
+    difPressurePa =  ((float)((int16_t) (readBuffer[0] << 8) + (int16_t) readBuffer[1] & 0X00FF)) * dpScaleSdp3x     ; // diffPressure in pa
     difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
     difPressureAirspeedCount++;                // count the number of conversion
     difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values
