@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.8.1"
+#define VERSION "1.8.2"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -35,7 +35,7 @@
 // For temperature, oXs emulates a SBS/01T
 // For RPM, oXs emulates a SBS/01RO or 01RM
 // For vario, oXs emulates a F1672 or F1712
-// For Volt, current,capacity, oXs emulates SBS/01C
+// For Volt, current,capacity, oXs emulates SBS/01C ; seems to the same as F-1678
 // For GPS, oXs emulates a SBS/01G
 // V3 and V4 can be get using F125 or F1713 
 

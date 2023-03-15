@@ -308,8 +308,8 @@ void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM
     value = 0xffff;
     }
    slotAvailable[slot8] = true;
-   slotValueByte1[slot8] = value >> 8;
-   slotValueByte2[slot8] = value;
+   slotValueByte1[slot8] = value;
+   slotValueByte2[slot8] = value >> 8;
 }
 
 void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from ??? to m ; vario to m/s
