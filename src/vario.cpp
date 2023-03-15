@@ -103,8 +103,8 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
 
 void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each time that an altitude is available
     
-    float totalEnergyLowPassCm =0 ;
-    float totalEnergyHighPassCm =0 ;
+    static float totalEnergyLowPassCm =0 ;
+    static float totalEnergyHighPassCm =0 ;
     static float smoothCompensatedClimbRateCmS = 0;
     float difPressureAvgPa = 0; 
 
@@ -124,7 +124,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     difPressureCompVspeedCount = 0; // reset the values used for averaging  
     float rawCompensationCm = 2926.0 * difPressureAvgPa * temperatureKelvin /  actualPressurePa    ; 
     float rawTotalEnergyCm =  rawRelAltitudeCm + (rawCompensationCm * DTE_COMPENSATION_FACTOR) ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
-    if (totalEnergyLowPassCm == 0) { // initiaise smoothing 
+    if (totalEnergyLowPassCm == 0) { // initialize smoothing 
         totalEnergyLowPassCm = totalEnergyHighPassCm = rawTotalEnergyCm ; 
     }
     totalEnergyLowPassCm += 0.085 * ( rawTotalEnergyCm - totalEnergyLowPassCm) ;

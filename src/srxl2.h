@@ -13,6 +13,7 @@ bool srxl2FrameIsvalid();
 void srxl2ProcessIncomingFrame();
 bool srxl2FillTelemetryFrame();
 bool srxl2IsFrameDataAvailable(uint8_t frameIdx);
+void srxl2SendHandshake();
 
 void srxl2SendFrame(uint8_t length);  // srxl2TxBuffer is already filled (including CRC)
 void srxl2FillTXBuffer(uint8_t frameIdx);

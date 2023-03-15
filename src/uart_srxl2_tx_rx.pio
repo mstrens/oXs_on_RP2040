@@ -156,6 +156,16 @@ static inline void srxl2_uart_rx_program_restart(PIO pio, uint sm, uint pin_rx ,
     pio_sm_restart (pio, sm); // to test if we need an enable after this
     pio_sm_set_enabled(pio, sm, true);
 }    
+
+static inline void changeBaudrate(PIO pio, uint smTx, uint smRx,uint baud){
+    // stop the state machines
+    //pio_sm_set_enabled(pio, smTX, false);
+    //pio_sm_set_enabled(pio, smRX, false);    
+    float div = (float)clock_get_hz(clk_sys) / (8 * baud);
+    pio_sm_set_clkdiv( pio , smTx, div);
+    pio_sm_set_clkdiv( pio , smRx, div);
+    //pio_sm_set_enabled(pio, smRX, true); // restart the Rx
+}    
 /*
 static inline char srxl2_uart_rx_program_getc(PIO pio, uint sm) {
     // 8-bit read from the uppermost byte of the FIFO, as data is left-justified
