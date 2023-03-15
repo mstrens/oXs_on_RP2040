@@ -88,13 +88,14 @@ void SDP3X::begin() {
 void SDP3X::getDifPressure() {
     if ( ! airspeedInstalled) return ;     // do not process if there is no sensor
     uint32_t now = microsRp();
-    if ( (now - prevReadUs) < 2000 ) return ;// it take about 500 usec for a conversion
+    if ( (now - prevReadUs) < 2000 ) return ;// it takes about 500 usec for a conversion
     // read a new pressure
     prevReadUs = now;
     if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , true, 1500) < 0)  {
         printf("error read sdp3x (airspeed sensor)\n");
         return;
     }
+    printf("%x %x", readBuffer[0], readBuffer[1]);
     difPressurePa =  ((float)((int16_t) (readBuffer[0] << 8) + (int16_t) readBuffer[1] & 0X00FF)) * dpScaleSdp3x     ; // diffPressure in pa
     difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
     difPressureAirspeedCount++;                // count the number of conversion

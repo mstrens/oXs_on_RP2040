@@ -90,7 +90,7 @@
 #define SRXL2_LISTENING 2
 #define SRXL2_HANDSHAKE_FRAME_LENGTH 14
 #define SRXL2_BROADCAST_ID 0xFF
-#define SRXL2_OXS_ID 0X00
+#define SRXL2_OXS_ID 0X61
 #define SRXL2_NO_REPLY 0X00
 #define SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST 0XFF // dummy index to ask the function to fill a telemetry frame to request a (new) handshake
                         
@@ -226,6 +226,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
         srxl2RxBufferIdx = 0; // reset the buffer
         // check if frame is valid
         if (srxl2FrameIsvalid() ) {  // if frame, is valid, 
+            printf("Valid frame received\n");
             srxl2LastValidFrameUs = srxl2LastIdleUs;
             // at least baudrate is valid 
             srxl2ValidBaudrate = srxl2CurrentBaudrate;     
@@ -236,6 +237,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             // note: some frames are just discarded
             srxl2ProcessIncomingFrame();      
         } else {   
+            printf("Invalid frame received\n");
             // discard invalid frame
         }
     }
@@ -250,7 +252,8 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
                 srxl2State = SRXL2_LISTENING;
                 srxl2LastIdleUs = 0;
                 srxl2LastValidFrameUs = 0;
-                nextTO = nowUs + 50000 ; 
+                nextTO = nowUs + 50000 ;
+                printf("Running : No frame => go to listening\n"); 
             }
             break;
         case SRXL2_LISTENING:
@@ -264,10 +267,12 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
                     srxl2CurrentBaudrate = SRXL2_PORT_BAUDRATE_DEFAULT;
                 }    
                 changeBaudrate(srxl2Pio, srxl2SmTx, srxl2SmRx , srxl2CurrentBaudrate);
+                printf("Changing baudrate\n");
             }
             // when timeout expired, we did not processed a frame and are still waiting ; we can take the initiative for handshake
             if ( (nowUs - nextTO) > 0) {
                 if (srxl2LastValidFrameUs == 0) { // if we did not received a valid frame, then we can send a handshake because there is no activity
+                    printf("Handsake request sent\n");
                     srxl2SendHandshake(); // send at validBaudrate if know, else to 115200;
                     srxl2State = SRXL2_RUNNING;
                 } else { // we received a valid frame; so there is some activity on the bus but no one that we could process; 
@@ -328,7 +333,9 @@ void srxl2ProcessIncomingFrame(){
     // 0XA6 + 0X21 + 14 (length) + SourceID + DestinationID + priority(=10) + Baudrate(0=115200) + info + UID (4 bytes) + CRC (2 bytes)
     static uint32_t srxl2LastHandshakeRequestMs = 0; // avoid to send to many telemetry frame the one after the other 
     if  (srxl2ProcessIn[1] ==  SRXL2_HANDSHAKE_CODE ) {
+        printf(("receiving a handshake\n"));
         if ( srxl2ProcessIn[4] == SRXL2_OXS_ID) {   // reply to a handshake for our device ID
+            printf("HS is for XS\n");
             srxl2TxBuffer[0] = SRXL2_HEADER_BYTE1;
             srxl2TxBuffer[1] = SRXL2_HANDSHAKE_CODE;
             srxl2TxBuffer[2] = srxl2ProcessIn[2]; // use original length 
@@ -347,7 +354,9 @@ void srxl2ProcessIncomingFrame(){
             srxl2SendFrame(SRXL2_HANDSHAKE_FRAME_LENGTH); // send 14 bytes
             srxl2IsConnected = true;
             srxl2State = SRXL2_RUNNING;
+            printf("Reply to HS has been sent");
         } else if ( srxl2ProcessIn[4] == SRXL2_BROADCAST_ID) {   // when destination = FF = broadcast, we do not have to reply
+            printf("HS received for brodcast\n");
             srxl2MasterId = srxl2ProcessIn[3]; // we save the master ID
                                               // to do : change baudrate if required
             srxl2MasterIdIsValid = true; // from now we can reply to control data frame
@@ -362,14 +371,17 @@ void srxl2ProcessIncomingFrame(){
         #define SRXL2_TELEMETRY_FRAME_LENGTH 22
         // when we get a control data for oXs, we reply with a telemetry frame (if data are available)
         if ( srxl2ProcessIn[4] == SRXL2_OXS_ID) {
+            printf("Control data frame received for oXs at %d\n", (int) microsRp());
             if ( srxl2FillTelemetryFrame() ) {
                 srxl2SendFrame(SRXL2_TELEMETRY_FRAME_LENGTH); // send 22 bytes if a buffer has been filled with telemetry
                 srxl2IsConnected = true;
                 srxl2State = SRXL2_RUNNING;
+                printf("Telemetry frame sent\n");
             }    
         } else if ((srxl2ProcessIn[4] == SRXL2_NO_REPLY) && ( srxl2State == SRXL2_LISTENING) &&
                  (srxl2IsConnected == false) && ( ( millisRp() - srxl2LastHandshakeRequestMs) > 200) ){
             // when there is no reply needed and if we are not yet connected then we request an handshake with a telemetry frame 
+            printf("Sending telemetry for handshaking\n");
             srxl2LastHandshakeRequestMs = millisRp(); 
             srxl2FillTXBuffer(SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST);
             srxl2SendFrame(SRXL2_TELEMETRY_FRAME_LENGTH);
@@ -614,7 +626,7 @@ void srxl2SendFrame(uint8_t length){  // srxl2TxBuffer is already filled (includ
     dma_channel_set_trans_count (srxl2_dma_chan, length , true) ;  // start with the right length
     // we need a way to set the pio back in receive mode when all bytes are sent 
     // this will be done in the main loop after some ms (here 2ms)
-    restoreSrxl2PioToReceiveMicros = microsRp() + 2;   
+    restoreSrxl2PioToReceiveMicros = microsRp() + (uint32_t) (1000000.0 * 10.0 * length / srxl2CurrentBaudrate);   
 }
 
 
