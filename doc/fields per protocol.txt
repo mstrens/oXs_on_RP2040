@@ -242,13 +242,13 @@ Roll       degree            Same as above                                 Not t
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
-VOLT1       0.001V           V1 pin is defined                            EXTERNAL_VOLTAGE           0.1V
-VOLT2       0.001V=0.001A    V2 pin is defined                            BAT_CURR                   0.1A
-Capacity    mAh              V2 pin is defined (reset after power down)   FUEL                       mAh
+VOLT1       0.001V           V1 pin is defined                            volts A                   0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            current A                  0.1A
+Capacity    mAh              V2 pin is defined (reset after power down)   Charged used A             mAh
 VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
-            represent temp   V3 pin is defined & TEMP=1 or =2             TEMPERATURE                degree
+            represent temp   V3 pin is defined & TEMP=1 or =2             Temperature FET            0.1 degree
 VOLT4       0.001V           V4 pin is defined                            not transmitted currently
-            represent temp   V4 pin is defined & TEMP=2                   TEMPERATURE                degree
+            represent temp   V4 pin is defined & TEMP=2                   Temperature BEC            0.1 degree
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    ALT                        0.1 m
 Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_RATE                 0.1 m/sec
                              if a MP6050 is installed, Vpeed use it too
@@ -264,10 +264,12 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
-RPM        Hz                RPM pin is defined                            RPM                       tour/min
+RPM        Hz                RPM pin is defined                            RPM                       10 tour/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       degree            Same as above                                 Not transmitted 
+Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed                 km/h
+Comp.Vspeed cm/s             a Baro + a MS4525 are installed               not transmitted
 
 
 

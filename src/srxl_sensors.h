@@ -181,7 +181,7 @@ typedef struct
 			uField2,
 			uField3,
 			uField4;
-} STRU_TELE_USER_16SU;
+} __attribute__((packed)) STRU_TELE_USER_16SU;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -199,7 +199,7 @@ typedef struct
 			uField2,
 			uField3;
 	uint32_t	u32Field; 															// Unsigned 32-bit data field
-} STRU_TELE_USER_16SU32U;
+} __attribute__((packed)) STRU_TELE_USER_16SU32U;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -217,7 +217,7 @@ typedef struct
 			uField2,
 			uField3;
 	int32_t	s32Field; 															// Signed 32-bit data field
-} STRU_TELE_USER_16SU32S;
+} __attribute__((packed)) STRU_TELE_USER_16SU32S;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -233,7 +233,7 @@ typedef struct
 	int32_t	s32Field; 															// Signed 32-bit data field
 	uint32_t	u32Field1, 															// Unsigned 32-bit data fields
 			u32Field2;
-} STRU_TELE_USER_16U32SU;
+} __attribute__((packed)) STRU_TELE_USER_16U32SU;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -253,7 +253,7 @@ typedef struct
 	uint16_t	spare16_2;
 	uint8_t	spare;
 	uint8_t	alarms;																// Alarm bitmask (see below)
-} STRU_TELE_POWERBOX;
+} __attribute__((packed)) STRU_TELE_POWERBOX;
 
 #define	TELE_PBOX_ALARM_VOLTAGE_1			(0x01)
 #define	TELE_PBOX_ALARM_VOLTAGE_2			(0x02)
@@ -275,7 +275,7 @@ typedef struct
 	uint8_t		identifier;														// Source device = 0x01
 	uint8_t		sID;															// Secondary ID
 	uint16_t		volts;															// 0.01V increments
-} STRU_TELE_HV;
+} __attribute__((packed)) STRU_TELE_HV;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -288,7 +288,7 @@ typedef struct
 	uint8_t		identifier;														// Source device = 0x02
 	uint8_t		sID;															// Secondary ID
 	int16_t		temperature;													// Temperature in degrees Fahrenheit
-} STRU_TELE_TEMP;
+} __attribute__((packed)) STRU_TELE_TEMP;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -308,7 +308,7 @@ typedef struct
 	uint16_t		volts_B;														// Volts, 0.01V increments (0-16.00V)
 	uint8_t		alerts,										// Bit mapped alert conditions (see below)
 				highCharge;									// High nybble is extra bits for chargeUsed_B, Low is for chargeUsed_A
-} STRU_TELE_RX_MAH;
+} __attribute__((packed)) STRU_TELE_RX_MAH;
 
 #define	RXMAH_PS_ALERT_NONE			(0)											// No alarms
 #define	RXMAH_PS_ALERT_RF_INT		(1 << 0)									// A or internal Remote failure
@@ -332,7 +332,7 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	int16_t		current,														// Range: +/- 150A     Resolution: 300A / 2048 = 0.196791 A/count
 				dummy;															// TBD
-} STRU_TELE_IHIGH;
+} __attribute__((packed)) STRU_TELE_IHIGH;
 
 #define	IHIGH_RESOLUTION_FACTOR						((FP32)(0.196791))
 
@@ -353,7 +353,7 @@ typedef struct
 				delta_1500ms,													// change in altitude last 1.5 seconds, 0.1m/s increments
 				delta_2000ms,													// change in altitude last 2.0 seconds, 0.1m/s increments
 				delta_3000ms;													// change in altitude last 3.0 seconds, 0.1m/s increments
-} STRU_TELE_VARIO_S;
+} __attribute__((packed)) STRU_TELE_VARIO_S;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -367,7 +367,7 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	int16_t		altitude;														// .1m increments
 	int16_t		maxAltitude;													// .1m increments
-} STRU_TELE_ALT;																// Eagle Tree Sensor
+} __attribute__((packed)) STRU_TELE_ALT;																// Eagle Tree Sensor
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -386,7 +386,7 @@ typedef struct
     uint16_t    reserve3; // added by mstrens to get a payload of 16 bytes
     uint16_t    reserve4; // added by mstrens to get a payload of 16 bytes
     uint16_t    reserve5; // added by mstrens to get a payload of 16 bytes
-} STRU_TELE_SPEED;																// Eagle Tree Sensor
+} __attribute__((packed)) STRU_TELE_SPEED;																// Eagle Tree Sensor
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -403,7 +403,7 @@ typedef struct
 	uint32_t		lastLapTime;													// Time of lap in 1ms increments (NOT duration)
 	uint32_t		gateTime;														// Duration between last 2 gates
 	uint8_t		unused[4];
-} STRU_TELE_LAPTIMER;
+} __attribute__((packed)) STRU_TELE_LAPTIMER;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -417,7 +417,7 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	uint8_t		lineNumber;														// Line number to display (0 = title, 1-8 for general, 254 = Refresh backlight, 255 = Erase all text on screen)
 	char		text[13];														// 0-terminated text when < 13 chars
-} STRU_TELE_TEXTGEN;
+} __attribute__((packed)) STRU_TELE_TEXTGEN;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -438,7 +438,7 @@ typedef struct
 	uint16_t		powerDec;														// VTX Power as a decimal 1mw/unit
 	uint8_t		region;															// Region (0 = USA, 1 = EU, 0xFF = Not Provided)
 	uint8_t		unused[7];														// reserved
-} STRU_TELE_VTX;
+} __attribute__((packed)) STRU_TELE_VTX;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -461,7 +461,7 @@ typedef struct
 	uint8_t		voltsBEC;														// BEC Volts, 0.05V (0-12.70V)    0xFF ----> "No data"
 	uint8_t		throttle;														// 0.5% (0-100%)                  0xFF ----> "No data"
 	uint8_t		powerOut;														// Power Output, 0.5% (0-127%)    0xFF ----> "No data"
-} STRU_TELE_ESC;
+} __attribute__((packed)) STRU_TELE_ESC;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -480,7 +480,7 @@ typedef struct
 	uint16_t		flowRate_B;														// Instantaneous consumption, 0.01mL/min
 	uint16_t		temp_B;															// Temperature, 0.1C (0-655.34C)
 	uint16_t		spare;															// Not used
-} STRU_TELE_FUEL;
+} __attribute__((packed)) STRU_TELE_FUEL;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -501,7 +501,7 @@ typedef struct
 	int16_t		chargeUsed_B;													// Integrated mAh used, 1mAh (0-32.766Ah)
 	uint16_t		temp_B;															// Temperature, 0.1C (0-150C, 0x7FFF indicates not populated)
 	uint16_t		spare;															// Not used
-} STRU_TELE_FP_MAH;
+} __attribute__((packed)) STRU_TELE_FP_MAH;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -517,7 +517,7 @@ typedef struct
 	uint16_t		spare1;
 	uint16_t		pressure[4];													// Tank pressure, 0.1PSI (0-6553.4PSI), 0xFFFF = Not Installed
 	uint16_t		spare2;
-} STRU_TELE_DIGITAL_AIR;
+} __attribute__((packed)) STRU_TELE_DIGITAL_AIR;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -533,7 +533,7 @@ typedef struct
 				strain_B,														// Strain sensor B
 				strain_C,														// Strain sensor D
 				strain_D;														// Strain sensor C
-} STRU_TELE_STRAIN;
+} __attribute__((packed)) STRU_TELE_STRAIN;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -548,7 +548,7 @@ typedef struct
 	uint16_t		cell[6];														// Voltage across cell 1, .01V steps
 																				// 0x7FFF --> cell not present
 	uint16_t		temp;															// Temperature, 0.1C (0-655.34C)
-} STRU_TELE_LIPOMON;
+} __attribute__((packed)) STRU_TELE_LIPOMON;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -563,7 +563,7 @@ typedef struct
 	uint8_t		cell[14];														// Voltage across cell 1, .01V steps, excess of 2.56V
 																				// (ie, 3.00V would report 300-256 = 44)
 																				// 0xFF --> cell not present
-} STRU_TELE_LIPOMON_14;
+} __attribute__((packed)) STRU_TELE_LIPOMON_14;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -584,7 +584,7 @@ typedef struct
 	int16_t		maxGForceY;														// abs (max G Y-axis)  LEFT/RIGHT
 	int16_t		maxGForceZ;														// max G Z-axis        WING SPAR LOAD
 	int16_t		minGForceZ;														// min G Z-axis        WING SPAR LOAD
-} STRU_TELE_G_METER;
+} __attribute__((packed)) STRU_TELE_G_METER;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -601,7 +601,7 @@ typedef struct
 	int16_t		attQuatZ;														// Z component in Q14.
 	int16_t		attQuatW;														// W component in Q14.
 	uint16_t		spare[3];
-} STRU_TELE_TILT;
+} __attribute__((packed)) STRU_TELE_TILT;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -621,7 +621,7 @@ typedef struct
 	uint16_t		EGT;															// (BCD) Temperature, Celsius
 	uint8_t		offCondition;													// Table below
 	uint8_t		spare;
-} STRU_TELE_JETCAT;
+} __attribute__((packed)) STRU_TELE_JETCAT;
 
 enum JETCAT_ECU_TURBINE_STATE {							// ECU Status definitions
 		JETCAT_ECU_STATE_OFF = 0x00,
@@ -803,7 +803,7 @@ typedef struct
 	uint32_t		RestFuelVolumeInTankML;											// (BCD) mL remaining in tank
 	uint8_t		ECUbatteryPercent;												// (BCD) % battery pack capacity remaining
 	// 7 bytes left
-} STRU_TELE_JETCAT2;
+} __attribute__((packed)) STRU_TELE_JETCAT2;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -822,7 +822,7 @@ typedef struct
 	uint16_t		course;															// BCD, 3.1
 	uint8_t		HDOP;															// BCD, format 1.1
 	uint8_t		GPSflags;														// see definitions below
-} STRU_TELE_GPS_LOC;
+} __attribute__((packed)) STRU_TELE_GPS_LOC;
 
 typedef struct
 {
@@ -832,7 +832,7 @@ typedef struct
 	uint32_t		UTC;															// BCD, format HH:MM:SS.S, format 6.1
 	uint8_t		numSats;														// BCD, 0-99
 	uint8_t		altitudeHigh;													// BCD, meters, format 2.0 (High order of altitude)
-} STRU_TELE_GPS_STAT;
+} __attribute__((packed)) STRU_TELE_GPS_STAT;
 
 // GPS flags definitions:
 #define	GPS_INFO_FLAGS_IS_NORTH_BIT					(0)
@@ -869,7 +869,7 @@ typedef struct
 	uint16_t		heading;														// degree / 10
 	uint8_t		groundSpeed;													// km/h
 	uint8_t		numSats;														// count
-} STRU_TELE_GPS_BINARY;
+} __attribute__((packed)) STRU_TELE_GPS_BINARY;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -892,7 +892,7 @@ typedef struct
 	uint8_t		activeYaw;
 	uint8_t		flightMode;														// bit 7 1 --> FM present in bits 0,1 except 0xFF --> not present
 	uint8_t		unused[4];
-} STRU_TELE_AS3X_LEGACY;
+} __attribute__((packed)) STRU_TELE_AS3X_LEGACY;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -916,7 +916,7 @@ typedef struct
 	uint8_t		flightMode;														// bit 7 1 --> FM present in bits 0,1 except 0xFF --> not present
 	// new fields go here:
 	uint8_t		unused[4];
-} STRU_TELE_AS6X_GAIN;
+} __attribute__((packed)) STRU_TELE_AS6X_GAIN;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -936,7 +936,7 @@ typedef struct
 	int16_t		maxGyroX;														// Max rates (absolute value)
 	int16_t		maxGyroY;
 	int16_t		maxGyroZ;
-} STRU_TELE_GYRO;
+} __attribute__((packed)) STRU_TELE_GYRO;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -957,7 +957,7 @@ typedef struct
 				attPitch,														// Pitch Attitude
 				attYaw;															// Yaw Attitude
 	uint16_t		spare;
-} STRU_TELE_ALPHA6;
+} __attribute__((packed)) STRU_TELE_ALPHA6;
 
 #define	GBOX_STATE_BOOT							(0x00)							// Alpha6 State - Boot
 #define	GBOX_STATE_INIT							(0x01)							// Init
@@ -991,7 +991,7 @@ typedef struct
 	int16_t		magY;															// Units are 0.1mG
 	int16_t		magZ;															//
 	uint16_t		heading;														// Heading, 0.1deg
-} STRU_TELE_ATTMAG;
+} __attribute__((packed)) STRU_TELE_ATTMAG;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1005,7 +1005,7 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	uint8_t		spare[2];
 	uint32_t		altOffset;														// Altitude "zero" log
-} STRU_TELE_ALT_ZERO;
+} __attribute__((packed)) STRU_TELE_ALT_ZERO;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1019,7 +1019,7 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	uint8_t		spare[6];
 	uint64_t		UTC64;															// Linux 64-bit time_t for post-2038 date compatibility
-} STRU_TELE_RTC;
+} __attribute__((packed)) STRU_TELE_RTC;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1032,7 +1032,7 @@ typedef struct
 	uint8_t		identifier;														// Source device = 0x61
 	uint8_t		sID;															// Secondary ID
 	uint8_t		spare[14];														// Format TBD by V-Speak
-} STRU_TELE_V_SPEAK;
+} __attribute__((packed)) STRU_TELE_V_SPEAK;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1050,7 +1050,7 @@ typedef struct
 	uint8_t		cutoff;															// 1 count, Range 0-9
 	uint8_t		connected;														// 0=not connected, 1=connected, x = TBD
 	uint16_t		spare[3];
-} STRU_TELE_SMOKE_EL;
+} __attribute__((packed)) STRU_TELE_SMOKE_EL;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1081,7 +1081,7 @@ typedef struct
 				// 0xFE = 28.9V
 				// 0xFF = NO SENSOR ATTACHED
 	uint8_t		spare;															// 0xFF --> no data
-} STRU_TELE_MULTI_TEMP;
+} __attribute__((packed)) STRU_TELE_MULTI_TEMP;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1094,7 +1094,7 @@ typedef struct
 	uint8_t		identifier;														// Source device = 0x7D
 	uint8_t		sID;															// Secondary ID
 	uint16_t		chanData[7];													// Channel Data array
-} STRU_TELE_FRAMEDATA;
+} __attribute__((packed)) STRU_TELE_FRAMEDATA;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1113,7 +1113,7 @@ typedef struct
 	uint8_t		waypoint;														// Waypoint number
 	uint8_t		spare8;
 	uint16_t		spare16[2];
-} STRU_TELE_AHRS;																// AHRS data from rx
+} __attribute__((packed)) STRU_TELE_AHRS;																// AHRS data from rx
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1131,7 +1131,7 @@ typedef struct
 	// Ideas -
 	//		arming status in a bitmap
 	//		time in state
-} STRU_TELE_FLITECTRL;
+} __attribute__((packed)) STRU_TELE_FLITECTRL;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1154,7 +1154,7 @@ typedef struct
 				downlink,				// dBm * -1
 				qualityDown;			// %
 	int8_t		SNRdown;				// dB
-} STRU_TELE_XF_QOS;
+} __attribute__((packed)) STRU_TELE_XF_QOS;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1176,7 +1176,7 @@ typedef struct
 																				// Note: Legacy use as antenna A/B dBm values is still supported. If only 1 antenna, set B = A.
 																				//       The "no data" value is 0, but -1 (0xFF) is treated the same for backwards compatibility
 	uint16_t		spare[2];
-} STRU_TELE_RPM;
+} __attribute__((packed)) STRU_TELE_RPM;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1206,7 +1206,7 @@ typedef struct
 	uint16_t		F;																// Frame losses. 0xFFFF = "No data"
 	uint16_t		H;																// Holds. 0xFFFF = "No data"
 	uint16_t		rxVoltage;														// Volts, .01V increment. 0xFFFF = "No data"
-} STRU_TELE_QOS;
+} __attribute__((packed)) STRU_TELE_QOS;
 
 //////////////////////////////////////////////////////////////////////////////
 //

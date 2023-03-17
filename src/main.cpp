@@ -319,6 +319,8 @@ void setup() {
   //printf("rounding +10 = %d\n" , ( int_round(testValue , 100) ) +500);
   //testValue = +60;
   //printf("rounding +60 = %d\n" , ( int_round(testValue , 100) ) +500);
+  //uint8_t readBuffer[2] = {0XFF, 0XFE}; 
+  //printf("test %f\n",(float) ((int16_t) (readBuffer[0] << 8 | readBuffer[1] & 0X00FF)));
   #endif
   
   if (watchdog_caused_reboot()) {

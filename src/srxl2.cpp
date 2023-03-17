@@ -194,8 +194,8 @@ void srxl2PioRxHandlerIrq(){    // when a byte is received on the srxl2, read th
 }
 
 #define SRXL2_DETECT_TIMEOUT_RX_US 50000 // us = 50 ms
-#define SRXL2_DETECT_IDLE_RX_US 200 //10usec * 10 bits * 2 char    
-    
+#define SRXL2_DETECT_IDLE_RX_US 500 //10usec * 10 bits * 2 char ; with 200usec, some frames are splitted and considered as invalid    
+uint32_t idleDelayJustForTesting ; // to remove after debug    
 void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     uint8_t data;
     if (config.pinPrimIn == 255) return ; // skip when Tlm is not foreseen
@@ -219,6 +219,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
     } 
     if ((( microsRp() - srxl2LastRxUs) > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
         // expect a full frame has been received; save it in another buffer, check it and save it.
+        idleDelayJustForTesting = microsRp() - srxl2LastRxUs;
         srxl2LastIdleUs = microsRp(); 
         memcpy(srxl2ProcessIn, srxl2RxBuffer, srxl2RxBufferIdx);
         srxl2ProcessInIdx = srxl2RxBufferIdx ;
@@ -237,6 +238,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             srxl2ProcessIncomingFrame();      
         } else {   
             printf("Invalid frame received\n");
+            printf("with idleTime=%d\n", (int) idleDelayJustForTesting );
             for (uint8_t i = 0; i< srxl2ProcessInIdx; i++ ){
                 printf(" %x", srxl2ProcessIn[i] );
             }
@@ -436,7 +438,7 @@ uint16_t srxl2RcChannels[16] = {0X0400}; // servo mid position coded on 11 bits
 // for channels, payload= RSSI(1 byte) Framelosses (U16) channelMask(U32) channels(U16)[n X depending on mask]
 // channel value must be >> 5 to get usual 11 bits
 // for failsafe, payload= RssiMin ( 1 byte) number of hold(u16) channel mask(U32) channels(U16)[n X]
-void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){  // todo : still to fill
+void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){  
     //uint32_t mask = srxl2ProcessIn[11]<<24 | srxl2ProcessIn[10]<<16 | srxl2ProcessIn[9]<<8 | srxl2ProcessIn[8];
     uint16_t mask = srxl2ProcessIn[9]<<8 | srxl2ProcessIn[8];
     uint8_t frameIdx = 12;
@@ -557,8 +559,11 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             if (fields[VSPEED].available) {
                 srxl2Frames.vario.identifier = TELE_DEVICE_VARIO_S ; // 0x40
                 srxl2Frames.vario.sID = 0;
-                srxl2Frames.vario.altitude = (int16_t) int_round( fields[RELATIVEALT].value , 10); // from cm to 0.1m increments
-                srxl2Frames.vario.delta_0250ms = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
+                //srxl2Frames.vario.altitude = (int16_t) int_round( fields[RELATIVEALT].value , 10); // from cm to 0.1m increments
+                //srxl2Frames.vario.delta_0250ms = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
+                srxl2Frames.vario.altitude = 123; // from cm to 0.1m increments
+                srxl2Frames.vario.delta_0250ms = 456;	// change in altitude last 250ms, 0.1m/s increments 
+                
                 srxl2Frames.vario.delta_0500ms = 0x7FFF;
 				srxl2Frames.vario.delta_1000ms = 0x7FFF;
 				srxl2Frames.vario.delta_1500ms = 0x7FFF;			
