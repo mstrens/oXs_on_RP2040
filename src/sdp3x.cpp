@@ -35,7 +35,7 @@ void SDP3X::begin() {
   dpScaleSdp3x =  966.0 / 1013.0 / 60 ; //60=SDP31 , 240=SDP32
 #else // not a simulation
     
-    uint8_t readBuffer[9];
+    //uint8_t readBuffer[9];
     int32_t i2cError;
     
     // set the sensor in continous mode with averaging (send a command 0X3615)
@@ -95,8 +95,9 @@ void SDP3X::getDifPressure() {
         printf("error read sdp3x (airspeed sensor)\n");
         return;
     }
-    printf("%x %x", readBuffer[0], readBuffer[1]);
+    printf("%x %x\n", readBuffer[0], readBuffer[1]);
     difPressurePa =  ((float)((int16_t) (readBuffer[0] << 8) + (int16_t) readBuffer[1] & 0X00FF)) * dpScaleSdp3x     ; // diffPressure in pa
+    printf("%x %x %f\n", readBuffer[1], readBuffer[0] , difPressurePa);
     difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
     difPressureAirspeedCount++;                // count the number of conversion
     difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values

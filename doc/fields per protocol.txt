@@ -18,7 +18,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
 GPS lat                      Same as above                                 lat (0x0800)           special format
 GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 kts/h
-GPS course degree            Same as above                                 GPS heading (0X840)       0.01 degree
+GPS course 0.01 degree       Same as above                                 GPS heading (0X840)       0.01 degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              DIY (0X5100)              unit (+100)
@@ -50,7 +50,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) longitude                special format
 GPS lat                      Same as above                                 latitude                 special format
 GPS speed  cm/sec            Same as above                                 GPS ground speed         0.1 km/h
-GPS heading degree           Same as above                                 heading                  0.01 degree
+GPS course 0.01 degree       Same as above                                 heading                  0.01 degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                 m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              Num of satelites         unit (+100)
@@ -87,7 +87,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    GAM Vs
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) Gps longitude             special format
 GPS lat                      Same as above                                 GPS latitude              special format
 GPS speed  cm/sec            Same as above                                 GPS ground speed          km/h
-GPS course degree            Same as above                                 GPS heading               0.5 degree
+GPS course 0.01 degree       Same as above                                 GPS heading               0.5 degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              GPS num sat               unit (+100)
@@ -123,7 +123,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) longitude                 special format
 GPS lat                      Same as above                                 latitude                  special format
 GPS speed  cm/sec            Same as above                                 GPS ground speed          0.1 km/h
-GPS course degree            Same as above                                 GPS course                degree
+GPS course 0.01 degree       Same as above                                 GPS course                degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt                  m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted currently
@@ -155,7 +155,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Index 
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) not transmitted
 GPS lat                      Same as above                                 not transmitted
 GPS speed  cm/sec            Same as above                                 Index = 4                 0.1 km/h
-GPS course degree            Same as above                                 not transmitted
+GPS course 0.01 degree       Same as above                                 not transmitted
 GPS Alt    cm                Same as above; = alt above see level          not transmitted
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted
@@ -189,7 +189,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree 7decimals
 GPS lat                      Same as above                                 GPS_LAT                   degree 7decimals
 GPS speed  cm/sec            Same as above                                 GROUND_SPEED              cm/s
-GPS course degree            Same as above                                 CMP_HEAD                  degree
+GPS course 0.01 degree       Same as above                                 CMP_HEAD                  degree
 GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   cm
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              GPS_STATUS                no unit
@@ -222,7 +222,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree ?decimals
 GPS lat                      Same as above                                 GPS_LAT                   degree ?decimals
 GPS speed  cm/sec            Same as above                                 GROUND_SPEED              km/h
-GPS course degree            Same as above                                 not transmitted
+GPS course 0.01 degree       Same as above                                 not transmitted
 GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              GPS_STATUS                no unit
@@ -236,6 +236,38 @@ Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not t
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       degree            Same as above                                 Not transmitted 
 
+
+******************************************************************************************************************
+**                                        Srxl2 (Spektrum) protocol                                             **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            EXTERNAL_VOLTAGE           0.1V
+VOLT2       0.001V=0.001A    V2 pin is defined                            BAT_CURR                   0.1A
+Capacity    mAh              V2 pin is defined (reset after power down)   FUEL                       mAh
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
+            represent temp   V3 pin is defined & TEMP=1 or =2             TEMPERATURE                degree
+VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+            represent temp   V4 pin is defined & TEMP=2                   TEMPERATURE                degree
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    ALT                        0.1 m
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_RATE                 0.1 m/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree 7decimals
+GPS lat                      Same as above                                 GPS_LAT                   degree 7decimals
+GPS speed  cm/sec            Same as above                                 GROUND_SPEED              km/h
+GPS course 0.01 degree       Same as above                                 Heading                   0.1 degree
+GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   m (transmitted with 1000 offset)
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              GPS_STATUS                no unit
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 not transmitted
+GPS distance from home       Same as above                                 not transmitted
+RPM        Hz                RPM pin is defined                            RPM                       tour/min
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       degree            Same as above                                 Not transmitted 
 
 
 

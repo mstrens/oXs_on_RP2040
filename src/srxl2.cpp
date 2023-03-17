@@ -1,6 +1,5 @@
-// to check : set the state to running when a hs is is received and handle or when we send a telemetry
-
-
+// todo move the device ID to config.h
+// todo fill the function that decode the channels
 
 // srxl2 run on a pio uart at a baud rate of 115200 8N1 not inverted
 // Rx sent a handshake at power on to different device ID
@@ -115,17 +114,17 @@ uint8_t srxl2ProcessIn[SRXL2_BUFFER_LENGTH];
 uint8_t srxl2ProcessInIdx = 0 ;
 
 //uint8_t chanCount ;   // says the number of channels (8,16 or 24) in Rc frame
-uint32_t srxl2ValidBaudrate;  // filled with current baud rate when a valid frame is received
-uint32_t srxl2CurrentBaudrate;
+uint32_t srxl2ValidBaudrate = 0;  // filled with current baud rate when a valid frame is received
+uint32_t srxl2CurrentBaudrate = 115200;
 bool srxl2IsConnected = false; // become true when a handshake is received and replied; set false again when no frame is receive for 50 msec
-uint8_t srxl2State = SRXL2_LISTENING;
+uint8_t srxl2State = SRXL2_RUNNING;
 
 uint8_t srxl2TxBuffer[SRXL2_BUFFER_LENGTH]; // 80
 
 uint8_t srxl2MasterId = 0; // UID of the master of the bus ; must be the dest Id in a tlm frame
 bool srxl2MasterIdIsValid = false; // when false we do not yet had a handshake with FF and so we do not have to reply to control data frame
 
-srxl2Frames_t srxl2Frames;
+srxl2Frames_t srxl2Frames; // frames with telemetry data per type of sensor
 
 uint32_t restoreSrxl2PioToReceiveMicros = 0; // when 0, the pio is normally in receive mode,
                                         // otherwise, it is the timestamp when pio transmit has to be restore to receive mode
@@ -178,7 +177,7 @@ void setupSrxl2() {
 
 // Set up the state machine we're going to use to receive them.
     srxl2OffsetRx = pio_add_program(srxl2Pio, &srxl2_uart_rx_program);
-    srxl2_uart_rx_program_init(srxl2Pio, srxl2SmRx, srxl2OffsetRx, config.pinPrimIn, SRXL2_PORT_BAUDRATE_DEFAULT , true);  
+    srxl2_uart_rx_program_init(srxl2Pio, srxl2SmRx, srxl2OffsetRx, config.pinPrimIn, SRXL2_PORT_BAUDRATE_DEFAULT , false);  
 }
 
 
@@ -203,7 +202,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
     if ( restoreSrxl2PioToReceiveMicros) {            // put sm back in receive mode after some delay
         if (microsRp() > restoreSrxl2PioToReceiveMicros){
             srxl2_uart_tx_program_stop(srxl2Pio, srxl2SmTx, config.pinPrimIn );
-            srxl2_uart_rx_program_restart(srxl2Pio, srxl2SmRx, config.pinPrimIn, true);  // true = inverted
+            srxl2_uart_rx_program_restart(srxl2Pio, srxl2SmRx, config.pinPrimIn, false);  // true = inverted
             restoreSrxl2PioToReceiveMicros = 0 ;
         } return;
     }
@@ -238,28 +237,32 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             srxl2ProcessIncomingFrame();      
         } else {   
             printf("Invalid frame received\n");
+            for (uint8_t i = 0; i< srxl2ProcessInIdx; i++ ){
+                printf(" %x", srxl2ProcessIn[i] );
+            }
+            printf("\n");
             // discard invalid frame
         }
     }
-    #define SRXL2_NO_ACTIVITY_TO_MS 200
+    #define SRXL2_NO_ACTIVITY_TO_US 50000
     uint32_t nowUs =microsRp();
-    static uint32_t nextTO = 0;
+    static uint32_t beginListeningUs = 0;
     switch (srxl2State){
         case SRXL2_RUNNING:
             // go back to listening when no valid frame is received for 50 msec
-            if ( (nowUs -  srxl2LastValidFrameUs) > SRXL2_NO_ACTIVITY_TO_MS ){
+            if ( (nowUs -  srxl2LastValidFrameUs) > SRXL2_NO_ACTIVITY_TO_US ){
                 srxl2IsConnected = false; // we lose the connection
                 srxl2State = SRXL2_LISTENING;
                 srxl2LastIdleUs = 0;
                 srxl2LastValidFrameUs = 0;
-                nextTO = nowUs + 50000 ;
+                beginListeningUs = nowUs ;
                 printf("Running : No frame => go to listening\n"); 
             }
             break;
         case SRXL2_LISTENING:
             // when we receive the end of a frame and we do not yet have baudrate; we alternate the baudrate
-            // hoping to find the correct baudrate.
-            if ( (srxl2LastIdleUs > 0) && (srxl2ValidBaudrate == 0)) {
+            // hoping to find the correct baudrate after a first delay to get the opportunity to get a valid frame.
+            if ( (srxl2LastIdleUs > 0) && (srxl2ValidBaudrate == 0) && ((nowUs - beginListeningUs) > 50000 )) {
                 // change current baudrate
                 if(srxl2CurrentBaudrate == SRXL2_PORT_BAUDRATE_DEFAULT)
                     srxl2CurrentBaudrate = SRXL2_PORT_BAUDRATE_HIGH;
@@ -270,9 +273,9 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
                 printf("Changing baudrate\n");
             }
             // when timeout expired, we did not processed a frame and are still waiting ; we can take the initiative for handshake
-            if ( (nowUs - nextTO) > 0) {
+            if ( (nowUs - beginListeningUs) > 200000) {
                 if (srxl2LastValidFrameUs == 0) { // if we did not received a valid frame, then we can send a handshake because there is no activity
-                    printf("Handsake request sent\n");
+                    printf("Handshake request sent\n");
                     srxl2SendHandshake(); // send at validBaudrate if know, else to 115200;
                     srxl2State = SRXL2_RUNNING;
                 } else { // we received a valid frame; so there is some activity on the bus but no one that we could process; 
@@ -289,19 +292,34 @@ bool srxl2FrameIsvalid(){
     
     // check that first byte is 0xA6
     #define SRXL2_HEADER_BYTE1 0XA6
-    if (srxl2ProcessIn[0] !=  SRXL2_HEADER_BYTE1 ) return false; 
-    if ( srxl2ProcessInIdx < 5) return false; // frame is to short
+    if (srxl2ProcessIn[0] !=  SRXL2_HEADER_BYTE1 ) {
+        if (srxl2IsConnected) printf("First char is not 0XA6\n");
+        return false; 
+    }
+    if ( srxl2ProcessInIdx < 5){
+        if (srxl2IsConnected) printf("Less than 5 char\n");
+        return false; // frame is to short
+    }
     // check that length is correct
-    if (srxl2ProcessIn[2] !=  srxl2ProcessInIdx ) return false;
+    if (srxl2ProcessIn[2] !=  srxl2ProcessInIdx ) {
+        if (srxl2IsConnected) printf("Incorrect length\n");
+        return false;
+    }    
     // check that type of frame is Handsake or control data
     #define SRXL2_HANDSHAKE_CODE 0X21
     #define SRXL2_CONTROL_DATA_CODE   0XCD
-    if ((srxl2ProcessIn[1] !=  SRXL2_HANDSHAKE_CODE ) && (srxl2ProcessIn[1] !=  SRXL2_CONTROL_DATA_CODE )) return false;
+    if ((srxl2ProcessIn[1] !=  SRXL2_HANDSHAKE_CODE ) && (srxl2ProcessIn[1] !=  SRXL2_CONTROL_DATA_CODE )) {
+        if (srxl2IsConnected) printf("Type is not handshake nor control data\n");
+        return false;
+    }    
     // check that CRC is OK
     uint16_t crc16Expected = srxl2CalculateCrc( &srxl2ProcessIn[0],srxl2ProcessInIdx - 2) ; // calculate CRC
     uint16_t crc16Received = ((uint16_t) srxl2ProcessIn[srxl2ProcessInIdx-2])  << 8;
     crc16Received |= srxl2ProcessIn[srxl2ProcessInIdx-1];
-    if (crc16Expected != crc16Received) return false ; 
+    if (crc16Expected != crc16Received) {
+        if (srxl2IsConnected) printf("CRC is not correctn");
+        return false ; 
+    }    
     return true;  // frame is valid; it has still to be processed         
 }         
     
@@ -321,21 +339,13 @@ void srxl2SendHandshake(){ // called when there is no activity on the bus and we
     uint16_t crc16 = srxl2CalculateCrc( &srxl2TxBuffer[0], 12) ; // calculate CRC
     srxl2TxBuffer[12] = crc16 >> 8;
     srxl2TxBuffer[13] = crc16;
+    srxl2CurrentBaudrate = 115200;
     srxl2SendFrame(SRXL2_HANDSHAKE_FRAME_LENGTH); // send 14 bytes
     srxl2IsConnected = true;
     srxl2State = SRXL2_RUNNING;
 }
 
-
-void srxl2ProcessIncomingFrame(){
-    // we process only handshake and control data frames
-    // for an handshake for oXs Id, we reply with an handshake (source and dest are reversed) 
-    // 0XA6 + 0X21 + 14 (length) + SourceID + DestinationID + priority(=10) + Baudrate(0=115200) + info + UID (4 bytes) + CRC (2 bytes)
-    static uint32_t srxl2LastHandshakeRequestMs = 0; // avoid to send to many telemetry frame the one after the other 
-    if  (srxl2ProcessIn[1] ==  SRXL2_HANDSHAKE_CODE ) {
-        printf(("receiving a handshake\n"));
-        if ( srxl2ProcessIn[4] == SRXL2_OXS_ID) {   // reply to a handshake for our device ID
-            printf("HS is for XS\n");
+void replyToHandshake(){
             srxl2TxBuffer[0] = SRXL2_HEADER_BYTE1;
             srxl2TxBuffer[1] = SRXL2_HANDSHAKE_CODE;
             srxl2TxBuffer[2] = srxl2ProcessIn[2]; // use original length 
@@ -352,13 +362,35 @@ void srxl2ProcessIncomingFrame(){
             srxl2TxBuffer[12] = crc16 >> 8;
             srxl2TxBuffer[13] = crc16;
             srxl2SendFrame(SRXL2_HANDSHAKE_FRAME_LENGTH); // send 14 bytes
+}            
+
+
+void srxl2ProcessIncomingFrame(){
+    // we process only handshake and control data frames
+    // for an handshake for oXs Id, we reply with an handshake (source and dest are reversed) 
+    // 0XA6 + 0X21 + 14 (length) + SourceID + DestinationID + priority(=10) + Baudrate(0=115200) + info + UID (4 bytes) + CRC (2 bytes)
+    static uint32_t srxl2LastHandshakeRequestMs = 0; // avoid to send to many telemetry frame the one after the other 
+    if  (srxl2ProcessIn[1] ==  SRXL2_HANDSHAKE_CODE ) {
+        printf(("receiving a handshake\n"));
+        if ( srxl2ProcessIn[4] == SRXL2_OXS_ID) {   // reply to a handshake for our device ID
+            printf("HS is for XS\n");
+            replyToHandshake() ;
             srxl2IsConnected = true;
             srxl2State = SRXL2_RUNNING;
-            printf("Reply to HS has been sent");
+            printf("Reply to HS has been sent\n");
         } else if ( srxl2ProcessIn[4] == SRXL2_BROADCAST_ID) {   // when destination = FF = broadcast, we do not have to reply
             printf("HS received for brodcast\n");
             srxl2MasterId = srxl2ProcessIn[3]; // we save the master ID
-                                              // to do : change baudrate if required
+            // change baudrate if required
+            if ( srxl2ProcessIn[6] == 0) {  // 0 means that we will use load baudrate = 115200
+                srxl2ValidBaudrate = SRXL2_PORT_BAUDRATE_DEFAULT ; 
+            } else {  // else apply 400000 baud rate
+                srxl2ValidBaudrate = SRXL2_PORT_BAUDRATE_HIGH ; 
+            }
+            if ( srxl2CurrentBaudrate != srxl2ValidBaudrate ) {
+                changeBaudrate(srxl2Pio, srxl2SmTx, srxl2SmRx, srxl2ValidBaudrate);
+                srxl2CurrentBaudrate = srxl2ValidBaudrate;
+            }    
             srxl2MasterIdIsValid = true; // from now we can reply to control data frame
             srxl2IsConnected = true;
             srxl2State = SRXL2_RUNNING;
@@ -389,15 +421,66 @@ void srxl2ProcessIncomingFrame(){
         }
         // decode rc channels (but not other types of data)
         #define SRXL2_RC_CHANNELS 0
-        if (srxl2ProcessIn[3] == SRXL2_RC_CHANNELS){
-            srxl2DecodeRcChannels();
+        #define SRXL2_RC_FAILSAFE 1
+        if ( (srxl2ProcessIn[3] == SRXL2_RC_CHANNELS) || (srxl2ProcessIn[3] == SRXL2_RC_FAILSAFE) ){
+            srxl2DecodeRcChannels(srxl2ProcessIn[3]);
         }
     }
 }    
 
 
-void srxl2DecodeRcChannels(){  // todo : still to fill
+// to do, limit to 16 channels; store in 16 fields, code the 16 into 22 bits
+uint16_t srxl2RcChannels[16] = {0X0400}; // servo mid position coded on 11 bits
 
+// format is:  0XA6 0XCD Length Command(0X0 for channels, 0X01 for failsafe, 0X02 for VTX) ReplyId Payload CRCA CRCB
+// for channels, payload= RSSI(1 byte) Framelosses (U16) channelMask(U32) channels(U16)[n X depending on mask]
+// channel value must be >> 5 to get usual 11 bits
+// for failsafe, payload= RssiMin ( 1 byte) number of hold(u16) channel mask(U32) channels(U16)[n X]
+void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){  // todo : still to fill
+    //uint32_t mask = srxl2ProcessIn[11]<<24 | srxl2ProcessIn[10]<<16 | srxl2ProcessIn[9]<<8 | srxl2ProcessIn[8];
+    uint16_t mask = srxl2ProcessIn[9]<<8 | srxl2ProcessIn[8];
+    uint8_t frameIdx = 12;
+    uint8_t channelIdx = 0;
+    uint8_t sbus[23];
+    //If receiver is in a connected state, and a packet is missed, the channel mask will be 0.
+    if (mask == 0) return;
+    while (mask) {
+        if ( mask & 0X1) {
+            srxl2RcChannels[channelIdx] = srxl2ProcessIn[frameIdx+1]<<8 | srxl2ProcessIn[frameIdx] >> 5 ;
+            frameIdx +=2;
+        }
+        channelIdx++;
+        mask = mask >> 1;
+    }
+    sbus[0] = srxl2RcChannels[0];
+    sbus[1] = (srxl2RcChannels[0] >> 8) | (srxl2RcChannels[1] & 0x00FF)<<3;
+    sbus[2] = srxl2RcChannels[1]>>5|(srxl2RcChannels[2]<<6);
+    sbus[3] = (srxl2RcChannels[2]>>2)& 0x00ff;
+    sbus[4] = srxl2RcChannels[2]>>10| (srxl2RcChannels[3] & 0x00FF)<<1;
+    sbus[5] = srxl2RcChannels[3]>>7|  (srxl2RcChannels[4] & 0x0FF )<<4;
+    sbus[6] = srxl2RcChannels[4]>>4| (srxl2RcChannels[5] & 0xFF) <<7;
+    sbus[7] = (srxl2RcChannels[5]>>1)& 0x00ff;
+    sbus[8] = srxl2RcChannels[5]>>9| (srxl2RcChannels[6] & 0xFF)<<2;
+    sbus[9] = srxl2RcChannels[6]>>6| (srxl2RcChannels[7] & 0xFF)<<5;
+    sbus[10] = (srxl2RcChannels[7]>>3)& 0x00ff;//end
+    sbus[11] = (srxl2RcChannels[8] & 0XFF);
+    sbus[12] = (srxl2RcChannels[8]>> 8) | (srxl2RcChannels[9] & 0xFF)<<3;
+    sbus[13] = srxl2RcChannels[9]>>5 | (srxl2RcChannels[10]<<6);
+    sbus[14] = (srxl2RcChannels[10]>>2) & 0xff;
+    sbus[15] = srxl2RcChannels[10]>>10 | (srxl2RcChannels[11] & 0XFF)<<1;
+    sbus[16] = srxl2RcChannels[11]>>7 | (srxl2RcChannels[12] & 0XFF)<<4;
+    sbus[17] = srxl2RcChannels[12]>>4 | (srxl2RcChannels[13] & 0XFF)<<7;
+    sbus[18] = (srxl2RcChannels[13]>>1)& 0xff;
+    sbus[19] = srxl2RcChannels[13]>>9 | (srxl2RcChannels[14] & 0XFF)<<2;
+    sbus[20] = srxl2RcChannels[14]>>6 | (srxl2RcChannels[15] & 0XFF)<<5;
+    sbus[21] = (srxl2RcChannels[15]>>3)& 0xff;
+    
+    sbus[22] = 0x00;
+    if ( channelOrFailsafe == SRXL2_RC_FAILSAFE) sbus[22] |= (1<<3);//FS activated   
+    //    if(missingPackets >= 1) sbus[22] |= (1<<2);//frame lost
+    memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
+    lastRcChannels = millisRp();
+    lastPriChannelsMillis =  lastRcChannels;
 }
 
 
@@ -427,8 +510,8 @@ void fbusDecodeRcChannels(){             // this code is similar to Sbus in
 #define SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST 0XFF
 #define TELE_DEVICE_RSV_06
 
-uint8_t srxl2PriorityList[] = { TELE_DEVICE_VARIO_S , TELE_DEVICE_GPS_BINARY , TELE_DEVICE_AIRSPEED , TELE_DEVICE_RPM,
-                                 TELE_DEVICE_RX_MAH, TELE_DEVICE_TEMPERATURE };
+uint8_t srxl2PriorityList[] = { TELE_DEVICE_VARIO_S , TELE_DEVICE_GPS_BINARY , TELE_DEVICE_AIRSPEED , TELE_DEVICE_ESC,
+                                 TELE_DEVICE_RX_MAH };
 uint8_t srxl2MaxPooling[]  = { 4, 8, 10, 10, 10, 10};
 uint8_t srxl2MinPooling[]  = { 2, 4, 5, 5, 5, 5};                                
 uint32_t srxl2LastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each frame
@@ -472,9 +555,9 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
     switch (frameIdx) {
         case 0: //TELE_DEVICE_VARIO_S
             if (fields[VSPEED].available) {
-                srxl2Frames.vario.identifier = TELE_DEVICE_VARIO_S ;
+                srxl2Frames.vario.identifier = TELE_DEVICE_VARIO_S ; // 0x40
                 srxl2Frames.vario.sID = 0;
-                srxl2Frames.vario.altitude = (int16_t) int_round( fields[RELATIVEALT].value , 10); // 0.1m increments
+                srxl2Frames.vario.altitude = (int16_t) int_round( fields[RELATIVEALT].value , 10); // from cm to 0.1m increments
                 srxl2Frames.vario.delta_0250ms = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
                 srxl2Frames.vario.delta_0500ms = 0x7FFF;
 				srxl2Frames.vario.delta_1000ms = 0x7FFF;
@@ -523,11 +606,63 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             }    
             break;
         case 2: //TELE_DEVICE_AIRSPEED
-            return false;
+            if (fields[AIRSPEED].available) {
+                srxl2Frames.airspeed.identifier = TELE_DEVICE_AIRSPEED; //0X11
+                srxl2Frames.airspeed.sID = 0; // Secondary ID
+                if (fields[AIRSPEED].value >= 0) {
+                    srxl2Frames.airspeed.airspeed = (uint16_t) int_round(fields[AIRSPEED].value * 36, 1000); //       from cm/sec to 1 km/h
+                } else  { 
+                    srxl2Frames.airspeed.airspeed = 0;
+                }
+            	srxl2Frames.airspeed.maxAirspeed =  0XFFFF;
+                srxl2Frames.airspeed.reserve1 =  0XFFFF;
+                srxl2Frames.airspeed.reserve2 =  0XFFFF;
+                srxl2Frames.airspeed.reserve3 =  0XFFFF;
+                srxl2Frames.airspeed.reserve4 =  0XFFFF;
+                srxl2Frames.airspeed.reserve5 =  0XFFFF;
+                return true;
+            }    
             break;
-        case 3: // TELE_DEVICE_RPM
-            return false;
-            break;
+        case 3: // TELE_DEVICE_ESC
+            if ((fields[RPM].available) || (fields[TEMP1].available) || (fields[TEMP2].available)) {
+                srxl2Frames.esc.identifier = TELE_DEVICE_ESC; //0X20
+                srxl2Frames.esc.sID = 0; // Secondary ID
+                if (fields[RPM].available) {
+                    srxl2Frames.esc.RPM = fields[RPM].value * 6  ; //from Hz to 10 tour/min
+                } else {
+                    srxl2Frames.esc.RPM = 0XFFFF;
+                }
+                srxl2Frames.esc.voltsInput =  0XFFFF;
+                if ((fields[TEMP1].available) && (fields[TEMP1].value > 0)) {
+                    srxl2Frames.esc.tempFET =  fields[TEMP1].value * 10; // from degree to 0.1 degree
+                } else {
+                    srxl2Frames.esc.tempFET =  0XFFFF;
+                }
+                srxl2Frames.esc.currentMotor =  0XFFFF;
+                if ((fields[TEMP2].available) && (fields[TEMP2].value > 0)) {
+                    srxl2Frames.esc.tempBEC =  fields[TEMP2].value * 10; // from degree to 0.1 degree
+                } else {
+                    srxl2Frames.esc.tempBEC =  0XFFFF;
+                }
+                srxl2Frames.esc.currentBEC =  0XFF;
+                srxl2Frames.esc.voltsBEC =  0XFF;
+                srxl2Frames.esc.throttle =  0XFF; 
+                srxl2Frames.esc.powerOut =  0XFF;
+                return true ;
+            }
+            break;    
+/*
+    uint16_t		RPM;															// Electrical RPM, 10RPM (0-655340 RPM)  0xFFFF --> "No data"
+	uint16_t		voltsInput;														// Volts, 0.01v (0-655.34V)       0xFFFF --> "No data"
+	uint16_t		tempFET;														// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
+	uint16_t		currentMotor;													// Current, 10mA (0-655.34A)      0xFFFF --> "No data"
+	uint16_t		tempBEC;														// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
+	uint8_t		currentBEC;														// BEC Current, 100mA (0-25.4A)   0xFF ----> "No data"
+	uint8_t		voltsBEC;														// BEC Volts, 0.05V (0-12.70V)    0xFF ----> "No data"
+	uint8_t		throttle;														// 0.5% (0-100%)                  0xFF ----> "No data"
+	uint8_t		powerOut;														// Power Output, 0.5% (0-127%)    0xFF ----> "No data"
+} STRU_TELE_ESC;
+*/
         case 4: //TELE_DEVICE_RX_MAH
             if (fields[MVOLT].available || fields[CURRENT].available){
                 srxl2Frames.voltCurrentCap.identifier = TELE_DEVICE_RX_MAH ;  // 0X18
@@ -563,9 +698,6 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 return true;
             }
             break;
-        case 5: //TELE_DEVICE_TEMPERATURE
-            return false;
-            break;
         default:
             return false;
             break;    
@@ -587,17 +719,14 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gps.identifier, 16);
             break;
         case 2: //TELE_DEVICE_AIRSPEED
+            memcpy(&srxl2TxBuffer[4], &srxl2Frames.airspeed.identifier, 16);
             break;
-        case 3: // TELE_DEVICE_RPM
-            
+        case 3: // TELE_DEVICE_ESC
+            memcpy(&srxl2TxBuffer[4], &srxl2Frames.esc.identifier, 16);
             break;
         case 4: //TELE_DEVICE_RX_MAH
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);
             break;
-        case 5: //TELE_DEVICE_TEMPERATURE
-            
-            break;
-        
         case 0XFF: //request new handshake (it is a dummy value I use)
             srxl2TxBuffer[3] = 0XFF ; // overwrite destination ID with FF to ask for a request
             for (uint8_t i=4; i< 22; i++){
@@ -620,13 +749,13 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
 
 void srxl2SendFrame(uint8_t length){  // srxl2TxBuffer is already filled (including CRC)
     srxl2_uart_rx_program_stop(srxl2Pio, srxl2SmRx, config.pinPrimIn); // stop receiving
-    srxl2_uart_tx_program_start(srxl2Pio, srxl2SmTx, config.pinPrimIn, true); // prepare to transmit
+    srxl2_uart_tx_program_start(srxl2Pio, srxl2SmTx, config.pinPrimIn, false); // prepare to transmit; no invert
     // start the DMA channel with the data to transmit
     dma_channel_set_read_addr (srxl2_dma_chan, &srxl2TxBuffer[0], false);
     dma_channel_set_trans_count (srxl2_dma_chan, length , true) ;  // start with the right length
     // we need a way to set the pio back in receive mode when all bytes are sent 
     // this will be done in the main loop after some ms (here 2ms)
-    restoreSrxl2PioToReceiveMicros = microsRp() + (uint32_t) (1000000.0 * 10.0 * length / srxl2CurrentBaudrate);   
+    restoreSrxl2PioToReceiveMicros = microsRp() + 3000; //(uint32_t) (1000000.0 * 10.0 * length / srxl2CurrentBaudrate);   
 }
 
 

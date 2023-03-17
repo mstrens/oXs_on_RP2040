@@ -381,6 +381,11 @@ typedef struct
 	uint8_t		sID;															// Secondary ID
 	uint16_t		airspeed;														// 1 km/h increments
 	uint16_t		maxAirspeed;													// 1 km/h increments
+    uint16_t    reserve1; // added by mstrens to get a payload of 16 bytes
+    uint16_t    reserve2; // added by mstrens to get a payload of 16 bytes
+    uint16_t    reserve3; // added by mstrens to get a payload of 16 bytes
+    uint16_t    reserve4; // added by mstrens to get a payload of 16 bytes
+    uint16_t    reserve5; // added by mstrens to get a payload of 16 bytes
 } STRU_TELE_SPEED;																// Eagle Tree Sensor
 
 //////////////////////////////////////////////////////////////////////////////
