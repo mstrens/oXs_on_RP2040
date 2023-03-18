@@ -118,6 +118,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
         // compensation (cm) =  2926.0 * difPressureAdc * Temp(kelv) / Press (Pa)
     if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false) return; // skip when no MS4525/sdp3x is installed
     if (newClimbRateAvailableForCompensation == false) return; // skip when no new Vspeed is available
+    newClimbRateAvailableForCompensation = false; // reset the flag
     // calculate average diff of pressure because MS4525 is read more ofen than Vspeed
     if (difPressureCompVspeedCount > 0) difPressureAvgPa = difPressureCompVspeedSumPa / (float) difPressureCompVspeedCount ;
     difPressureCompVspeedSumPa = 0;

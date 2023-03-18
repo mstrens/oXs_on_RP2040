@@ -184,12 +184,10 @@ void setupSrxl2() {
 void srxl2PioRxHandlerIrq(){    // when a byte is received on the srxl2, read the pio srxl2 fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
   irq_clear (PIO0_IRQ_0 );
-  uint32_t nowMicros = microsRp();
   while (  ! pio_sm_is_rx_fifo_empty (srxl2Pio ,srxl2SmRx)){ // when some data have been received
-     uint16_t c = pio_sm_get (srxl2Pio , srxl2SmRx) >> 24;         // read the data
-     //when previous byte was received more than X usec after the previous, then add 1 in bit 15     
+    uint16_t c = pio_sm_get (srxl2Pio , srxl2SmRx) >> 24;         // read the data
     queue_try_add (&srxl2RxQueue, &c);          // push to the queue
-    srxl2LastRxUs = nowMicros;                    // save the timestamp of last received byte.
+    srxl2LastRxUs = microsRp();                    // save the timestamp of last received byte.
   }
 }
 
@@ -216,10 +214,15 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             } else {
                 srxl2RxBufferIdx = 0 ; // loose the buffer if to long
             }
-    } 
-    if ((( microsRp() - srxl2LastRxUs) > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
+    }
+    uint32_t irqStatus = save_and_disable_interrupts();
+    uint32_t lastByteReadInIsrUs = srxl2LastRxUs;
+    restore_interrupts(irqStatus); 
+    idleDelayJustForTesting = microsRp() - lastByteReadInIsrUs;
+    if (( idleDelayJustForTesting > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
+    //if ((( microsRp() - srxl2LastRxUs) > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
         // expect a full frame has been received; save it in another buffer, check it and save it.
-        idleDelayJustForTesting = microsRp() - srxl2LastRxUs;
+        
         srxl2LastIdleUs = microsRp(); 
         memcpy(srxl2ProcessIn, srxl2RxBuffer, srxl2RxBufferIdx);
         srxl2ProcessInIdx = srxl2RxBufferIdx ;
@@ -620,11 +623,11 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                     srxl2Frames.airspeed.airspeed = 0;
                 }
             	srxl2Frames.airspeed.maxAirspeed =  0XFFFF;
-                srxl2Frames.airspeed.reserve1 =  0XFFFF;
-                srxl2Frames.airspeed.reserve2 =  0XFFFF;
-                srxl2Frames.airspeed.reserve3 =  0XFFFF;
-                srxl2Frames.airspeed.reserve4 =  0XFFFF;
-                srxl2Frames.airspeed.reserve5 =  0XFFFF;
+                srxl2Frames.airspeed.reserve1 =  0;  // undefined part of the frame has to be filled with 0
+                srxl2Frames.airspeed.reserve2 =  0;
+                srxl2Frames.airspeed.reserve3 =  0;
+                srxl2Frames.airspeed.reserve4 =  0;
+                srxl2Frames.airspeed.reserve5 =  0;
                 return true;
             }    
             break;
