@@ -92,7 +92,20 @@
 #define SRXL2_OXS_ID 0X61
 #define SRXL2_NO_REPLY 0X00
 #define SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST 0XFF // dummy index to ask the function to fill a telemetry frame to request a (new) handshake
-                        
+#define SRXL2_TELEMETRY_CODE 0X80                        
+#define SRXL2_DETECT_TIMEOUT_RX_US 50000 // us = 50 ms
+#define SRXL2_DETECT_IDLE_RX_US 500 //10usec * 10 bits * 2 char ; with 200usec, some frames are splitted and considered as invalid    
+#define SRXL2_NO_ACTIVITY_TO_US 50000
+#define SRXL2_HEADER_BYTE1 0XA6
+#define SRXL2_HANDSHAKE_CODE 0X21
+#define SRXL2_CONTROL_DATA_CODE   0XCD
+#define SRXL2_TELEMETRY_FRAME_LENGTH 22
+#define SRXL2_RC_CHANNELS 0
+#define SRXL2_RC_FAILSAFE 1
+#define SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST 0XFF
+              
+#define SRXL2_ALARM_NUM_UART_IDLE 2 // number of the timer alarm used to detect uart idle. (alarm3 is sued by watchdog!)
+
 
 extern CONFIG config;
 queue_t srxl2RxQueue ;
@@ -132,6 +145,7 @@ uint32_t restoreSrxl2PioToReceiveMicros = 0; // when 0, the pio is normally in r
 extern field fields[];  // list of all telemetry fields that are measured
 
 volatile uint32_t srxl2LastRxUs;
+uint32_t srxl2IdleDelay ; // delay in Us between last char and current proccess (in loop)
 uint32_t srxl2LastIdleUs;
 uint32_t srxl2LastValidFrameUs;
 uint32_t srxl2LastRepliedFrameUs;
@@ -148,7 +162,7 @@ extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To 
 
 void setupSrxl2() {
 // configure the queue to get the data from srxl2 in the irq handle
-    queue_init (&srxl2RxQueue, sizeof(uint8_t), 250);  // one byte per item
+    queue_init (&srxl2RxQueue, sizeof(uint16_t), 250);  // one byte per item
 
 // set up the DMA but do not yet start it to send data to srxl2
 // Configure a channel to write the same byte (8 bits) repeatedly to PIO0
@@ -178,8 +192,16 @@ void setupSrxl2() {
 // Set up the state machine we're going to use to receive them.
     srxl2OffsetRx = pio_add_program(srxl2Pio, &srxl2_uart_rx_program);
     srxl2_uart_rx_program_init(srxl2Pio, srxl2SmRx, srxl2OffsetRx, config.pinPrimIn, SRXL2_PORT_BAUDRATE_DEFAULT , false);  
+
+// add an alarm callback to be used to detect idle in UART
+hardware_alarm_set_callback(SRXL2_ALARM_NUM_UART_IDLE , srxl2AlarmUart_callback);
+
 }
 
+void srxl2AlarmUart_callback(uint alarmNum){
+    uint16_t c = 0X8000;
+    queue_try_add (&srxl2RxQueue, &c);  // add a code with MSB different from 0
+}
 
 void srxl2PioRxHandlerIrq(){    // when a byte is received on the srxl2, read the pio srxl2 fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
@@ -188,14 +210,14 @@ void srxl2PioRxHandlerIrq(){    // when a byte is received on the srxl2, read th
     uint16_t c = pio_sm_get (srxl2Pio , srxl2SmRx) >> 24;         // read the data
     queue_try_add (&srxl2RxQueue, &c);          // push to the queue
     srxl2LastRxUs = microsRp();                    // save the timestamp of last received byte.
+    hardware_alarm_set_target(SRXL2_ALARM_NUM_UART_IDLE , time_us_64()+300);
   }
 }
 
-#define SRXL2_DETECT_TIMEOUT_RX_US 50000 // us = 50 ms
-#define SRXL2_DETECT_IDLE_RX_US 500 //10usec * 10 bits * 2 char ; with 200usec, some frames are splitted and considered as invalid    
-uint32_t idleDelayJustForTesting ; // to remove after debug    
+     
 void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
-    uint8_t data;
+    uint16_t data;
+    bool fullFrameIsreceived = false;
     if (config.pinPrimIn == 255) return ; // skip when Tlm is not foreseen
     if ( restoreSrxl2PioToReceiveMicros) {            // put sm back in receive mode after some delay
         if (microsRp() > restoreSrxl2PioToReceiveMicros){
@@ -208,6 +230,10 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
     while (! queue_is_empty(&srxl2RxQueue)) {
             // we get the value from the queue and save it
             queue_try_remove (&srxl2RxQueue,&data);
+            if ( data > 0x0100){
+                fullFrameIsreceived = true;
+                break; // exit the while because we got a byte that says that UART was Idle 
+            }
             if (srxl2RxBufferIdx < SRXL2_BUFFER_LENGTH) {
                 srxl2RxBuffer[srxl2RxBufferIdx] = data;
                 srxl2RxBufferIdx++;
@@ -218,8 +244,9 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
     uint32_t irqStatus = save_and_disable_interrupts();
     uint32_t lastByteReadInIsrUs = srxl2LastRxUs;
     restore_interrupts(irqStatus); 
-    idleDelayJustForTesting = microsRp() - lastByteReadInIsrUs;
-    if (( idleDelayJustForTesting > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
+    srxl2IdleDelay = microsRp() - lastByteReadInIsrUs;
+    //if (( srxl2IdleDelay > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
+    if (fullFrameIsreceived){
     //if ((( microsRp() - srxl2LastRxUs) > SRXL2_DETECT_IDLE_RX_US ) && (srxl2RxBufferIdx > 0)){
         // expect a full frame has been received; save it in another buffer, check it and save it.
         
@@ -229,7 +256,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
         srxl2RxBufferIdx = 0; // reset the buffer
         // check if frame is valid
         if (srxl2FrameIsvalid() ) {  // if frame, is valid, 
-            printf("Valid frame received\n");
+            //printf("Valid frame received\n");
             srxl2LastValidFrameUs = srxl2LastIdleUs;
             // at least baudrate is valid 
             srxl2ValidBaudrate = srxl2CurrentBaudrate;     
@@ -241,7 +268,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             srxl2ProcessIncomingFrame();      
         } else {   
             printf("Invalid frame received\n");
-            printf("with idleTime=%d\n", (int) idleDelayJustForTesting );
+            printf("with idleTime=%d\n", (int) srxl2IdleDelay );
             for (uint8_t i = 0; i< srxl2ProcessInIdx; i++ ){
                 printf(" %x", srxl2ProcessIn[i] );
             }
@@ -249,7 +276,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
             // discard invalid frame
         }
     }
-    #define SRXL2_NO_ACTIVITY_TO_US 50000
+    
     uint32_t nowUs =microsRp();
     static uint32_t beginListeningUs = 0;
     switch (srxl2State){
@@ -296,7 +323,6 @@ bool srxl2FrameIsvalid(){
     // srxl2ProcessInIdx contains the number of char in the buffer
     
     // check that first byte is 0xA6
-    #define SRXL2_HEADER_BYTE1 0XA6
     if (srxl2ProcessIn[0] !=  SRXL2_HEADER_BYTE1 ) {
         if (srxl2IsConnected) printf("First char is not 0XA6\n");
         return false; 
@@ -311,8 +337,6 @@ bool srxl2FrameIsvalid(){
         return false;
     }    
     // check that type of frame is Handsake or control data
-    #define SRXL2_HANDSHAKE_CODE 0X21
-    #define SRXL2_CONTROL_DATA_CODE   0XCD
     if ((srxl2ProcessIn[1] !=  SRXL2_HANDSHAKE_CODE ) && (srxl2ProcessIn[1] !=  SRXL2_CONTROL_DATA_CODE )) {
         if (srxl2IsConnected) printf("Type is not handshake nor control data\n");
         return false;
@@ -405,7 +429,6 @@ void srxl2ProcessIncomingFrame(){
 // 0XA6 + 0XCD + lenght + command (0=channels, 1=failsafe) + ReplyId + payload + CRC (2 bytes)
 //         payload for channels= RSSI(I8) + frameLosses(U16) + channel mask(U32) + n*channel(U16) (n depends on mask)
 //         payload for Failsafe= RSSI(I8) + hold(U16) + channel mask(U32) + n*channel(U16) (n depends on mask) 
-        #define SRXL2_TELEMETRY_FRAME_LENGTH 22
         // when we get a control data for oXs, we reply with a telemetry frame (if data are available)
         if ( srxl2ProcessIn[4] == SRXL2_OXS_ID) {
             printf("Control data frame received for oXs at %d\n", (int) microsRp());
@@ -425,8 +448,6 @@ void srxl2ProcessIncomingFrame(){
             srxl2State = SRXL2_RUNNING;
         }
         // decode rc channels (but not other types of data)
-        #define SRXL2_RC_CHANNELS 0
-        #define SRXL2_RC_FAILSAFE 1
         if ( (srxl2ProcessIn[3] == SRXL2_RC_CHANNELS) || (srxl2ProcessIn[3] == SRXL2_RC_FAILSAFE) ){
             srxl2DecodeRcChannels(srxl2ProcessIn[3]);
         }
@@ -451,8 +472,15 @@ void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){
     if (mask == 0) return;
     while (mask) {
         if ( mask & 0X1) {
-            srxl2RcChannels[channelIdx] = srxl2ProcessIn[frameIdx+1]<<8 | srxl2ProcessIn[frameIdx] >> 5 ;
-            frameIdx +=2;
+            srxl2RcChannels[channelIdx] = (srxl2ProcessIn[frameIdx+1]<<8 | srxl2ProcessIn[frameIdx]) >> 5 ;
+            //if( frameIdx == 12) {    // to debug Rc channels messages.
+            //    printf("Frame begins with\n");
+            //    for (uint8_t i = 0; i < 14 ; i++) {
+            //        printf(" %X ", srxl2ProcessIn[i]);
+            //    }
+            //    printf("\n channel 1 = %X\n", srxl2RcChannels[channelIdx]);
+            //}
+            frameIdx += 2;
         }
         channelIdx++;
         mask = mask >> 1;
@@ -511,9 +539,7 @@ void fbusDecodeRcChannels(){             // this code is similar to Sbus in
 // 0X7E RPM
 // User defined : several 0X50 + ...
 // we can use the same logic as Sport based on a list where frame are in some sequence based on priority
-// we use also a dummy value SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST = TELE_DEVICE_RSV_06 to request a handshake
-#define SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST 0XFF
-#define TELE_DEVICE_RSV_06
+// we use also a dummy value SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST = 0xFF to request a handshake
 
 uint8_t srxl2PriorityList[] = { TELE_DEVICE_VARIO_S , TELE_DEVICE_GPS_BINARY , TELE_DEVICE_AIRSPEED , TELE_DEVICE_ESC,
                                  TELE_DEVICE_RX_MAH };
@@ -557,21 +583,28 @@ bool srxl2FillTelemetryFrame(){
 // test if some data are available for sending for one frame type
 // if so, fill the payload of the frame and return true when available
 bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
+    uint16_t tempU16;
+    int16_t tempI16;
+    uint32_t tempU32;
+    int32_t tempI32;
     switch (frameIdx) {
         case 0: //TELE_DEVICE_VARIO_S
             if (fields[VSPEED].available) {
                 srxl2Frames.vario.identifier = TELE_DEVICE_VARIO_S ; // 0x40
                 srxl2Frames.vario.sID = 0;
-                //srxl2Frames.vario.altitude = (int16_t) int_round( fields[RELATIVEALT].value , 10); // from cm to 0.1m increments
-                //srxl2Frames.vario.delta_0250ms = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
-                srxl2Frames.vario.altitude = 123; // from cm to 0.1m increments
-                srxl2Frames.vario.delta_0250ms = 456;	// change in altitude last 250ms, 0.1m/s increments 
                 
-                srxl2Frames.vario.delta_0500ms = 0x7FFF;
-				srxl2Frames.vario.delta_1000ms = 0x7FFF;
-				srxl2Frames.vario.delta_1500ms = 0x7FFF;			
-				srxl2Frames.vario.delta_2000ms = 0x7FFF;	
-				srxl2Frames.vario.delta_3000ms = 0x7FFF;
+                tempI16 = (int16_t) int_round( fields[RELATIVEALT].value , 10); // from cm to 0.1m increments
+                //tempI16 = 123; // from cm to 0.1m increments
+                srxl2Frames.vario.altitude = swapBinary(tempI16);
+                
+                tempI16 = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
+                //tempI16 = 456;	// change in altitude last 250ms, 0.1m/s increments 
+                srxl2Frames.vario.delta_0250ms = swapBinary(tempI16);
+                srxl2Frames.vario.delta_0500ms = 0xFF7F;
+				srxl2Frames.vario.delta_1000ms = 0xFF7F;
+				srxl2Frames.vario.delta_1500ms = 0xFF7F;			
+				srxl2Frames.vario.delta_2000ms = 0xFF7F;	
+				srxl2Frames.vario.delta_3000ms = 0xFF7F;
                 fields[VSPEED].available = false;
                 return true;
             } 
@@ -581,25 +614,33 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gps.identifier = TELE_DEVICE_GPS_BINARY; //0X26
                 srxl2Frames.gps.sID = 0; // Secondary ID
                 if (fields[ALTITUDE].available) {
-                    srxl2Frames.gps.altitude = (uint16_t) (int_round(fields[ALTITUDE].value + 100000, 100)); // from cm to m, 1000m offset
+                    tempU16 = (uint16_t) (int_round(fields[ALTITUDE].value + 100000, 100)); // from cm to m, 1000m offset
+                    srxl2Frames.gps.altitude = swapBinary(tempI16);
                 } else {
                     srxl2Frames.gps.altitude = 0XFFFF;
                 }
+                
                 if (fields[LATITUDE].available) {
-                    srxl2Frames.gps.latitude = fields[LATITUDE].value; // degree / 10,000,000
+                    tempI32 = fields[LATITUDE].value; // degree / 10,000,000
+                    srxl2Frames.gps.latitude = swapBinary(tempI32);
                 } else {
-                    srxl2Frames.gps.altitude = 0X7FFF;
+                    srxl2Frames.gps.latitude = 0XFF7F;
                 }
+                
                 if (fields[LONGITUDE].available) {
-                    srxl2Frames.gps.longitude = fields[LONGITUDE].value; // degree / 10,000,000
+                    tempI32 = fields[LONGITUDE].value; // degree / 10,000,000
+                     srxl2Frames.gps.longitude = swapBinary(tempI32);
                 } else {
-                    srxl2Frames.gps.longitude = 0X7FFF;
+                    srxl2Frames.gps.longitude = 0XFF7F;
                 }
+                
                 if (fields[HEADING].available) {
-                    srxl2Frames.gps.heading = (uint16_t) (int_round(fields[HEADING].value , 10)); // from 0.01 deg to 0.1 deg
+                    tempU16 = (uint16_t) (int_round(fields[HEADING].value , 10)); // from 0.01 deg to 0.1 deg
+                    srxl2Frames.gps.heading = swapBinary(tempU16);
                 } else {
                     srxl2Frames.gps.heading = 0XFFFF;
                 }
+                
 	            if (fields[GROUNDSPEED].available) {
                     srxl2Frames.gps.groundSpeed = (uint8_t) (int_round(fields[HEADING].value * 36, 100)); // cm/sec to Km/h
                 } else {
@@ -618,7 +659,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.airspeed.identifier = TELE_DEVICE_AIRSPEED; //0X11
                 srxl2Frames.airspeed.sID = 0; // Secondary ID
                 if (fields[AIRSPEED].value >= 0) {
-                    srxl2Frames.airspeed.airspeed = (uint16_t) int_round(fields[AIRSPEED].value * 36, 1000); //       from cm/sec to 1 km/h
+                    tempU16 = (uint16_t) int_round(fields[AIRSPEED].value * 36, 1000); //       from cm/sec to 1 km/h
+                    srxl2Frames.airspeed.airspeed = swapBinary(tempU16);
                 } else  { 
                     srxl2Frames.airspeed.airspeed = 0;
                 }
@@ -636,22 +678,28 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.esc.identifier = TELE_DEVICE_ESC; //0X20
                 srxl2Frames.esc.sID = 0; // Secondary ID
                 if (fields[RPM].available) {
-                    srxl2Frames.esc.RPM = fields[RPM].value * 6  ; //from Hz to 10 tour/min
+                    tempU16 = (uint16_t) fields[RPM].value * 6  ; //from Hz to 10 tour/min
+                    srxl2Frames.esc.RPM = swapBinary(tempU16);
                 } else {
                     srxl2Frames.esc.RPM = 0XFFFF;
                 }
+                
                 srxl2Frames.esc.voltsInput =  0XFFFF;
                 if ((fields[TEMP1].available) && (fields[TEMP1].value > 0)) {
-                    srxl2Frames.esc.tempFET =  fields[TEMP1].value * 10; // from degree to 0.1 degree
+                    tempU16 =  (uint16_t) fields[TEMP1].value * 10; // from degree to 0.1 degree
+                    srxl2Frames.esc.tempFET = swapBinary(tempU16);
                 } else {
                     srxl2Frames.esc.tempFET =  0XFFFF;
                 }
+                
                 srxl2Frames.esc.currentMotor =  0XFFFF;
                 if ((fields[TEMP2].available) && (fields[TEMP2].value > 0)) {
-                    srxl2Frames.esc.tempBEC =  fields[TEMP2].value * 10; // from degree to 0.1 degree
+                    tempU16 =    fields[TEMP2].value * 10; // from degree to 0.1 degree
+                    srxl2Frames.esc.tempBEC = swapBinary(tempU16);
                 } else {
                     srxl2Frames.esc.tempBEC =  0XFFFF;
                 }
+                
                 srxl2Frames.esc.currentBEC =  0XFF;
                 srxl2Frames.esc.voltsBEC =  0XFF;
                 srxl2Frames.esc.throttle =  0XFF; 
@@ -676,29 +724,35 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.voltCurrentCap.identifier = TELE_DEVICE_RX_MAH ;  // 0X18
                 srxl2Frames.voltCurrentCap.sID = 0; // Secondary ID
                 if (fields[CURRENT].available) {
-                    srxl2Frames.voltCurrentCap.current_A  = (int16_t) (int_round( fields[CURRENT].value ,  10));  //// Instantaneous current, 0.01A (0-328.7A)		7FFF-> no data  
+                    tempI16 = (int16_t) (int_round( fields[CURRENT].value ,  10));  //// Instantaneous current, 0.01A (0-328.7A)		7FFF-> no data  
+                    srxl2Frames.voltCurrentCap.current_A  = swapBinary(tempI16);
                 } else {
-                    srxl2Frames.voltCurrentCap.current_A = 0x7FFF ; 
+                    srxl2Frames.voltCurrentCap.current_A = 0xFF7F ; 
                 }
+                
                 if (fields[CAPACITY].available) {
                     if ( fields[CAPACITY].value > 0 ){   
-                        srxl2Frames.voltCurrentCap.chargeUsed_A  = (uint16_t) (int_round( fields[CAPACITY].value ,  1));  //// Integrated mAh used, 0.1mAh (0-3276.6mAh)  
+                        tempU16 =  (uint16_t) (int_round( fields[CAPACITY].value ,  1));  //// Integrated mAh used, 0.1mAh (0-3276.6mAh)  
+                        srxl2Frames.voltCurrentCap.chargeUsed_A  = swapBinary(tempU16);
                     } else {
                         srxl2Frames.voltCurrentCap.chargeUsed_A  = 0 ;
                     }
                 } else {
                     srxl2Frames.voltCurrentCap.chargeUsed_A = 0xFFFF ; 
                 }
+                
                 if (fields[MVOLT].available) {
                     if ( fields[MVOLT].value > 0 ){   
-                        srxl2Frames.voltCurrentCap.volts_A  = (uint16_t) (int_round( fields[MVOLT].value ,  10));  // Volts, 0.01V increments (0-16.00V)
+                        tempU16  = (uint16_t) (int_round( fields[MVOLT].value ,  10));  // Volts, 0.01V increments (0-16.00V)
+                        srxl2Frames.voltCurrentCap.volts_A  = swapBinary(tempU16);
                     } else {
                         srxl2Frames.voltCurrentCap.volts_A  = 0 ;
                     }
                 } else {
                     srxl2Frames.voltCurrentCap.volts_A = 0xFFFF ; 
                 }
-                srxl2Frames.voltCurrentCap.current_B = 0x7FFF ;
+                
+                srxl2Frames.voltCurrentCap.current_B = 0xFF7F ;
                 srxl2Frames.voltCurrentCap.chargeUsed_B = 0xFFFF ;
                 srxl2Frames.voltCurrentCap.volts_B = 0xFFFF ;
                 srxl2Frames.voltCurrentCap.alerts = 0 ;// Bit mapped alert conditions (see below)
@@ -713,7 +767,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
     return false;    
 }
 
-#define SRXL2_TELEMETRY_CODE 0X80
+
 void srxl2FillTXBuffer(uint8_t frameIdx){
     srxl2TxBuffer[0] = SRXL2_HEADER_BYTE1 ; // 0xA6
     srxl2TxBuffer[1] = SRXL2_TELEMETRY_CODE ; // 0x80
@@ -756,6 +810,9 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
 
 
 void srxl2SendFrame(uint8_t length){  // srxl2TxBuffer is already filled (including CRC)
+    printf("sending : ");
+    for (uint8_t i= 0; i < length ; i++) printf(" %X ", srxl2TxBuffer[i]);
+    printf("\n");
     srxl2_uart_rx_program_stop(srxl2Pio, srxl2SmRx, config.pinPrimIn); // stop receiving
     srxl2_uart_tx_program_start(srxl2Pio, srxl2SmTx, config.pinPrimIn, false); // prepare to transmit; no invert
     // start the DMA channel with the data to transmit

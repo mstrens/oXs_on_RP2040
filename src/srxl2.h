@@ -13,6 +13,7 @@ bool srxl2FrameIsvalid();
 void srxl2ProcessIncomingFrame();
 bool srxl2FillTelemetryFrame();
 bool srxl2IsFrameDataAvailable(uint8_t frameIdx);
+void srxl2AlarmUart_callback(uint alarmNum);
 void srxl2SendHandshake();
 void replyToHandshake();
 

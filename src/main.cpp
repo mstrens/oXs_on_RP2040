@@ -37,8 +37,7 @@
 #include "pico/multicore.h"
 #include "pico/util/queue.h"
 #include "ds18b20.h"
-
-
+#include "hardware/timer.h"
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
 //         support Frsky Fbus on top of sbus+sport protocol
@@ -77,6 +76,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
+
 
 
 VOLTAGE voltage ;    // class to handle voltages
@@ -295,6 +295,11 @@ void handleBootButton(){
     }
 }
 
+volatile uint8_t testU8 = 0;
+void test_callback(uint alarmNum){
+    testU8++;
+}
+
 void setup() {
   stdio_init_all();
   setupLed();
@@ -321,6 +326,23 @@ void setup() {
   //printf("rounding +60 = %d\n" , ( int_round(testValue , 100) ) +500);
   //uint8_t readBuffer[2] = {0XFF, 0XFE}; 
   //printf("test %f\n",(float) ((int16_t) (readBuffer[0] << 8 | readBuffer[1] & 0X00FF)));
+  //int16_t test = 0X7B03;
+  //int32_t testi32 = (int32_t) test;
+  //uint8_t testFirst = * (&test);
+  //printf("test %X %X %X\n",  test , testi32 , testFirst) ; 
+  //if (hardware_alarm_is_claimed(0)) printf("alarm 0 is used\n");
+  //if (hardware_alarm_is_claimed(1)) printf("alarm 1 is used\n");
+  //if (hardware_alarm_is_claimed(2)) printf("alarm 2 is used\n");
+  //if (hardware_alarm_is_claimed(3)) printf("alarm 3 is used\n");
+  //hardware_alarm_set_callback(2 , test_callback);
+  //hardware_alarm_set_target(2 , time_us_64()+200);
+  //hardware_alarm_set_target(2 , time_us_64()+700);
+  //sleep_us(100);
+  //printf("testU8= %d\n", (int) testU8);
+  //sleep_us(200);
+  //printf("testU8= %d\n", (int) testU8);
+  //sleep_us(700);
+  //printf("testU8= %d\n", (int) testU8);
   #endif
   
   if (watchdog_caused_reboot()) {

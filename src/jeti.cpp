@@ -188,7 +188,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
       case ALTITUDE : 
         if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
-        * fieldValue  = int_round(fields[fieldId].value , 1000) ;                        // convert from mm to m 
+        * fieldValue  = int_round(fields[fieldId].value , 100) ;                        // convert from cm to m 
         * dataType = JETI14_0D ;
         fields[fieldId].available  = false ;
         break ;

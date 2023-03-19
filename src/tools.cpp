@@ -272,3 +272,21 @@ int32_t negFieldValues[] = {
         }
     }
  }
+
+uint16_t swapBinary(uint16_t value) {
+    return (value >> 8) | (value << 8);
+}
+
+int16_t swapBinary(int16_t value) {
+    return (value >> 8) | (value << 8);
+}
+
+uint32_t swapBinary(uint32_t value) {
+    uint32_t tmp = ((value << 8) & 0xFF00FF00) | ((value >> 8) & 0xFF00FF);
+    return (tmp << 16) | (tmp >> 16);
+}
+
+int32_t swapBinary(int32_t value) {
+    int32_t tmp = ((value << 8) & 0xFF00FF00) | ((value >> 8) & 0xFF00FF);
+    return (tmp << 16) | (tmp >> 16);
+}

@@ -82,3 +82,11 @@ void getTimerUs(uint8_t idx);
 void calculateAirspeed();
 
 void fillFields( uint8_t forcedFields);
+
+uint16_t swapBinary(uint16_t value) ;
+
+int16_t swapBinary(int16_t value) ;
+
+uint32_t swapBinary(uint32_t value) ;
+
+int32_t swapBinary(int32_t value) ;
