@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.8.7"
+#define VERSION "1.8.8"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -45,10 +45,13 @@
 #define SBUS2_SLOT_BATTERY_3 18  // Battery requires 3 slots (volt, current, capacity)
 #define SBUS2_SLOT_TEMP1_1 21    // Temp1 requires 1 slot
 #define SBUS2_SLOT_TEMP2_1 22    // Temp2 requires 1 slot
-#define SBUS2_SLOT_RESERVE1_1 23    // V3 requires 1 slot
-#define SBUS2_SLOT_RESERVE2_1 24    // V4 requires 1 slot
+#define SBUS2_SLOT_RESERVE1_1 23    // V3 requires 1 slot, emulate F1713
+#define SBUS2_SLOT_RESERVE2_1 24    // V4 requires 1 slot, emulate F1713
 #define SBUS2_SLOT_RPM_1 25    // Rpm requires 1 slot
+//#define SBUS2_SLOT_AIRSPEED_1 26    // Airspeed requires ? slot
 
+#define SBUS2_SLOT_HOLD_COUNTER_1 28    // Count the number of hold frames ; require 1 slot; emulate F1713
+#define SBUS2_SLOT_FAILSAFE_COUNTER_1 29    // Count the number of failsafeframes ; require 1 slot; emulate F1713
 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100

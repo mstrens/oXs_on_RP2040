@@ -600,11 +600,18 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 tempI16 = (int16_t) int_round( fields[VSPEED].value , 10);	// change in altitude last 250ms, 0.1m/s increments 
                 //tempI16 = 456;	// change in altitude last 250ms, 0.1m/s increments 
                 srxl2Frames.vario.delta_0250ms = swapBinary(tempI16);
-                srxl2Frames.vario.delta_0500ms = 0xFF7F;
-				srxl2Frames.vario.delta_1000ms = 0xFF7F;
-				srxl2Frames.vario.delta_1500ms = 0xFF7F;			
-				srxl2Frames.vario.delta_2000ms = 0xFF7F;	
-				srxl2Frames.vario.delta_3000ms = 0xFF7F;
+                srxl2Frames.vario.delta_0500ms = 0x0001;
+				srxl2Frames.vario.delta_1000ms = 0x0100;
+				srxl2Frames.vario.delta_1500ms = 0x0002;			
+				srxl2Frames.vario.delta_2000ms = 0x0200;	
+				srxl2Frames.vario.delta_3000ms = 0x0100;
+                
+
+                //srxl2Frames.vario.delta_0500ms = 0xFF7F;
+				//srxl2Frames.vario.delta_1000ms = 0xFF7F;
+				//srxl2Frames.vario.delta_1500ms = 0xFF7F;			
+				//srxl2Frames.vario.delta_2000ms = 0xFF7F;	
+				//srxl2Frames.vario.delta_3000ms = 0xFF7F;
                 fields[VSPEED].available = false;
                 return true;
             } 

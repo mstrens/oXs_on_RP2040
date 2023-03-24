@@ -45,7 +45,7 @@
  * 
  * so we wait to receive a RC frame.
  * * when a valid frame is received, we stop listening and we prepare transmitting
- * if byte 24 is 04,14,23 or 34 then ir is a SBUS2 and we can reply
+ * if byte 24 is 04,14,24 or 34 then it is a SBUS2 and we can reply
  * we save the 0,1,2,3 (tlm frame counter), set sequence = 0 and start then a timer for 2msec
  * when it fires, we look if sequence is < 8 
  * if < 8, and if the data is available for slot sequence + frame counter *8, we fill the buffer and transmit it
@@ -179,7 +179,7 @@ void fill8Sbus2Slots (uint8_t slotGroup){
         fillReserve1(SBUS2_SLOT_RESERVE1_1 & 0x07); // keep 3 last bits as slot index
     }
     if ((fields[RESERVE2].available) && ( slotGroup == (SBUS2_SLOT_RESERVE2_1 >>3))){
-        fillReserve1(SBUS2_SLOT_RESERVE2_1 & 0x07); // keep 3 last bits as slot index
+        fillReserve2(SBUS2_SLOT_RESERVE2_1 & 0x07); // keep 3 last bits as slot index
     }
     if ((fields[TEMP1].available) && ( slotGroup == (SBUS2_SLOT_TEMP1_1 >>3))){
         fillTemp1(SBUS2_SLOT_TEMP1_1 & 0x07); // keep 3 last bits as slot index
@@ -189,6 +189,13 @@ void fill8Sbus2Slots (uint8_t slotGroup){
     }
     if ((fields[RPM].available) && ( slotGroup == (SBUS2_SLOT_RPM_1 >>3))){
         fillRpm(SBUS2_SLOT_RPM_1  & 0x07); // keep 3 last bits as slot index
+    }
+    
+    if ((fields[SBUS_HOLD_COUNTER].available) && ( slotGroup == (SBUS2_SLOT_HOLD_COUNTER_1 >>3))){
+        fillSbusHoldCounter(SBUS2_SLOT_HOLD_COUNTER_1  & 0x07); // keep 3 last bits as slot index
+    }
+    if ((fields[SBUS_FAILSAFE_COUNTER].available) && ( slotGroup == (SBUS2_SLOT_FAILSAFE_COUNTER_1 >>3))){
+        fillSbusFailsafeCounter(SBUS2_SLOT_FAILSAFE_COUNTER_1  & 0x07); // keep 3 last bits as slot index
     }
     if ((fields[LONGITUDE].available) && ( slotGroup == (SBUS2_SLOT_GPS_8 >>3))){
         fillGps(SBUS2_SLOT_GPS_8  & 0x07); // keep 3 last bits as slot index
@@ -214,7 +221,7 @@ int64_t sendNextSlot_callback(alarm_id_t id, void *user_data){ // sent the next 
 
 void fillTemp1(uint8_t slot8){ // emulate SBS/01T ; Temp in °
     int16_t value=  fields[TEMP1].value;
-    value |= 0x8000;
+    value |= 0x8000; // to say that the value is valid
     value = value + 100;
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value;// >> 8;
@@ -223,7 +230,7 @@ void fillTemp1(uint8_t slot8){ // emulate SBS/01T ; Temp in °
 
 void fillTemp2(uint8_t slot8){
     int16_t value=  fields[TEMP2].value;
-    value |= 0x8000;
+    value |= 0x8000; // to say that the value is valid
     value = value + 100;
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value;// >> 8;
@@ -233,7 +240,7 @@ void fillTemp2(uint8_t slot8){
 
 void fillReserve1(uint8_t slot8){ // emulate F1713
     int16_t value=  fields[RESERVE1].value;
-    value |= 0x4000;
+    value |= 0x4000; // to say that the value is valid
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value >> 8;
     slotValueByte2[slot8] = value;
@@ -241,7 +248,23 @@ void fillReserve1(uint8_t slot8){ // emulate F1713
 
 void fillReserve2(uint8_t slot8){ // emulate F1713
     int16_t value=  fields[RESERVE2].value;
-    value |= 0x4000;
+    value |= 0x4000; // to say that the value is valid
+    slotAvailable[slot8] = true;
+    slotValueByte1[slot8] = value >> 8;
+    slotValueByte2[slot8] = value;
+}
+
+void fillSbusHoldCounter(uint8_t slot8){ // emulate F1713
+    int16_t value=  fields[SBUS_HOLD_COUNTER].value;
+    value |= 0x4000; // to say that the value is valid
+    slotAvailable[slot8] = true;
+    slotValueByte1[slot8] = value >> 8;
+    slotValueByte2[slot8] = value;
+}
+
+void fillSbusFailsafeCounter(uint8_t slot8){ // emulate F1713
+    int16_t value=  fields[SBUS_FAILSAFE_COUNTER].value;
+    value |= 0x4000; // to say that the value is valid
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value >> 8;
     slotValueByte2[slot8] = value;
@@ -252,14 +275,17 @@ void fillReserve2(uint8_t slot8){ // emulate F1713
 void fillVario(uint8_t slot8){ // emulate F1672 ; Alt from cm to m ; Vspeed from cm/s to 0.1m/s
     // Vspeed
     int16_t value = int_round(fields[VSPEED].value, 10);
+    value |= 0X400;   // to say that the value is valid
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value >> 8;
     slotValueByte2[slot8] = value;// >> 8;
     //Alt
     value = int_round(fields[RELATIVEALT].value, 100);
+    value |= 0X400;   // to say that the value is valid   
     slotAvailable[slot8+1] = true;
     slotValueByte1[slot8+1] = value >> 8;
     slotValueByte2[slot8+1] = value;// >> 8;
+
 }
 
 

@@ -114,7 +114,9 @@ void setupSportList(){     // table used by sport
         ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1    200
         ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2    200
         ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    200
-        ADS_2_4     // Voltage provided by ads1115 nr 2 on pin 4      200
+        ADS_2_4,     // Voltage provided by ads1115 nr 2 on pin 4      200
+        SBUS_HOLD_COUNTER,  // Sbus hold counter
+        SBUS_FAILSAFE_COUNTER, // Sbus failsafe counter
     };
     for (uint8_t i = 0; i < NUMBER_MAX_IDX ; i++){
         sportPriority[i]= temp[i];
@@ -155,7 +157,8 @@ void setupSportList(){     // table used by sport
     sportFieldId[ADS_2_4] = DIY_ADS_2_4;
     sportFieldId[AIRSPEED] = AIR_SPEED_FIRST_ID;
     sportFieldId[AIRSPEED_COMPENSATED_VSPEED] = VARIO_LAST_ID;
-    
+    sportFieldId[SBUS_HOLD_COUNTER] = DIY_SBUS_HOLD_COUNTER;
+    sportFieldId[SBUS_FAILSAFE_COUNTER] = DIY_SBUS_FAILSAFE_COUNTER;
 
     sportMaxPooling[LATITUDE] = 20;
     sportMaxPooling[LONGITUDE] = 20;
@@ -191,6 +194,9 @@ void setupSportList(){     // table used by sport
     sportMaxPooling[ADS_2_4] = 200;
     sportMaxPooling[AIRSPEED] = 30;
     sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 8;
+    sportMaxPooling[SBUS_HOLD_COUNTER] = 100;
+    sportMaxPooling[SBUS_FAILSAFE_COUNTER] = 100;
+
 
     sportMinPooling[LATITUDE] = 5;
     sportMinPooling[LONGITUDE] = 5;
@@ -224,8 +230,11 @@ void setupSportList(){     // table used by sport
     sportMinPooling[ADS_2_2] = 50;
     sportMinPooling[ADS_2_3] = 50;
     sportMinPooling[ADS_2_4] = 50;
-    sportMaxPooling[AIRSPEED] = 10;
-    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 3;
+    sportMinPooling[AIRSPEED] = 10;
+    sportMinPooling[AIRSPEED_COMPENSATED_VSPEED] = 3;
+    sportMinPooling[SBUS_HOLD_COUNTER] = 50;
+    sportMinPooling[SBUS_FAILSAFE_COUNTER] = 50;
+
 
     /*
     fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;

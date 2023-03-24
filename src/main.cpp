@@ -462,34 +462,34 @@ void loop() {
       getSensorsFromCore1();
       mergeSeveralSensors();
       watchdog_update();
-      if ( config.protocol == 'C'){
+      if ( config.protocol == 'C'){   //elrs/crsf
         fillCRSFFrame();
         handleCrsfIn();
         handleCrsf2In();
         fillSbusFrame();
-      } else if (config.protocol == 'S') {
+      } else if (config.protocol == 'S') {  // sport
         handleSportRxTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == 'J') {
+      } else if (config.protocol == 'J') {  //jeti
         handleJetiTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == 'H') {
+      } else if (config.protocol == 'H') {  //Hott
         handleHottRxTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == 'M') {
+      } else if (config.protocol == 'M') {  // multiplex
         handleMpxRxTx();
         handleSbusIn();
         handleSbus2In();
         fillSbusFrame();
-      } else if (config.protocol == 'I') {
+      } else if (config.protocol == 'I') {  // Ibus flysky
         handleIbusRxTx();
-        handleSbusIn();
+        handleSbusIn();           //???????????is this OK
         handleSbus2In();
         fillSbusFrame();
       } else if (config.protocol == '2') { // Sbus2 Futaba
@@ -508,6 +508,7 @@ void loop() {
       watchdog_update();
       updatePWM();
             //updatePioPwm();
+            
   }
   watchdog_update();
   //if (tud_cdc_connected()) {

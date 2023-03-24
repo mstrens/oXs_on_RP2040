@@ -53,10 +53,18 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
       ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
       AIRSPEED,
-      AIRSPEED_COMPENSATED_VSPEED,      
+      AIRSPEED_COMPENSATED_VSPEED,
+      SBUS_HOLD_COUNTER,
+      SBUS_FAILSAFE_COUNTER,      
       NUMBER_MAX_IDX, // used to count the number of entries       34
 };
-
+// note : when a new field is added to this list we have to change also:
+//    - in tools.cpp to add the positive and the negative values for FVP and FVN commands
+//    - in param.cpp to add the text (printf) for FV command (adding case...) 
+//    - in sport.cpp in setupSportList() there are several tables
+//    - in ibus.cpp there is a list to complete
+//    - in sbus2_tlm.cpp add code (for a slot)
+//    - in config.h , add slot for sbus2
 int32_t int_round(int32_t n, uint32_t d);
 
 uint32_t millisRp() ;

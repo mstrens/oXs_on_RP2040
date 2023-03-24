@@ -29,10 +29,13 @@ GPS bearing from home degree Same as above                                 DIY (
 GPS distance from home  m    Same as above                                 DIY (5103)                m
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     DIY (0X5131 / 0X5138)    mVolt
-Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (05120)              degree
-Roll       degree            Same as above                                 DIY (05121)              degree
+Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (0X5120)             degree
+Roll       degree            Same as above                                 DIY (0X5121)             degree
 Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed (0X0A00)        0.1 kts/h
 Comp.Vspeed cm/s             a Baro + a MS4525 are installed               Vspeed (0X011F)          cm/s
+Sbus hold frames count       Sbus(2) is used                               DIY (0X5124)             no unit
+Sbus failsafe frames count   Same as above                                 DIY (0X5125)             no unit
+
 
 ******************************************************************************************************************
 **                                       ELRS/CRSF protocol                                                     **
@@ -235,6 +238,8 @@ RPM        ?????             RPM pin is defined                            RPM  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       degree            Same as above                                 Not transmitted 
+Sbus hold frames count       Sbus(2) is used                               Transmitted as temperature no unit
+Sbus failsafe frames count   Same as above                                 Transmitted as temperature no unit
 
 
 ******************************************************************************************************************

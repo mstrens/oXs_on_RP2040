@@ -1123,6 +1123,12 @@ void printFieldValues(){
                 case AIRSPEED_COMPENSATED_VSPEED:
                     printf("Compensated Vspeed = %d cm/s\n", (int) fields[i].value) ;
                     break;
+                case SBUS_HOLD_COUNTER:
+                    printf("Sbus hold counter = %d\n", (int) fields[i].value) ;
+                    break;
+                case SBUS_FAILSAFE_COUNTER:
+                    printf("Sbus failsafe counter = %d\n", (int) fields[i].value) ;
+                    break;
                             
             } // end switch
         }

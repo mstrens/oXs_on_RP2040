@@ -185,8 +185,8 @@ int32_t posFieldValues[] = {
     234,         //  GPS_HOME_DISTANCE, // 10 GPS  in m
     7321,       //  MVOLT,        // volt1   in mVolt
     89321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
-    45321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
-    56321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+    15321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    14321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
       
     34321,      //  CAPACITY,    // based on current (volt2) in mAh
     136,        //  TEMP1,       // = Volt3 but saved as temp in degree
@@ -209,7 +209,10 @@ int32_t posFieldValues[] = {
     23232,      //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
     24242,      //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
     15151,      //  AIRSPEED,    cm/s
-    167         //     AIRSPEED_COMPENSATED_VSPEED,      
+    167,         //     AIRSPEED_COMPENSATED_VSPEED,
+    98,         //  SBUS_HOLD_COUNTER,
+    12          //  SBUS_FAILSAFE_COUNTER,      
+            
 };
 
 int32_t negFieldValues[] = {    
@@ -227,8 +230,8 @@ int32_t negFieldValues[] = {
     0,         //  GPS_HOME_DISTANCE, // 10 GPS  in m
     -7321,       //  MVOLT,        // volt1   in mVolt
     -89321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
-    -45321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
-    -56321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+    -15321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    -14321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
       
     0,      //  CAPACITY,    // based on current (volt2) in mAh
     -19,        //  TEMP1,       // = Volt3 but saved as temp in degree
@@ -251,7 +254,9 @@ int32_t negFieldValues[] = {
     -23232,      //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
     -24242,      //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
     0,      //  AIRSPEED,    cm/s
-    -167         //     AIRSPEED_COMPENSATED_VSPEED,      
+    -167,         //     AIRSPEED_COMPENSATED_VSPEED,      
+    0,         //  SBUS_HOLD_COUNTER,
+    0          //  SBUS_FAILSAFE_COUNTER,      
 };
 // fill all fields with dummy values (useful to test a protocol)
  void fillFields( uint8_t forcedFields){

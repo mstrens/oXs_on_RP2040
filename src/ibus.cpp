@@ -127,7 +127,12 @@ uint8_t ibusTypes[NUMBER_MAX_IDX] = {  // list of ibus type in the same sequence
       IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
       
       IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
-      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4  
+      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4 
+      IBUS_SENSOR_TYPE_UNKNOWN,      //AIRSPEED,
+      IBUS_SENSOR_TYPE_UNKNOWN,      //AIRSPEED_COMPENSATED_VSPEED,
+      IBUS_SENSOR_TYPE_UNKNOWN,      //SBUS_HOLD_COUNTER,
+      IBUS_SENSOR_TYPE_UNKNOWN,      //SBUS_FAILSAFE_COUNTER,      
+       
 };
 
 void setupIbus() {                                                 

@@ -145,6 +145,9 @@ void sendOneSport(uint8_t idx);
 #define DIY_ROLL               0X5121
 #define DIY_YAW                0X5122
 #define DIY_CAPACITY           0X5123
+#define DIY_SBUS_HOLD_COUNTER     0X5124
+#define DIY_SBUS_FAILSAFE_COUNTER 0X5125
+
 
 #define DIY_ADS_1_1             0X5131
 #define DIY_ADS_1_2             0X5132
