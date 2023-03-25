@@ -171,10 +171,10 @@ void fill8Sbus2Slots (uint8_t slotGroup){
     }
     if ((fields[VSPEED].available) && ( slotGroup == (SBUS2_SLOT_VARIO_2 >>3))){
         fillVario( SBUS2_SLOT_VARIO_2 & 0x07); // keep 3 last bits as slot index
-        printf("Vspeed= %x %x %x  Alt= %x %x %x\n", 
-            slotId[0 + firstSlot32Idx] , slotValueByte1[0] , slotValueByte2[0],
-            slotId[1 + firstSlot32Idx] , slotValueByte1[1] , slotValueByte2[1]
-            );
+        //printf("Vspeed= %x %x %x  Alt= %x %x %x\n", 
+        //    slotId[0 + firstSlot32Idx] , slotValueByte1[0] , slotValueByte2[0],
+        //    slotId[1 + firstSlot32Idx] , slotValueByte1[1] , slotValueByte2[1]
+        //    );
     }
     if (( (fields[MVOLT].available) || (fields[CURRENT].available) ) && ( slotGroup == (SBUS2_SLOT_BATTERY_3 >>3))){
         fillBattery( SBUS2_SLOT_BATTERY_3 & 0x07);
