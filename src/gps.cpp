@@ -335,7 +335,6 @@ void GPS::handleGpsUblox(){
             while (initGpsIdx < sizeof( initGpsM10)) {
                 if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
                     pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
-                    //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
                     initGpsIdx++;
                 }
             }
