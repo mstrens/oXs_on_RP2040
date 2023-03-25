@@ -71,11 +71,11 @@ const uint8_t initGpsM10[] = {
         34, 0,  //length 4 + payload here after
         0x00,0x01,0x00,0x00,  // in ram
         0X01,0X00,0X21,0X30,   0X64 , 0X00, // key + Val in little endian for measurement rate (100 = 10Hz)
-        0X2A,0X00,0X91,0X02,   0X01, // key + Val in little endian for POSLLH
-        0X43,0X00,0X91,0X92,   0X01, // key + Val in little endian for VELNED
-        0X07,0X00,0X91,0X92,   0X01, // key + Val in little endian for PVT
+        0X2A,0X00,0X91,0X20,   0X01, // key + Val in little endian for POSLLH
+        0X43,0X00,0X91,0X20,   0X01, // key + Val in little endian for VELNED
+        0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
         0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
-        0X3F,0X3E// checksum
+        0X79,0XC6// checksum
 };
 
 const uint8_t initGpsM6[] = { 
@@ -136,14 +136,14 @@ void uboxChecksum(){   // this function is used to calculate ublox checksum
                         };
     */
     uint8_t buffer[]= {
-        0xB5,0x62,0x06,0x8A,   // config
+    0xB5,0x62,0x06,0x8A,   // config
         34, 0,  //length 4 + payload here after
         0x00,0x01,0x00,0x00,  // in ram
         0X01,0X00,0X21,0X30,   0X64 , 0X00, // key + Val in little endian for measurement rate (100 = 10Hz)
-        0X2A,0X00,0X91,0X02,   0X01, // key + Val in little endian for POSLLH
-        0X43,0X00,0X91,0X92,   0X01, // key + Val in little endian for VELNED
-        0X07,0X00,0X91,0X92,   0X01, // key + Val in little endian for PVT
-        0X02,0X00,0X74,0X10,   0X00 // L - - Flag to indicate if NMEA should be an output protocol on UART1
+        0X2A,0X00,0X91,0X20,   0X01, // key + Val in little endian for POSLLH
+        0X43,0X00,0X91,0X20,   0X01, // key + Val in little endian for VELNED
+        0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
+        0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
     };
     
     
