@@ -344,8 +344,8 @@ void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM
    slotValueByte2[slot8] = value >> 8;
 }
 
-void fillAirspeed(uint8_t slot8){ // emulate SBS01-TAS ; in from cm/s to ??? Not yet in 1.8.8
-    uint32_t value =  fields[AIRSPEED].value ;
+void fillAirspeed(uint8_t slot8){ // emulate SBS01-TAS ; in from cm/s to Km/h
+    uint32_t value =  fields[AIRSPEED].value * 36 /1000;
    value |= 0X4000;   // to say that the value is valid    
    slotAvailable[slot8] = true;
    slotValueByte1[slot8] = value >> 8;
