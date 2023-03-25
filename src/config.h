@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "1.8.8"
+#define VERSION "1.8.9"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -48,7 +48,7 @@
 #define SBUS2_SLOT_RESERVE1_1 23    // V3 requires 1 slot, emulate F1713
 #define SBUS2_SLOT_RESERVE2_1 24    // V4 requires 1 slot, emulate F1713
 #define SBUS2_SLOT_RPM_1 25    // Rpm requires 1 slot
-//#define SBUS2_SLOT_AIRSPEED_1 26    // Airspeed requires ? slot
+#define SBUS2_SLOT_AIRSPEED_1 26    // Airspeed requires ? slot
 
 #define SBUS2_SLOT_HOLD_COUNTER_1 28    // Count the number of hold frames ; require 1 slot; emulate F1713
 #define SBUS2_SLOT_FAILSAFE_COUNTER_1 29    // Count the number of failsafeframes ; require 1 slot; emulate F1713

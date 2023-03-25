@@ -171,6 +171,10 @@ void fill8Sbus2Slots (uint8_t slotGroup){
     }
     if ((fields[VSPEED].available) && ( slotGroup == (SBUS2_SLOT_VARIO_2 >>3))){
         fillVario( SBUS2_SLOT_VARIO_2 & 0x07); // keep 3 last bits as slot index
+        printf("Vspeed= %x %x %x  Alt= %x %x %x\n", 
+            slotId[0 + firstSlot32Idx] , slotValueByte1[0] , slotValueByte2[0],
+            slotId[1 + firstSlot32Idx] , slotValueByte1[1] , slotValueByte2[1]
+            );
     }
     if (( (fields[MVOLT].available) || (fields[CURRENT].available) ) && ( slotGroup == (SBUS2_SLOT_BATTERY_3 >>3))){
         fillBattery( SBUS2_SLOT_BATTERY_3 & 0x07);
@@ -190,7 +194,9 @@ void fill8Sbus2Slots (uint8_t slotGroup){
     if ((fields[RPM].available) && ( slotGroup == (SBUS2_SLOT_RPM_1 >>3))){
         fillRpm(SBUS2_SLOT_RPM_1  & 0x07); // keep 3 last bits as slot index
     }
-    
+    if ((fields[AIRSPEED].available) && ( slotGroup == (SBUS2_SLOT_AIRSPEED_1 >>3))){
+        fillAirspeed(SBUS2_SLOT_AIRSPEED_1  & 0x07); // keep 3 last bits as slot index
+    }
     if ((fields[SBUS_HOLD_COUNTER].available) && ( slotGroup == (SBUS2_SLOT_HOLD_COUNTER_1 >>3))){
         fillSbusHoldCounter(SBUS2_SLOT_HOLD_COUNTER_1  & 0x07); // keep 3 last bits as slot index
     }
@@ -208,8 +214,9 @@ int64_t sendNextSlot_callback(alarm_id_t id, void *user_data){ // sent the next 
         //add_alarm_in_us(660, sendNextSlot_callback, NULL, false); 
         if (slotAvailable[slotNr] ) {
             uart_putc_raw(uart1 , (char) slotId[slotNr + firstSlot32Idx] ) ;
-            uart_putc_raw(uart1 , (char) slotValueByte1[slotNr] );      /// !!!!!!!!!! perhaps to reverse
+            uart_putc_raw(uart1 , (char) slotValueByte1[slotNr] );      
             uart_putc_raw(uart1 , (char) slotValueByte2[slotNr] );
+            
             }
         slotNr++;
         return -660;  // generates a new alarm 660 usec after this one
@@ -270,8 +277,6 @@ void fillSbusFailsafeCounter(uint8_t slot8){ // emulate F1713
     slotValueByte2[slot8] = value;
 }
 
-
-
 void fillVario(uint8_t slot8){ // emulate F1672 ; Alt from cm to m ; Vspeed from cm/s to 0.1m/s
     // Vspeed
     int16_t value = int_round(fields[VSPEED].value, 10);
@@ -285,7 +290,6 @@ void fillVario(uint8_t slot8){ // emulate F1672 ; Alt from cm to m ; Vspeed from
     slotAvailable[slot8+1] = true;
     slotValueByte1[slot8+1] = value >> 8;
     slotValueByte2[slot8+1] = value;// >> 8;
-
 }
 
 
@@ -336,6 +340,14 @@ void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM
    slotAvailable[slot8] = true;
    slotValueByte1[slot8] = value;
    slotValueByte2[slot8] = value >> 8;
+}
+
+void fillAirspeed(uint8_t slot8){ // emulate SBS01-TAS ; in from cm/s to ??? Not yet in 1.8.8
+    uint32_t value =  fields[AIRSPEED].value ;
+   value |= 0X400;   // to say that the value is valid    
+   slotAvailable[slot8] = true;
+   slotValueByte1[slot8] = value >> 8;
+   slotValueByte2[slot8] = value ;
 }
 
 void fillGps(uint8_t slot8){ // emulate SBS01G  ; speed from  to Km/h ; Alt from ??? to m ; vario to m/s

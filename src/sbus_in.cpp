@@ -45,7 +45,7 @@ uint32_t sbusHoldCounter = 0;
 uint32_t sbusFailsafeCounter = 0;
 uint32_t sbusFrameCounter = 0;
 #define SBUS_HOLD_COUNTED_ON_FRAMES 100 // calculate the % every X frames
-
+bool prevFailsafeFlag = false;
 
 // RX interrupt handler on one uart
 void on_sbus_uart_rx() {
@@ -248,8 +248,12 @@ if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
         break;      
         }
     }     
-    sent2Core0(SBUS_HOLD_COUNTER , sbusHoldCounter);
-    sent2Core0(SBUS_FAILSAFE_COUNTER , sbusFailsafeCounter);
+    if ( sbusFrameCounter >= SBUS_HOLD_COUNTED_ON_FRAMES) {
+        sent2Core0(SBUS_HOLD_COUNTER , sbusHoldCounter * 100 / sbusFrameCounter); // * 100 because the value is in %
+        sbusHoldCounter = 0;             // reset the counter
+        sbusFrameCounter = 0;
+        sent2Core0(SBUS_FAILSAFE_COUNTER , sbusFailsafeCounter);  // for failsafe, we just count the total number
+    }
 }
 
 
@@ -257,11 +261,12 @@ void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, chan
     sbusPriMissingFlag = (runningSbusFrame[23] >> 2) & 0X01;
     sbusPriFailsafeFlag = (runningSbusFrame[23] >> 3) & 0X01;
     if ( ( config.pinSecIn == 255 || ( ( millisRp() - lastSecChannelsMillis )  > 50 )))  {
+        sbusFrameCounter++;
         if ( sbusPriMissingFlag ) {
             sbusHoldCounter++;
-            sbusFrameCounter++;
         }
-        if ( sbusPriFailsafeFlag) sbusFailsafeCounter++;
+        if ( sbusPriFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
+        prevFailsafeFlag = sbusPriFailsafeFlag; 
     }    
     if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   
         ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
@@ -279,11 +284,12 @@ void storeSbus2Frame(){
     sbusSecMissingFlag = (runningSbus2Frame[23] >> 2) & 0X01;
     sbusSecFailsafeFlag = (runningSbus2Frame[23] >> 3) & 0X01;
     if ( ( config.pinPrimIn == 255) || (( millisRp() - lastPriChannelsMillis )  > 50 ) ) {
+        sbusFrameCounter++;
         if ( sbusSecMissingFlag ){
             sbusHoldCounter++;
-            sbusFrameCounter++;
         } 
-        if ( sbusSecFailsafeFlag) sbusFailsafeCounter++;
+        if ( sbusSecFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
+        prevFailsafeFlag = sbusSecFailsafeFlag;
     } 
     if ((( sbusSecMissingFlag == false) && (sbusSecFailsafeFlag == false))  ||                               // copy when frame is OK   
         (( sbusSecMissingFlag == true) && (sbusSecFailsafeFlag == false) && (sbusPriFailsafeFlag == true)) || // or previous PRI is failsafe and SEC is only missing

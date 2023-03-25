@@ -19,6 +19,7 @@ void fillReserve2(uint8_t slot8);
 void fillSbusHoldCounter(uint8_t slot8);
 void fillSbusFailsafeCounter(uint8_t slot8);
 void fillRpm(uint8_t slot8);
+void fillAirspeed(uint8_t slot);
 void fillGps(uint8_t slot8);
 
 int64_t sendNextSlot_callback(alarm_id_t id, void *parameters);
