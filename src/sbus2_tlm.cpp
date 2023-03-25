@@ -280,7 +280,7 @@ void fillSbusFailsafeCounter(uint8_t slot8){ // emulate F1713
 void fillVario(uint8_t slot8){ // emulate F1672 ; Alt from cm to m ; Vspeed from cm/s to 0.1m/s
     // Vspeed
     int16_t value = int_round(fields[VSPEED].value, 10);
-    value |= 0X4000;   // to say that the value is valid
+    //value |= 0X4000;   // to say that the value is valid
     slotAvailable[slot8] = true;
     slotValueByte1[slot8] = value >> 8;
     slotValueByte2[slot8] = value;// >> 8;
