@@ -187,7 +187,8 @@ struct __attribute__((__packed__)) casic_nav_pv_info {
 
 enum {
     GPS_WAIT_END_OF_RESET = 0,
-    GPS_IN_RECONFIGURATION,
+    GPS_M10_IN_RECONFIGURATION,
+    GPS_M6_IN_RECONFIGURATION,
     GPS_CONFIGURED,
 };
 
