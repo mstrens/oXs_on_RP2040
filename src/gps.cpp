@@ -119,7 +119,7 @@ const uint8_t initGpsM6Part2[] = {
             //            0X23 , 0X7D           // checksum
 
         // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
-        
+/*        
             0xB5,0x62,0x06,0x3E, 0x3C, 0x00, // GNSS + number of bytes= 60 dec = 003C in HEx
             0x00, 0x00, 0x20, 0x07,  // GNSS / min / max / enable
             0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01, // GPS / 8 / 16 / Y
@@ -136,7 +136,7 @@ const uint8_t initGpsM6Part2[] = {
             0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
             0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
             0x86, 0x2A, //checksum
-        
+*/        
     0xB5,0x62,0x06,0x8A,   // config for M10
         30, 0,  //length payload here after
         0x00,0x01,0x00,0x00,  // in ram
@@ -159,9 +159,10 @@ void uboxChecksum(){   // this function is used to calculate ublox checksum; It 
                         };
     */
     uint8_t buffer[]= {
-0xB5,0x62,0x06,0x16, 0x08, 0x00, // SBAS + number of bytes = 8
-            0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
-            0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
+    0xB5,0x62,0x06,0x00,
+    0x14,0x00,
+    0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
                 };
     
     
@@ -324,7 +325,7 @@ void GPS::handleGpsUblox(){
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
-                        //uboxChecksum();
+                        uboxChecksum();
                     } else {
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
                     }    

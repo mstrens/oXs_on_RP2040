@@ -622,7 +622,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gps.sID = 0; // Secondary ID
                 if (fields[ALTITUDE].available) {
                     tempU16 = (uint16_t) (int_round(fields[ALTITUDE].value + 100000, 100)); // from cm to m, 1000m offset
-                    srxl2Frames.gps.altitude = swapBinary(tempI16);
+                    srxl2Frames.gps.altitude = swapBinary(tempU16);
                 } else {
                     srxl2Frames.gps.altitude = 0XFFFF;
                 }
