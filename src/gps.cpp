@@ -137,6 +137,7 @@ const uint8_t initGpsM6Part2[] = {
             0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
             0x86, 0x2A, //checksum
 */        
+/*
     0xB5,0x62,0x06,0x8A,   // config for M10
         30, 0,  //length payload here after
         0x00,0x01,0x00,0x00,  // in ram
@@ -146,7 +147,7 @@ const uint8_t initGpsM6Part2[] = {
         0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
         0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
         0X75,0X46// checksum
-
+*/
         }  ;   
 
 void uboxChecksum(){   // this function is used to calculate ublox checksum; It mus be activated in a line of code below
@@ -304,7 +305,7 @@ void GPS::handleGpsUblox(){
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 while (initGpsIdx < sizeof( initGpsM10)) {
                     if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
-                        pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
+                        //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
                         initGpsIdx++;
                     }
                 }
