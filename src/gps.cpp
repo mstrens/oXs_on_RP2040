@@ -129,13 +129,13 @@ const uint8_t initGpsM6Part2[] = {
             0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x01, // IMES / 0 / 8 / N
             0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x01, // QZSS / 0 / 3 / N
             0x06, 0x08, 0x0e, 0x00, 0x01, 0x00, 0x01, 0x01, // GLONASS / 8 / 14 / Y
-            0x30, 0xD8, // checksum
+            0x2F, 0xA1, // checksum
 
     // Here the code to activate SBAS for Europe (This has not yet been tested and is based on I-NAV code)
             0xB5,0x62,0x06,0x16, 0x08, 0x00, // SBAS + number of bytes = 8
             0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
             0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
-            0x86, 0x2C, //checksum
+            0x86, 0x2A, //checksum
         
     0xB5,0x62,0x06,0x8A,   // config for M10
         30, 0,  //length payload here after
@@ -159,15 +159,10 @@ void uboxChecksum(){   // this function is used to calculate ublox checksum; It 
                         };
     */
     uint8_t buffer[]= {
-    0xB5,0x62,0x06,0x8A,   // config
-        30, 0,  //length 4 + payload here after
-        0x00,0x01,0x00,0x00,  // in ram
-        0X01,0X00,0X21,0X30,   0X64 , 0X00, // key + Val in little endian for measurement rate (100 = 10Hz)
-        0X2A,0X00,0X91,0X20,   0X01, // key + Val in little endian for POSLLH
-        0X43,0X00,0X91,0X20,   0X01, // key + Val in little endian for VELNED
-        0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
-        0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
-    };
+0xB5,0x62,0x06,0x16, 0x08, 0x00, // SBAS + number of bytes = 8
+            0x03, 0x03, 0x03, 0x00, // mode = test + enabled, usage=range+diffcorr, max =3, scanmode2=0
+            0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
+                };
     
     
     uint8_t c1= 0;
@@ -206,7 +201,7 @@ void GPS::setupGps(void){
     if ( config.gpsType == 'U') {
         gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
         //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
-        //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
+        uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
         //pio_sm_put (gpsPio, gpsSmTx, (char) 0XAA );
     
 
@@ -286,15 +281,17 @@ void GPS::handleGpsUblox(){
     if (config.pinGpsTx == 255) return;
     switch (gpsState){
         case GPS_WAIT_END_OF_RESET:
-            
-            if (millisRp() > 1000) { //after x msec from power up
-               uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600); 
-               sleep_ms(5);
-               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
-                //sleep_ms(2);
-               sleep_ms(5);
-               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
+            if (lastActionUs == 0) {
+               uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
+               lastActionUs = microsRp();   
+            }
+            if ((microsRp() - lastActionUs ) > 2000000) { // wait at least  1 sec
+               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
+               
                 
+                //sleep_ms(2);
+               //sleep_ms(5);
+               //sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
                 gpsState = GPS_M10_IN_RECONFIGURATION;
                 lastActionUs = microsRp();
                 //baudIdx = 0;       
@@ -320,7 +317,7 @@ void GPS::handleGpsUblox(){
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 lastActionUs = microsRp();        
             }
-            if ((microsRp() - lastActionUs ) > 10000) { // wait 10 ms between 2 commands
+            if ((microsRp() - lastActionUs ) > 40000) { // wait 40 ms between 2 commands
                 if ( initGpsIdx >= sizeof( initGpsM6Part2)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
