@@ -649,7 +649,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 }
                 
 	            if (fields[GROUNDSPEED].available) {
-                    srxl2Frames.gps.groundSpeed = (uint8_t) (int_round(fields[HEADING].value * 36, 100)); // cm/sec to Km/h
+                    srxl2Frames.gps.groundSpeed = (uint8_t) (int_round(fields[HEADING].value * 36, 1000)); // cm/sec to Km/h
                 } else {
                     srxl2Frames.gps.groundSpeed = 0XFF;
                 }

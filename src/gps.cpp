@@ -79,7 +79,15 @@ const uint8_t initGpsM10[] = {
         0X75,0X46// checksum
 };
     
-const uint8_t initGpsM6[] = { 
+const uint8_t initGpsM6Part1[] = {
+    0xB5,0x62,0x06,0x00,
+    0x14,0x00,
+    0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
+    0x91,0x84  // Check sum                rest of CFG_PRT command                            
+};
+
+const uint8_t initGpsM6Part2[] = { 
         // send command to GPS to change the setup
     #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
             0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
@@ -88,8 +96,27 @@ const uint8_t initGpsM6[] = {
     #else
             0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A, // NAV-RATE for 5 hz
     #endif
+    // Here other code        
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
+            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
+            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
+            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
 
-
+            //0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+            //                    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
+            //0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+            //                    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
+            
+            //0xB5,0x62,0x06,0x8A,
+            //            13, 0,  //length 4 + payload here after
+            //            0x00,0x01,0x00,0x00,  // in ram
+            //            0x10,0x73,0x00,0x02,  // key  // no nema
+            //            0x00 ,                // value
+            //            0X23 , 0X7D           // checksum
 
         // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
         
@@ -110,27 +137,16 @@ const uint8_t initGpsM6[] = {
             0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
             0x86, 0x2C, //checksum
         
-    // Here other code        
-            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
-            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
-            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
-            0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
-            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
-            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x06,0x00,0x01,0x00,0x00,0x00,0x00,0x17,0xDA, //        NAV-SOL
-            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
-            //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
+    0xB5,0x62,0x06,0x8A,   // config for M10
+        30, 0,  //length payload here after
+        0x00,0x01,0x00,0x00,  // in ram
+        0X01,0X00,0X21,0X30,   0X64 , 0X00, // key + Val in little endian for measurement rate (100 = 10Hz)
+        0X2A,0X00,0X91,0X20,   0X01, // key + Val in little endian for POSLLH
+        0X43,0X00,0X91,0X20,   0X01, // key + Val in little endian for VELNED
+        0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
+        0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
+        0X75,0X46// checksum
 
-            0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
-            //0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-            //                    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
-            
-            //0xB5,0x62,0x06,0x8A,
-            //            13, 0,  //length 4 + payload here after
-            //            0x00,0x01,0x00,0x00,  // in ram
-            //            0x10,0x73,0x00,0x02,  // key  // no nema
-            //            0x00 ,                // value
-            //            0X23 , 0X7D           // checksum
         }  ;   
 
 void uboxChecksum(){   // this function is used to calculate ublox checksum; It mus be activated in a line of code below
@@ -249,84 +265,21 @@ void GPS::gpsInitRx(){
         _step = 0 ;
 }
 
-/*
-// interrupt to calculate the delay between 2 edges
-void gpioBaudrateCallback(uint gpio, uint32_t events) {
-    uint32_t now = microsRp();
-    uint32_t intervalUs = now - prevRxChangeUs;
-    if ((intervalUs < baudMinInterval )  && (intervalUs > 5) ) baudMinInterval = intervalUs;
-    prevRxChangeUs = now;
-    baudrateCount++; 
-    //printf("\n");
-}
-*/
-/*
-void detectBaudrate(){
-    sleep_ms(3000);
-    irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
-    gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
-    if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
-    if ( ( baudMinInterval > 23 ) && ( baudMinInterval <30 ) ) gpsBaudrate = 38400; // 26
-    if ( ( baudMinInterval > 48 ) && ( baudMinInterval <58 ) ) gpsBaudrate = 19200; //52
-    if ( ( baudMinInterval > 100 ) && ( baudMinInterval <110 ) ) gpsBaudrate = 9600; //104
-    if (gpsBaudrate == 0){
-        printf("gps baudrate not detected; will be set on 9600\n");
-        gpsBaudrate = 9600;
-    } else {
-        printf("gps baudrate detected = %d\n", (uint) gpsBaudrate) ;
-    }
-}
-*/
 
-/*
-void GPS::setupGpsUblox(void){    // here the setup for a Ublox (only sending the configuration cmd)            
-    // detectBaudrate();    // autodetect the baudrate
-    // setup the PIO for TX UART
-    uint gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program);
-    uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, gpsBaudrate);
-*/
-    /*
-            //!!!!!!!!!!!! this part used pio0 and should be change for pio1
-            // Configure a dma channel to write the same word (8 bits) repeatedly to PIO0
-            // SM0's TX FIFO, paced by the data request signal from that peripheral.
-            gps_dma_chan = dma_claim_unused_channel(true);
-            c = dma_channel_get_default_config(gps_dma_chan);
-            channel_config_set_read_increment(&c, true);
-            channel_config_set_write_increment(&c, false);
-            channel_config_set_dreq(&c, DREQ_PIO0_TX0);
-            channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
-            dma_channel_configure(
-                gps_dma_chan,
-                &c,
-                &pio0_hw->txf[0], // Write address (only need to set this once)
-                &gpsBuffer[0],   // we use always the same buffer             
-                0 , // do not yet provide the number of bytes (DMA cycles)
-                false             // Don't start yet
-            );
-            // do not set interrupt on DMA. The main loop will check if DMA is busy before sending
-    */
-
-    /*
-        uart_init(GPS_UART_ID, 9600);   // setup UART0 at 9600 baud
-        uart_set_hw_flow(GPS_UART_ID, false, false);// Set UART flow control CTS/RTS, we don't want these, so turn them off
-        uart_set_fifo_enabled(GPS_UART_ID, false);    // Turn off FIFO's - we want to do this character by character
-        
-        gpio_set_function(GPS_TX_PIN , GPIO_FUNC_UART); // Set the GPIO pin mux to the UART0
-        gpio_set_function(GPS_RX_PIN , GPIO_FUNC_UART);
-    */
-    /*
-    uint8_t initGpsIdx = 0 ;
-        while (initGpsIdx < sizeof( initGps1)) {
-    //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
-            if (initGps1[initGpsIdx] == 0XB5) busy_wait_us(5000) ;
-            if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx++] );   
-            //uart_putc_raw(GPS_UART_ID , initGps1[initGpsIdx++]);
+uint sendGpsConfig(const uint8_t buf[] , uint len , uint fromPos){
+    uint idx = fromPos;
+    while (idx < len) {
+        if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
+            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) buf[idx] );   
+            //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
+            idx++;
+            if (buf[idx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
+                break; // quit the while loop
+            }
         }
-        busy_wait_us(10000);
-    */     
-/*
-}  // end setupGPSUblox;
-*/
+    } // end while
+    return idx;
+}
 
 void GPS::handleGpsUblox(){
     static uint32_t lastActionUs = 0;
@@ -335,15 +288,21 @@ void GPS::handleGpsUblox(){
         case GPS_WAIT_END_OF_RESET:
             
             if (millisRp() > 1000) { //after x msec from power up
-               uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
+               uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600); 
+               sleep_ms(5);
+               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
                 //sleep_ms(2);
+               sleep_ms(5);
+               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
+                
                 gpsState = GPS_M10_IN_RECONFIGURATION;
                 lastActionUs = microsRp();
                 //baudIdx = 0;       
             }
             break;
         case GPS_M10_IN_RECONFIGURATION:
-            if ((microsRp() - lastActionUs ) > 10000) { // wait at least  10 msec
+            if ((microsRp() - lastActionUs ) > 40000) { // wait at least  10 msec
+                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 while (initGpsIdx < sizeof( initGpsM10)) {
                     if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
@@ -357,12 +316,12 @@ void GPS::handleGpsUblox(){
             break; 
         case GPS_M6_IN_RECONFIGURATION:
             if (lastActionUs == 0) {  // last action = 0 means that baudrate has to be rconfigure
-                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
+                //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 lastActionUs = microsRp();        
             }
             if ((microsRp() - lastActionUs ) > 10000) { // wait 10 ms between 2 commands
-                if ( initGpsIdx >= sizeof( initGpsM6)) { // when all bytes have been sent
+                if ( initGpsIdx >= sizeof( initGpsM6Part2)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
                         gpsInitRx();                        // setup the reception of GPS char.
@@ -373,12 +332,12 @@ void GPS::handleGpsUblox(){
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
                     }    
                 }  else { // when not end of all commands
-                    while (initGpsIdx < sizeof( initGpsM6)) {
+                    while (initGpsIdx < sizeof( initGpsM6Part2)) {
                         if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
-                            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM6[initGpsIdx] );   
+                            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM6Part2[initGpsIdx] );   
                             //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
                             initGpsIdx++;
-                            if (initGpsM6[initGpsIdx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
+                            if (initGpsM6Part2[initGpsIdx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
                                 //initGpsIdx++;
                                 lastActionUs = microsRp();
                                 break; // quit the while loop
