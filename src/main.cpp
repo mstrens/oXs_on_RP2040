@@ -50,7 +50,7 @@
 //         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
 //         fill compensated vspeed with compensated or normal vspeed depending on the value of a channel (require to select the channel)
-//         for GPS, better support of M10 (other kind of configuration)
+
 
 // Look at file in folder "doc" for more details
 //

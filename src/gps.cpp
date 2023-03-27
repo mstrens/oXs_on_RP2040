@@ -81,6 +81,16 @@ const uint8_t initGpsM10[] = {
     
 const uint8_t initGpsM6[] = { 
         // send command to GPS to change the setup
+    #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
+            0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
+    #elif defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 10)
+            0xB5,0x62,0x06,0x08,0x06,0x00,0x64,0x00,0x01,0x00,0x01,0x00,0x7A,0x12, // NAV-RATE for 10 hz
+    #else
+            0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A, // NAV-RATE for 5 hz
+    #endif
+
+
+
         // Here the code to activate galileo sat. (This has not yet been tested and is based on I-NAV code)
         
             0xB5,0x62,0x06,0x3E, 0x3C, 0x00, // GNSS + number of bytes= 60 dec = 003C in HEx
@@ -110,24 +120,20 @@ const uint8_t initGpsM6[] = {
             //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x12,0x00,0x01,0x00,0x00,0x00,0x00,0x23,0x2E, //        NAV-VELNED
             //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x18,0xE1, //        NAV_PVT
 
-    #if defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 1)
-            0xB5,0x62,0x06,0x08,0x06,0x00,0xE8,0x03,0x01,0x00,0x01,0x00,0x01,0x39,  // NAV-RATE for 1 hz
-    #elif defined(GPS_REFRESH_RATE) && (GPS_REFRESH_RATE == 10)
-            0xB5,0x62,0x06,0x08,0x06,0x00,0x64,0x00,0x01,0x00,0x01,0x00,0x7A,0x12, // NAV-RATE for 10 hz
-    #else
-            0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A, // NAV-RATE for 5 hz
-    #endif
             0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
                                 0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
-            0xB5,0x62,0x06,0x8A,
-                        13, 0,  //length 4 + payload here after
-                        0x00,0x01,0x00,0x00,  // in ram
-                        0x10,0x73,0x00,0x02,  // key  // no nema
-                        0x00 ,                // value
-                        0X23 , 0X7D           // checksum
+            //0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+            //                    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84,  //                 rest of CFG_PRT command                            
+            
+            //0xB5,0x62,0x06,0x8A,
+            //            13, 0,  //length 4 + payload here after
+            //            0x00,0x01,0x00,0x00,  // in ram
+            //            0x10,0x73,0x00,0x02,  // key  // no nema
+            //            0x00 ,                // value
+            //            0X23 , 0X7D           // checksum
         }  ;   
 
-void uboxChecksum(){   // this function is used to calculate ublox checksum
+void uboxChecksum(){   // this function is used to calculate ublox checksum; It mus be activated in a line of code below
     /*
     uint8_t buffer[]= { 0xB5,0x62,0x06,0x8A,
                         13, 0,  //length 4 + payload here after
@@ -183,7 +189,11 @@ void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
     if ( config.gpsType == 'U') {
         gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
-        uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
+        //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
+        //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
+        //pio_sm_put (gpsPio, gpsSmTx, (char) 0XAA );
+    
+
     } else {
         gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
     }
@@ -220,7 +230,6 @@ void GPS::gpsInitRx(){
 
     uint gpsOffsetRx = pio_add_program(gpsPio, &uart_rx_program);
     uart_rx_program_init(gpsPio, gpsSmRx, gpsOffsetRx, config.pinGpsTx, 38400);
-    uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
     /*
         //printf("End of GPS setup\n"); sleep_ms(1000);
         // clear the input queue that is filled by the interrupt
@@ -325,24 +334,26 @@ void GPS::handleGpsUblox(){
     switch (gpsState){
         case GPS_WAIT_END_OF_RESET:
             
-            if (millisRp() > 1000) { //after x msec
+            if (millisRp() > 1000) { //after x msec from power up
                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
-                sleep_ms(2);
+                //sleep_ms(2);
                 gpsState = GPS_M10_IN_RECONFIGURATION;
-                //lastActionUs = 0;
+                lastActionUs = microsRp();
                 //baudIdx = 0;       
             }
             break;
         case GPS_M10_IN_RECONFIGURATION:
-            initGpsIdx = 0; // reset on the first char of the first command to be sent
-            while (initGpsIdx < sizeof( initGpsM10)) {
-                if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
-                    pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
-                    initGpsIdx++;
+            if ((microsRp() - lastActionUs ) > 10000) { // wait at least  10 msec
+                initGpsIdx = 0; // reset on the first char of the first command to be sent
+                while (initGpsIdx < sizeof( initGpsM10)) {
+                    if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
+                        pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
+                        initGpsIdx++;
+                    }
                 }
+                gpsState = GPS_M6_IN_RECONFIGURATION;     
+                lastActionUs = 0;
             }
-            gpsState = GPS_M6_IN_RECONFIGURATION;     
-            lastActionUs = 0;
             break; 
         case GPS_M6_IN_RECONFIGURATION:
             if (lastActionUs == 0) {  // last action = 0 means that baudrate has to be rconfigure
@@ -350,14 +361,14 @@ void GPS::handleGpsUblox(){
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 lastActionUs = microsRp();        
             }
-            if ((microsRp() - lastActionUs ) > 5000) { // wait 5 ms between 2 commands
+            if ((microsRp() - lastActionUs ) > 10000) { // wait 10 ms between 2 commands
                 if ( initGpsIdx >= sizeof( initGpsM6)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
-                        uboxChecksum();
+                        //uboxChecksum();
                     } else {
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
                     }    
