@@ -311,7 +311,7 @@ void GPS::handleGpsUblox(){
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 while (initGpsIdx < sizeof( initGpsM10)) {
                     if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
-                        //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
+                        pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGpsM10[initGpsIdx] );   
                         initGpsIdx++;
                     }
                 }
