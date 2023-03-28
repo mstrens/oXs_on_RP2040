@@ -40,11 +40,6 @@ union {
         uint8_t bytes[sizeof(casic_nav_pv_info)];
     } __attribute__((__packed__)) _casicBuffer;
 
-//volatile uint32_t baudMinInterval = 1000000; // set a very high value; should be reduced when uart is received
-//volatile uint32_t baudrateCount = 0;
-//uint32_t gpsBaudrate = 0;  // dummy value / replaced by 9600 during autodetect
-//uint32_t baudrateList[4] = { 115200 , 38400 , 19200 , 9600} ;
-//uint32_t baudrateList[4] = {  115200, 115200 , 115200, 115200} ; 
 uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;
@@ -53,11 +48,6 @@ PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
 uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
 uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
 
-//const uint8_t initGps0[] = {
-//                0xB5,0x62,0x06,0x00,0x14,0x00,0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-//                                0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x91,0x84  //                 rest of CFG_PRT command                            
-//};
-
 #define CFG_RATE_MEAS 0x30210001 // U2 0.001 s Nominal time between GNSS measurements ; 100 = 10hz; 1000 = 1Hz
 #define CFG_MSGOUT_UBX_NAV_POSLLH_UART1 0x2091002a // U1 - - Output rate of the UBX-NAV-POSLLH message on port UART1
 #define CFG_MSGOUT_UBX_NAV_VELNED_UART1 0x20910043 // U1 - - Output rate of the UBX-NAV-VELNED message on port UART1
@@ -65,7 +55,6 @@ uint gpsSmRx = 1;  // we use the state machine 1 for Rx;
 #define CFG_UART1OUTPROT_NMEA 0x10740002 // L - - Flag to indicate if NMEA should be an output protocol on UART1
 // Ublox and RP2040 are both little endian
 #define CFG_RATE_NAV 0x30210002 // U2 - - Ratio of number of measurements to number of navigation solutions
-
 
 const uint8_t initGpsM10[] = {
     0xB5,0x62,0x06,0x8A,   // config
@@ -80,7 +69,6 @@ const uint8_t initGpsM10[] = {
 };
     
 const uint8_t initGpsM6Part1[] = {
-    //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
     0xB5,0x62,0x06,0x00,
     0x14,0x00,
     0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
@@ -138,36 +126,15 @@ const uint8_t initGpsM6Part2[] = {
             0x00, 0x00, 0x08, 0x51, // scanmode1 120,124, 126, 131
             0x86, 0x2A, //checksum
 */        
-/*
-    0xB5,0x62,0x06,0x8A,   // config for M10
-        30, 0,  //length payload here after
-        0x00,0x01,0x00,0x00,  // in ram
-        0X01,0X00,0X21,0X30,   0X64 , 0X00, // key + Val in little endian for measurement rate (100 = 10Hz)
-        0X2A,0X00,0X91,0X20,   0X01, // key + Val in little endian for POSLLH
-        0X43,0X00,0X91,0X20,   0X01, // key + Val in little endian for VELNED
-        0X07,0X00,0X91,0X20,   0X01, // key + Val in little endian for PVT
-        0X02,0X00,0X74,0X10,   0X00, // L - - Flag to indicate if NMEA should be an output protocol on UART1
-        0X75,0X46// checksum
-*/
         }  ;   
 
 void uboxChecksum(){   // this function is used to calculate ublox checksum; It mus be activated in a line of code below
-    /*
-    uint8_t buffer[]= { 0xB5,0x62,0x06,0x8A,
-                        13, 0,  //length 4 + payload here after
-                        0x00,0x01,0x00,0x00,  // in ram
-                        0x10,0x73,0x00,0x02,  // key
-                        0x00                  // value
-                        };
-    */
     uint8_t buffer[]= {
-    0xB5,0x62,0x06,0x00,
-    0x14,0x00,
-    0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
-                };
-    
-    
+        0xB5,0x62,0x06,0x00,
+        0x14,0x00,
+        0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
+        0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
+        };
     uint8_t c1= 0;
     uint8_t c2 = 0;
     uint16_t len = sizeof(buffer);
@@ -182,48 +149,24 @@ void uboxChecksum(){   // this function is used to calculate ublox checksum; It 
 }
 
 
-/*
-// RX interrupt handler
-void on_uart_rx() {
-    while (uart_is_readable(GPS_UART_ID)) {
-        uint8_t ch = uart_getc(GPS_UART_ID);
-        //int count = queue_get_level( &gpsQueue );
-        //printf(" level = %i\n", count);
-        //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &gpsRxQueue , &ch)) printf("gpsRxQueue try add error\n");
-        //printf("%x\n", ch);
-    }
-}
-*/
 uint gpsOffsetTx; 
 
 GPS::GPS( void) {}
 
 void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( config.gpsType == 'U') {
+    if ( ( config.gpsType == 'U') || ( config.gpsType == 'E') ) {
         gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
-        //uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400);
         uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
-        //pio_sm_put (gpsPio, gpsSmTx, (char) 0XAA );
-    
-
     } else {
         gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
     }
 }
 void GPS::readGps(){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( config.gpsType == 'U') handleGpsUblox();
+    if ( ( config.gpsType == 'U')  || ( config.gpsType == 'E') ) handleGpsUblox();
     if ( config.gpsType == 'C') readGpsCasic();    
 }
-
-//uint8_t gpsBuffer[50]; // buffer that contains the frame to be sent (via dma)
-//uint8_t gpsBufferLength;
-
-
-//int gps_dma_chan;response
-//dma_channel_config c;
 
 void gpsPioRxHandlerIrq(){    // when a byte is received on the PIO GPS, read the pio fifo and push the data to a queue (to be processed in the main loop)
   // clear the irq flag
@@ -244,25 +187,11 @@ void GPS::gpsInitRx(){
 
     uint gpsOffsetRx = pio_add_program(gpsPio, &uart_rx_program);
     uart_rx_program_init(gpsPio, gpsSmRx, gpsOffsetRx, config.pinGpsTx, 38400);
-    /*
-        //printf("End of GPS setup\n"); sleep_ms(1000);
-        // clear the input queue that is filled by the interrupt
-        queue_init(&gpsQueue , sizeof(uint8_t) ,256) ;// queue for uart0 with 256 elements of 1
-        
-        // change the baudrate of UART0 to the new rate
-        uart_set_baudrate(GPS_UART_ID , 38400);
-        // And set up and enable the interrupt handlers
-        irq_set_exclusive_handler(UART0_IRQ, on_uart_rx);
-        irq_set_enabled(UART0_IRQ, true);
-        // Now enable the UART to send interrupts - RX only
-        uart_set_irq_enables(GPS_UART_ID, true, false);
-    */
-        busy_wait_us(1000);
-        uint8_t dummy;
-        while (! queue_is_empty (&gpsRxQueue)) queue_try_remove ( &gpsRxQueue , &dummy ) ;
-        _step = 0 ;
+    busy_wait_us(1000);
+    uint8_t dummy;
+    while (! queue_is_empty (&gpsRxQueue)) queue_try_remove ( &gpsRxQueue , &dummy ) ;
+    _step = 0 ;
 }
-
 
 uint sendGpsConfig(const uint8_t buf[] , uint len , uint fromPos){
     uint idx = fromPos;
@@ -283,24 +212,32 @@ void GPS::handleGpsUblox(){
     static uint32_t lastActionUs = 0;
     if (config.pinGpsTx == 255) return;
     switch (gpsState){
+        case GPS_CONFIGURED:
+            readGpsUblox() ;   
+            break;
         case GPS_WAIT_END_OF_RESET:
-            if (lastActionUs == 0) {
-               uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
-               lastActionUs = microsRp();   
-            }
-            if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
-               //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
-               //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
-               sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
-               
+            if ( config.gpsType == 'E') {
+                gpsInitRx();                        // setup the reception of GPS char.
+                gpsState = GPS_CONFIGURED;
+            } else {
+                if (lastActionUs == 0) {
+                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
+                lastActionUs = microsRp();   
+                }
+                if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
+                //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
+                //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
+                sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
                 
-                //sleep_ms(2);
-               //sleep_ms(5);
-               //sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
-                gpsState = GPS_M10_IN_RECONFIGURATION;
-                lastActionUs = microsRp();
-                //baudIdx = 0;       
-            }
+                    
+                    //sleep_ms(2);
+                //sleep_ms(5);
+                //sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
+                    gpsState = GPS_M10_IN_RECONFIGURATION;
+                    lastActionUs = microsRp();
+                    //baudIdx = 0;       
+                }
+            }    
             break;
         case GPS_M10_IN_RECONFIGURATION:
             if ((microsRp() - lastActionUs ) > 4000) { // wait at least  4mse between baudrate change 
@@ -354,76 +291,8 @@ void GPS::handleGpsUblox(){
                 }
             }
             break;
-        case GPS_CONFIGURED:
-            readGpsUblox() ;   
-            break;
     } // end of switch
 }
-
-/*
-    
-    switch (gpsState){
-        case GPS_TO_SETUP:
-            printf("Start detecting baudrate\n");
-            // start an irq on a gpio
-            gpio_init(config.pinGpsTx);
-            gpio_set_dir(config.pinGpsTx, false); // input
-            //gpio_pull_up(config.pinGpsRx);
-            gpio_set_irq_enabled_with_callback(config.pinGpsTx, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpioBaudrateCallback);
-            lastActionUs = microsRp();
-            gpsState = GPS_IN_AUTOBAUD_DETECTION;        
-            break;
-        case GPS_IN_AUTOBAUD_DETECTION:
-            if ( ( baudrateCount > 2000) || ( ( microsRp() - lastActionUs) > 30000000)) {
-                // we count or wait long enoug
-                irq_set_enabled(IO_IRQ_BANK0, false); // stop interrupt
-                gpio_set_irq_enabled(config.pinGpsTx, 0, false) ; //avoid gpio all interrupts
-                printf("baudrateCount= %d\n", baudrateCount);
-                printf("after %d\n",microsRp() - lastActionUs );
-                printf("baudminInterval %d\n",baudMinInterval );
-                if ( ( baudMinInterval > 5 ) && ( baudMinInterval <10 ) ) gpsBaudrate = 115200; // 8
-                if ( ( baudMinInterval > 23 ) && ( baudMinInterval <30 ) ) gpsBaudrate = 38400; // 26
-                if ( ( baudMinInterval > 48 ) && ( baudMinInterval <58 ) ) gpsBaudrate = 19200; //52
-                if ( ( baudMinInterval > 100 ) && ( baudMinInterval <110 ) ) gpsBaudrate = 9600; //104
-                if (gpsBaudrate == 0){
-                    printf("gps baudrate not detected; will be set on 9600\n");
-                    gpsBaudrate = 9600;
-                } else {
-                    printf("gps baudrate detected = %d\n", (uint) gpsBaudrate) ;
-                }
-                // setup the PIO for TX UART
-                uint gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program);
-                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, gpsBaudrate);
-
-                lastActionUs = microsRp();
-                gpsState = GPS_IN_RECONFIGUARTION;        
-            }   
-            break;
-        case GPS_IN_RECONFIGUARTION:
-            if ((microsRp() - lastActionUs ) > 5000) { // wait 5 ms between 2 commands
-                if ( initGpsIdx >= sizeof( initGps1)) { // when all bytes have been sent
-                    gpsInitRx();                        // setup the reception of GPS char.
-                    gpsState = GPS_CONFIGURED;
-                }  else {
-                    while (initGpsIdx < sizeof( initGps1)) {
-                        if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
-                            pio_sm_put (gpsPio, gpsSmTx, (uint32_t) initGps1[initGpsIdx] );   
-                            //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
-                            if (initGps1[initGpsIdx] == 0XB5) {
-                                initGpsIdx++;
-                                lastActionUs = microsRp();
-                                break; // quit the while loop
-                            } else {
-                                initGpsIdx++; // point to next char
-                            }
-                        }
-                    } // end while
-                }
-            }
-            break;
-
-*/
-
 
 void GPS::readGpsUblox(){
     uint8_t data;

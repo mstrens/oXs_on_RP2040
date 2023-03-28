@@ -138,7 +138,7 @@ void processCmd(){
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
         printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
         printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
-        printf("-To change GPS type: for an Ublox, enter GPS=U and for a CADIS, enter GPS=C\n");
+        printf("-To change GPS type: for an Ublox, enter GPS=U (configured by oXs) or E (configured Externally) and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
         printf("-To force a calibration of MP6050, enter MPUCAL\n");
     //    printf("-To select the signal generated on:\n");
@@ -483,11 +483,14 @@ void processCmd(){
         if (strcmp("U", pvalue) == 0) {
             config.gpsType = 'U';
             updateConfig = true;
+        } else if (strcmp("E", pvalue) == 0) {
+            config.gpsType = 'E';
+            updateConfig = true;
         } else if (strcmp("C", pvalue) == 0) {
             config.gpsType = 'C';
             updateConfig = true;
         } else  {
-            printf("Error : GPS type must be U or C\n");
+            printf("Error : GPS type must be U, E or C\n");
         }
     }
     // change RPM multipicator
@@ -817,7 +820,9 @@ void printConfig(){
     } 
 
     if (config.gpsType == 'U'){
-            printf("Foreseen GPS type is Ublox  :")  ;
+            printf("Foreseen GPS type is Ublox (configured by oXs) :")  ;
+        } else if (config.gpsType == 'C'){
+            printf("Foreseen GPS type is Ublox (configured externally) :")  ;
         } else if (config.gpsType == 'C'){
             printf("Foreseen GPS type is CADIS  :")  ;
         } else {

@@ -1,6 +1,6 @@
 
 ------- General ------------------
-This project can be interfaced with one or 2 ELRS, JETI , HOTT , MULTIPLEX or FRSKY receiver(s) (protocol has to be selected accordingly)
+This project can be interfaced with one or 2 ELRS, JETI , HOTT , MULTIPLEX, Spektrum, Flysky or FRSKY receiver(s) (protocol has to be selected accordingly)
 
 This project is foreseen to generate:
 - telemetry data (e.g. when a flight controller is not used)
@@ -33,7 +33,8 @@ This board can be connected to:
    - a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx differential pressure sensor
    - a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
    - a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
-      note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware
+      note : a Ublox GPS can be configured automatically by oXs ( with oXs param). It has then to use the default standard ublox config.
+                         It can also be configured manually (with U-center firmware) externally prior to be connected to oXs.
              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
             this can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
    - some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
@@ -60,8 +61,8 @@ When used with a ELRS receiver:
 When used with a FRSKY/JETI/FLYSKY/MPX/FUTABA receiver:
    - Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin (from Frsky/Jeti/FLYSKY/Futaba receiver); this wire transmit the RC channels
    - Connect TLM pin via a 1k resistor to the Sport/Ex/Ibus/Mlink pin from the receiver; this wire transmits the telemetry data
-   Note : for Futaba telemetry, the Sbus2 pin is used for both functions (receiving Rc channels and sending telemetry).
-          Then the 1k resistor is connected between the TLM pin and the PRIM pin and it is only the PRI pin that is connected to the Rx Sbus2 pin
+   Note : for Futaba, Spektrum and Frsky Fbus telemetry, the Sbus2/SRXL2/FBus pin is used for both functions (receiving Rc channels and sending telemetry).
+          Then the 1k resistor is connected between the TLM pin and the PRIM pin and it is only the PRI pin that is connected to the Rx pin
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
