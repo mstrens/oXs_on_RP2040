@@ -80,7 +80,7 @@ const uint8_t initGpsM10[] = {
 };
     
 const uint8_t initGpsM6Part1[] = {
-    0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
+    //0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
     0xB5,0x62,0x06,0x00,
     0x14,0x00,
     0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
@@ -289,6 +289,8 @@ void GPS::handleGpsUblox(){
                lastActionUs = microsRp();   
             }
             if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
+               //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
+               //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
                sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
                
                 
@@ -303,7 +305,9 @@ void GPS::handleGpsUblox(){
         case GPS_M10_IN_RECONFIGURATION:
             if ((microsRp() - lastActionUs ) > 2000000) { // wait at least  2 sec between baudrate change 
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
-                sleep_ms(2); // to avoid perhaps a pulse due to change of baudrate
+                //sleep_ms(2); // to avoid perhaps a pulse due to change of baudrate
+                //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch
+                //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 while (initGpsIdx < sizeof( initGpsM10)) {
                     if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
@@ -328,7 +332,7 @@ void GPS::handleGpsUblox(){
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
-                        uboxChecksum();
+                        //uboxChecksum();
                     } else {
                         lastActionUs = 0;  // force setting again the baudrate (with next value)
                     }    
