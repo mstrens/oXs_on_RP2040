@@ -80,10 +80,11 @@ const uint8_t initGpsM10[] = {
 };
     
 const uint8_t initGpsM6Part1[] = {
+    0xB5,0x62,0x06,0x01,0x08,0x00,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x13,0xBE, // activate NAV-POSLLH message
     0xB5,0x62,0x06,0x00,
     0x14,0x00,
     0x01,0x00,0x00,0x00,0xD0,0x08,0x00,0x00,0x00,0x96, //        CFG-PRT : Set port to output only UBX (so deactivate NMEA msg) and set baud = 38400.
-    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x07,0x00,0x01,0x00,0x00,0x00,0x00,0x00, //        and set baud = 38400.
     0x91,0x84  // Check sum                rest of CFG_PRT command                            
 };
 
@@ -271,7 +272,7 @@ uint sendGpsConfig(const uint8_t buf[] , uint len , uint fromPos){
             //    Serial.println( pgm_read_byte_near(initGps1 + initGpsIdx ), HEX) ;    
             idx++;
             if (buf[idx] == 0XB5)  { // make a pause when there is a new command (0XB5 = begin )
-                break; // quit the while loop
+            //    break; // quit the while loop
             }
         }
     } // end while
@@ -287,7 +288,7 @@ void GPS::handleGpsUblox(){
                uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
                lastActionUs = microsRp();   
             }
-            if ((microsRp() - lastActionUs ) > 2000000) { // wait at least  2 sec
+            if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
                sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
                
                 
@@ -302,6 +303,7 @@ void GPS::handleGpsUblox(){
         case GPS_M10_IN_RECONFIGURATION:
             if ((microsRp() - lastActionUs ) > 2000000) { // wait at least  2 sec between baudrate change 
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
+                sleep_ms(2); // to avoid perhaps a pulse due to change of baudrate
                 initGpsIdx = 0; // reset on the first char of the first command to be sent
                 while (initGpsIdx < sizeof( initGpsM10)) {
                     if ( pio_sm_is_tx_fifo_empty( gpsPio, gpsSmTx )) {
