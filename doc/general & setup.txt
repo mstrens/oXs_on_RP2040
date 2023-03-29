@@ -33,8 +33,11 @@ This board can be connected to:
    - a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx differential pressure sensor
    - a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
    - a GPS from UBlox (like the beitian bn220) or one that support CASIC messages
-      note : a Ublox GPS can be configured automatically by oXs ( with oXs param). It has then to use the default standard ublox config.
+      note : a Ublox GPS can be re-configured automatically by oXs ( with own oXs param). It has then to use the default standard ublox config.
                          It can also be configured manually (with U-center firmware) externally prior to be connected to oXs.
+                         Set up must then be:
+                            - 38400 bauds
+                            - output on uart1: only 4 UBX messages (no NEMA): UBX-NAV-PVT , UBX-NAV-POSLLH, UBX-NAV-VELNED (when supported) , UBX-NAV-SOL (when supported)
              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
             this can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
    - some voltage dividers (=2 resistors) when the voltages to measure exceed 3V
