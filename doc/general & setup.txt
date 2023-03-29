@@ -36,7 +36,7 @@ This board can be connected to:
       note : a Ublox GPS can be re-configured automatically by oXs ( with own oXs param). It has then to use the default standard ublox config.
                          It can also be configured manually (with U-center firmware) externally prior to be connected to oXs.
                          Set up must then be:
-                            - 38400 bauds
+                            - 38400 baud (for a M10) or 9600 baud (for a M8)
                             - output on uart1: only 4 UBX messages (no NEMA): UBX-NAV-PVT , UBX-NAV-POSLLH, UBX-NAV-VELNED (when supported) , UBX-NAV-SOL (when supported)
              a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds
             this can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
