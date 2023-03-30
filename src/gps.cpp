@@ -227,7 +227,7 @@ void GPS::handleGpsUblox(){
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
                 lastActionUs = microsRp();   
                 }
-                if ((microsRp() - lastActionUs ) > 3000000) { // wait at least  5 sec
+                if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
                 //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
                 //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
                 sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
@@ -243,7 +243,7 @@ void GPS::handleGpsUblox(){
             }    
             break;
         case GPS_M10_IN_RECONFIGURATION:
-            if ((microsRp() - lastActionUs ) > 3000000) { // wait at least  4mse between baudrate change 
+            if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  4mse between baudrate change 
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
                 //sleep_ms(2); // to avoid perhaps a pulse due to change of baudrate
                 //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch

@@ -526,7 +526,7 @@ void loop() {
     }
   }
 
-//  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+  handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
   if (( bootButtonState == ARMED) || ( bootButtonState == SAVED)){
     //setRgbColorOn(0, 0, 10); //blue
   } else if ( ledState != prevLedState){
