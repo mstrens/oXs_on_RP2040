@@ -111,23 +111,35 @@ LED = 16                        (internal led of RP2040-zero)
 
 --------- software -------------------
    This software has been developped using the RP2040 SDK provided by Rapsberry.
-   It uses as IDE platformio and the WIZIO extension (to be found on internet here : https://github.com/Wiz-IO/wizio-pico )
-   Developers can compile and flash this software with those tools.
-   Still if you just want to use it, there is (in most cases) no need to install/use those tools.
-   On github, in uf2 folder, there is already a compiled version of this software that can be directly uploaded and configured afterwards
-   To upload this compiled version, the process is the folowing:
-       - download the file in folder uf2 on your pc
-       - insert the USB cable in the RP2040 board
-       - press on the "boot" button on the RP2040 board while you insert the USB cable in your PC.
-       - this will enter a special bootloader mode and your pc should show a new drive named RPI-RP2
-       - copy and paste the uf2 file to this new drive
-       - the file should be automatically picked up by the RP2040 bootloader and flashed
-       - the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
-       - you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
-       - while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-       - when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
-       - if you want to change some parameters, fill in the command (code=value) and press the enter.
-       - the RP2040 should then display the new (saved) config.  
+   If you just want to use it, there is (in most cases) no need to install/use any tool.
+        - download from github the zip file containing all files and unzip them where you want.
+        - in your folder, there is a file named oXs.uf2; this is a compiled version of this software that can be directly uploaded and configured afterwards
+        - insert the USB cable in the RP2040 board
+        - press on the "boot" button on the RP2040 board while you insert the USB cable in your PC.
+        - this will enter the RP2040 in a special bootloader mode and your pc should show a new drive named RPI-RP2
+        - copy and paste (or drag and drop) the uf2 file to this new drive
+        - the file should be automatically picked up by the RP2040 bootloader and flashed
+        - the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
+        - you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
+        - while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
+        - when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
+        - if you want to change some parameters, fill in the command (code=value) and press the enter.
+        - the RP2040 should then display the new (saved) config.  
+   
+Developers can change the firmware, compile and flash it with VScode and Rapsberry SDK tools.
+An easy way to install those tools is to follow the tutorials provided by Rapsberry.
+In particular for Windows there is currently an installer. See : https://github.com/raspberrypi/pico-setup-windows/blob/master/docs/tutorial.md
+
+Once the tools are installed, copy all files provided on github on you PC (keeping the same structure).
+Open VScode and then select menu "File" + item "Open Folder". Select the folder where you copied the files.
+In VScode, press CTRL+SHIFT+P and in the input line that appears, enter (select) CMake: Configure + ENTER
+This will create some files needed for the compilation.
+To compile, select the "CMake" icon on the left vertical pannel (rectangle with a triangle inside).
+Move the cursor on the line oXs [oXs.elf]; an icon that look like an open box with some dots apears; click on it.
+Compilation should start. When done a new file oXs.uf2 should be created.  
+For more info on VScode and SDK look at tutorials on internet.
+
+Note :  the file config.h contains some #define that can easily be changed to change some advanced parameters.
 
 Note for ELRS:
 The RP2040 send the telemetry data to the ELRS receiver at some speed.
