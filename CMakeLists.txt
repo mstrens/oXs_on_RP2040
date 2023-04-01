@@ -48,3 +48,13 @@ pico_enable_stdio_uart(oXs 0)
 
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(oXs)
+
+
+add_custom_command(TARGET oXs POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR}   
+)
+
+#COMMAND copy oXs.uf2 .
+#COMMAND ${CMAKE_COMMAND}
+#  ARGS -E copy $<TARGET_FILE:Foo> /testing_department/files
