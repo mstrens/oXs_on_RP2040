@@ -55,6 +55,3 @@ add_custom_command(TARGET oXs POST_BUILD
   ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR}   
 )
 
-#COMMAND copy oXs.uf2 .
-#COMMAND ${CMAKE_COMMAND}
-#  ARGS -E copy $<TARGET_FILE:Foo> /testing_department/files
