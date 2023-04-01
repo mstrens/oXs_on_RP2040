@@ -210,7 +210,7 @@ void srxl2PioRxHandlerIrq(){    // when a byte is received on the srxl2, read th
     uint16_t c = pio_sm_get (srxl2Pio , srxl2SmRx) >> 24;         // read the data
     queue_try_add (&srxl2RxQueue, &c);          // push to the queue
     srxl2LastRxUs = microsRp();                    // save the timestamp of last received byte.
-    hardware_alarm_set_target(SRXL2_ALARM_NUM_UART_IDLE , time_us_64()+300);
+    hardware_alarm_set_target(SRXL2_ALARM_NUM_UART_IDLE , from_us_since_boot(time_us_64()+300));
   }
 }
 

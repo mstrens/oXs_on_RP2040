@@ -1,5 +1,8 @@
 #include "EMFButton.h"
 #include "tools.h"
+#include "pico/stdlib.h"
+#include "stdio.h"
+
 
 // state:
 // avait = not pressed/released since some time

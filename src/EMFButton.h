@@ -1,7 +1,8 @@
 #ifndef E_M_F_BUTTON_H
 #define E_M_F_BUTTON_H
-#include "Arduino.h"
+//#include "Arduino.h"
 
+#include <stdint.h>
 #define EMFB_DEB_TIMER 50  // debounce time
 #define EMFB_HOLD_TIMER 500 // delay before considering button is hold
 #define EMFB_RELEASE_TIMER 500 // delay before considering multiple clicks end

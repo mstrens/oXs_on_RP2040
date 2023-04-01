@@ -7,13 +7,13 @@
 #include "BMP280.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include <vario.h>
-#include <voltage.h>
-#include <gps.h>
-#include <tusb.h>
-#include <crsf_in.h>
-#include <crsf_out.h>
-#include <param.h>
+#include "vario.h"
+#include "voltage.h"
+#include "gps.h"
+#include "tusb.h"
+#include "crsf_in.h"
+#include "crsf_out.h"
+#include "param.h"
 #include "hardware/pio.h"
 #include "sbus_out_pwm.h"
 #include "sbus_in.h"
@@ -40,12 +40,9 @@
 #include "hardware/timer.h"
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
-//         support Frsky Fbus on top of sbus+sport protocol
 //         add switching 8 gpio from one channel
-//         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
-//         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
 //         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
