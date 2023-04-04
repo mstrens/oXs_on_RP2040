@@ -307,10 +307,10 @@ void setup() {
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
-    sleep_ms(200);
+    sleep_ms(100);
     toggleRgb();
     }
-  sleep_ms(2000);
+  sleep_ms(2000);  // in debug mode, wait a little to let USB on PC be able to display all messages
   // test
   //int32_t testValue = -10;
   //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);
@@ -347,7 +347,7 @@ void setup() {
         printf("Rebooted by Watchdog!\n");
     } else {
         printf("Clean boot\n");
-        sleep_ms(1000); // wait that GPS is initialized
+        //sleep_ms(1000); // wait that GPS is initialized
     }
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
@@ -358,9 +358,6 @@ void setup() {
       }  
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
-      #ifdef DEBUG
-      sleep_ms(2000); // xxxxxxxxxxx to remove after debug
-      #endif
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
       uint32_t setup1StartUs = microsRp();  
       while ( core1SetupDone == false) {
