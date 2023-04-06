@@ -172,21 +172,21 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
           fields[fieldId].available  = false ;
           break ;
       case HEADING :
-        if (GPS_no_fix ) return 0 ;
+        //if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
         * fieldValue = int_round(fields[fieldId].value  , 100000) ; // convert from degree * 100000 to degree
         * dataType = JETI14_0D ;
         fields[fieldId].available  = false ;
         break ;
       case GROUNDSPEED :
-        if (GPS_no_fix ) return 0 ;
+        //if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
         * fieldValue = ((uint32_t) fields[fieldId].value) * 36 /100 ;       // convert from cm/sec to 1/10 of km/h
         * dataType = JETI14_1D ;
         fields[fieldId].available  = false ;
         break ;
       case ALTITUDE : 
-        if (GPS_no_fix ) return 0 ;
+        //if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
         * fieldValue  = int_round(fields[fieldId].value , 100) ;                        // convert from cm to m 
         * dataType = JETI14_0D ;
@@ -198,7 +198,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
 //        * dataType = JETI14_0D ;
 //        break ;
       case LONGITUDE :      
-         if (GPS_no_fix ) return 0 ;
+        // if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0; 
          jetiLong =  formatGpsLongLat ( fields[fieldId].value , true ) ;
          * fieldValue  = jetiLong  ;
@@ -206,7 +206,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
         fields[fieldId].available  = false ; 
          break ;                          
       case LATITUDE :                                           // Still to be added
-         if (GPS_no_fix ) return 0 ;
+        // if (GPS_no_fix ) return 0 ;
         if ( ! fields[fieldId].available ) return 0;  
          jetiLat =  formatGpsLongLat (fields[fieldId].value , false ) ;
          * fieldValue  = jetiLat  ;
