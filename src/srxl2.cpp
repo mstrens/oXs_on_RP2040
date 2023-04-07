@@ -288,7 +288,7 @@ void handleSrxl2RxTx(void){   // main loop : restore receiving mode , wait for t
                 srxl2LastIdleUs = 0;
                 srxl2LastValidFrameUs = 0;
                 beginListeningUs = nowUs ;
-                printf("Running : No frame => go to listening\n"); 
+                //printf("Running : No frame => go to listening\n"); 
             }
             break;
         case SRXL2_LISTENING:
