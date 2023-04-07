@@ -170,7 +170,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
       case  CURRENT :
           if ( ! fields[fieldId].available ) return 0;
           * fieldValue =  int_round(fields[fieldId].value  , 10) ; // converted in A with 2 decimals
-          * dataType = JETI14_2D ;
+          * dataType = JETI22_2D ;
           fields[fieldId].available  = false ;
           break ;
       case  CAPACITY :

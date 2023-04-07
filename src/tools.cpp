@@ -184,7 +184,7 @@ int32_t posFieldValues[] = {
 
     234,         //  GPS_HOME_DISTANCE, // 10 GPS  in m
     7321,       //  MVOLT,        // volt1   in mVolt
-    8321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
+    89321,      //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
     15321,      //   RESERVE1, // volt3 must be in seq for voltage.cpp in mV
     14321,      //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
       
