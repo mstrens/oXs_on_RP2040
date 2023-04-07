@@ -25,7 +25,7 @@ It is possible to send some info to reverse some fields on the display and to ac
 #include "param.h"
 #include <inttypes.h> // used by PRIu32
 #include "sport.h"
-
+#include "string.h" // used for memset
 
 #ifdef DEBUG
 // ************************* here Several parameters to help debugging

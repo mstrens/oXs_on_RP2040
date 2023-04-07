@@ -2,6 +2,7 @@
 #include "sbus_out_pwm.h"
 #include "hardware/dma.h"
 #include "uart_sbus_tx.pio.h"
+#include "pico/stdlib.h"
 #include "hardware/pwm.h"
 #include "tools.h"
 #include "param.h"

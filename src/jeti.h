@@ -12,6 +12,7 @@
 #define JETI14_2D 0b01000001  // 2 decimal, jeti TYpe = 1
 #define JETI22_0D 0b00000100  // 0 decimal, jeti TYpe = 1
 #define JETI22_1D 0b00100100  // 1 decimal, jeti TYpe = 1
+#define JETI22_2D 0b01000100  // 1 decimal, jeti TYpe = 1
 #define JETI_GPS  0b00001001  // special GPS format in 4 bytes, type = 9 in decimal
 
 typedef enum  {

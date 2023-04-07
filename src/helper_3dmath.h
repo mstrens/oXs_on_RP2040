@@ -30,6 +30,7 @@ THE SOFTWARE.
 #define _HELPER_3DMATH_H_
 
 #include <cmath>
+#include "inttypes.h"
 
 class Quaternion {
     public:

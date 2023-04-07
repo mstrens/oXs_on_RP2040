@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Arduino.h"
+//#include "Arduino.h"
 
 // Hott protocol v4 delay
 #define HOTTV4_TX_DELAY 1000 // Delai entre octets (usec)

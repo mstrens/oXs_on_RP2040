@@ -7,13 +7,13 @@
 #include "BMP280.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include <vario.h>
-#include <voltage.h>
-#include <gps.h>
-#include <tusb.h>
-#include <crsf_in.h>
-#include <crsf_out.h>
-#include <param.h>
+#include "vario.h"
+#include "voltage.h"
+#include "gps.h"
+#include "tusb.h"
+#include "crsf_in.h"
+#include "crsf_out.h"
+#include "param.h"
 #include "hardware/pio.h"
 #include "sbus_out_pwm.h"
 #include "sbus_in.h"
@@ -40,12 +40,9 @@
 #include "hardware/timer.h"
 // to do : add current and rpm telemetry fields to jeti protocol
 //         support ex bus jeti protocol on top of ex jeti protocol
-//         support Frsky Fbus on top of sbus+sport protocol
 //         add switching 8 gpio from one channel
-//         cleanup code for MP6050 (select one algo from the 3, keeping averaging of accZ, avoid movind data from var to var)
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
-//         reactivate boot button and test if it works for failsafe setting (it blocks core1 and so it is perhaps an issue)
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
 //         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
@@ -310,10 +307,10 @@ void setup() {
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
-    sleep_ms(200);
+    sleep_ms(100);
     toggleRgb();
     }
-  sleep_ms(2000);
+  sleep_ms(2000);  // in debug mode, wait a little to let USB on PC be able to display all messages
   // test
   //int32_t testValue = -10;
   //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);
@@ -350,7 +347,7 @@ void setup() {
         printf("Rebooted by Watchdog!\n");
     } else {
         printf("Clean boot\n");
-        sleep_ms(1000); // wait that GPS is initialized
+        //sleep_ms(1000); // wait that GPS is initialized
     }
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
@@ -361,9 +358,6 @@ void setup() {
       }  
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
-      #ifdef DEBUG
-      sleep_ms(2000); // xxxxxxxxxxx to remove after debug
-      #endif
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
       uint32_t setup1StartUs = microsRp();  
       while ( core1SetupDone == false) {
