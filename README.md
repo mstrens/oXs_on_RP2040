@@ -1,20 +1,31 @@
-# expressLRS / FRSKY / HOTT / JETI / MPX / FLYSKY openXsensor (oXs) on RP2040 board
+# openXsensor (oXs) on RP2040 board
+# For rc protocols : expressLRS / FRSKY (sport + Fbus) / HOTT / JETI Ex/ MPX / FLYSKY / Futaba (SBUS2) / Spektrum (SRXL2) 
 
-This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY or Jeti receiver(s) (protocol has to be selected accordingly).
+This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Futaba, Spektrum or Jeti receiver(s) (protocol has to be selected accordingly).
  
-This project is foreseen to generate telemetry data (e.g. when a flight controller is not used) , PWM and Sbus signals.
- 
+This project is foreseen to generate:
+- telemetry data (e.g. when a flight controller is not used)
+- PWM and/or
+- Sbus signals
+
 For telemetry, it can provide
+   - up to 4 analog voltages measurement (with scaling and offset) (optional)
+   - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
+   - the altitude and the vertical speed when connected to a pressure sensor (optional)
+   - the airspeed when connected to a differential pressure sensor (and a pitot tube) (optional)
+   - compensated vertical speed when connected to a baro + a differentil pressure sensor 
+   - Pitch and Roll when conncted to a MP6050 sensor (optional); 
+   - GPS data (longitude, latitude, speed, altitude,...) (optional)
+   Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
+   
+It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus signal (e.g Frsky or Jeti).
  
- * up to 4 analog voltages measurement (with scaling and offset) without external ADC 
- * the altitude and the vertical speed when connected to a pressure sensor (optional) (and optionally a MP6050 acc/gyro)
- * GPS data (longitude, latitude, speed, altitude,...) (optional)
- * RPM (requires some composant to generate pulses) (optional)
- * up to 8 additional analog voltages (requires up to 2 ADS1115)
+It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
 
-It can also provide up to 16 PWM RC channels from a CRSF (ELRS) or a Sbus (Frsky/Jeti) signal.
+ When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels.
+ So this provide a kind of redundancy/diversity.
 
-It can provide diversity when connected to 2 receivers: the generated PWM and Sbus signals will be issued from the last received Rc channels.
+Each function (telemetry/PWM/SBUS) can be used alone or combined with the others.
 
 ## -------  Hardware -----------------
 
@@ -23,103 +34,137 @@ This project requires a board with a RP2040 processor (like the rapsberry pi pic
 A better alternative is the RP2040-Zero (same processor but smaller board)
 
 This board can be connected to:
-* a pressure sensor to get altitude and vertical speed. It can be
-   * a GY63 or a GY86 board based on MS5611
-   * a SPL06-001 sensor
-   * a BMP280 sensor
-* a MP6050 (acc+gyro) to improve reaction time of the vario or to get pitch/roll
-* a GPS from UBlox (like the BEITIAN bn220) or one that support CASIC messages
+   * a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
+   * a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx differential pressure sensor to get airspeed (and compensated vertical speed)
+   * a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
+   * 1 or 2 ADS1115 if you want to measure more than 4 analog voltages
+   * a GPS from UBlox (like the beitian bn220) or one that support CASIC messages   
+       *  note : a Ublox GPS can be re-configured automatically by oXs ( with own oXs param). It has then to use the default standard ublox config.
 
-       note : a Ublox GPS has to use the default standard config. It will be automatically reconfigure by this firmware  
-       
-       a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds  
-       
-       This can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
-* some voltage dividers (=2 resistors) when the voltages to measure exceeds 3V
+          It can also be configured manually (with U-center firmware) externally prior to be connected to oXs. Set up must then be:  
+              - 38400 baud (for a M10) or 9600 baud (for a M8)  
+              - output on uart1: only 4 UBX messages (no NEMA): UBX-NAV-PVT , UBX-NAV-POSLLH, UBX-NAV-VELNED (when supported) , UBX-NAV-SOL (when supported)
+       * a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds  
+           This can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
+   * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
+      note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage 
 
-      note : a voltage can be used to measure e.g. a current when some external devices are use to generate an analog voltage 
-* 1 or 2 ADS1115 if you want to measure more than 4 analog voltage
+About the SDP31, SDP32, SDP33 , SDP810:
+     Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
+     Those sensors exists in 3 versions which differs by the maximum differential pressure (and so the max speed) they can measure
+     SDP31 (or SDP810-500) can measure up to 500 Pa = 105 km/h
+     SDP32 (or SDP810-125) can measure up to 125 Pa = 52 km/h
+     SDP33 can measure up to 1500 Pa = 189 km/h
+     The difference between SDP3x and SDP800 series is mainly the size of the sensor.
+        SDP3x are very small (5mm) and require soldering on small pin
+        SDP810 are bigger (25 mm) and have a 4 pin connector
+     Currently oXs code is written for SDP3x serie but using a SDP810 requires only to change the I2C address in the config.h file.
+
 
 ## --------- Wiring --------------------
 
-* FRSKY/ELRS receiver, baro sensor GPS, ... must share the same Gnd
-* Connect a 5V source to the Vcc pin of RP2040 board (attention max input voltage of RP2040-Zero is 5.5Volt)  
-* Select the functions and pins being used (most are optional)
-* The config parameters allow to select:
+FRSKY/ELRS/JETI/... receiver, MS5611, GPS and other sensors must share the same Gnd  
+Connect a 5V source to the Vcc pin of RP2040 board ( RP2040-zero board does not accept more than 5.5V on Vcc pin !! )  
+There is no default affectation of the RP2040 pins so user has to specify it with some parameters after flashing the firmware (see below)  
 
-   * the pins used to generate PWM channels (Gpio0 up to Gpio15) 
+When used with a ELRS receiver:  
+   * Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
+   * Connect TLM pin to the Rx pin from ELRS receiver that is supposed to transmit telemetry data (this wire transmits the telemetry data)  
 
-   * a pin (within Gpio5 ,9, 21 or 25) that get the Rc channels and is connected to one ELRS receiver or to the SBus pin (FRSKY/JETI...).
+When used with a FRSKY/JETI/FLYSKY/MPX/FUTABA/SPEKTRUM receiver:
+   * Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin (from Frsky/Jeti/FLYSKY/Futaba receiver); this wire transmit the RC channels
+   * Connect TLM pin via a 1k resistor to the Sport/Ex/Ibus/Mlink pin from the receiver; this wire transmits the telemetry data  
+   Note : for Futaba, Spektrum and Frsky Fbus telemetry, the Sbus2/SRXL2/FBus pin is used for both functions (receiving Rc channels and sending telemetry).  
+          Then the 1k resistor is connected between the TLM pin and the PRIM pin and it is only the PRI pin that is connected to the Rx pin
 
-   * a pin (within Gpio1, 13 , 17 or29) that get the Rc channels and is connected to a second ELRS receiver or a second SBus receiver.
+Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
-   * a pin used to generate a Sbus signal (gpio 0...29) (from the ELRS signal(s) or by "merging" the 2 Sbus
+Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
 
-   * a pin used to transmit telemetry data (gpio 0...29) (connected to ELRS Rx/Frsky Sport/Jeti Ex)
+One RPM (Hz) can be measured
+* Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
+* All pulsed are counted (no debouncing); so use a hardware low pass filter (resistor/capitor) to avoid dummy pulses reading
 
-   * the (max 4) pins used to measure voltages (gpio 26...29)
-    
-   * a pin used to measure RPM (gpio 0...29)
-   
-   * the 2 pins used for GPS (gpio 0...29) (RP2040 pin defined as GPS-TX is connected GPS Tx pin and GPS-RX to GPS RX pin)
-   
-   * the 2 pins connected to I2C sensor (baro, MP6050, ADS1115) (SDA=2, 6, 10, 14, 18, 22, 26) (SCL=3, 7, 11, 15, 19, 23, 27)
+When a MS5611/SPL06/BMP280 (baro sensor) and/or MP6050 is used:
+* Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc from other sensor   
+           Note: do not connect 5V pin of GY63/GY86 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
+* Connect SCL from baro sensor to the pin selected as SCL in parameter for RP2040
+* Connect SDA from baro sensor to the pin selected as SDA in parameter for RP2040
 
+When a differential pressure sensor is used, you should connect SCL/SDA like for a baro sensor.
+* Vcc is connected to 5V or 3.3V depending on the chip you selected
+* If the module you are using does not have pullup resistors and if you do not use other I2C modules, than you must use pullup resistor (4.7K) connected between SCL/SDA and 3.3V
 
-   Take care to use a voltage divider (2 resistances) in order to limit the voltage on the pins to 3V max (e.g. when you want to measure higher voltages)
-
-* When a baro sensor and/or MP6050 and/or ADS115 are used:
-
-   * Connect the 3V pin from RP2040 board to the 5V pin of GY63/GY86 or the Vcc of SPL06/BMP280/MP6050/ADS1115  
-
-   Note: do not connect 5V pin of GY63/GY86/ADS1115 to a 5V source because the SDA and SCL would then be at 5V level and would damage the RP2040          
-
-* When a GPS is used:
-
-   * Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
-
-* For more details, look at file named "general & setup.txt" in the "doc" folder
+When a GPS is used:
+*  Connect the 3V pin from RP2040 board to the Vin/5V pin from GPS
+*  Connect the RX pin from GPS to the RX pin selected in parameter for RP2040 
+*  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
+*  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
+      
+The affectation of the pins has to be defined by the user.  
+Here are the command codes and the pins that can be used are:  
+Note: pin 16 is reserved for an internal LED on RP2040-zero as so should not be used.  
+|Command|used for:|
+|----|----|
+|C1 = 0/15  ... C16 = 0/15|PWM output|
+|GPS_TX = 0/29            |getting GPS data |
+|GPS_RX = 0/29            |configuring GPS|
+|PRI = 5 ,9, 21 ,25       |primary RC channel input|  
+|SEC = 1, 13 , 17 ,29     |secondary RC channel input|  
+SBUS_OUT = 0/29           |Sbus output|  
+TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
+VOLT1= 26/29 ... VOLT4 = 26/29 |voltage measurements|  
+SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
+SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
+RPM = 0/29                     | RPM|
+LED = 16                       | internal led of RP2040-zero|  
 
 ## --------- Software -------------------
 This software has been developped using the RP2040 SDK provided by Rapsberry.
 
-It uses as IDE platformio and the WIZIO extension (to be found on internet here : https://github.com/Wiz-IO/wizio-pico )
-It can also be compiled with Platformio CLI (which requires lees installation than platformio IDE)
-
-Developers can compile and flash this software with those tools.
-
-Still if you just want to use it, there is no need to install/use those tools.
-
-On github, in uf2 folder, there is already a compiled version of this software that can be directly uploaded and configured afterwards
-
-To upload this compiled version, the process is the folowing:
-* download the file in folder uf2 on your pc
+If you just want to use it, there is (in most cases) no need to install/use any tool.
+* download from github the zip file containing all files and unzip them where you want.
+* in your folder, there is a file named oXs.uf2; this is a compiled version of this software that can be directly uploaded and configured afterwards
 * insert the USB cable in the RP2040 board
 * press on the "boot" button on the RP2040 board while you insert the USB cable in your PC.
-* this will enter a special bootloader mode and your pc should show a new drive named RPI-RP2
-* copy and paste the uf2 file to this new drive
+* this will enter the RP2040 in a special bootloader mode and your pc should show a new drive named RPI-RP2
+* copy and paste (or drag and drop) the uf2 file to this new drive
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
+* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
+* while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
+* when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
+* if you want to change some parameters, fill in the command (code=value) and press the enter.
+* the RP2040 should then display the new (saved) config.  
+   
+Developers can change the firmware, compile and flash it with VScode and Rapsberry SDK tools.  
+An easy way to install those tools is to follow the tutorials provided by Rapsberry.  
+In particular for Windows there is currently an installer. See : https://github.com/raspberrypi/pico-setup-windows/blob/master/docs/tutorial.md
 
-Once the firmware is uploaded and running the led (when a RP2040-Zero is used) will blink or be on (see below).
-The firmware must still be configured (to specify the pins, protocol, sensors... being used):
-* You can now use a serial terminal (like serial monitor in visual code , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
-* While the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-* When the RP2040 starts (or pressing the reset button), press the enter key and it will display the current configuration
-* Press "?"+ ENTER to get the list of commands.
-* To change some parameters, fill in a command using a format xxxx=yyyyy and press the enter.
-* The RP2040 should then display the new (saved) config.
-* When ADS1115 are used, you can configure quite many additional parameters but this requires to edit the config.h file and compile your self.  
+Once the tools are installed, copy all files provided on github on you PC (keeping the same structure).  
+Open VScode and then select menu "File" + item "Open Folder". Select the folder where you copied the files.  
+In VScode, press CTRL+SHIFT+P and in the input line that appears, enter (select) CMake: Configure + ENTER  
+This will create some files needed for the compilation.  
+To compile, select the "CMake" icon on the left vertical pannel (rectangle with a triangle inside).  
+Move the cursor on the line oXs [oXs.elf]; an icon that look like an open box with some dots apears; click on it.  
+Compilation should start. When done a new file oXs.uf2 should be created.  
+For more info on VScode and SDK look at tutorials on internet.  
 
-Notes for ELRS:
+Note :  the file config.h contains some #define that can easily be changed to change some advanced parameters.
 
-The RP2040 sent the telemetry data to the ELRS receiver at some speed.
-This speed (=baud rate) must be the same as the baudrate defined on the receiver
-Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels signal to the flight controller and to get the telemetry data.
-Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly
+Note for ELRS:  
+The RP2040 send the telemetry data to the ELRS receiver at some speed.  
+This speed (=baud rate) must be the same as the baudrate defined on the receiver.  
+Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels signal to the flight controller and to get the telemetry data.  
+Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly.  
+
+You have to compile your self the firmware if you want to change some values in the config.h file in order e.g. to:
+* change the setup of the ADS1115
+* allocate other slots for Sbus2 in Futaba protocol
+* allocate another physical ID for Sport in Sport protocol
 
 
-## --------- Failsafe---------------
+## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.
 
 
@@ -132,7 +177,19 @@ Still, ELRS receivers can be configured to use another baud rate. In this case, 
     
 For the 2 last options, the handset must be on and generating the channels values that you want to save in oXs.
 
-## --------- Led -------------------
+
+## --- Telemetry fields being measured and transmitted ---
+
+oXs tries to detect automatically which sensors are connected (based on the parameters being fill in the setup).
+It can display on the PC (on a serial terminal getting the messages via usb ) the current setup and the sensors that have been discovered.
+
+oXs measures different fields depending on the sensors being detected.
+
+Please note that the data being transmitted depends also on the protocol being used (Sport, ELRS, ...).
+
+For more information, please look at document "fields per protocol.txt" in folder "doc"
+
+## ------------------ Led -------------------
 When a RP2040-Zero is used, the firmware will handle a RGB led (internally connected to gpio16).
 * when config is wrong, led is red and ON.
 * when config is valid, led is blinking and the color depends on RC channels being received ot not
