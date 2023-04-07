@@ -200,4 +200,4 @@ When a RP2040-Zero is used, the firmware will handle a RGB led (internally conne
 * when "Boot" button is used for setting the failsafe values, led becomes blue and white (see above)
 
 
-Please note that other boards does not have a RGB led on gpio16 and so this does not applies.
+Please note that other boards do not have a RGB led on gpio16 and so this does not applies.
