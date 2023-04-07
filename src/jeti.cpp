@@ -6,11 +6,15 @@
 #include "uart_jeti_tx.pio.h"
 #include "MS5611.h"
 #include "SPL06.h"
+#include "ms4525.h"
+#include "sdp3x.h"
 #include "jeti.h"
 #include "tools.h"
 #include "gps.h"
 #include "param.h"
 #include <inttypes.h> // used by PRIu32
+
+
 
 #ifdef DEBUG
 // ************************* Several parameters to help debugging
@@ -26,6 +30,8 @@
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MS5611 baro1;
 extern SPL06 baro2;
+extern MS4525 ms4525;
+extern SDP3X sdp3x; 
 
 extern GPS gps;
 extern CONFIG config;
@@ -132,7 +138,9 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = LONGITUDE ;
         listOfJetiFields[listOfJetiFieldsIdx++] = LATITUDE ;  
     }
-    
+    if ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) {
+        listOfJetiFields[listOfJetiFieldsIdx++] = AIRSPEED ; 
+    }
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;
     listOfJetiFieldsIdx = 1 ; 
 }
@@ -212,7 +220,14 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
          * fieldValue  = jetiLat  ;
          * dataType = JETI_GPS ;
         fields[fieldId].available  = false ;  
-         break ;                          
+         break ;
+    case AIRSPEED :
+         if ( ! fields[fieldId].available ) return 0; 
+         * fieldValue = fields[fieldId].value   * 36 / 1000 ; // from cm/s to km/h
+         * dataType = JETI14_0D ;
+         fields[fieldId].available = false ;
+        break ;
+                                   
    } // end of switch
    return 1 ;
 }
@@ -392,7 +407,10 @@ void fillJetiBufferWithText() {
       case LATITUDE :                                           // Still to be added
         mergeLabelUnit( textIdx, "Gps Lat", degreeChar  ) ;
         break ;
-
+    case AIRSPEED :
+        mergeLabelUnit( textIdx, "Airspeed", "Km/h"  ) ;
+        break ;
+      
   } // end switch
   jetiData[2] =  ( jetiMaxData - 2 ) ; // update number of bytes that will be in buffer (including crc); keep flag in bit 6/7 to zero because it is text and not data
   
