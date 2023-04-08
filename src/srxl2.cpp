@@ -732,6 +732,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
 	uint8_t		powerOut;														// Power Output, 0.5% (0-127%)    0xFF ----> "No data"
 } STRU_TELE_ESC;
 */
+/*
         case 4: //TELE_DEVICE_RX_MAH
             if (fields[MVOLT].available || fields[CURRENT].available){
                 srxl2Frames.voltCurrentCap.identifier = TELE_DEVICE_RX_MAH ;  // 0X18
@@ -773,6 +774,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 return true;
             }
             break;
+*/
         default:
             return false;
             break;    

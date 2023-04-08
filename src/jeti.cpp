@@ -131,8 +131,8 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
     }
     
     if ( config.pinGpsTx != 255 ) {
-        listOfJetiFields[listOfJetiFieldsIdx++] = GROUNDSPEED ;
         listOfJetiFields[listOfJetiFieldsIdx++] = HEADING ;
+        listOfJetiFields[listOfJetiFieldsIdx++] = GROUNDSPEED ;
         listOfJetiFields[listOfJetiFieldsIdx++] = ALTITUDE ; 
     //    listOfJetiFields[listOfJetiFieldsIdx++] = NUMSAT ;
         listOfJetiFields[listOfJetiFieldsIdx++] = LONGITUDE ;
