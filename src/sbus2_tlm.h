@@ -17,6 +17,7 @@ void fillTemp2(uint8_t slot8);
 void fillReserve1(uint8_t slot8);
 void fillReserve2(uint8_t slot8);
 void fillSbusHoldCounter(uint8_t slot8);
+void fillSbusHoldCounterTotal(uint8_t slot8);
 void fillSbusFailsafeCounter(uint8_t slot8);
 void fillRpm(uint8_t slot8);
 void fillAirspeed(uint8_t slot);
@@ -33,3 +34,5 @@ int64_t sendNextSlot_callback(alarm_id_t id, void *parameters);
 
 void setupBus2Simulation();
 void generateSbus2RcPacket();
+
+//#define SEND_TOTAL_HOLD  // this is made on request in order to sent the total number of hold (in a rpm field) instead of the current % of hold

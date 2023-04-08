@@ -89,14 +89,11 @@ void setupSbus2Tlm(){
     gpio_set_function( config.pinTlm, GPIO_FUNC_UART);
     gpio_set_outover( config.pinTlm , GPIO_OVERRIDE_INVERT);
     
-    
     //gpio_set_function( config.pinTlm,  GPIO_FUNC_UART);
     //gpio_set_inover( config.pinTlm, GPIO_OVERRIDE_INVERT);
     #ifdef SIMULATE_SBUS2_ON_PIN
         setupBus2Simulation();    
     #endif
-
-
 }
 
 #include "hardware/address_mapped.h"
@@ -198,7 +195,11 @@ void fill8Sbus2Slots (uint8_t slotGroup){
         fillAirspeed(SBUS2_SLOT_AIRSPEED_1  & 0x07); // keep 3 last bits as slot index
     }
     if ((fields[SBUS_HOLD_COUNTER].available) && ( slotGroup == (SBUS2_SLOT_HOLD_COUNTER_1 >>3))){
+        #ifdef SEND_TOTAL_HOLD
+        fillSbusHoldCounterTotal(SBUS2_SLOT_HOLD_COUNTER_1  & 0x07); // keep 3 last bits as slot index
+        #else
         fillSbusHoldCounter(SBUS2_SLOT_HOLD_COUNTER_1  & 0x07); // keep 3 last bits as slot index
+        #endif
     }
     if ((fields[SBUS_FAILSAFE_COUNTER].available) && ( slotGroup == (SBUS2_SLOT_FAILSAFE_COUNTER_1 >>3))){
         fillSbusFailsafeCounter(SBUS2_SLOT_FAILSAFE_COUNTER_1  & 0x07); // keep 3 last bits as slot index
@@ -268,6 +269,17 @@ void fillSbusHoldCounter(uint8_t slot8){ // emulate F1713
     slotValueByte1[slot8] = value >> 8;
     slotValueByte2[slot8] = value;
 }
+
+void fillSbusHoldCounterTotal(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM 
+    uint32_t value =  fields[RPM].value * 10;
+    if(value > 0xffff){
+    value = 0xffff;
+    }
+   slotAvailable[slot8] = true;
+   slotValueByte1[slot8] = value;
+   slotValueByte2[slot8] = value >> 8;
+}
+
 
 void fillSbusFailsafeCounter(uint8_t slot8){ // emulate F1713
     int16_t value=  fields[SBUS_FAILSAFE_COUNTER].value;

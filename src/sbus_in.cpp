@@ -42,6 +42,7 @@ bool sbusPriFailsafeFlag = true;
 bool sbusSecFailsafeFlag = true;
 
 uint32_t sbusHoldCounter = 0;
+uint32_t sbusHoldCounterTotal = 0;
 uint32_t sbusFailsafeCounter = 0;
 uint32_t sbusFrameCounter = 0;
 #define SBUS_HOLD_COUNTED_ON_FRAMES 100 // calculate the % every X frames
@@ -200,10 +201,14 @@ void handleSbusIn(){
             }
             }
         break;      
-        }  
+        }
     } // end while
     if ( sbusFrameCounter >= SBUS_HOLD_COUNTED_ON_FRAMES) {
+        #ifdef SEND_TOTAL_HOLD
+        sent2Core0(SBUS_HOLD_COUNTER , sbusHoldCounterTotal ); // total number of hold
+        #else
         sent2Core0(SBUS_HOLD_COUNTER , sbusHoldCounter * 100 / sbusFrameCounter); // * 100 because the value is in %
+        #endif
         sbusHoldCounter = 0;             // reset the counter
         sbusFrameCounter = 0;
         sent2Core0(SBUS_FAILSAFE_COUNTER , sbusFailsafeCounter);  // for failsafe, we just count the total number
@@ -264,6 +269,7 @@ void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, chan
         sbusFrameCounter++;
         if ( sbusPriMissingFlag ) {
             sbusHoldCounter++;
+            sbusHoldCounterTotal++;
         }
         if ( sbusPriFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
         prevFailsafeFlag = sbusPriFailsafeFlag; 
@@ -287,6 +293,7 @@ void storeSbus2Frame(){
         sbusFrameCounter++;
         if ( sbusSecMissingFlag ){
             sbusHoldCounter++;
+            sbusHoldCounterTotal++;
         } 
         if ( sbusSecFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
         prevFailsafeFlag = sbusSecFailsafeFlag;

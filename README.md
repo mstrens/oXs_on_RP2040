@@ -1,14 +1,14 @@
 # openXsensor (oXs) on RP2040 board
-# For rc protocols : expressLRS / FRSKY (sport + Fbus) / HOTT / JETI Ex/ MPX / FLYSKY / Futaba (SBUS2) / Spektrum (SRXL2) 
+## For rc protocols : expressLRS / FRSKY (sport + Fbus) / HOTT / JETI Ex/ MPX / FLYSKY / Futaba (SBUS2) / Spektrum (SRXL2) 
 
 This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Futaba, Spektrum or Jeti receiver(s) (protocol has to be selected accordingly).
  
-This project is foreseen to generate:
+### This project is foreseen to generate:
 - telemetry data (e.g. when a flight controller is not used)
 - PWM and/or
 - Sbus signals
 
-For telemetry, it can provide
+### For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional)
    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
    - the altitude and the vertical speed when connected to a pressure sensor (optional)
@@ -18,14 +18,14 @@ For telemetry, it can provide
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
-It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus signal (e.g Frsky or Jeti).
+### It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus signal (e.g Frsky or Jeti).
  
-It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
-
+### It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
  When connected to 2 receivers, the generated PWM and Sbus signals will be issued from the last received Rc channels.
  So this provide a kind of redundancy/diversity.
 
 Each function (telemetry/PWM/SBUS) can be used alone or combined with the others.
+
 
 ## -------  Hardware -----------------
 
