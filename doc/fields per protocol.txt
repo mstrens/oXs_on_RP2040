@@ -118,8 +118,10 @@ field       measured in      mesured and transmitted when                 transm
 VOLT1       0.001V           V1 pin is defined                            Accu volt                  0.01V
 VOLT2       0.001V=0.001A    V2 pin is defined                            Current                    0.01A
 Capacity    mAh              V2 pin is defined (reset after power down)   Consumption                0.01Ah
-VOLT3       0.001V           V3 pin is defined                            not transmitted currently
-VOLT4       0.001V           V4 pin is defined                            not transmitted currently
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           not transmitted currently
+                             V3 pin is defined & TEMP=1 or TEMP=2         Temp1                      degree
+VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           not transmitted currently
+                             V4 pin is defined & TEMP=2                   Temp2                      degree
 Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Rel. Altitude              dm
 Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed                     cm/sec
                              if a MP6050 is installed, Vpeed use it too
@@ -135,7 +137,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
-RPM        ?????             RPM pin is defined                            not transmitted currently
+RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
 Roll       degree            Same as above
