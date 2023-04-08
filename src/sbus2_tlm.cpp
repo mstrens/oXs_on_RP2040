@@ -271,7 +271,7 @@ void fillSbusHoldCounter(uint8_t slot8){ // emulate F1713
 }
 
 void fillSbusHoldCounterTotal(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM 
-    uint32_t value =  fields[RPM].value * 10;
+    uint32_t value =  fields[SBUS_HOLD_COUNTER].value * 10;
     if(value > 0xffff){
     value = 0xffff;
     }
