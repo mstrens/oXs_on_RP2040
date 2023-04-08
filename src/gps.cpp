@@ -471,25 +471,27 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             GPS_pdop = _buffer.pvt.position_DOP;
             sent2Core0(GPS_PDOP, _buffer.pvt.position_DOP);
         }
-        //printf("nbr sat : %X \n", GPS_numSat) ;
-        gpsDate =_buffer.pvt.year % 100;
-        gpsDate <<= 8;
-        gpsDate += _buffer.pvt.month;
-        gpsDate <<= 8;
-        gpsDate += _buffer.pvt.day;
-        gpsDate <<= 8;
-        gpsDate += 0xFF;
-        gpsTime = _buffer.pvt.hour;
-        gpsTime <<= 8;
-        gpsTime += _buffer.pvt.min;
-        gpsTime <<= 8;
-        gpsTime += _buffer.pvt.sec;
-        gpsTime <<= 8;
-        if ( prevGpsTime != gpsTime) {
-            prevGpsTime = gpsTime; 
-            sent2Core0(GPS_DATE , gpsDate);
-            sent2Core0(GPS_TIME , gpsTime);
-        }
+        if (( _buffer.pvt.valid & 0x03) == 0X03 ){ // if date and time are valid (bit 0 and 1 = HIGH)
+            //printf("nbr sat : %X \n", GPS_numSat) ;
+            gpsDate =_buffer.pvt.year % 100;
+            gpsDate <<= 8;
+            gpsDate += _buffer.pvt.month;
+            gpsDate <<= 8;
+            gpsDate += _buffer.pvt.day;
+            gpsDate <<= 8;
+            gpsDate += 0xFF;
+            gpsTime = _buffer.pvt.hour;
+            gpsTime <<= 8;
+            gpsTime += _buffer.pvt.min;
+            gpsTime <<= 8;
+            gpsTime += _buffer.pvt.sec;
+            gpsTime <<= 8;
+            if ( prevGpsTime != gpsTime) {
+                prevGpsTime = gpsTime; 
+                sent2Core0(GPS_DATE , gpsDate);
+                sent2Core0(GPS_TIME , gpsTime);
+            }
+        }    
         break;
     case MSG_VELNED:   
         if( GPS_fix) sent2Core0(GROUNDSPEED , _buffer.velned.speed_3d ) ; 
