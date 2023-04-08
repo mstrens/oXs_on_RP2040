@@ -38,8 +38,8 @@
 #include "pico/util/queue.h"
 #include "ds18b20.h"
 #include "hardware/timer.h"
-// to do : add current and rpm telemetry fields to jeti protocol
-//         support ex bus jeti protocol on top of ex jeti protocol
+// to do : add rpm, temp telemetry fields to jeti protocol
+//         support ex bus jeti protocol on top of ex jeti protocol (not sure it makes lot of sense because bandwitdth is limited)
 //         add switching 8 gpio from one channel
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
@@ -47,7 +47,7 @@
 //         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
 //         fill compensated vspeed with compensated or normal vspeed depending on the value of a channel (require to select the channel)
-
+//         look to use pitch and roll to stabilize 2 servos for a gimball
 
 // Look at file in folder "doc" for more details
 //

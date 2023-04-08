@@ -37,7 +37,7 @@ extern GPS gps;
 extern CONFIG config;
 extern uint8_t debugTlm;
 
-uint8_t listOfJetiFields[16] ; // list of oXs Field Id to transmit
+uint8_t listOfJetiFields[20] ; // list of oXs Field Id to transmit
 uint8_t listOfJetiFieldsIdx ; // current fields being handled (for data); there is another idx for text field
 uint8_t numberOfJetiFields ; // number of fields to transmit (from 1 ... 15)
 // buffer with data to transmit prefilled with some constants
@@ -141,6 +141,15 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
     if ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) {
         listOfJetiFields[listOfJetiFieldsIdx++] = AIRSPEED ; 
     }
+    if ( config.pinRpm != 255 ) {
+        listOfJetiFields[listOfJetiFieldsIdx++] = RPM ; 
+    }
+    if (config.temperature == 1 || config.temperature == 2){
+        listOfJetiFields[listOfJetiFieldsIdx++] = TEMP1 ;
+    }
+    if (config.temperature == 2){
+        listOfJetiFields[listOfJetiFieldsIdx++] = TEMP2 ;
+    }
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;
     listOfJetiFieldsIdx = 1 ; 
 }
@@ -224,6 +233,24 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
     case AIRSPEED :
          if ( ! fields[fieldId].available ) return 0; 
          * fieldValue = fields[fieldId].value   * 36 / 1000 ; // from cm/s to km/h
+         * dataType = JETI14_0D ;
+         fields[fieldId].available = false ;
+        break ;
+    case RPM :
+         if ( ! fields[fieldId].available ) return 0; 
+         * fieldValue = fields[fieldId].value   * 60 ; // from Hz to RPM
+         * dataType = JETI22_0D ;
+         fields[fieldId].available = false ;
+        break ;
+    case TEMP1 :
+         if ( ! fields[fieldId].available ) return 0; 
+         * fieldValue = fields[fieldId].value ; // degree
+         * dataType = JETI14_0D ;
+         fields[fieldId].available = false ;
+        break ;
+    case TEMP2 :
+         if ( ! fields[fieldId].available ) return 0; 
+         * fieldValue = fields[fieldId].value ; // degree
          * dataType = JETI14_0D ;
          fields[fieldId].available = false ;
         break ;
@@ -409,6 +436,15 @@ void fillJetiBufferWithText() {
         break ;
     case AIRSPEED :
         mergeLabelUnit( textIdx, "Airspeed", "Km/h"  ) ;
+        break ;
+    case RPM :
+        mergeLabelUnit( textIdx, "Rpm", "n"  ) ;
+        break ;
+    case TEMP1 :
+        mergeLabelUnit( textIdx, "Temp1", degreeChar  ) ;
+        break ;
+    case TEMP2 :
+        mergeLabelUnit( textIdx, "Temp2", degreeChar  ) ;
         break ;
       
   } // end switch
