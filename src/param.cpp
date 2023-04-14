@@ -36,7 +36,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
-// PROTOCOL = C, S, J , M , I , F, 2, L
+// PROTOCOL = C, S, J , M , I , F, 2, L, E
 // for RP2040_zero, pin 16 = LED
 // When no config is found in memory, a default config is loaded (defined in config.h)
 // When a pin is not used, value = 0xFF
@@ -132,7 +132,7 @@ void processCmd(){
 
         printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
-        printf("     S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), J(Jeti) , H(Hott), M(Mpx) , 2(Sbus2 Futaba) or I(IBus/Flysky)\n");
+        printf("     S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), X (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
@@ -150,7 +150,7 @@ void processCmd(){
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
         printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
-        printf("        for dummy positive values, enter POS; for dummy negative values, enter NEG\n")  ;
+        printf("        for dummy positive values, enter FVP; for dummy negative values, enter FVN\n")  ;
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         return;  
@@ -418,6 +418,9 @@ void processCmd(){
         } else if (strcmp("J", pvalue) == 0) {
             config.protocol = 'J';
             updateConfig = true;
+        } else if (strcmp("E", pvalue) == 0) {
+            config.protocol = 'E';
+            updateConfig = true;
         } else if (strcmp("H", pvalue) == 0) {
             config.protocol = 'H';
             updateConfig = true;
@@ -437,7 +440,7 @@ void processCmd(){
             config.protocol = 'L';
             updateConfig = true;
         } else  {
-            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), H(Hott), M(Mpx), 2(Sbus2 Futaba), L(SRXL2 Spektrum) or I(Ibus/Flysky)\n");
+            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), E(jeti Exbus), H(Hott), M(Mpx), 2(Sbus2 Futaba), L(SRXL2 Spektrum) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -695,8 +698,16 @@ void checkConfig(){
         printf("Error in parameters: For Frsky Fbus, a pin must be defined for Primary channels input (PRI)\n");
         configIsValid=false;
     }
+    if (config.protocol == 'E' && config.pinPrimIn == 255  ){
+        printf("Error in parameters: For JEti Exbus, a pin must be defined for Primary channels input (PRI)\n");
+        configIsValid=false;
+    }
     if (config.protocol == 'F' && config.pinTlm != 255  ){
         printf("Error in parameters: For Frsky Fbus, TLM pin may not be defined (but PRI must be defined)\n");
+        configIsValid=false;
+    }
+    if (config.protocol == 'E' && config.pinTlm != 255  ){
+        printf("Error in parameters: For jeti Exbus, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
     if (config.protocol == 'L' && config.pinPrimIn == 255  ){
@@ -739,7 +750,9 @@ void printConfig(){
         } else if (config.protocol == 'C'){
             printf("\nProtocol is CRSF (=ELRS)\n")  ;
         } else if (config.protocol == 'J'){
-            printf("\nProtocol is Jeti (Ex)\n")  ;    
+            printf("\nProtocol is Jeti (non Exbus)\n")  ;    
+        } else if (config.protocol == 'E'){
+            printf("\nProtocol is Jeti (Exbus)\n")  ;    
         } else if (config.protocol == 'H'){
             printf("\nProtocol is Hott\n")  ;    
         } else if (config.protocol == 'M'){

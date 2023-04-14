@@ -1,5 +1,5 @@
 # openXsensor (oXs) on RP2040 board
-## For rc protocols : expressLRS / FRSKY (sport + Fbus) / HOTT / JETI Ex/ MPX / FLYSKY / Futaba (SBUS2) / Spektrum (SRXL2) 
+## For rc protocols : expressLRS / FRSKY (sport + Fbus) / HOTT / JETI Ex / JETI EXBUS/ MPX / FLYSKY / Futaba (SBUS2) / Spektrum (SRXL2) 
 
 This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Futaba, Spektrum or Jeti receiver(s) (protocol has to be selected accordingly).
  
@@ -67,15 +67,28 @@ FRSKY/ELRS/JETI/... receiver, MS5611, GPS and other sensors must share the same 
 Connect a 5V source to the Vcc pin of RP2040 board ( RP2040-zero board does not accept more than 5.5V on Vcc pin !! )  
 There is no default affectation of the RP2040 pins so user has to specify it with some parameters after flashing the firmware (see below)  
 
-When used with a ELRS receiver:  
-   * Connect PRIMARY/SECONDARY RC Channel pin(s) to the TX pin from ELRS receiver (this wire transmit the RC channels)
-   * Connect TLM pin to the Rx pin from ELRS receiver that is supposed to transmit telemetry data (this wire transmits the telemetry data)  
+Depending on the protocol, the pins used for PRIMARY/SECONDARY RC Channels and for Telemetry (TLM) varies
+| protocol       | PRI pin is connectected to | SEC pin is connected to | TLM pin is connected to| Comment|
+|----------      |----------------------------|-------------------------|------------------------|--------|
+| C(ELRS)        |    (TX from Rx1)           |     (TX from Rx2)       | (RX from RX1)          |        |
+| S(Frsky sport) |    (Sbus from Rx1)         |     (Sbus from Rx2)     |(Sport from RX1 or Rx2) |   (1)  |
+| F(Frsky Fbus)  |    Fbus from Rx1           |     (Sbus from Rx2)     | Not used               |   (2)  |
+| J(Jeti ex)     |    (Sbus from Rx1)         |     (Sbus from Rx2)     |  (Ex from Rx1 or Rx2)  |        |
+| E(Jeti Exbus)  |    Exbus from Rx1          |     (Sbus from Rx2)     | Not used               |   (2)  |
+| H(Hott)        |    (Sbus from Rx1)         |     (Sbus from Rx2)     |???(tlm from RX1 or Rx2)|   (1)  |
+| M(Multiplex)   |    (Sbus from Rx1)         |     (Sbus from Rx2)     |???(tlm from RX1 or Rx2)|   (1)  |
+| I(Flysky Ibus) |    (Sbus from Rx1)         |     (Sbus from Rx2)     | ( Ibus from RX1 or Rx2)|   (1)  |
+| L(Spektrum Srxl2)|  Srxl from Rx1           |     Not used            | Not used               |   (2)  |
+| 2(Futaba Sbus2) |   Sbus2 from Rx1          |     (Sbus2 from Rx2)    | Sbus2 from Rx1 via 1Kohm | (3)  |
 
-When used with a FRSKY/JETI/FLYSKY/MPX/FUTABA/SPEKTRUM receiver:
-   * Connect PRIMARY/SECONDARY RC Channel pin(s) to the Sbus pin (from Frsky/Jeti/FLYSKY/Futaba receiver); this wire transmit the RC channels
-   * Connect TLM pin via a 1k resistor to the Sport/Ex/Ibus/Mlink pin from the receiver; this wire transmits the telemetry data  
-   Note : for Futaba, Spektrum and Frsky Fbus telemetry, the Sbus2/SRXL2/FBus pin is used for both functions (receiving Rc channels and sending telemetry).  
-          Then the 1k resistor is connected between the TLM pin and the PRIM pin and it is only the PRI pin that is connected to the Rx pin
+Note: pins between () means that they are optional.
+
+(1) for safety, insert a 1 kOhm resistor between TLM pin and Rx 
+
+(2) for safety, insert a 1 kOhm resistor between PRI pin and Rx
+
+(3) For Futaba, TLM pin must be equal to PRI pin - 1 and insert 1 kOhm resistor between PRI and TLM
+
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 

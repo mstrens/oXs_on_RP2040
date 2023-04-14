@@ -55,8 +55,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       AIRSPEED,
       AIRSPEED_COMPENSATED_VSPEED,
       SBUS_HOLD_COUNTER,
-      SBUS_FAILSAFE_COUNTER,      
-      NUMBER_MAX_IDX, // used to count the number of entries       34
+
+      SBUS_FAILSAFE_COUNTER,                                        // 35        
+      NUMBER_MAX_IDX, // used to count the number of entries       
 };
 // note : when a new field is added to this list we have to change also:
 //    - in tools.cpp to add the positive and the negative values for FVP and FVN commands

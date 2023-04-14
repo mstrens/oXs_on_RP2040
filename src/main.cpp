@@ -21,6 +21,7 @@
 #include "tools.h"
 #include "sport.h"
 #include "jeti.h"
+#include "exbus.h"
 #include "hott.h"
 #include "mpx.h"
 #include "ibus.h"
@@ -377,7 +378,7 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupSport();
-      } else if (config.protocol == 'J') {   //jeti
+      } else if (config.protocol == 'J') {   //jeti non exbus
         setupSbusIn();
         setupSbus2In();
         setupJeti();
@@ -403,6 +404,10 @@ void setup() {
         //setupSbus2Tlm();
       } else if (config.protocol == 'L') {   // srxl2 Spektrum
         setupSrxl2();
+        //setupSbus2In(); // to do add a second input
+        //setupSbus2Tlm();
+      } else if (config.protocol == 'E') {   // jeti Exbus
+        setupExbus();
         //setupSbus2In(); // to do add a second input
         //setupSbus2Tlm();
       }
@@ -497,6 +502,10 @@ void loop() {
         fillSbusFrame();
       } else if (config.protocol == 'L') {  // SRXL2 Spektrum
         handleSrxl2RxTx();
+        //handleSbus2In();  // to do processa second inpunt
+        fillSbusFrame();
+      } else if (config.protocol == 'E') {  // Jeti Exbus
+        handleExbusRxTx();
         //handleSbus2In();  // to do processa second inpunt
         fillSbusFrame();
       }

@@ -184,8 +184,8 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
           break ;
       case  CAPACITY :
           if ( ! fields[fieldId].available ) return 0;
-          * fieldValue =  int_round(fields[fieldId].value  , 10) ; // converted in Ah with 2 decimals
-          * dataType = JETI14_2D ;
+          * fieldValue =  fields[fieldId].value ; //  in mAh 
+          * dataType = JETI22_0D ;
           fields[fieldId].available  = false ;
           break ;
       case HEADING :
@@ -350,13 +350,15 @@ uint8_t updateJetiCrc (uint8_t crc, uint8_t crc_seed)
 }
 
 void startJetiTransmit() {
-    if ( debugTlm == 'Y'){
+    //#define DEBUG_JETI_TLM
+    #ifdef DEBUG_JETI_TLM
       printf("Jeti= ");
       for (uint8_t j = 0 ; j < jetiMaxData ; j++ ){
         printf(" %02X" , jetiData[j]);
       }
-      printf("/n");
-    }
+      //printf(" t=%d", config.temperature);
+      printf("\n");
+    #endif
     // copy from jetiData (8 bits) to jetiTxBuffer (16 bits); we add a bit 9 (0 for only 2 bytes), a bit 10 = odd parity and a bit 11= stopbit
     uint8_t * ptr = (uint8_t *) &jetiData[0] ;
     for (uint8_t i = 0; i< jetiMaxData ; i++){ 
@@ -411,7 +413,7 @@ void fillJetiBufferWithText() {
         mergeLabelUnit( textIdx, "Current", "A"  ) ;
         break ;
     case  CAPACITY :
-        mergeLabelUnit( textIdx, "Consumtion", "Ah"  ) ;
+        mergeLabelUnit( textIdx, "Consumption", "mAh"  ) ;
         break ;
       case HEADING :
         mergeLabelUnit( textIdx, "Course", degreeChar  ) ;
@@ -455,7 +457,7 @@ void fillJetiBufferWithText() {
 void handleJetiTx()    // when there is more than 20mses since sending last frame, this part try to put 2 data in a one frame.
                             // the buffer must contain a header (already filled with fixed data), then DATA or TEXT part , then a CRC,
                             // then a separator (0xFE), 2 * 16 char of text and a trailer (0xFF)
-                            // the TEXT part contains or the name of the device or the name and unit of each field
+                            // the TEXT part contains or the name of the device (="oXs") or the name and unit of each field
 {
   if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
   static  uint8_t jetiSendDataFrameCount ;
