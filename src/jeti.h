@@ -75,7 +75,7 @@ typedef enum  {
 // End of list of type of available measurements
 */
     void setupJeti();
-    void initListOfJetiFields();
+    void initListOfJetiFields(bool activateAllFields);
     bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t * dataType) ; // fill fieldValue and dataType for the fieldId when data is available, return true if data is available
     uint32_t formatGpsLongLat (int32_t longLat, bool isLong ) ; // return the long or latitude in Jeti format
     bool tryToAddFieldToJetiBuffer (void) ; // return true if a field has been added in the jetiBuffer

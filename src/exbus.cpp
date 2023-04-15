@@ -162,10 +162,10 @@ JETISENSOR_CONST sensorsParam[] =
     { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 
-void setupExbusList(){
+void setupExbusList(bool activateAllFields){
     exbusFieldList[0] = NUMBER_MAX_IDX;  // index of the name "oXs" = last in the list
     exbusMaxFields = 1;
-    if ( config.pinGpsTx != 255 ) {
+    if (( config.pinGpsTx != 255 ) ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = LATITUDE ;  
         exbusFieldList[exbusMaxFields++] = LONGITUDE ;
         exbusFieldList[exbusMaxFields++] = GROUNDSPEED ;
@@ -173,40 +173,40 @@ void setupExbusList(){
         exbusFieldList[exbusMaxFields++] = ALTITUDE ; 
         exbusFieldList[exbusMaxFields++] = NUMSAT ;
     }
-    if ( config.pinVolt[0] != 255) {
+    if (( config.pinVolt[0] != 255)  ||  activateAllFields){
         exbusFieldList[exbusMaxFields++] = MVOLT ;
     }
-    if ( config.pinVolt[1] != 255) {
+    if (( config.pinVolt[1] != 255)  ||  activateAllFields){
         exbusFieldList[exbusMaxFields++] = CURRENT ;
         exbusFieldList[exbusMaxFields++] = CAPACITY ;
     }
-    if (( config.pinVolt[2] != 255)  && (config.temperature == 0 || config.temperature == 255)) {
+    if ((( config.pinVolt[2] != 255)  && (config.temperature == 0 || config.temperature == 255)) ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = RESERVE1 ;
     }
-    if (( config.pinVolt[3] != 255)  && ( config.temperature != 2)) {
+    if ((( config.pinVolt[3] != 255)  && ( config.temperature != 2))  ||  activateAllFields){
         exbusFieldList[exbusMaxFields++] = RESERVE2 ;
     }
-    if (( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) {
+    if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = TEMP1 ;
     }
-    if (( config.pinVolt[3] != 255)  && (config.temperature == 2) ){
+    if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = TEMP2 ;
     }
-    if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
+    if (( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled)  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = RELATIVEALT ; 
         exbusFieldList[exbusMaxFields++] = VSPEED ;
     }
-    if (mpu.mpuInstalled) {
+    if ((mpu.mpuInstalled)  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = PITCH ; 
         exbusFieldList[exbusMaxFields++] = ROLL ;
     }
-    if ( config.pinRpm != 255 ) {
+    if (( config.pinRpm != 255 )  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = RPM ; 
     }
-    if ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) {
+    if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = AIRSPEED ; 
     }
-    if ( ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) && ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) ) {
+    if (( ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) && ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) )  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = AIRSPEED_COMPENSATED_VSPEED ; 
     }
     //exbusMaxFields-- ;
@@ -226,7 +226,7 @@ void setupExbusList(){
 
 void setupExbus() {
 // configure some tables to manage priorities and exbus fields codes used by exbus    
-    setupExbusList(); 
+    setupExbusList(false); 
 // configure the queue to get the data from exbus in the irq handle (2 bytes because MSB says if there was a timeout; help to find start of frame)
     queue_init (&exbusRxQueue, sizeof(uint16_t), 250);
 

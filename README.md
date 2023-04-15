@@ -141,7 +141,7 @@ If you just want to use it, there is (in most cases) no need to install/use any 
 * insert the USB cable in the RP2040 board
 * press on the "boot" button on the RP2040 board while you insert the USB cable in your PC.
 * this will enter the RP2040 in a special bootloader mode and your pc should show a new drive named RPI-RP2
-* copy and paste (or drag and drop) the uf2 file to this new drive
+* copy and paste (or drag and drop) the oXs.uf2 file to this new drive
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
 * you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1

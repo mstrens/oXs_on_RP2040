@@ -111,26 +111,26 @@ void setupJeti() {
     uart_jeti_tx_program_init(jetiPio, jetiSmTx, jetiOffsetTx, config.pinTlm, 9700 );  
     degreeChar[0] = 0xB0 ; // for the symbol °, fill with 0xB0 followed by 0x00 as showed in jetiprotocol example and in datasheet (code A02 for european set of char))
     degreeChar[1] = 0x00 ;
-    initListOfJetiFields() ;  
+    initListOfJetiFields(false) ;  // do not activate all fields but only those with pin defined od installed  
 }
 
 
-void initListOfJetiFields() {  // fill an array with the list of fields (field ID) that are defined -   Note : this list is not yet complete (e.g; GPS, ...)
+void initListOfJetiFields(bool activateAllFields) {  // fill an array with the list of fields (field ID) that are defined -   Note : this list is not yet complete (e.g; GPS, ...)
     listOfJetiFields[0] = OXS_ID ;
     listOfJetiFieldsIdx = 1 ; // 0 is not used for a value, because - for text- it contains the name of the sensor (e.g. openXsensor)
-    if ( config.pinVolt[0] != 255) {
+    if (( config.pinVolt[0] != 255) ||  activateAllFields)  {
         listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
     }
-    if ( config.pinVolt[1] != 255) {
+    if (( config.pinVolt[1] != 255)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = CURRENT ;
         listOfJetiFields[listOfJetiFieldsIdx++] = CAPACITY ;
     }
-    if ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) {
+    if (( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }
     
-    if ( config.pinGpsTx != 255 ) {
+    if (( config.pinGpsTx != 255 )  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = HEADING ;
         listOfJetiFields[listOfJetiFieldsIdx++] = GROUNDSPEED ;
         listOfJetiFields[listOfJetiFieldsIdx++] = ALTITUDE ; 
@@ -138,16 +138,16 @@ void initListOfJetiFields() {  // fill an array with the list of fields (field I
         listOfJetiFields[listOfJetiFieldsIdx++] = LONGITUDE ;
         listOfJetiFields[listOfJetiFieldsIdx++] = LATITUDE ;  
     }
-    if ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) {
+    if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = AIRSPEED ; 
     }
-    if ( config.pinRpm != 255 ) {
+    if (( config.pinRpm != 255 )  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RPM ; 
     }
-    if (config.temperature == 1 || config.temperature == 2){
+    if ((config.temperature == 1 || config.temperature == 2)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = TEMP1 ;
     }
-    if (config.temperature == 2){
+    if ((config.temperature == 2) ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = TEMP2 ;
     }
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;

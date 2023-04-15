@@ -22,7 +22,7 @@ typedef const JetiSensorConst JETISENSOR_CONST;
 #define EXBUS_TYPE_NONE 0XFF      // field not used currently
 #define EXBUS_TYPE_DEVICE 0       // identify the name of the device (= "oXs")
 
-void setupExbusList();
+void setupExbusList(bool activateAllFields);
 
 void setupExbus();
 

@@ -22,6 +22,8 @@
 #include "mpu.h"
 #include "pico/util/queue.h"
 #include "tools.h"
+#include "jeti.h"
+#include "exbus.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -389,6 +391,8 @@ void processCmd(){
     if ( strcmp("FVP", pkey) == 0 ) { 
             forcedFields = 1;
             fillFields(forcedFields);
+            if (config.protocol = 'E') setupExbusList(true); // rebuild the list of fields being sent in jeti exbus
+            if (config.protocol = 'J') initListOfJetiFields(true); // rebuild the list of fields being sent in jeti ex
             printFieldValues();
             printf("Internal telemetry fields are now filled with POSITIVE dummy values\n");
             printf("To get real values again, you have to power down\n");
@@ -399,6 +403,9 @@ void processCmd(){
     if ( strcmp("FVN", pkey) == 0 ) { 
             forcedFields = 2;
             fillFields(forcedFields);
+            if (config.protocol = 'E') setupExbusList(true); // rebuild the list of fields being sent in jeti exbus
+            if (config.protocol = 'J') initListOfJetiFields(true); // rebuild the list of fields being sent in jeti ex
+            
             printFieldValues();
             printf("Internal telemetry fields are now filled with NEGATIVE dummy values\n");
             printf("To get real values again, you have to power down\n");
