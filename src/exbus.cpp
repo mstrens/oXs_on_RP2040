@@ -609,7 +609,8 @@ void exbusCreateTelemetry() {
         while (count--) { // we look max once into the list of fields 
             sensorsParamIdx = exbusFieldList[dataIdx] ;            // retrieve the index in sensorParam[]
             if ( fields[sensorsParamIdx].available ) {             // if the field is available, look if there is still space in the buffer
-                if (( countWritten + sensorsParam[sensorsParamIdx].length) > 24 ) break; // exit if no space enough
+                if (( countWritten + sensorsParam[sensorsParamIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value
+                    // some doc says 26 bytes for the ex frame and there are 8 other bytes (7F + 2F Type, deviceID1...4, CRC)
                 countWritten = addOneValue(sensorsParamIdx , nextBufferWrite) ;
                 countWrittenTotal += countWritten ;
                 nextBufferWrite += countWritten ;

@@ -162,8 +162,8 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Index 
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) not transmitted
 GPS lat                      Same as above                                 not transmitted
 GPS speed  cm/sec            Same as above                                 Index = 4                 0.1 km/h
-GPS course 0.01 degree       Same as above                                 not transmitted
-GPS Alt    cm                Same as above; = alt above see level          not transmitted
+GPS course 0.01 degree       Same as above                                 Index = 15                0.1 degree
+GPS Alt    cm                Same as above; = alt above see level          Index = 14                m
                              Note : some handsets calculate a relative alt
 GPS number of satelites      Same as above (+100 when 3D fix)              not transmitted
 GPS date   YYMMDD0xFF        Same as above                                 not transmitted 

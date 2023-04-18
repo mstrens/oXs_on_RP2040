@@ -80,8 +80,8 @@ MU_VOLT,    //#define MPX_VOLT    9	     //tension	                           0.
 MU_MAH,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
 MU_DIST,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
-0XFF,         //14
-0XFF          //15
+MU_ALT,           //          //14            // GPS Altitude                 1m          -500 à +2000    
+MU_DIR       //#define MPX_DIR          //15                                          0,1 degrés     0 à 3600
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
@@ -101,8 +101,8 @@ MVOLT,         //#define MPX_VOLT    9	     //tension	                          
 CAPACITY,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
 0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
 GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
-0XFF,         //14
-0XFF          //15
+ALTITUDE,         //14                      // GPS altitude                        1m         -500 à +2000
+HEADING          //15                       // GPS heading                                    0,1 degrés     0 à 3600  
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
@@ -348,9 +348,15 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         case GPS_HOME_BEARING:
             mpxValue= fields[fieldId].value *10 ; // from  deg  to 0.1 deg
             break;
+        case HEADING:
+            mpxValue= int_round(fields[fieldId].value, 10) ; // from  0.01 deg  to 0.1 deg
+            break;
         case GPS_HOME_DISTANCE:
             mpxValue= int_round(fields[fieldId].value ,100) ; // from  m  to 0.1km
             break;     
+        case ALTITUDE:
+            mpxValue= int_round(fields[fieldId].value ,100) ; // from cm to m
+            break;
         case RELATIVEALT:
             mpxValue= int_round(fields[fieldId].value ,100) ; // from cm to m
             break;            
