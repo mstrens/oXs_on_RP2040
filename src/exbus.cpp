@@ -159,6 +159,7 @@ JETISENSOR_CONST sensorsParam[] =
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_HOLD_COUNTER,
 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  GPS cumulative distance,
     { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 

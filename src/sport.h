@@ -138,6 +138,7 @@ void sendOneSport(uint8_t idx);
 #define DIY_GPS_PDOP           0X5101
 #define DIY_GPS_HOME_BEARING   0X5102
 #define DIY_GPS_HOME_DISTANCE  0X5103
+#define DIY_GPS_CUMUL_DISTANCE  0X5104
 
 #define DIY_VOLT3              0X5113
 #define DIY_VOLT4              0X5114

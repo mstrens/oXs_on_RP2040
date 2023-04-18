@@ -1154,6 +1154,9 @@ void printFieldValues(){
                 case SBUS_FAILSAFE_COUNTER:
                     printf("Sbus failsafe counter = %d\n", (int) fields[i].value) ;
                     break;
+                case GPS_CUMUL_DIST :
+                    printf("Gps cumulative distance = %d\n", (int) fields[i].value) ;
+                    break;
                             
             } // end switch
         }

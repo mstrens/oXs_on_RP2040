@@ -57,6 +57,7 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       SBUS_HOLD_COUNTER,
 
       SBUS_FAILSAFE_COUNTER,                                        // 35        
+      GPS_CUMUL_DIST,   
       NUMBER_MAX_IDX, // used to count the number of entries       
 };
 // note : when a new field is added to this list we have to change also:
@@ -66,6 +67,7 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
 //    - in ibus.cpp there is a list to complete
 //    - in sbus2_tlm.cpp add code (for a slot)
 //    - in config.h , add slot for sbus2
+//    - in exbus.cpp , adapt one table and program (name and unit)
 int32_t int_round(int32_t n, uint32_t d);
 
 uint32_t millisRp() ;

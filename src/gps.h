@@ -230,6 +230,9 @@ public:
     int16_t GPS_heading ;          // heading from home (in Rad)
     int32_t GPS_home_lat ;         // position of home in degre with 7 decimals
     int32_t GPS_home_lon ;         // position of home in degre with 7 decimals
+    int32_t GPS_last_lat ;         // last position used for cummulative dist in degre with 7 decimals
+    int32_t GPS_last_lon ;         // last position used for cumulative dist in degre with 7 decimals
+    int32_t GPS_cumulativeDistCm ;     // cumulative distance in cm
     float GPS_scale ;     // scaling factor to calculate the distance depending on latitude
     int16_t GPS_bearing ;          // bearing from home in degrees
 
@@ -252,7 +255,9 @@ public:
     bool parseGps(void) ;
     bool parseGpsUblox(void) ;
     bool parseGpsCasic(void) ;
-    
+
+    int32_t GpsDistanceCm(int32_t deltaLat , int32_t deltaLon);
+
 private:
     uint16_t gpsDataErrors;
 
@@ -271,6 +276,9 @@ private:
     //int32_t GPS_last_fix_lat ;     // last lat when a fix has been received
     //#endif
 
+
+
 };
 
 void uboxChecksum();
+

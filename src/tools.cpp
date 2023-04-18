@@ -211,7 +211,8 @@ int32_t posFieldValues[] = {
     15151,      //  AIRSPEED,    cm/s
     167,         //     AIRSPEED_COMPENSATED_VSPEED,
     98,         //  SBUS_HOLD_COUNTER,
-    12          //  SBUS_FAILSAFE_COUNTER,      
+    12,          //  SBUS_FAILSAFE_COUNTER,
+    135791       // GPS cumulative dist in m
             
 };
 
@@ -256,7 +257,8 @@ int32_t negFieldValues[] = {
     0,      //  AIRSPEED,    cm/s
     -167,         //     AIRSPEED_COMPENSATED_VSPEED,      
     0,         //  SBUS_HOLD_COUNTER,
-    0          //  SBUS_FAILSAFE_COUNTER,      
+    0,          //  SBUS_FAILSAFE_COUNTER,   
+    0           // cumulative GPS dist m
 };
 // fill all fields with dummy values (useful to test a protocol)
  void fillFields( uint8_t forcedFields){

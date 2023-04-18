@@ -78,7 +78,7 @@ MU_ALT,   //#define MPX_HEIGHT  8	     //Hauteur                             1m 
 MU_VOLT,    //#define MPX_VOLT    9	     //tension	                           0.1V          -600 à +600
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 MU_MAH,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
-0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
+MU_DIST,          //#define MPX_LIQUID  12       //GPS Cumul distance                  0.1 km    0 à +16000
 MU_DIST,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 MU_ALT,           //          //14            // GPS Altitude                 1m          -500 à +2000    
 MU_DIR       //#define MPX_DIR          //15                                          0,1 degrés     0 à 3600
@@ -99,7 +99,7 @@ RELATIVEALT,   //#define MPX_HEIGHT  8	     //Hauteur                           
 MVOLT,         //#define MPX_VOLT    9	     //tension	                           0.1V          -600 à +600
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 CAPACITY,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
-0XFF,          //#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
+GPS_CUMUL_DIST,          // gps cumul distance                                          0.1 km         0 à +16000
 GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 ALTITUDE,         //14                      // GPS altitude                        1m         -500 à +2000
 HEADING          //15                       // GPS heading                                    0,1 degrés     0 à 3600  
@@ -352,6 +352,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
             mpxValue= int_round(fields[fieldId].value, 10) ; // from  0.01 deg  to 0.1 deg
             break;
         case GPS_HOME_DISTANCE:
+            mpxValue= int_round(fields[fieldId].value ,100) ; // from  m  to 0.1km
+            break;     
+        case GPS_CUMUL_DIST:
             mpxValue= int_round(fields[fieldId].value ,100) ; // from  m  to 0.1km
             break;     
         case ALTITUDE:

@@ -27,6 +27,7 @@ GPS time   HHMMSS0x00        Same as above                                 GPS t
 GPS PDOP   0.01  ????        Same as above                                 GPS PDOP (0X5101)         0.01 
 GPS bearing from home degree Same as above                                 DIY (5102)                degree
 GPS distance from home  m    Same as above                                 DIY (5103)                m
+GPS cumulative distance m    Same as above                                 DIY (5104)                m
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     DIY (0X5131 / 0X5138)    mVolt
 Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (0X5120)             degree
@@ -62,6 +63,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            not transmitted  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
@@ -99,6 +101,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 GPS bearing               degree
 GPS distance from home       Same as above                                 GPS distance              m
+GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz ?????          RPM pin is defined                            GAM Rpm                   Hz/10
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
@@ -137,6 +140,8 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
@@ -171,6 +176,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 Index = 7                 0.1 degree
 GPS distance from home       Same as above                                 Index = 13                0.1 km
+GPS cumulative distance m    Same as above                                 Index = 12                0.1 km
 RPM        ?????             RPM pin is defined                            Index = 5                 100 t/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
@@ -205,6 +211,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 COG                       degree
 GPS distance from home       Same as above                                 GPS_DIST                  m
+GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            RPM                       ???
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
@@ -238,6 +245,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            RPM                       RPM
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
@@ -275,6 +283,7 @@ GPS time   HHMMSS0x00        Same as above                                 not t
 GPS PDOP   0.01 ????         Same as above                                 not transmitted 
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted 
 RPM        Hz                RPM pin is defined                            RPM                       10 tour/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 

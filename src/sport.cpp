@@ -117,6 +117,7 @@ void setupSportList(){     // table used by sport
         ADS_2_4,     // Voltage provided by ads1115 nr 2 on pin 4      200
         SBUS_HOLD_COUNTER,  // Sbus hold counter
         SBUS_FAILSAFE_COUNTER, // Sbus failsafe counter
+        GPS_CUMUL_DIST, // GPS cumulative dist                        200
     };
     for (uint8_t i = 0; i < NUMBER_MAX_IDX ; i++){
         sportPriority[i]= temp[i];
@@ -159,6 +160,7 @@ void setupSportList(){     // table used by sport
     sportFieldId[AIRSPEED_COMPENSATED_VSPEED] = VARIO_LAST_ID;
     sportFieldId[SBUS_HOLD_COUNTER] = DIY_SBUS_HOLD_COUNTER;
     sportFieldId[SBUS_FAILSAFE_COUNTER] = DIY_SBUS_FAILSAFE_COUNTER;
+    sportFieldId[GPS_CUMUL_DIST] =  DIY_GPS_CUMUL_DISTANCE; 
 
     sportMaxPooling[LATITUDE] = 20;
     sportMaxPooling[LONGITUDE] = 20;
@@ -196,7 +198,7 @@ void setupSportList(){     // table used by sport
     sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 8;
     sportMaxPooling[SBUS_HOLD_COUNTER] = 100;
     sportMaxPooling[SBUS_FAILSAFE_COUNTER] = 100;
-
+    sportMaxPooling[GPS_CUMUL_DIST] = 200;  
 
     sportMinPooling[LATITUDE] = 5;
     sportMinPooling[LONGITUDE] = 5;
@@ -234,7 +236,7 @@ void setupSportList(){     // table used by sport
     sportMinPooling[AIRSPEED_COMPENSATED_VSPEED] = 3;
     sportMinPooling[SBUS_HOLD_COUNTER] = 50;
     sportMinPooling[SBUS_FAILSAFE_COUNTER] = 50;
-
+    sportMinPooling[GPS_CUMUL_DIST] = 100;
 
     /*
     fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;

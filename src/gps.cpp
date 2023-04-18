@@ -11,9 +11,9 @@
 #include "tools.h"
 #include <inttypes.h>
 
-// scaling factor from 1e-7 degrees to meters at equater
+// scaling factor from 1e-7 degrees to centimeter meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
-#define LOCATION_SCALING_FACTOR 0.011131884502145034f
+#define LOCATION_SCALING_FACTOR 1.1131884502145034f
 #define DEG_TO_RAD_FOR_GPS 0.017453292519943295769236907684886f
 //#define GPS_UART_ID uart0
 
@@ -417,20 +417,27 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             if ( GPS_home_lat == 0 ) { 
               GPS_home_lat = _buffer.posllh.latitude ;  // save home position
               GPS_home_lon = _buffer.posllh.longitude ;
+              GPS_last_lat = _buffer.posllh.latitude ;  // use dto calculate the cumulative distance
+              GPS_last_lon = _buffer.posllh.longitude ;
+              GPS_cumulativeDistCm =  0; 
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
             }
             // Calculate distance
-            float dlat  = (float)(GPS_home_lat - _buffer.posllh.latitude);
-            float dlong  = ((float)(GPS_home_lon - _buffer.posllh.longitude)) * GPS_scale ;
-            GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
-            sent2Core0(GPS_HOME_DISTANCE, (int32_t) GPS_distance);
-            // calculate bearing
+            sent2Core0(GPS_HOME_DISTANCE, 0.01 * GpsDistanceCm(GPS_home_lat - _buffer.posllh.latitude , GPS_home_lon - _buffer.posllh.longitude ));
+             // calculate bearing
             int32_t off_x = _buffer.posllh.longitude - GPS_home_lon ;
             int32_t off_y = (_buffer.posllh.latitude - GPS_home_lat) / GPS_scale ;
             GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
             if (GPS_bearing < 0) GPS_bearing += 360;
             sent2Core0(GPS_HOME_BEARING, (int32_t) GPS_bearing);
-            
+            // calculate cumulative flow
+            int32_t deltaDistanceCm = GpsDistanceCm(GPS_last_lat - _buffer.posllh.latitude , GPS_last_lon - _buffer.posllh.longitude );
+            if (deltaDistanceCm > 200 && deltaDistanceCm < 100000){
+                GPS_cumulativeDistCm += deltaDistanceCm;
+                GPS_last_lat = _buffer.posllh.latitude;
+                GPS_last_lon = _buffer.posllh.longitude;
+                sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
+            }
         } else {
             GPS_fix = false;
         }
@@ -620,8 +627,11 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     if ( _casicBuffer.nav_pv.velValid >= 7) {
         sent2Core0(NUMSAT,  _casicBuffer.nav_pv.numSV + 100); // add 100 if 3d fix available
         sent2Core0(GROUNDSPEED, _casicBuffer.nav_pv.speed3D * 100); // in ublox = cm/sec, in CASIC float M/sec
-        sent2Core0(LONGITUDE, (int32_t) (_casicBuffer.nav_pv.lon * 10000000));   // in Ublox = degree with 7 decimals, in CASIC float degree 
-        sent2Core0(LATITUDE, (int32_t) ( _casicBuffer.nav_pv.lat* 10000000));   // in Ublox = degree with 7 decimals, in CASIC float degree
+        int32_t casicLat = (int32_t)( _casicBuffer.nav_pv.lat* 10000000);
+        int32_t casicLon = (int32_t)( _casicBuffer.nav_pv.lon* 10000000);
+        
+        sent2Core0(LONGITUDE, casicLon);   // in Ublox = degree with 7 decimals, in CASIC float degree 
+        sent2Core0(LATITUDE, casicLat);   // in Ublox = degree with 7 decimals, in CASIC float degree
         if (_casicBuffer.nav_pv.height > 0) {
             sent2Core0(ALTITUDE,  _casicBuffer.nav_pv.height * 100) ;  // in cm : in Ublox = mm , in CASIC float m
         } else {
@@ -634,19 +644,32 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
         //fields[ALTITUDE].available = true; 
         //fields[HEADING].available = true;
         if ( GPS_home_lat == 0 ) { 
-              GPS_home_lat = (int32_t) ( _casicBuffer.nav_pv.lat* 10000000) ;  // save home position
-              GPS_home_lon = (int32_t) (_casicBuffer.nav_pv.lon * 10000000) ;
+              GPS_home_lat = casicLat ;  // save home position
+              GPS_home_lon = casicLon ;
+              GPS_last_lat = GPS_home_lat;
+              GPS_last_lon = GPS_home_lon;
+              GPS_cumulativeDistCm =  0;
               GPS_scale = cosf(GPS_home_lat * 1.0e-7f * DEG_TO_RAD_FOR_GPS); // calculate scale factor based on latitude
         }
         // Calculate distance
-        float dlat  = (float)(GPS_home_lat -  (int32_t)( _casicBuffer.nav_pv.lat* 10000000));
-        float dlong  = ((float)(GPS_home_lon - (int32_t) (_casicBuffer.nav_pv.lon * 10000000))) * GPS_scale ;
+         
+        float dlat  = (float)(GPS_home_lat -  casicLat);
+        float dlong  = ((float)(GPS_home_lon - casicLon)) * GPS_scale ;
         GPS_distance =  sqrtf( dlat * dlat + dlong * dlong  ) * LOCATION_SCALING_FACTOR;
         // calculate bearing
         int32_t off_x = (int32_t) (_casicBuffer.nav_pv.lon * 10000000) - GPS_home_lon ;
         int32_t off_y = ((int32_t)( _casicBuffer.nav_pv.lat* 10000000) - GPS_home_lat) / GPS_scale ;
         GPS_bearing = 90 + atan2f(-off_y, off_x) * 57.2957795f;  // in degree
         if (GPS_bearing < 0) GPS_bearing += 360;
+                    // calculate cumulative flow
+        int32_t deltaDistanceCm = GpsDistanceCm(GPS_last_lat - casicLat , GPS_last_lon - casicLon );
+        if (deltaDistanceCm > 200 && deltaDistanceCm < 100000){
+            GPS_cumulativeDistCm += deltaDistanceCm;
+            GPS_last_lat = casicLat ;
+            GPS_last_lon = casicLon ;
+            sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
+        }
+
         return true;
     } else {
         //fields[GROUNDSPEED].value  = 0;        // in cm/sec
@@ -662,3 +685,10 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
     }
     return false;
 }
+
+int32_t GPS::GpsDistanceCm(int32_t deltaLat , int32_t deltaLon){
+                float deltaLatFloat = (float) deltaLat;
+                float deltaLonFloat = (float) deltaLon * GPS_scale ;
+                return (int32_t)  (sqrtf( deltaLatFloat * deltaLatFloat + deltaLonFloat * deltaLonFloat  ) * LOCATION_SCALING_FACTOR) ; // in cm   
+}
+           
