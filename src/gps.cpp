@@ -436,8 +436,8 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
                 GPS_cumulativeDistCm += deltaDistanceCm;
                 GPS_last_lat = _buffer.posllh.latitude;
                 GPS_last_lon = _buffer.posllh.longitude;
-                sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
             }
+            sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
         } else {
             GPS_fix = false;
         }
@@ -667,9 +667,8 @@ bool GPS::parseGpsCasic(void) // move the data from buffer to the different fiel
             GPS_cumulativeDistCm += deltaDistanceCm;
             GPS_last_lat = casicLat ;
             GPS_last_lon = casicLon ;
-            sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
         }
-
+        sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
         return true;
     } else {
         //fields[GROUNDSPEED].value  = 0;        // in cm/sec
