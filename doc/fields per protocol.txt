@@ -114,7 +114,7 @@ Roll       degree            Same as above
 
 
 ******************************************************************************************************************
-**                                           Jeti protocol                                                      **
+**                                           Jeti Ex protocol                                                      **
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
@@ -141,13 +141,47 @@ GPS PDOP   0.01 ????         Same as above                                 not t
 GPS bearing from home        Same as above                                 not transmitted
 GPS distance from home       Same as above                                 not transmitted
 GPS cumulative distance m    Same as above                                 not transmitted
-GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
 Roll       degree            Same as above
 Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed          not transmitted 
+
+******************************************************************************************************************
+**                                           Jeti Exbus protocol                                                      **
+******************************************************************************************************************
+field       measured in      mesured and transmitted when                 transmitted as            transmitted in
+-----       -----------      ----------------------------                 --------------            ---------------  
+VOLT1       0.001V           V1 pin is defined                            Volt 1                     0.01V
+VOLT2       0.001V=0.001A    V2 pin is defined                            Current                    0.01A
+Capacity    mAh              V2 pin is defined (reset after power down)   Consumption                0.01Ah
+VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           Volt 3                     0.01V
+                             V3 pin is defined & TEMP=1 or TEMP=2         Temp1                      degree
+VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           Volt 4                     0.01V  
+                             V4 pin is defined & TEMP=2                   Temp2                      degree
+Baro Alt    cm               a baro is installed (and SCL/SDA defined)    Rel. Altitude              dm
+Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed                     cm/sec
+                             if a MP6050 is installed, Vpeed use it too
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) Gps long                 special format
+GPS lat                      Same as above                                 Gps lat                  special format
+GPS speed  cm/sec            Same as above                                 Gps ground speed          0.1 km/h
+GPS course 0.01 degree       Same as above                                 Gps heading              degree
+GPS Alt    cm                Same as above; = alt above see level          Gps Alt                  m
+                             Note : some handsets calculate a relative alt
+GPS number of satelites      Same as above (+100 when 3D fix)              Gps Sat                  no unit 
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 not transmitted 
+GPS PDOP   0.01 ????         Same as above                                 not transmitted 
+GPS bearing from home        Same as above                                 not transmitted
+GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 Gps cum. dist.            0.1km
+RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Pitch      degree            MP6050 is installed (and SCL/SDA defined)     Pitch                    degree
+Roll       degree            Same as above                                 Roll                     degree
+Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
+Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed         Comp Vspeed              m/s 
 
 
 ******************************************************************************************************************
