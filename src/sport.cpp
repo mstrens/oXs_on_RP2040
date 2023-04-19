@@ -162,30 +162,30 @@ void setupSportList(){     // table used by sport
     sportFieldId[SBUS_FAILSAFE_COUNTER] = DIY_SBUS_FAILSAFE_COUNTER;
     sportFieldId[GPS_CUMUL_DIST] =  DIY_GPS_CUMUL_DISTANCE; 
 
-    sportMaxPooling[LATITUDE] = 20;
-    sportMaxPooling[LONGITUDE] = 20;
-    sportMaxPooling[GROUNDSPEED] = 30;
-    sportMaxPooling[HEADING] = 50;
-    sportMaxPooling[ALTITUDE] = 50;
+    sportMaxPooling[LATITUDE] = 50;
+    sportMaxPooling[LONGITUDE] = 50;
+    sportMaxPooling[GROUNDSPEED] = 50;
+    sportMaxPooling[HEADING] = 80;
+    sportMaxPooling[ALTITUDE] = 80;
     sportMaxPooling[NUMSAT] = 200;
     sportMaxPooling[GPS_DATE] = 200;
     sportMaxPooling[GPS_TIME] = 200;
     sportMaxPooling[GPS_PDOP] = 200;
-    sportMaxPooling[GPS_HOME_BEARING] = 50;
-    sportMaxPooling[GPS_HOME_DISTANCE] = 50;
-    sportMaxPooling[MVOLT] = 50;
-    sportMaxPooling[CURRENT] = 50;
-    sportMaxPooling[RESERVE1] = 50;
-    sportMaxPooling[RESERVE2] = 50;
+    sportMaxPooling[GPS_HOME_BEARING] = 80;
+    sportMaxPooling[GPS_HOME_DISTANCE] = 80;
+    sportMaxPooling[MVOLT] = 80;
+    sportMaxPooling[CURRENT] = 80;
+    sportMaxPooling[RESERVE1] = 80;
+    sportMaxPooling[RESERVE2] = 80;
     sportMaxPooling[CAPACITY] = 200;
-    sportMaxPooling[TEMP1] = 50;
-    sportMaxPooling[TEMP2] = 50;
-    sportMaxPooling[VSPEED] = 8;
+    sportMaxPooling[TEMP1] = 80;
+    sportMaxPooling[TEMP2] = 80;
+    sportMaxPooling[VSPEED] = 10;
     sportMaxPooling[RELATIVEALT] = 20;
-    sportMaxPooling[PITCH] = 20;
-    sportMaxPooling[ROLL] = 20;
-    sportMaxPooling[YAW] = 100;
-    sportMaxPooling[RPM] = 50;
+    sportMaxPooling[PITCH] = 30;
+    sportMaxPooling[ROLL] = 30;
+    sportMaxPooling[YAW] = 200;
+    sportMaxPooling[RPM] = 80;
     sportMaxPooling[ADS_1_1] = 200;
     sportMaxPooling[ADS_1_2] = 200;
     sportMaxPooling[ADS_1_3] = 200;
@@ -195,7 +195,7 @@ void setupSportList(){     // table used by sport
     sportMaxPooling[ADS_2_3] = 200;
     sportMaxPooling[ADS_2_4] = 200;
     sportMaxPooling[AIRSPEED] = 30;
-    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 8;
+    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = 10;
     sportMaxPooling[SBUS_HOLD_COUNTER] = 100;
     sportMaxPooling[SBUS_FAILSAFE_COUNTER] = 100;
     sportMaxPooling[GPS_CUMUL_DIST] = 200;  
@@ -438,7 +438,7 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         case AIRSPEED:
             uintValue =  (uint32_t)( ((float) intValue) * 0.194384 ) ;// from cm/s to 0.1kts/h
             if (intValue < 0) uintValue = 0; 
-            break;    
+            break;            
     }
     
     uint16_t crc = 0;
