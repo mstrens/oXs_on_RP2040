@@ -35,20 +35,20 @@
 
 #define MPX_BAUDRATE 38400
 
-//List of polling address
-#define MPX_VOLT    1	     //tension	                           0.1V          -600 à +600
-#define MPX_CURRENT 2        //électricité                        0.1A          -1000 à +1000
-#define MPX_VSPEED  3        //monter/descendre                   0,1 m/s       -500 à +500
-#define MPX_SPEED   4        //vitesse                            0,1 km/h       0 à +6000
-#define MPX_RPM     5        //vitesse rotationnelle         100 tr/min ou 10 tr/min	0 à +500 / -5000
-#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
-#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
-#define MPX_HEIGHT  8	     //Hauteur                             1m         -500 à +2000
-#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
-#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
-#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
-#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
-#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
+//List of default polling address
+//#define MPX_VOLT    1	     //tension	                           0.1V          -600 à +600
+//#define MPX_CURRENT 2        //électricité                        0.1A          -1000 à +1000
+//#define MPX_VSPEED  3        //monter/descendre                   0,1 m/s       -500 à +500
+//#define MPX_SPEED   4        //vitesse                            0,1 km/h       0 à +6000
+//#define MPX_RPM     5        //vitesse rotationnelle         100 tr/min ou 10 tr/min	0 à +500 / -5000
+//#define MPX_TMP     6        //Température                         0.1°C         -250 à +7000
+//#define MPX_DIR     7        //Direction                           0,1 degrés     0 à 3600
+//#define MPX_HEIGHT  8	     //Hauteur                             1m         -500 à +2000
+//#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+//#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
+//#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
+//#define MPX_LIQUID  12       //liquides                            1mL         0 à +16000
+//#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 
 //list of all telemetry units supported by Multiplex protocol
 #define MU_ALT     0x08  // 1m       (-500 2000)
@@ -81,7 +81,7 @@ MU_MAH,      //#define MPX_CONSUMPTION 11   //consommation d'énergie           
 MU_DIST,          //#define MPX_LIQUID  12       //GPS Cumul distance                  0.1 km    0 à +16000
 MU_DIST,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 MU_ALT,           //          //14            // GPS Altitude                 1m          -500 à +2000    
-MU_DIR       //#define MPX_DIR          //15                                          0,1 degrés     0 à 3600
+MU_DIR       //#define MPX_DIR          //15   // GPS Heading                          0,1 degrés     0 à 3600
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
 
@@ -99,7 +99,7 @@ RELATIVEALT,   //#define MPX_HEIGHT  8	     //Hauteur                           
 MVOLT,         //#define MPX_VOLT    9	     //tension	                           0.1V          -600 à +600
 0XFF,          //#define MPX_LQ      10       //Indicateur de qualité du lien	IQL 1 %         0 à +100
 CAPACITY,      //#define MPX_CONSUMPTION 11   //consommation d'énergie              1mAh        -16000 à +16000
-GPS_CUMUL_DIST,          // gps cumul distance                                          0.1 km         0 à +16000
+GPS_CUMUL_DIST,          // gps cumul distance    12                                      0.1 km         0 à +16000
 GPS_HOME_DISTANCE,          //#define MPX_DIST    13       //distance                            0.1 km      0 à +16000
 ALTITUDE,         //14                      // GPS altitude                        1m         -500 à +2000
 HEADING          //15                       // GPS heading                                    0,1 degrés     0 à 3600  
@@ -139,7 +139,7 @@ MPXSTATES mpxState;
 //uint32_t restoreMpxPioToReceiveMillis = 0; // when 0, the pio is normally in receive mode,
 //                                        // otherwise, it is the timestamp when pio transmit has to be restore to receive mode
 
-extern field fields[];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by oXs
 
 extern MS5611 baro1;
 extern SPL06 baro2;
@@ -269,8 +269,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
                 if ( data <= 0X0F ) { // when data is less than 16, it is a sensor polling 
                     mpxState = WAIT_FOR_SENDING;
                     mpxStartWaiting = microsRp();
-                }
-                
+                }                
             }        
             break;
         case WAIT_FOR_SENDING :
@@ -305,15 +304,14 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
 }
 
 
-bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to transmit
+bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field to transmit
     bool sendingRequired = false;
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
     
     if ( fieldId == 0XFF) return false; // do not reply if this address is not supported
-    if ( fields[data_id].available ) fields[data_id].onceAvailable = true;
-    if ( fields[data_id].onceAvailable == false) return false;
-    //if (mpxFieldsToReply[data_id] == false) return false; // do not reply if the hardware does not support it 
+    if ( fields[fieldId].available ) fields[fieldId].onceAvailable = true;
+    if ( fields[fieldId].onceAvailable == false) return false;
     //printf("da id val= %d %d %d %d\n", data_id , fieldId , fields[fieldId].value , fields[fieldId].available );
     
     if ( dma_channel_is_busy(mpx_dma_chan) ) {
@@ -376,8 +374,8 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address of the field to tr
         mpxValue |= 1 << 15;
     //mpxValue = mpxValue << 1; // Shift 1 X and do not set an alarm.
     #define MB_NOVALUE		0x8000
-    if ( fields[fieldId].available == false) return false ; //overwrite with NO_VALUE as long this field has never been available (no reset in mpx protocol) 
-    fields[fieldId].available = false;   // reset the flag available
+    if ( fields[fieldId].available == false) mpxValue = MB_NOVALUE ; //overwrite with NO_VALUE as long this field has never been available (no reset in mpx protocol) 
+    //fields[fieldId].available = false;   // reset the flag available
     //printf("id= %d\n", data_id);
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
