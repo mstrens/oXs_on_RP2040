@@ -333,7 +333,7 @@ void processCmd(){
         }
     }
     // change for voltages
-    if ( *pkey == 'V' ) {
+    if ( *pkey == 'V' && * (pkey+1) >= '0' && * (pkey+1) <= '9') {
         pkey++; // skip 'V' char to extract the digits
         ui2 = strtoul(pkey, NULL, 10);
         if ( (ui2==0 or ui2>4 )){

@@ -202,6 +202,22 @@ Please note that the data being transmitted depends also on the protocol being u
 
 For more information, please look at document "fields per protocol.txt" in folder "doc"
 
+When a baro sensor and an airspeed sensor are both used, oXs calculates 2 vertical speeds: 
+* the normal one based only on the baro sensor; this one is always transmitted
+* an airspeed compensated Vspeed (=dte) that take care of the variation of airspeed.
+
+You can use a channel to control the way airspeed compensated Vspeed is calculated and/or transmitted.
+
+First you have to send a command ACC (via the PC) to specify the channel being used (1...16).
+
+You must use a protocol/wiring (like Sbus, Fbus, Exbus, ...) that allows the Rx to communicate the RC channel values to oXs.
+
+Then, depending on the value sent by the Tx on the selected channel, oXs manages the airspeed compensated Vspeed in different ways:
+* if the value is around the center position, oXs uses a default coefficient (defined in config.h file as 1.15) to calculate compensated Vspeed and transmit it.
+* if the value is largely positive, oXs uses it to adapt the coefficient (from 0.9 up to 1.4). Assigning e.g. a slider to this channel allows you adjust the coefficient while flying to find the best value.
+* if the value is largely negative, oXs sent the "normal" Vspeed in the field foreseen for compensated Vspeed. So even if vario tone is based on compensated Vspeed telemetry field, you can switch while flying between the 2 Vspeed (with a switch on the TX).
+
+Note: you can use the FV command to know the current coefficient. This allow you to check that your Tx sent a Rc channel value that match the expected goal and indeed required, adjust your Tx settings.
 ## ------------------ Led -------------------
 When a RP2040-Zero is used, the firmware will handle a RGB led (internally connected to gpio16).
 * when config is wrong, led is red and ON.
