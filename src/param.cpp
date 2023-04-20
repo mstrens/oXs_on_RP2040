@@ -837,12 +837,10 @@ void printConfig(){
     } else {
         printf("Airspeed sensor is not detected\n")  ;
     } 
-    if ( (ms4525.airspeedInstalled) || sdp3x.airspeedInstalled ){
-        if (config.VspeedCompChannel == 255){
-            printf("    Vspeed compensation channel = %i\n", config.VspeedCompChannel);
-        } else {
-            printf("    No Vspeed compensation channel defined; oXs uses default settings");
-        }
+    if (config.VspeedCompChannel == 255){
+        printf("    Vspeed compensation channel = %i\n", config.VspeedCompChannel);
+    } else {
+        printf("    No Vspeed compensation channel defined; oXs uses default settings\n");
     }
     if (adc1.adsInstalled) {
         printf("First analog to digital sensor is detected using ads1115\n")  ;
@@ -1191,6 +1189,6 @@ void printFieldValues(){
         }
     }
     if (config.VspeedCompChannel != 255){
-        printf("Vspeed compensation = %.2f)\n", dteCompensationFactor);
+        printf("Vspeed compensation = %.2f\n", dteCompensationFactor);
     }
 }
