@@ -141,7 +141,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
         dteChannelValue =  findVspeedCompensation();
         
         #define DTE_MIN_CHANNEL_COMP_VALUE 0X0500
-        #define DTE_MAX_CHANNEL_COMP_VALUE 0X0F00
+        #define DTE_MAX_CHANNEL_COMP_VALUE 0X0700
         #define DTE_NO_CHANNEL_COMP_VALUE  0X0200
         if ( dteChannelValue > DTE_MIN_CHANNEL_COMP_VALUE) {
             if (dteChannelValue > DTE_MAX_CHANNEL_COMP_VALUE) dteChannelValue = DTE_MAX_CHANNEL_COMP_VALUE;
