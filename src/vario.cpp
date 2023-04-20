@@ -139,8 +139,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     uint16_t dteChannelValue = 0X400;  // default value = send compensation
     if (( config.VspeedCompChannel != 255) && lastRcChannels) { // when a channel is used and has been received
         dteChannelValue =  findVspeedCompensation();
-        printf("comp %X\n",dteChannelValue);
-
+        
         #define DTE_MIN_CHANNEL_COMP_VALUE 0X0500
         #define DTE_MAX_CHANNEL_COMP_VALUE 0X0F00
         #define DTE_NO_CHANNEL_COMP_VALUE  0X0200
@@ -188,16 +187,14 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
 } // end calculateVspeedDte
 
 uint16_t VARIO::findVspeedCompensation(){
-    printf("channel= %i\n", config.VspeedCompChannel);
+    //printf("channel= %i\n", config.VspeedCompChannel);
     switch (config.VspeedCompChannel) {
         case 1: return (uint16_t) sbusFrame.rcChannelsData.ch0 ;
         case 2: return (uint16_t) sbusFrame.rcChannelsData.ch1 ;
         case 3: return (uint16_t) sbusFrame.rcChannelsData.ch2 ;
         case 4: return (uint16_t) sbusFrame.rcChannelsData.ch3 ;
         case 5: return (uint16_t) sbusFrame.rcChannelsData.ch4 ;
-        case 6: 
-            printf("val=%X\n", (uint16_t) sbusFrame.rcChannelsData.ch5 );
-            return (uint16_t) sbusFrame.rcChannelsData.ch5 ;
+        case 6: return (uint16_t) sbusFrame.rcChannelsData.ch5 ;
         case 7: return (uint16_t) sbusFrame.rcChannelsData.ch6 ;
         case 8: return (uint16_t) sbusFrame.rcChannelsData.ch7 ;
         case 9: return (uint16_t) sbusFrame.rcChannelsData.ch8 ;

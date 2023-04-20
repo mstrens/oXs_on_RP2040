@@ -161,19 +161,21 @@ void processCmd(){
         return;  
     }
     if (cmdBuffer[0] != 0x0){
-        char * equalPos = strchr( (char*)cmdBuffer, '=');
+        char * equalPos = strchr( (char*)cmdBuffer, '=');  // search position of '='
         
         if (equalPos != NULL){ // there is = so search for value
-            *equalPos = 0x0;
-            equalPos++;
+            *equalPos = 0x0;      // replace '=' with End of string    
+            equalPos++;           // point to next position  
             pvalue = skipWhiteSpace(equalPos);
             removeTrailingWhiteSpace(pvalue);
         }    
-        pkey =  skipWhiteSpace((char*)cmdBuffer);
+        pkey =  skipWhiteSpace((char*)cmdBuffer);  
         removeTrailingWhiteSpace(pkey);
     }
     upperStr(pkey);
     upperStr(pvalue);
+    // pkey point to the key (before '=')
+    // pvalue point to the value
     printf("\nCmd to execute: ");   
     if (pkey) printf("  %s", pkey);
     if (pvalue) printf("=%s", pvalue);
@@ -311,7 +313,7 @@ void processCmd(){
     }
     
     // change for channels
-    if ( *pkey == 'C' ) {
+    if ( *pkey == 'C' && * (pkey+1) >= '0' && * (pkey+1) <= '9') {
         pkey++; // skip 'C' char to extract the digits
         ui2 = strtoul(pkey, NULL, 10);
         //printf("channel is = %u\n", (int) ui2);
