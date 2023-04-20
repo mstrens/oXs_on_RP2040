@@ -31,6 +31,7 @@ public:
     //int32_t intervalSmooth ; // we expect an interval of 20msec between 2 conversions
     float climbRateFloat ;
     float prevClimbRateFloat; 
+    int32_t compensatedVpseed;
     float climbRate2AltFloat;
     float abs_deltaClimbRate;
     uint32_t altMillis ;
@@ -58,7 +59,7 @@ public:
 
     void calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMicros);
     void calculateVspeedDte();
-
+    uint16_t findVspeedCompensation();
 private:
     int32_t prevAlt[20] ;   // table contains the 20 latest altitude
     uint8_t idxPrevAlt ;       // index of last entry in table

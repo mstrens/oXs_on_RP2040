@@ -9,7 +9,13 @@
 #include "tools.h"
 #include "mpu.h"
 #include "math.h"
+#include "param.h"
+#include "crsf_in.h"
 //#include <stdlib.h>     /* abs */
+
+extern CONFIG config;
+extern uint32_t lastRcChannels; // used here for dte compensation factor
+extern sbusFrame_s sbusFrame; // used here for dte compensation factor
 
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MPU mpu;
@@ -21,6 +27,7 @@ extern float difPressureCompVspeedSumPa  ; // calculate a moving average on x va
 extern uint32_t difPressureCompVspeedCount ;
 extern float temperatureKelvin;
 uint32_t prevCompVspeedAvailableMs;
+float dteCompensationFactor = DTE_DEFAULT_COMPENSATION_FACTOR;
 
 
 uint32_t abs1(int32_t value){
@@ -84,7 +91,8 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
         prevClimbRateFloat = climbRateFloat  ;
     }    
     if ( !mpu.mpuInstalled) {   // do not sent when a mp6050 is installed (value will be sent by mpu)
-        sent2Core0( VSPEED , (int32_t) prevClimbRateFloat) ; 
+        compensatedVpseed =  (int32_t) prevClimbRateFloat ; // we save it here first, so we can reuse this field for compensated Vspeed when it is disabled 
+        sent2Core0( VSPEED , compensatedVpseed) ;
     }
     // AltitudeAvailable is set to true only once every 200 msec in order to give priority to climb rate on SPORT
     altMillis = millisRp() ;
@@ -99,7 +107,7 @@ void VARIO::calculateAltVspeed(float baroAltitudeCm , int32_t baro_altIntervalMi
 #define SMOOTHING_DTE_MAX SENSITIVITY_MAX
 #define SMOOTHING_DTE_MIN_AT SENSITIVITY_MIN_AT
 #define SMOOTHING_DTE_MAX_AT SENSITIVITY_MAX_AT
-#define DTE_COMPENSATION_FACTOR 1.15
+
 
 void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each time that an altitude is available
     
@@ -123,8 +131,27 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     if (difPressureCompVspeedCount > 0) difPressureAvgPa = difPressureCompVspeedSumPa / (float) difPressureCompVspeedCount ;
     difPressureCompVspeedSumPa = 0;
     difPressureCompVspeedCount = 0; // reset the values used for averaging  
+    // calculate the dteCompensationFactor
+    // there are 3 cases:
+    // when channel is more than positive(in %), channel value is used to calculate the factor and compensated Vspeed is send
+    // when channel is around at center, we use default value to calculate the factor and compensated Vspeed is send
+    // when channel is more than negative (in %), compensated Vspeed is calculated with previous factor but not sent (we send normal Vspeed) 
+    uint16_t dteChannelValue = 0X400;  // default value = send compensation
+    if (( config.VspeedCompChannel != 255) && lastRcChannels) { // when a channel is used and has been received
+        dteChannelValue =  findVspeedCompensation();
+        #define DTE_MIN_CHANNEL_COMP_VALUE 0X0500
+        #define DTE_MAX_CHANNEL_COMP_VALUE 0X0F00
+        #define DTE_NO_CHANNEL_COMP_VALUE  0X0200
+        if ( dteChannelValue > DTE_MIN_CHANNEL_COMP_VALUE) {
+            if (dteChannelValue > DTE_MAX_CHANNEL_COMP_VALUE) dteChannelValue = DTE_MAX_CHANNEL_COMP_VALUE;
+            dteCompensationFactor = 0.9 + ((float) (dteChannelValue - DTE_MIN_CHANNEL_COMP_VALUE)
+                 * 0.5 / ((float) (DTE_MAX_CHANNEL_COMP_VALUE - DTE_MIN_CHANNEL_COMP_VALUE)) );
+        } else if ( dteChannelValue >= DTE_NO_CHANNEL_COMP_VALUE) {
+            dteCompensationFactor = DTE_DEFAULT_COMPENSATION_FACTOR;
+        } // when dteChannelValue < DTE_NO_CHANNEL_COMP_VALUE, we calculate with the previous dteCompensationFactor
+    }
     float rawCompensationCm = 2926.0 * difPressureAvgPa * temperatureKelvin /  actualPressurePa    ; 
-    float rawTotalEnergyCm =  rawRelAltitudeCm + (rawCompensationCm * DTE_COMPENSATION_FACTOR) ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
+    float rawTotalEnergyCm =  rawRelAltitudeCm + (rawCompensationCm * dteCompensationFactor) ; // 1 means 100% compensation but we add 15% because it seems that it is 15% undercompensated. 
     if (totalEnergyLowPassCm == 0) { // initialize smoothing 
         totalEnergyLowPassCm = totalEnergyHighPassCm = rawTotalEnergyCm ; 
     }
@@ -148,5 +175,34 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     if ( abs( ((int32_t)  smoothCompensatedClimbRateCmS) - compensatedClimbRateCmS) > VARIOHYSTERESIS ) {
         compensatedClimbRateCmS = smoothCompensatedClimbRateCmS  ;
     } 
-    sent2Core0( AIRSPEED_COMPENSATED_VSPEED , (int32_t) compensatedClimbRateCmS) ; 
+    if (( config.VspeedCompChannel != 255) && lastRcChannels && ( dteChannelValue < DTE_NO_CHANNEL_COMP_VALUE) ){
+        sent2Core0( AIRSPEED_COMPENSATED_VSPEED , compensatedVpseed) ; // used normal Vspeed saved value in vario or mpu 
+    } else {
+        sent2Core0( AIRSPEED_COMPENSATED_VSPEED , (int32_t) compensatedClimbRateCmS) ;
+    }     
+        
+    
+     
 } // end calculateVspeedDte
+
+uint16_t VARIO::findVspeedCompensation(){
+    switch (config.VspeedCompChannel) {
+        case 1: return (uint16_t) sbusFrame.rcChannelsData.ch0 ;
+        case 2: return (uint16_t) sbusFrame.rcChannelsData.ch1 ;
+        case 3: return (uint16_t) sbusFrame.rcChannelsData.ch2 ;
+        case 4: return (uint16_t) sbusFrame.rcChannelsData.ch3 ;
+        case 5: return (uint16_t) sbusFrame.rcChannelsData.ch4 ;
+        case 6: return (uint16_t) sbusFrame.rcChannelsData.ch5 ;
+        case 7: return (uint16_t) sbusFrame.rcChannelsData.ch6 ;
+        case 8: return (uint16_t) sbusFrame.rcChannelsData.ch7 ;
+        case 9: return (uint16_t) sbusFrame.rcChannelsData.ch8 ;
+        case 10: return (uint16_t) sbusFrame.rcChannelsData.ch9 ;
+        case 11: return (uint16_t) sbusFrame.rcChannelsData.ch10 ;
+        case 12: return (uint16_t) sbusFrame.rcChannelsData.ch11 ;
+        case 13: return (uint16_t) sbusFrame.rcChannelsData.ch12 ;
+        case 14: return (uint16_t) sbusFrame.rcChannelsData.ch13 ;
+        case 15: return (uint16_t) sbusFrame.rcChannelsData.ch14 ;
+        case 16: return (uint16_t) sbusFrame.rcChannelsData.ch15 ;
+    }
+    return 0X400; // mid value for 11 bits
+}

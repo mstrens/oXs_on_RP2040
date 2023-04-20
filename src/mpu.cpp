@@ -334,8 +334,9 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         sumAz = 0;
         if ( abs((vTrack - prevVTrack) ) >  VARIOHYSTERESIS ) {
             prevVTrack = vTrack ;
-        }    
-        sent2Core0( VSPEED , (int32_t) prevVTrack) ; 
+        }
+        vario1.compensatedVpseed =  (int32_t) prevVTrack ; // we save it here first, so we can reuse this field for compensated Vspeed when it is disabled  
+        sent2Core0( VSPEED , (int32_t) vario1.compensatedVpseed) ; 
     }
     now_ms = millisRp(); //time to print?
     if (now_ms - last_ms >= 500) {

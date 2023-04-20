@@ -79,6 +79,8 @@ extern queue_t qSendCmdToCore1;
 
 extern uint8_t forcedFields;
 
+extern float dteCompensationFactor;
+
 void handleUSBCmd(void){
     int c;
     while (1) {
@@ -143,6 +145,7 @@ void processCmd(){
         printf("-To change GPS type: for an Ublox, enter GPS=U (configured by oXs) or E (configured Externally) and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
         printf("-To force a calibration of MP6050, enter MPUCAL\n");
+        printf("-To use a channel to setup compensated Vspeed factor and/or to select between the 2 Vspeed, enter the channel with VCC=1...16");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -606,6 +609,20 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    // change Vspeed compensation channel 
+    if ( strcmp("VCC", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+            printf("Error : channel must be 1...16 or 255");
+        } else {    
+            config.VspeedCompChannel = ui;
+            printf("Vspeed compensation channel = %u\n" , config.VspeedCompChannel);
+            updateConfig = true;
+        }
+    }
+        
     if (updateConfig) {
         saveConfig();
         printf("config has been saved\n");  
@@ -725,6 +742,10 @@ void checkConfig(){
         printf("Error in parameters: For Spektrum SRXL2, TLM pin may not be defined (but PRI must be defined)\n");
         configIsValid=false;
     }
+    if (!( config.VspeedCompChannel >= 1 or config.VspeedCompChannel <= 16 or config.VspeedCompChannel ==255)){
+        printf("Error in parameters: Vspeed compensation channel must be in range 1...16 or 255\n");
+        configIsValid=false;
+    }
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
@@ -815,7 +836,14 @@ void printConfig(){
         printf("Airspeed sensor is detected using SDP3X\n")  ;
     } else {
         printf("Airspeed sensor is not detected\n")  ;
-    }    
+    } 
+    if ( (ms4525.airspeedInstalled) || sdp3x.airspeedInstalled ){
+        if (config.VspeedCompChannel == 255){
+            printf("    Vspeed compensation channel = %i\n", config.VspeedCompChannel);
+        } else {
+            printf("    No Vspeed compensation channel defined; oXs uses default settings");
+        }
+    }
     if (adc1.adsInstalled) {
         printf("First analog to digital sensor is detected using ads1115\n")  ;
         printf("    Measurement setup: %i , %i , %i ,%i\n", ads_Measure[0][0], ads_Measure[0][1], ads_Measure[0][2], ads_Measure[0][3]) ;
@@ -1014,6 +1042,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.gyroOffsetY = 0;
         config.gyroOffsetZ= 0;
         config.temperature = 255;
+        config.VspeedCompChannel = 255;
     }
     
 } 
@@ -1160,5 +1189,8 @@ void printFieldValues(){
                             
             } // end switch
         }
+    }
+    if (config.VspeedCompChannel != 255){
+        printf("Vspeed compensation = %.2f)\n", dteCompensationFactor);
     }
 }
