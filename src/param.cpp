@@ -145,7 +145,7 @@ void processCmd(){
         printf("-To change GPS type: for an Ublox, enter GPS=U (configured by oXs) or E (configured Externally) and for a CADIS, enter GPS=C\n");
         printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
         printf("-To force a calibration of MP6050, enter MPUCAL\n");
-        printf("-To use a channel to setup compensated Vspeed factor and/or to select between the 2 Vspeed, enter the channel with VCC=1...16");
+        printf("-To use a channel to setup Airspeed compensation factor and/or to select between the 2 Vspeed, enter the channel with ACC=1...16");
     //    printf("-To select the signal generated on:\n");
     //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
@@ -178,6 +178,7 @@ void processCmd(){
     if (pkey) printf("  %s", pkey);
     if (pvalue) printf("=%s", pvalue);
     printf("\n");
+    
     // change PRI pin
     if ( strcmp("PRI", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
@@ -331,7 +332,7 @@ void processCmd(){
     }
     // change for voltages
     if ( *pkey == 'V' ) {
-        pkey++; // skip 'C' char to extract the digits
+        pkey++; // skip 'V' char to extract the digits
         ui2 = strtoul(pkey, NULL, 10);
         if ( (ui2==0 or ui2>4 )){
             printf("Error : Voltage number must be in range 1 / 4\n");
@@ -610,7 +611,7 @@ void processCmd(){
         }
     }
     // change Vspeed compensation channel 
-    if ( strcmp("VCC", pkey) == 0 ) { 
+    if ( strcmp("ACC", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : pin must be an unsigned integer\n");
@@ -622,6 +623,7 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    
         
     if (updateConfig) {
         saveConfig();
@@ -837,7 +839,7 @@ void printConfig(){
     } else {
         printf("Airspeed sensor is not detected\n")  ;
     } 
-    if (config.VspeedCompChannel == 255){
+    if (config.VspeedCompChannel != 255){
         printf("    Vspeed compensation channel = %i\n", config.VspeedCompChannel);
     } else {
         printf("    No Vspeed compensation channel defined; oXs uses default settings\n");
