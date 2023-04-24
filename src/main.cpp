@@ -99,6 +99,11 @@ MPU mpu(1);
 
 field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters that can be measured (not only used by Sport)
 
+// remapping from sbus value to pwm value
+uint16_t fromSbusMin = FROM_SBUS_MIN;
+uint16_t toPwmMin = TO_PWM_MIN; 
+uint16_t fromSbusMax = FROM_SBUS_MAX;
+uint16_t toPwmMax = TO_PWM_MAX; 
 
 // CRSF is managed with 2 pio and not with the internal uart1 in order to freely select the pins
 

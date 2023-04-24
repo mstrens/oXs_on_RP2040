@@ -82,7 +82,7 @@ extern uint8_t forcedFields;
 
 extern float dteCompensationFactor;
 
-extern uint16_t rcSbusOutChannels[16];
+extern sbusFrame_s sbusFrame;
 
 
 void handleUSBCmd(void){
@@ -918,22 +918,22 @@ void printConfig(){
         printf("Failsafe type is HOLD\n")  ;
     } else {
         printf("Failsafe uses predefined values\n")  ;
-    printf("     Chan 1...4  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch0 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch1 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch2 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch3 , 260, 2041, 988, 2012 ) );
-    printf("     Chan 5...8  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch4 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch5 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch6 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch7 , 260, 2041, 988, 2012 ) );
-    printf("     Chan 9...12 = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch8 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch9 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch10 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch11 , 260, 2041, 988, 2012 ) );
-    printf("     Chan 13...16= %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch12 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch13 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch14 , 260, 2041, 988, 2012 )\
-                                                    , (int) fmap( config.failsafeChannels.ch15 , 260, 2041, 988, 2012 ) );
+    printf("     Chan 1...4  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch0  )\
+                                                    , (int) fmap( config.failsafeChannels.ch1 )\
+                                                    , (int) fmap( config.failsafeChannels.ch2 )\
+                                                    , (int) fmap( config.failsafeChannels.ch3 ) );
+    printf("     Chan 5...8  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch4 )\
+                                                    , (int) fmap( config.failsafeChannels.ch5 )\
+                                                    , (int) fmap( config.failsafeChannels.ch6 )\
+                                                    , (int) fmap( config.failsafeChannels.ch7 ) );
+    printf("     Chan 9...12 = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch8 )\
+                                                    , (int) fmap( config.failsafeChannels.ch9 )\
+                                                    , (int) fmap( config.failsafeChannels.ch10 )\
+                                                    , (int) fmap( config.failsafeChannels.ch11 ) );
+    printf("     Chan 13...16= %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch12 )\
+                                                    , (int) fmap( config.failsafeChannels.ch13 )\
+                                                    , (int) fmap( config.failsafeChannels.ch14 )\
+                                                    , (int) fmap( config.failsafeChannels.ch15 ) );
     }
     checkConfig();
 
@@ -1207,14 +1207,31 @@ void printPwmValues(){
     if ( lastRcChannels == 1){
         printf("PWM values are not available - no rc channels data have been received\n");
     } else {
+        uint16_t c[16];
+        c[0] = (uint16_t) sbusFrame.rcChannelsData.ch0 ;
+        c[1] = (uint16_t) sbusFrame.rcChannelsData.ch1 ;
+        c[2] = (uint16_t) sbusFrame.rcChannelsData.ch2 ;
+        c[3] = (uint16_t) sbusFrame.rcChannelsData.ch3 ;
+        c[4] = (uint16_t) sbusFrame.rcChannelsData.ch4 ;
+        c[5] = (uint16_t) sbusFrame.rcChannelsData.ch5 ;
+        c[6] = (uint16_t) sbusFrame.rcChannelsData.ch6 ;
+        c[7] = (uint16_t) sbusFrame.rcChannelsData.ch7 ;
+        c[8] = (uint16_t) sbusFrame.rcChannelsData.ch8 ;
+        c[9] = (uint16_t) sbusFrame.rcChannelsData.ch9 ;
+        c[10] = (uint16_t) sbusFrame.rcChannelsData.ch10 ;
+        c[11] = (uint16_t) sbusFrame.rcChannelsData.ch11 ;
+        c[12] = (uint16_t) sbusFrame.rcChannelsData.ch12 ;
+        c[13] = (uint16_t) sbusFrame.rcChannelsData.ch13 ;
+        c[14] = (uint16_t) sbusFrame.rcChannelsData.ch14 ;
+        c[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
         printf("PWM values us (sbus) 1... 8 ");
-        for (uint8_t i = 0 ; i<8;i++){
-            printf(" %5d(%5d)", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ), rcSbusOutChannels[i]);
+        for (uint8_t i = 0; i<8; i++){
+            printf(" %5d(%5d)", (int) fmap( c[i]  ), c[i]);
         }
         printf("\n");
         printf("PWM values us (sbus) 9...16 ");
-        for (uint8_t i = 8 ; i<16;i++){
-            printf(" %5d(%5d)", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ) , rcSbusOutChannels[i]);
+        for (uint8_t i = 8; i<16; i++){
+            printf(" %5d(%5d)", (int) fmap( c[i] ) , c[i]);
         }
         printf("\n");
         

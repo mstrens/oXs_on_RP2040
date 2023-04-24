@@ -36,6 +36,13 @@ extern bool sbusSecMissingFlag;
 extern bool sbusPriFailsafeFlag;
 extern bool sbusSecFailsafeFlag;
 
+// remapping from sbus value to pwm value
+extern uint16_t fromSbusMin;
+extern uint16_t toPwmMin; 
+extern uint16_t fromSbusMax;
+extern uint16_t toPwmMax; 
+
+
 extern CONFIG config;
 extern uint8_t debugSbusOut;
 
@@ -215,7 +222,7 @@ void updatePWM(){
         for( uint8_t i = 0 ; i < 16 ; i++){    
             if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 
             //pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
-            pwmValue = fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 );
+            pwmValue = fmap( rcSbusOutChannels[i]  );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
             pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
         }   
@@ -223,9 +230,9 @@ void updatePWM(){
     
 }
 
-uint16_t  fmap(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max)
+uint16_t  fmap(uint16_t x)
 {
-    return ((x - in_min) * (out_max - out_min) * 2 / (in_max - in_min) + out_min * 2 + 1) / 2;
+    return (uint16_t)(((int)x - (int)fromSbusMin) * (int)(toPwmMax - toPwmMin) * 2 / (int)(fromSbusMax - fromSbusMin) + (int) toPwmMin * 2 + 1) / 2;
 }
 
 

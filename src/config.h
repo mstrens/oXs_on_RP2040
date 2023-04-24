@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.2.8"
+#define VERSION "2.2.9"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -52,6 +52,12 @@
 
 #define SBUS2_SLOT_HOLD_COUNTER_1 28    // Count the number of hold frames ; require 1 slot; emulate F1713
 #define SBUS2_SLOT_FAILSAFE_COUNTER_1 29    // Count the number of failsafeframes ; require 1 slot; emulate F1713
+
+// parameters to remap the SBUS Rc channel values to PWM values
+#define FROM_SBUS_MIN 172
+#define TO_PWM_MIN 1000
+#define FROM_SBUS_MAX 1811
+#define TO_PWM_MAX 2000
 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100
