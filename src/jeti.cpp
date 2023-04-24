@@ -151,7 +151,14 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
         listOfJetiFields[listOfJetiFieldsIdx++] = TEMP2 ;
     }
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;
-    listOfJetiFieldsIdx = 1 ; 
+    listOfJetiFieldsIdx = 1 ;
+    
+    printf("list of jeti fields: ");
+    for (uint8_t i = 0; i <= numberOfJetiFields ; i++){
+        printf(" %2X", listOfJetiFields[i]);
+    }
+    printf("\n");
+     
 }
 
 bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t * dataType) { // fill fieldValue and dataType for the fieldId when data is available, return true if data is available
@@ -359,6 +366,10 @@ void startJetiTransmit() {
       //printf(" t=%d", config.temperature);
       printf("\n");
     #endif
+    //#define DEBUG_SHORT_JETI_TLM
+    #ifdef DEBUG_SHORT_JETI_TLM
+    printf("jj=%2X  %2X \n",jetiData[8],numberOfJetiFields );// print the first byte of data transmitted and the number of fields
+    #endif
     // copy from jetiData (8 bits) to jetiTxBuffer (16 bits); we add a bit 9 (0 for only 2 bytes), a bit 10 = odd parity and a bit 11= stopbit
     uint8_t * ptr = (uint8_t *) &jetiData[0] ;
     for (uint8_t i = 0; i< jetiMaxData ; i++){ 
@@ -381,6 +392,7 @@ void startJetiTransmit() {
 
 void mergeLabelUnit( const uint8_t identifier , const char * label, const char * unit )
 {
+  //printf("ier= %u\n",identifier);
   uint8_t i = 0 ;
   uint8_t k = 0 ;
   jetiMaxData = 10 ;

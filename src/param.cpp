@@ -24,7 +24,8 @@
 #include "tools.h"
 #include "jeti.h"
 #include "exbus.h"
-
+#include "hardware/pio.h"  // needed for sbus_out_pwm.h
+#include "sbus_out_pwm.h"  // needed to print the PWM values
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
 // GPS_TX = 0/29
@@ -80,6 +81,9 @@ extern queue_t qSendCmdToCore1;
 extern uint8_t forcedFields;
 
 extern float dteCompensationFactor;
+
+extern uint16_t rcSbusOutChannels[16];
+
 
 void handleUSBCmd(void){
     int c;
@@ -156,6 +160,7 @@ void processCmd(){
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
         printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
         printf("        for dummy positive values, enter FVP; for dummy negative values, enter FVN\n")  ;
+        printf("-To get the current PWM values (in micro sec, enter PWM\n)");
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         return;  
@@ -417,9 +422,11 @@ void processCmd(){
             printf("To get real values again, you have to power down\n");
             return;
     }
-
-
-
+    // print current values of all PWM fields
+    if ( strcmp("PWM", pkey) == 0 ) { 
+            printPwmValues();
+            return;
+    }
     // change protocol
     if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
         if (strcmp("S", pvalue) == 0) {
@@ -911,23 +918,22 @@ void printConfig(){
         printf("Failsafe type is HOLD\n")  ;
     } else {
         printf("Failsafe uses predefined values\n")  ;
-    printf("     Chan 1...4  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch0\
-                                                    , (uint32_t) config.failsafeChannels.ch1\
-                                                    , (uint32_t) config.failsafeChannels.ch2\
-                                                    , (uint32_t) config.failsafeChannels.ch3);
-    printf("     Chan 5...8  = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch4\
-                                                    , (uint32_t) config.failsafeChannels.ch5\
-                                                    , (uint32_t) config.failsafeChannels.ch6\
-                                                    , (uint32_t) config.failsafeChannels.ch7);
-    printf("     Chan 9...12 = %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch8\
-                                                    , (uint32_t) config.failsafeChannels.ch9\
-                                                    , (uint32_t) config.failsafeChannels.ch10\
-                                                    , (uint32_t) config.failsafeChannels.ch11);
-    printf("     Chan 13...16= %" PRIu32 " , %" PRIu32 " , %" PRIu32 " , %" PRIu32 "\n", (uint32_t) config.failsafeChannels.ch12\
-                                                    , (uint32_t) config.failsafeChannels.ch13\
-                                                    , (uint32_t) config.failsafeChannels.ch14\
-                                                    , (uint32_t) config.failsafeChannels.ch15);
-
+    printf("     Chan 1...4  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch0 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch1 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch2 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch3 , 260, 2041, 988, 2012 ) );
+    printf("     Chan 5...8  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch4 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch5 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch6 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch7 , 260, 2041, 988, 2012 ) );
+    printf("     Chan 9...12 = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch8 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch9 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch10 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch11 , 260, 2041, 988, 2012 ) );
+    printf("     Chan 13...16= %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch12 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch13 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch14 , 260, 2041, 988, 2012 )\
+                                                    , (int) fmap( config.failsafeChannels.ch15 , 260, 2041, 988, 2012 ) );
     }
     checkConfig();
 
@@ -1194,5 +1200,23 @@ void printFieldValues(){
     }
     if (config.VspeedCompChannel != 255){
         printf("Vspeed compensation = %.2f\n", dteCompensationFactor);
+    }
+}
+
+void printPwmValues(){
+    if ( lastRcChannels == 0){
+        printf("PWM values are not available - no rc channels data have been received\n");
+    } else {
+        printf("PWM values (us) 1... 8 ");
+        for (uint8_t i = 0 ; i<8;i++){
+            printf(" %5d", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ));
+        }
+        printf("\n");
+        printf("PWM values (us) 9...16 ");
+        for (uint8_t i = 8 ; i<16;i++){
+            printf(" %5d", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ));
+        }
+        printf("\n");
+        
     }
 }

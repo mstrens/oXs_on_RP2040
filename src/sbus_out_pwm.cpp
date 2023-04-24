@@ -50,6 +50,9 @@ static const bool ParityTable256[256] =
 
 extern uint8_t ledState;
 
+uint16_t rcSbusOutChannels[16];
+
+
 // Set up a PIO state machine to serialise our bits
 void setupSbusOutPio(){
         // setup the PIO for TX UART
@@ -182,7 +185,6 @@ void setupPwm(){
     }    
 }
 
-uint16_t rcSbusOutChannels[16];
 
 void updatePWM(){
     static uint32_t lastPwmMillis = 0 ;

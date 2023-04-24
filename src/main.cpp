@@ -47,7 +47,6 @@
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
 //         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
-//         fill compensated vspeed with compensated or normal vspeed depending on the value of a channel (require to select the channel)
 //         look to use pitch and roll to stabilize 2 servos for a gimball
 
 // Look at file in folder "doc" for more details
@@ -312,6 +311,11 @@ void setup() {
     toggleRgb();
     }
   sleep_ms(2000);  // in debug mode, wait a little to let USB on PC be able to display all messages
+  uint8_t a1[2] = {1, 2};
+  int debug = 2;
+  debugAX("aa", a1 , 2);
+  //int debug = 2;
+  //dp("test\n");
   // test
   //int32_t testValue = -10;
   //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);

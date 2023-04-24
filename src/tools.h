@@ -101,3 +101,22 @@ int16_t swapBinary(int16_t value) ;
 uint32_t swapBinary(uint32_t value) ;
 
 int32_t swapBinary(int32_t value) ;
+
+
+#define DO_DEBUG
+extern int debug ; // set from conf file at runtime
+#ifdef DO_DEBUG
+  #define debugP(fmt, ...)  do { if(debug == 1){printf((fmt), ##__VA_ARGS__);} } while (0)
+  #define debugAX(txt , a, n)  do { if(debug == 1){printf((txt)); for(uint8_t i = 0; i < n; i++){\
+    printf(" %2X",a[i]);} printf("\n");} } while (0)
+  
+#else
+   #define debugP(fmt, ...){}
+//   #define debugAX(fmt , uint8_t * a[], uint8_t n) {}
+#define debugAX(txt , a, n) {} 
+#endif
+//  #define debug_print(fmt, ...)  do { if(debug == 1){plog(__FILE__, ___FUNCTION__, __LINE__, ((fmt)), ##__VA_ARGS__);} } while (0)
+//#define debug_print(fmt, ...) \
+//            do { if (DEBUG) fprintf(stderr, fmt, ##__VA_ARGS__); } while (0)
+
+

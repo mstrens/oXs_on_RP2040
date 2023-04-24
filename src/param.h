@@ -63,5 +63,6 @@ void printConfig();
 void requestMpuCalibration();
 void printConfigOffsets();
 void printFieldValues();
+void printPwmValues();
 
  //uint8_t * find(uint8_t * search, uint8_t in , uint16_t max); // search for first occurence of search string in "in" buffer  

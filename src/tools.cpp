@@ -297,3 +297,4 @@ int32_t swapBinary(int32_t value) {
     int32_t tmp = ((value << 8) & 0xFF00FF00) | ((value >> 8) & 0xFF00FF);
     return (tmp << 16) | (tmp >> 16);
 }
+
