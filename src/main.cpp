@@ -305,6 +305,7 @@ void test_callback(uint alarmNum){
 
 void setup() {
   stdio_init_all();
+  set_sys_clock_khz(133000, false);
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
