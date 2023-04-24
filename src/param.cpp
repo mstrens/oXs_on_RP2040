@@ -1204,17 +1204,17 @@ void printFieldValues(){
 }
 
 void printPwmValues(){
-    if ( lastRcChannels == 0){
+    if ( lastRcChannels == 1){
         printf("PWM values are not available - no rc channels data have been received\n");
     } else {
-        printf("PWM values (us) 1... 8 ");
+        printf("PWM values us (sbus) 1... 8 ");
         for (uint8_t i = 0 ; i<8;i++){
-            printf(" %5d", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ));
+            printf(" %5d(%5d)", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ), rcSbusOutChannels[i]);
         }
         printf("\n");
-        printf("PWM values (us) 9...16 ");
+        printf("PWM values us (sbus) 9...16 ");
         for (uint8_t i = 8 ; i<16;i++){
-            printf(" %5d", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ));
+            printf(" %5d(%5d)", (int) fmap( rcSbusOutChannels[i] , 260, 2041, 988, 2012 ) , rcSbusOutChannels[i]);
         }
         printf("\n");
         
