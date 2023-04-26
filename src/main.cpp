@@ -193,7 +193,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       //printf("adc2 done\n");
       mpu.begin(); 
       //printf("mpu done\n");
-    //blinkRgb(0,10,0);
+    //blinkRgb(0,10,0,500,1000000); blink red, green, blue at 500 msec for 1000 0000 X
       gps.setupGps();  //use a Pio
       //printf("gps done\n");
       ms4525.begin();
@@ -305,7 +305,8 @@ void test_callback(uint alarmNum){
 
 void setup() {
   stdio_init_all();
-  set_sys_clock_khz(133000, false);
+  bool clockChanged; 
+  clockChanged = set_sys_clock_khz(133000, false);
   setupLed();
   setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
@@ -427,9 +428,16 @@ void setup() {
       setupPwm();
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
-  printConfig(); // config is not valid
+  printConfig(); 
   setRgbColorOn(10,0,0); // set color on red (= no signal)
-  
+  /*
+  if (clockChanged){
+    printf("clock is changed to 133mHz\n");
+  } else {
+    printf("clock is not changed\n");
+  }
+  */ 
+    //checkLedColors(); // this program does not end and so main loop is not called.
 }
 
 void getSensorsFromCore1(){

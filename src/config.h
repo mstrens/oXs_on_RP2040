@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.2.11"
+#define VERSION "2.2.12"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -104,6 +104,11 @@
 
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.15  // used when a channel is not used to setup the factor
+
+
+// -------------- Inverted led color on some RP2040-Zero
+
+//#define INVERTED_RGB // uncomment if red and green colors are inverted on your board
 
 // --------- Reserve for developer. ---------
 

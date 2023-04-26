@@ -14,8 +14,22 @@
 #include "param.h"
 #include <inttypes.h> // used by PRIu32
 
-
-
+// Gap of 20ms between 2 frames
+// 9700 baud, 9 bits, 2 stops , odd parity
+// bit8 = 0 for the synchro byte (0X7E), all other have bit8 = 1
+// byte 0 = 0X7F 
+// byte 1 = 0xnF (n= any value)
+// byte 2 =  bits7...6 = type of frame (00 = txt, 01 = data); bits 5...0 = Length of next bytes includinhg CRC
+// byte 3,4,5,6  = device id
+// byte 7 = 0X00 (fix)
+// for txt:
+// byte 8 = id of the description
+// byte 9 = bits7..3 = length of name ;  bits 2..0 = length of unit
+// next bytes = name + unit in ascii
+// CRC ( 1 byte)
+// for data
+// byte 8 = bits7...4 =  ID of field ; bits 3...0 =  type of data () 
+// byte 9... = value; LSB first ; in MSB, bits 7 = sign; bits7..6 = number of decimals 
 #ifdef DEBUG
 // ************************* Several parameters to help debugging
 //#define DEBUGSETNEWDATA

@@ -6,7 +6,7 @@
 #include "hardware/clocks.h"
 #include "ws2812.pio.h"
 #include "hardware/watchdog.h"
-
+#include "config.h"
 
 
 #include "ws2812.h"
@@ -39,18 +39,20 @@ void setRgbColorOn(uint8_t red , uint8_t green , uint8_t blue){
     rgbRed = red;
     rgbBlue = blue;
     rgbGreen = green;
-    rgbOn = true;
-    pio_sm_put_blocking(rgbPio, rgbSm , ( ((uint32_t) red) <<16) |
-             ( ((uint32_t) green) << 24) |
-             ((uint32_t) blue) << 8 );
+    setRgbOn();
 }
 
 void setRgbOn(){
     rgbOn = true;
-    pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbRed) <<16) |
+    #ifdef INVERTED_RGB
+        pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbGreen) <<16) |
+              (((uint32_t) rgbRed) << 24) |
+             (((uint32_t) rgbBlue) << 8) );
+    #else
+        pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbRed) <<16) |
               (((uint32_t) rgbGreen) << 24) |
              (((uint32_t) rgbBlue) << 8) );
-
+    #endif
 }
 
 void setRgbOff(){
@@ -66,14 +68,23 @@ void toggleRgb(){
     }    
 }
 
-void blinkRgb(uint8_t red , uint8_t green , uint8_t blue){
+void blinkRgb(uint8_t red , uint8_t green , uint8_t blue, uint32_t period , uint32_t count){
     setRgbColor(red,green,blue);
-    while(1){
+    while(count){
         setRgbOn();
         watchdog_update();
-        sleep_ms(500);
+        sleep_ms(period);
         setRgbOff();
         watchdog_update();
-        sleep_ms(500);
+        sleep_ms(period);
+        count--;
     }       
+}
+
+void checkLedColors(){
+    while (1){
+        blinkRgb(10,0,0, 500 , 10);
+        blinkRgb(0,10,0, 1000 , 5);
+        blinkRgb(0,0, 10, 5000 , 1);
+    }
 }
