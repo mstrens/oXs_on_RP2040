@@ -454,7 +454,9 @@ void srxl2ProcessIncomingFrame(){
     }
 }    
 
-
+uint16_t map2Sbus(uint16_t x) {
+    return (uint16_t)(((int)x - 342) * (int)(2000 - 1000) * 2 / (1706 - 342) +  342 * 2 + 1) / 2; 
+}
 // to do, limit to 16 channels; store in 16 fields, code the 16 into 22 bits
 uint16_t srxl2RcChannels[16] = {0X0400}; // servo mid position coded on 11 bits
 
@@ -472,7 +474,7 @@ void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){
     if (mask == 0) return;
     while (mask) {
         if ( mask & 0X1) {
-            srxl2RcChannels[channelIdx] = (srxl2ProcessIn[frameIdx+1]<<8 | srxl2ProcessIn[frameIdx]) >> 5 ;
+            srxl2RcChannels[channelIdx] = map2Sbus((srxl2ProcessIn[frameIdx+1]<<8 | srxl2ProcessIn[frameIdx]) >> 5) ;
             //if( frameIdx == 12) {    // to debug Rc channels messages.
             //    printf("Frame begins with\n");
             //    for (uint8_t i = 0; i < 14 ; i++) {
