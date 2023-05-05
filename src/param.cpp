@@ -160,7 +160,7 @@ void processCmd(){
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
         printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
         printf("        for dummy positive values, enter FVP; for dummy negative values, enter FVN\n")  ;
-        printf("-To get the current PWM values (in micro sec, enter PWM\n)");
+        printf("-To get the current PWM values (in micro sec, enter PWM)\n");
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         return;  

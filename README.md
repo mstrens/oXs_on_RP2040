@@ -228,5 +228,11 @@ When a RP2040-Zero is used, the firmware will handle a RGB led (internally conne
     * blinking green = Sbus and/or PWM signals are based on valid RC channels frames (from one source; from both sources if both are foressen in the setup)
 * when "Boot" button is used for setting the failsafe values, led becomes blue and white (see above)
 
+Note: some users got a RP2040-zero where red and green colors are inverted.
+If you got such a device and want to get the "normal" colors, you can uncomment a line in config.h file.
+It is line :
+
+//#define INVERTED_RGB // uncomment if red and green colors are inverted on your board
+
 
 Please note that other boards do not have a RGB led on gpio16 and so this does not applies.
