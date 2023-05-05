@@ -89,7 +89,7 @@ void setLedState(){
     uint32_t now = millisRp();
     bool priFailsafe = sbusPriFailsafeFlag; // we first try to use the sbus flags
     bool secFailsafe = sbusSecFailsafeFlag;
-    if (config.protocol == 'C'){   // overwrite when protocol is CRSF because we have to take care of last receiving timestamp
+    if ( (config.protocol == 'C') || (config.protocol == 'L') || (config.protocol == 'E') )     {   // overwrite when protocol is CRSF, ESRXL2 or EXbus because we have to take care of last receiving timestamp
         priFailsafe = (now - lastPriChannelsMillis) >  FAILSAFE_DELAY;
         secFailsafe = (now - lastSecChannelsMillis) >  FAILSAFE_DELAY;    
     } else {                       // even for Sbus, it could be that we have to ovewrite
