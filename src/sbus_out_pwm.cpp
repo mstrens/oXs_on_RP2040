@@ -123,7 +123,7 @@ void setLedState(){
             }
         }
     }
-    printf("%d\n", (int) ledState);
+    //printf("%d\n", (int) ledState);
 }
 
 void fillSbusFrame(){

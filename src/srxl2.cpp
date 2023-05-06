@@ -455,7 +455,7 @@ void srxl2ProcessIncomingFrame(){
 }    
 
 uint16_t map2Sbus(uint16_t x) {
-    return (uint16_t)(((int)x - 342) * (int)(2000 - 1000) * 2 / (1706 - 342) +  342 * 2 + 1) / 2; 
+    return (uint16_t)(((int)x - 342) * (int)(1792 - 191) * 2 / (1706 - 342) +  191 * 2 + 1) / 2; 
 }
 // to do, limit to 16 channels; store in 16 fields, code the 16 into 22 bits
 uint16_t srxl2RcChannels[16] = {0X0400}; // servo mid position coded on 11 bits
@@ -511,6 +511,7 @@ void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){
     sbus[21] = (srxl2RcChannels[15]>>3)& 0xff;
     
     sbus[22] = 0x00;
+    printf("fs= %d\n", (int) channelOrFailsafe);
     if ( channelOrFailsafe == SRXL2_RC_FAILSAFE) sbus[22] |= (1<<3);//FS activated   
     //    if(missingPackets >= 1) sbus[22] |= (1<<2);//frame lost
     memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
