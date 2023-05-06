@@ -13,6 +13,7 @@
 #include "param.h"
 #include <inttypes.h> // used by PRIu32
 #include "mpx.h"
+#include "config.h"
 
 // one pio and 2 state machines are used to manage the mpx in halfduplex
 // one state machine (sm) handle the TX and the second the RX
@@ -65,6 +66,55 @@
 #define MU_DIST    0x0D  // 0,1 km   (0-16000)
 // End of list of all telemetry units supported by Multiplex protocol  
 
+uint8_t oXsToMpxUnits[NUMBER_MAX_IDX] = { // same sequence as fieldIdx in tool.h
+// 0xFF means that field is not transmitted in mpx protocol
+    0XFF, //  LATITUDE =0,  //  GPS special format
+    0XFF, //  LONGITUDE,    //  GPS special format
+    MU_ASPD,  // GROUNDSPEED from cm/s (oxs) to 0,1 km/h (mpx)      0 à +6000  
+    MU_DIR,  //   HEADING from 0.01 degree to 0,1 degrés     0 à 3600    
+    MU_ALT,  //  ALTITUDE (gps) from cm to m -500 à +2000 
+
+    0XFF, //  NUMSAT ,      //  5 GPS no unit   
+    0XFF, //  GPS_DATE ,    // GPS special format AAMMJJFF
+    0XFF, //  GPS_TIME ,    // GPS special format HHMMSS00
+    0XFF, //  GPS_PDOP ,    // GPS no unit
+    MU_DIR,  //   GPS_HOME_BEARING, // from degree to  0,1 degrés     0 à 3600
+
+    MU_DIST,  // GPS_HOME_DISTANCE, from m to 0.1 km      0 à +16000
+    MU_VOLT,  //  MVOLT,  volt1      from  mVolt to 0.1V
+    MU_CURR,  //  CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV) to 0.1A    -1000 à +1000
+    0XFF, //  RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    0XFF, //  RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+      
+    MU_MAH,  //  CAPACITY,    // based on current (volt2) from mAh to 1mAh        -16000 à +16000
+    MU_TEMP, //  TEMP1,       // = Volt3 but saved as temp in degree to 0.1°C         -250 à +7000
+    0XFF,  //  TEMP2,       // = Volt4 but saved as temp in degree
+    MU_VSPD,  //  VSPEED,      // baro   from  cm/s to 0,1 m/s       -500 à +500
+    MU_ALT,  //  RELATIVEALT , // baro  from  cm to 1m         -500 à +2000
+      
+    0XFF, //  PITCH,       // 20 imu        in degree 
+    0XFF, //  ROLL,        // imu           in degree
+    0XFF, //  YAW ,        // not used to save data  in degree
+    MU_RPM,  //  RPM ,        // RPM sensor    from Herzt to 00 tr/min ou 10 tr/min	0 à +500 / -5000
+    0XFF, //  ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+
+    0XFF, //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+    0XFF, //  ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+    0XFF, //  ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+    0XFF, //  ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
+    0XFF, //  ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
+      
+    0XFF, //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
+    0XFF, //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
+    MU_ASPD,  //  AIRSPEED,     from ??? to 0,1 km/h       0 à +6000
+    0XFF, //  AIRSPEED_COMPENSATED_VSPEED,
+    0XFF, //  SBUS_HOLD_COUNTER,
+
+    0XFF, //  SBUS_FAILSAFE_COUNTER,                                        // 35        
+    MU_DIST,  //  GPS_CUMUL_DIST,  from ???? to   0.1 km    0 à +16000     
+};
+
+/*
 uint8_t convertMpxAddToUnit[16] = {
 0XFF,       // 0XFF means not used
 0XFF,       // 0XFF means not used
@@ -84,8 +134,11 @@ MU_ALT,           //          //14            // GPS Altitude                 1m
 MU_DIR       //#define MPX_DIR          //15   // GPS Heading                          0,1 degrés     0 à 3600
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+*/
 
-
+#ifdef MPX_SEQUENCE_OF_FIELDS
+uint8_t convertMpxAddToFieldId[16] = MPX_SEQUENCE_OF_FIELDS ; 
+#else
 uint8_t convertMpxAddToFieldId[16] = { 
 0XFF,          // 0XFF means not used
 0XFF,          // 0XFF means not used 1
@@ -105,6 +158,7 @@ ALTITUDE,         //14                      // GPS altitude                     
 HEADING          //15                       // GPS heading                                    0,1 degrés     0 à 3600  
 };
 //0XFF,          //#define MPX_LEVEL   9        //niveau                              1% réservoir    0 à +100
+#endif
 
 //bool mpxFieldsToReply[16] = {false} ; // this table says if oXs has to reply to this index polling (based on hardware installed)
 
@@ -320,7 +374,8 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
     }
     //printf("da id= %d %d\n", data_id , fieldId);
     
-    mpxTxBuffer[0] = (data_id << 4) | convertMpxAddToUnit[data_id] ; // 2X 4 bits (address and units)
+    //mpxTxBuffer[0] = (data_id << 4) | convertMpxAddToUnit[data_id] ; // 2X 4 bits (address and units)
+    mpxTxBuffer[0] = (data_id << 4) | oXsToMpxUnits[fieldId] ; // 2X 4 bits (address and units)
     switch (fieldId) {
         case MVOLT:
             mpxValue= int_round(fields[fieldId].value , 100) ; // from mvolt to 0.1V

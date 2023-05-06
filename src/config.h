@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.2.15"
+#define VERSION "2.2.16"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -20,8 +20,6 @@
 //list of all possible 28 device ID codes (in sequence)
 // 0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F, 
 // 0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B
-
-
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
@@ -53,7 +51,33 @@
 #define SBUS2_SLOT_HOLD_COUNTER_1 28    // Count the number of hold frames ; require 1 slot; emulate F1713
 #define SBUS2_SLOT_FAILSAFE_COUNTER_1 29    // Count the number of failsafeframes ; require 1 slot; emulate F1713
 
-// parameters to remap the SBUS Rc channel values to PWM values
+// ----------Parameters for multiplex protocol -----------------
+// MPX can have max 16 telemetry fields
+// The list below defines the fields that can be transmitted.
+// The sequence defines the number (from 0 up to 15) used on the display of the handset
+// 0XFF means that no field is transmitted
+// You can change the order of the lines but you must keep 16 lines 
+#define MPX_SEQUENCE_OF_FIELDS {\
+            0XFF,\
+            0XFF,\
+            CURRENT,\
+            VSPEED,\
+            GROUNDSPEED,\
+            RPM,\
+            TEMP1,\
+            GPS_HOME_BEARING,\
+            RELATIVEALT,\
+            MVOLT,\
+            0XFF,\
+            CAPACITY,\
+            GPS_CUMUL_DIST,\
+            GPS_HOME_DISTANCE,\
+            ALTITUDE,\
+            HEADING,\
+}
+
+
+// --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
 #define FROM_SBUS_MIN 172
 #define TO_PWM_MIN 988
 #define FROM_SBUS_MAX 1811
