@@ -29,7 +29,7 @@
 #include "tools.h"
 #include "config.h"
 #include "param.h"
-
+#include <math.h>
 
 
 // one pio and 2 state machines are used to manage the sport in halfduplex
@@ -78,6 +78,8 @@ uint8_t sportMaxPooling[NUMBER_MAX_IDX]; // contains the max number of polling a
 uint8_t sportMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
 uint32_t sportLastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each field
 uint32_t sportPoolingNr= 0; // contains the current Pooling nr
+float sportMaxBandwidth = 1; // coeeficient to manage priorities of sport tlm fields (to ensure all fields are sent) 
+
 
 void setupSportList(){     // table used by sport
     uint8_t temp[] = { // sequence of fields (first = highest priority to sent on sport)
@@ -161,7 +163,7 @@ void setupSportList(){     // table used by sport
     sportFieldId[SBUS_HOLD_COUNTER] = DIY_SBUS_HOLD_COUNTER;
     sportFieldId[SBUS_FAILSAFE_COUNTER] = DIY_SBUS_FAILSAFE_COUNTER;
     sportFieldId[GPS_CUMUL_DIST] =  DIY_GPS_CUMUL_DISTANCE; 
-
+/*
     sportMaxPooling[LATITUDE] = 50;
     sportMaxPooling[LONGITUDE] = 50;
     sportMaxPooling[GROUNDSPEED] = 50;
@@ -237,7 +239,7 @@ void setupSportList(){     // table used by sport
     sportMinPooling[SBUS_HOLD_COUNTER] = 50;
     sportMinPooling[SBUS_FAILSAFE_COUNTER] = 50;
     sportMinPooling[GPS_CUMUL_DIST] = 100;
-
+*/
     /*
     fields[LATITUDE].sportDeviceId = SPORT_DEVICEID_P1;
     fields[LONGITUDE].sportDeviceId = SPORT_DEVICEID_P1;
@@ -379,8 +381,8 @@ void sendNextSportFrame(){ // search for the next data to be sent
     // first we search the first field 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
          _fieldId = sportPriority[i]; // retrieve field ID to be checked
-         if (fields[_fieldId].available) {
-            if (currentPollingNr >= (sportLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
+         if ((fields[_fieldId].available) && (sportMaxPooling[_fieldId] > 0))  {
+            if (currentPollingNr > (sportLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
                 sendOneSport(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
@@ -391,8 +393,8 @@ void sendNextSportFrame(){ // search for the next data to be sent
     // repeat base on min 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
          _fieldId = sportPriority[i]; // retrieve field ID to be checked
-         if (fields[_fieldId].available) {
-            if (currentPollingNr >= (sportLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
+         if ((fields[_fieldId].available) && (sportMaxPooling[_fieldId] > 0)) {
+            if (currentPollingNr > (sportLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
                 sendOneSport(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
@@ -492,3 +494,62 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
     restoreSportPioToReceiveMillis = millisRp() + 6;   
 }
 
+void calculateSportMaxBandwidth(){
+    for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){
+        sportMaxBandwidth = 10; // dummy value just to be sure it is initialized
+    }
+    // fill with values from config.h
+    sportMaxPooling[LATITUDE] = P_LATITUDE;
+    sportMaxPooling[LONGITUDE] = P_LONGITUDE;
+    sportMaxPooling[GROUNDSPEED] = P_GROUNDSPEED;
+    sportMaxPooling[HEADING] = P_HEADING;
+    sportMaxPooling[ALTITUDE] = P_ALTITUDE;
+    sportMaxPooling[NUMSAT] = P_NUMSAT;
+    sportMaxPooling[GPS_DATE] = P_GPS_DATE;
+    sportMaxPooling[GPS_TIME] = P_GPS_TIME;
+    sportMaxPooling[GPS_PDOP] = P_GPS_PDOP;
+    sportMaxPooling[GPS_HOME_BEARING] = P_GPS_HOME_BEARING;
+    sportMaxPooling[GPS_HOME_DISTANCE] = P_GPS_HOME_DISTANCE;
+    sportMaxPooling[MVOLT] = P_MVOLT;
+    sportMaxPooling[CURRENT] = P_CURRENT;
+    sportMaxPooling[RESERVE1] = P_RESERVE1;
+    sportMaxPooling[RESERVE2] = P_RESERVE2;
+    sportMaxPooling[CAPACITY] = P_CAPACITY;
+    sportMaxPooling[TEMP1] = P_TEMP1;
+    sportMaxPooling[TEMP2] = P_TEMP2;
+    sportMaxPooling[VSPEED] = P_VSPEED;
+    sportMaxPooling[RELATIVEALT] = P_RELATIVEALT;
+    sportMaxPooling[PITCH] = P_PITCH;
+    sportMaxPooling[ROLL] = P_ROLL;
+    sportMaxPooling[YAW] = P_YAW;
+    sportMaxPooling[RPM] = P_RPM;
+    sportMaxPooling[ADS_1_1] = P_ADS_1_1;
+    sportMaxPooling[ADS_1_2] = P_ADS_1_2;
+    sportMaxPooling[ADS_1_3] = P_ADS_1_3;
+    sportMaxPooling[ADS_1_4] = P_ADS_1_4;
+    sportMaxPooling[ADS_2_1] = P_ADS_2_1;
+    sportMaxPooling[ADS_2_2] = P_ADS_2_2;
+    sportMaxPooling[ADS_2_3] = P_ADS_2_3;
+    sportMaxPooling[ADS_2_4] = P_ADS_2_4;
+    sportMaxPooling[AIRSPEED] = P_AIRSPEED;
+    sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = P_AIRSPEED_COMPENSATED_VSPEED;
+    sportMaxPooling[SBUS_HOLD_COUNTER] = P_SBUS_HOLD_COUNTER;
+    sportMaxPooling[SBUS_FAILSAFE_COUNTER] = P_SBUS_FAILSAFE_COUNTER;
+    sportMaxPooling[GPS_CUMUL_DIST] = P_GPS_CUMUL_DIST;  
+    // sum of inverted values only when field is used
+    sportMaxBandwidth = 0;
+    for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){
+        if ((fields[i].onceAvailable) && (sportMaxPooling[i]>0)) sportMaxBandwidth += 1.0 / sportMaxPooling[i];
+    }
+    //sportMaxprintf("MaxBW=%f\n",max);
+    if ( sportMaxBandwidth == 0) sportMaxBandwidth=1.0;
+    // adapt the min and max
+    for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){
+        if ((fields[i].onceAvailable) && (sportMaxPooling[i]>0)) {
+            sportMaxPooling[i] = sportMaxPooling[i] * sportMaxBandwidth ;
+            sportMinPooling[i] = sportMaxPooling[i] >> 1 ; // min are equal to max / 2
+            //printf("%i =  %i\n", (int)i , (int) sportMaxPooling[i] );
+        }    
+    }
+    
+}

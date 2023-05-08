@@ -11,6 +11,8 @@ void handleSportRxTx(void);
 void sendNextSportFrame() ; // search for the next data to be sent
 void sendOneSport(uint8_t idx); 
 
+void calculateSportMaxBandwidth();
+
 
 // FrSky new DATA IDs (2 bytes) (copied from openTX telemetry/frsky_sport.cpp on jan 2023) // those values are not used directly but bits 4 up to 11 are stored in an array in oXs_out_frsky.cpp 
 // FrSky new DATA IDs (2 bytes)

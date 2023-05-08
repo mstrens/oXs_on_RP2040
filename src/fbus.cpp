@@ -114,6 +114,8 @@ extern uint8_t sportMaxPooling[NUMBER_MAX_IDX]; // contains the max number of po
 extern uint8_t sportMinPooling[NUMBER_MAX_IDX]; // contains the min number of polling allowed between 2 transmissions
 uint32_t fbusLastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each field
 uint32_t fbusPoolingNr= 0; // contains the current Pooling nr
+extern float sportMax ; // coeeficient to manage priorities of sport tlm fields (to ensure all fields are sent) 
+
 
 uint32_t fbusRxMicros;
 
@@ -355,8 +357,8 @@ void sendNextFbusFrame(){ // search for the next data to be sent
     // first we search the first field 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
          _fieldId = sportPriority[i]; // retrieve field ID to be checked
-         if (fields[_fieldId].available) {
-            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
+        if ((fields[_fieldId].available) && (sportMaxPooling[_fieldId] > 0)) {
+            if (currentPollingNr > (fbusLastPoolingNr[_fieldId] + sportMaxPooling[_fieldId])){
                 sendOneFbus(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 fbusLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
@@ -367,8 +369,8 @@ void sendNextFbusFrame(){ // search for the next data to be sent
     // repeat base on min 
     for (uint8_t i = 0 ; i< NUMBER_MAX_IDX ; i++ ){
          _fieldId = sportPriority[i]; // retrieve field ID to be checked
-         if (fields[_fieldId].available) {
-            if (currentPollingNr >= (fbusLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
+        if ((fields[_fieldId].available) && (sportMaxPooling[_fieldId] > 0)) {
+            if (currentPollingNr > (fbusLastPoolingNr[_fieldId] + sportMinPooling[_fieldId])){
                 sendOneFbus(_fieldId);
                 fields[_fieldId].available = false; // flag as sent
                 fbusLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 

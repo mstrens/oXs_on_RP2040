@@ -1,13 +1,13 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.2.16"
+#define VERSION "2.3.0"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
-// -----------  for Sport protocol -------------------------------
+// -----------  for Sport and Fbus protocols -------------------------------
 #define SPORT_DEVICEID    DATA_ID_FAS  // this line defines the physical ID used by sport. 
 
 // default SPORT_SENSOR_ID use by some original frsky sensors
@@ -20,6 +20,52 @@
 //list of all possible 28 device ID codes (in sequence)
 // 0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F, 
 // 0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B
+
+// The #define below allow to setup the relative priority of field transmissions
+// Value should be in range 3...250 
+// A field with a lower value will be transmitted more often than another field with a higher value  
+// Still value 0 means that this field may not be transmitted
+// The values are relative.
+//     E.g. if oXs has 3 fields to transmit; one with priority 5 and 2 with priority 50
+//        the one with priority 5 will be transmitted about 10 X more often than the 2 others   
+// There is no need to set the value to 0 for fields not available (e.g. GPS fields if GPS pins are undefined) 
+#define P_LATITUDE 50
+#define P_LONGITUDE 50
+#define P_GROUNDSPEED 50
+#define P_HEADING 80
+#define P_ALTITUDE 80
+#define P_NUMSAT 200
+#define P_GPS_DATE 200
+#define P_GPS_TIME 200
+#define P_GPS_PDOP 200
+#define P_GPS_HOME_BEARING 80
+#define P_GPS_HOME_DISTANCE 80
+#define P_MVOLT 80
+#define P_CURRENT 80
+#define P_RESERVE1 80
+#define P_RESERVE2 80
+#define P_CAPACITY 200
+#define P_TEMP1 80
+#define P_TEMP2 80
+#define P_VSPEED 10
+#define P_RELATIVEALT 20
+#define P_PITCH 30
+#define P_ROLL 30
+#define P_YAW 200
+#define P_RPM 80
+#define P_ADS_1_1 200
+#define P_ADS_1_2 200
+#define P_ADS_1_3 200
+#define P_ADS_1_4 200
+#define P_ADS_2_1 200
+#define P_ADS_2_2 200
+#define P_ADS_2_3 200
+#define P_ADS_2_4 200
+#define P_AIRSPEED 30
+#define P_AIRSPEED_COMPENSATED_VSPEED 10
+#define P_SBUS_HOLD_COUNTER 100
+#define P_SBUS_FAILSAFE_COUNTER 100
+#define P_GPS_CUMUL_DIST 200  
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future

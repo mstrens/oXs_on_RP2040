@@ -466,7 +466,11 @@ void getSensorsFromCore1(){
             } else {
                 fields[entry.type].value = entry.data;
                 fields[entry.type].available = true ;
-                fields[entry.type].onceAvailable = true ;
+                if (fields[entry.type].onceAvailable == false){
+                    fields[entry.type].onceAvailable = true ;
+                    // update sportMaxBandwidth for some protocols
+                    if ( (config.protocol == 'S') || (config.protocol == 'F') )  calculateSportMaxBandwidth(); 
+                }    
                 //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
             }    
         }

@@ -160,6 +160,12 @@ extern uint32_t lastSecChannelsMillis;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
+extern uint32_t sbusFailsafeCounter;
+extern uint32_t sbusFrameCounter;
+extern bool prevFailsafeFlag;
+
+
+
 void setupSrxl2() {
 // configure the queue to get the data from srxl2 in the irq handle
     queue_init (&srxl2RxQueue, sizeof(uint16_t), 250);  // one byte per item
@@ -511,10 +517,14 @@ void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){
     sbus[21] = (srxl2RcChannels[15]>>3)& 0xff;
     
     sbus[22] = 0x00;
-    printf("fs= %d\n", (int) channelOrFailsafe);
-    if ( channelOrFailsafe == SRXL2_RC_FAILSAFE) sbus[22] |= (1<<3);//FS activated   
+    //printf("fs= %d\n", (int) channelOrFailsafe);
+    sbusPriFailsafeFlag = false;
+    if ( channelOrFailsafe == SRXL2_RC_FAILSAFE) sbusPriFailsafeFlag = true; // same action as sbus[22] |= (1<<3);//FS activated   
     //    if(missingPackets >= 1) sbus[22] |= (1<<2);//frame lost
-    memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
+    memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 22) ; // copy the data to the Sbus buffer
+    sbusFrameCounter++;
+    if ( sbusPriFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
+    prevFailsafeFlag = sbusPriFailsafeFlag;
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
 }
