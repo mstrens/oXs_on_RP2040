@@ -11,6 +11,7 @@
 #include "stdio.h"
 #include "ws2812.h"
 #include "pwm.pio.h"
+#include "mpu.h"
 
 // Sbus is 100000 baud, even parity, 8 bits , 2 stops,  inverted
 // in order to use the PIO we calculate in the main program the parity bit and the second stop bit
@@ -45,6 +46,9 @@ extern uint16_t toPwmMax;
 
 extern CONFIG config;
 extern uint8_t debugSbusOut;
+
+extern MPU mpu;
+extern field fields[];
 
 static const bool ParityTable256[256] = 
 {
@@ -224,7 +228,23 @@ void updatePWM(){
             //pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
             pwmValue = fmap( rcSbusOutChannels[i]  );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
+            #ifdef PITCH_RATIO
+                if ( (i==15) && (mpu.mpuInstalled)) {
+                    float pitch = fields[PITCH].value;  // in degree
+                    // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
+                    // so compensation of pitch 90° should change PWM value by 512 step
+                    // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000
+                    
+                    int16_t _pwmValue = ((int16_t) pwmValue) - (int16_t) (pitch * PITCH_RATIO * 0.0569) ; 
+                    int16_t max = fmapMinMax(PITCH_MAX);
+                    int16_t min = fmapMinMax(PITCH_MIN);
+                    if (_pwmValue > max ) _pwmValue = max;
+                    if (_pwmValue < min ) _pwmValue = min;
+                    pwmValue = _pwmValue;
+                } 
+            #endif
             pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
+            
         }   
     }
     
@@ -236,6 +256,10 @@ uint16_t  fmap(uint16_t x)
 }
 
 
+
+uint16_t fmapMinMax(int x){
+    return (((x + 100) * (int)(toPwmMax - toPwmMin) / 100) + toPwmMin * 2 + 1) / 2;
+}
 
 /*
 

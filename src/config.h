@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.3.0"
+#define VERSION "2.3.1"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -179,6 +179,13 @@
 // -------------- Inverted led color on some RP2040-Zero
 
 //#define INVERTED_RGB // uncomment if red and green colors are inverted on your board
+
+
+// -------------- Camera stabilizer ----------------------------------------
+
+//#define PITCH_RATIO  100  // uncomment this line to activate stabilisation on Pitch; increase/decrease the value in case of under/over stabilisation  
+#define PITCH_MAX 100     // adapt upper limit of servo travel 
+#define PITCH_MIN -100    // adapt lower limit of servo travel
 
 // --------- Reserve for developer. ---------
 
