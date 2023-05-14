@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.3.1"
+#define VERSION "2.3.2"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -121,6 +121,14 @@
             ALTITUDE,\
             HEADING,\
 }
+
+// uncomment next lines if you want to get some alarm and then set the alarm value
+#define MPX_ALARM_MVOLT_MIN 1100 // alarm when Mvolt is lower that this value
+#define MPX_ALARM_MA_MAX 20000   // alarm when current (in mA) is higher than this value
+#define MPX_ALARM_MAH_MAX 2000  // alarm when capacity (in mAh) is higher than this value
+#define MPX_ALARM_TEMP1_MAX 100  // alarm when temp1 (in degree) is higher than this value
+#define MPX_ALARM_TEMP2_MAX 100  // alarm when temp2 (in degree) is higher than this value
+#define MPX_ALARM_CM_MAX 12000  // alarm when relative altitude (in cm) is higher than this value
 
 
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------

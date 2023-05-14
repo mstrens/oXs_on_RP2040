@@ -360,6 +360,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
 
 bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field to transmit
     bool sendingRequired = false;
+    bool alarm = false;
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
     
@@ -379,15 +380,27 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
     switch (fieldId) {
         case MVOLT:
             mpxValue= int_round(fields[fieldId].value , 100) ; // from mvolt to 0.1V
+            #ifdef MPX_ALARM_MVOLT_MIN
+            if (fields[fieldId].value > MPX_ALARM_MVOLT_MIN) alarm = true;
+            #endif
             break;
         case CURRENT:
             mpxValue= int_round(fields[fieldId].value , 100); // from mamp to 0.1A
+            #ifdef MPX_ALARM_MA_MAX
+            if (fields[fieldId].value > MPX_ALARM_MA_MAX) alarm = true;
+            #endif
             break;
         case CAPACITY:
             mpxValue= fields[fieldId].value ; // from mah to mah
+            #ifdef MPX_ALARM_MAH_MAX
+            if (fields[fieldId].value > MPX_ALARM_MAH_MAX) alarm = true;
+            #endif
             break;
         case TEMP1:
             mpxValue= fields[fieldId].value * 10; // from ° to 0.1°
+            #ifdef MPX_ALARM_TEMP1_MAX
+            if (fields[fieldId].value > MPX_ALARM_TEMP1_MAX) alarm = true;
+            #endif
             break;
         case VSPEED:
             mpxValue= int_round(fields[fieldId].value , 10); // from cm/sec to 0.1m/sec
@@ -415,6 +428,9 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
             break;
         case RELATIVEALT:
             mpxValue= int_round(fields[fieldId].value ,100) ; // from cm to m
+            #ifdef MPX_ALARM_CM_MAX
+            if (fields[fieldId].value > MPX_ALARM_CM_MAX) alarm = true;
+            #endif
             break;            
     }
     if (mpxValue > 16383)
@@ -434,6 +450,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
     //printf("id= %d\n", data_id);
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
+    if (alarm) mpxTxBuffer[2] |= 0X1; // set the alarm flag
     mpx_uart_rx_program_stop(mpxPio, mpxSmRx, config.pinTlm); // stop receiving
     mpx_uart_tx_program_start(mpxPio, mpxSmTx, config.pinTlm, false); // prepare to transmit
     // start the DMA channel with the data to transmit
