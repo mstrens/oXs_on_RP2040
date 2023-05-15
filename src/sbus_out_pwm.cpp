@@ -236,9 +236,9 @@ void updatePWM(){
                 if ( (i==15) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
                     // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
                     // so compensation of pitch 90° should change PWM value by 512 step
-                    // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000
-                    
-                    int16_t _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * PITCH_RATIO * 0.0569) ; 
+                    // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000 = pitch *ratio * 0.0569
+                    // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
+                    int16_t _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * PITCH_RATIO * 0.00569) ; 
                     int16_t max = fmapMinMax(PITCH_MAX);
                     int16_t min = fmapMinMax(PITCH_MIN);
                     if (_pwmValue > max ) _pwmValue = max;
