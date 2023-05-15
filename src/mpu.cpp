@@ -323,6 +323,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     // here above is executed nearly once per millisec 
     roll  = RAD_TO_DEGREE * atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
     pitch = RAD_TO_DEGREE * asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
+    sent2Core0( 0XFE , (int32_t) pitch) ;
     if (vario1.newClimbRateAvailableForMpu){   // here once per about 20 msec
         vario1.newClimbRateAvailableForMpu = false; // reset the flag that says a new relative alt is available
         azWorldAverage = (sumAccZ/countAccZ);

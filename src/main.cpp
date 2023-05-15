@@ -126,6 +126,9 @@ void core1_main(); // prototype of core 1 main function
 
 uint8_t forcedFields = 0; // use to debug a protocol; force the values when = 'P' (positive) or 'N' (negative)
 
+int32_t cameraPitch;
+int32_t cameraRoll;
+
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
     // send 10 SCL clock to force sensor to release sda
@@ -367,6 +370,7 @@ void setup() {
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
         fields[i].available= false;
+        fields[i].onceAvailable = false;
       }  
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
@@ -447,7 +451,7 @@ void getSensorsFromCore1(){
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
             if (entry.type >= NUMBER_MAX_IDX) {
-                if (entry.type == 0XFF && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
+                if (entry.type == SAVE_CONFIG_ID && entry.data == 0XFFFFFFFF) {  // this is a command to save the config.
                     watchdog_enable(15000,false);
                     sleep_ms(1000);
                     printf("\nCalibration has been done");
@@ -460,6 +464,10 @@ void getSensorsFromCore1(){
                     watchdog_enable(1500,false);
                     sleep_ms(1000);
                     watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
+                } else if (entry.type == CAMERA_PITCH_ID) {
+                    cameraPitch = entry.data;
+                } else if (entry.type == CAMERA_ROLL_ID) {
+                    cameraRoll = entry.data;
                 } else {
                     printf("error : invalid type of sensor = %d\n", entry.type);
                 }    

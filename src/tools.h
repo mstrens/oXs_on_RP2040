@@ -68,6 +68,13 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
 //    - in sbus2_tlm.cpp add code (for a slot)
 //    - in config.h , add slot for sbus2
 //    - in exbus.cpp , adapt one table and program (name and unit)
+//    - For mpx there is also some check to be done (???)
+
+#define SAVE_CONFIG_ID 0XFF
+#define CAMERA_PITCH_ID 0XFE
+#define CAMERA_ROLL_ID 0XFD
+
+
 int32_t int_round(int32_t n, uint32_t d);
 
 uint32_t millisRp() ;
