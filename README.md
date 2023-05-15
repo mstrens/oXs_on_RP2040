@@ -174,8 +174,10 @@ Still, ELRS receivers can be configured to use another baud rate. In this case, 
 You have to compile your self the firmware if you want to change some values in the config.h file in order e.g. to:
 * change the setup of the ADS1115
 * allocate other slots for Sbus2 in Futaba protocol
-* allocate another physical ID for Sport in Sport protocol
-
+* allocate another physical ID for Sport in Sport/Fbus protocols
+* avoid or change priorities of some telemetry fields for Sport in Sport/Fbus protocols
+* assign another sequence number and/of generate alarms for some telemetry fields in Multiplex protocol
+* change the I2C address of some I2C sensors
 
 ## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.

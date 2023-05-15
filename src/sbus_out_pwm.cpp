@@ -240,6 +240,7 @@ void updatePWM(){
                     int16_t min = fmapMinMax(PITCH_MIN);
                     if (_pwmValue > max ) _pwmValue = max;
                     if (_pwmValue < min ) _pwmValue = min;
+                    printf("%i %i %i", pitch , pwmValue , _pwmValue);
                     pwmValue = _pwmValue;
                 } 
             #endif

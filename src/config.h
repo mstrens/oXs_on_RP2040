@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.3.3"
+#define VERSION "2.3.4"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -122,13 +122,13 @@
             HEADING,\
 }
 
-// uncomment next lines if you want to get some alarm and then set the alarm value
-#define MPX_ALARM_MVOLT_MIN 1100 // alarm when Mvolt is lower that this value
-#define MPX_ALARM_MA_MAX 20000   // alarm when current (in mA) is higher than this value
-#define MPX_ALARM_MAH_MAX 2000  // alarm when capacity (in mAh) is higher than this value
-#define MPX_ALARM_TEMP1_MAX 100  // alarm when temp1 (in degree) is higher than this value
-#define MPX_ALARM_TEMP2_MAX 100  // alarm when temp2 (in degree) is higher than this value
-#define MPX_ALARM_CM_MAX 12000  // alarm when relative altitude (in cm) is higher than this value
+// uncomment next line(s) if you want to get some alarm and then set the alarm value
+//#define MPX_ALARM_MVOLT_MIN 1100 // alarm when Mvolt is lower that this value
+//#define MPX_ALARM_MA_MAX 20000   // alarm when current (in mA) is higher than this value
+//#define MPX_ALARM_MAH_MAX 2000  // alarm when consumed capacity (in mAh) is higher than this value
+//#define MPX_ALARM_TEMP1_MAX 100  // alarm when temp1 (in degree) is higher than this value
+//#define MPX_ALARM_TEMP2_MAX 100  // alarm when temp2 (in degree) is higher than this value
+//#define MPX_ALARM_CM_MAX 12000  // alarm when relative altitude (in cm) is higher than this value
 
 
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
@@ -150,7 +150,7 @@
 //                        this can be done using a FTDI and program GnssToolkit3.exe (to download from internet)
 
 // --------- Parameter for RPM -------------------
-#define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec
+#define RPM_COUNTER_INTERVAL_USEC 100000 // in usec (so 100000 = 100 msec)
 
 // --------- Parameters for Ads1115 ----------------
 #define I2C_ADS_Add1 0x48 // I2C address of ads1115 when addr pin is connected to ground
