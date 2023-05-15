@@ -450,7 +450,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
     //printf("id= %d\n", data_id);
     mpxTxBuffer[1] = mpxValue ; //LOWER part
     mpxTxBuffer[2] = mpxValue >> 8; // upper part
-    if (alarm) mpxTxBuffer[2] |= 0X1; // set the alarm flag
+    if (alarm) mpxTxBuffer[1] |= 0X1; // set the alarm flag
     mpx_uart_rx_program_stop(mpxPio, mpxSmRx, config.pinTlm); // stop receiving
     mpx_uart_tx_program_start(mpxPio, mpxSmTx, config.pinTlm, false); // prepare to transmit
     // start the DMA channel with the data to transmit
