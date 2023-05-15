@@ -48,7 +48,10 @@ extern CONFIG config;
 extern uint8_t debugSbusOut;
 
 extern MPU mpu;
+extern float yaw, pitch, roll; //Euler angle output
+
 extern field fields[];
+
 
 static const bool ParityTable256[256] = 
 {
@@ -229,8 +232,7 @@ void updatePWM(){
             pwmValue = fmap( rcSbusOutChannels[i]  );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
             #ifdef PITCH_RATIO
-                if ( (i==15) && (mpu.mpuInstalled)) {
-                    float pitch = fields[PITCH].value;  // in degree
+                if ( (i==15) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
                     // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
                     // so compensation of pitch 90° should change PWM value by 512 step
                     // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000
@@ -240,7 +242,7 @@ void updatePWM(){
                     int16_t min = fmapMinMax(PITCH_MIN);
                     if (_pwmValue > max ) _pwmValue = max;
                     if (_pwmValue < min ) _pwmValue = min;
-                    printf("%i %i %i\n", pitch , pwmValue , _pwmValue);
+                    printf("%i %i %i\n", (int) pitch , (int) pwmValue , (int) _pwmValue);
                     pwmValue = _pwmValue;
                 } 
             #endif

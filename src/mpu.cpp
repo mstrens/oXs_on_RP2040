@@ -36,6 +36,7 @@ MPU::MPU(int a)
 
 
 #define PI 3.1416
+#define RAD_TO_DEGREE 57.296 //180 / 3.1416
 //float A_cal[6] = {335.0, 79.0, 1132.0, 1.0, 1.000, 1.0}; // 0..2 offset xyz, 3..5 scale xyz
 //float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
 float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> rad/s
@@ -320,6 +321,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     countAccZ++;
         //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
+    roll  = RAD_TO_DEGREE * atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
+    pitch = RAD_TO_DEGREE * asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
     if (vario1.newClimbRateAvailableForMpu){   // here once per about 20 msec
         vario1.newClimbRateAvailableForMpu = false; // reset the flag that says a new relative alt is available
         azWorldAverage = (sumAccZ/countAccZ);
@@ -336,15 +339,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
             prevVTrack = vTrack ;
         }
         vario1.compensatedVpseed =  (int32_t) prevVTrack ; // we save it here first, so we can reuse this field for compensated Vspeed when it is disabled  
-        sent2Core0( VSPEED , (int32_t) vario1.compensatedVpseed) ; 
+        sent2Core0( VSPEED , (int32_t) vario1.compensatedVpseed) ;     
     }
     now_ms = millisRp(); //time to print?
     if (now_ms - last_ms >= 500) {
         last_ms = now_ms;
-        roll  = atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
-        pitch = asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
-        pitch *= 180.0 / PI;
-        roll *= 180.0 / PI;
         sent2Core0( PITCH , (int32_t) pitch ) ; 
         sent2Core0( ROLL , (int32_t) roll ) ; 
         // print angles for serial plotter...
