@@ -238,7 +238,7 @@ void updatePWM(){
             pwmValue = fmap( rcSbusOutChannels[i]  );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
             #ifdef PITCH_CONTROL_CHANNEL
-                if ( (i==PITCH_CONTROL_CHANNEL) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
+                if ( (i==PITCH_CONTROL_CHANNEL-1) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
                     // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
                     // so compensation of pitch 90° should change PWM value by 512 step
                     // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000 = pitch *ratio * 0.0569
@@ -257,7 +257,7 @@ void updatePWM(){
                 } 
             #endif
             #ifdef ROLL_CONTROL_CHANNEL
-                if ( (i==ROLL_CONTROL_CHANNEL) && (mpu.mpuInstalled) && fields[ROLL].onceAvailable) {
+                if ( (i==ROLL_CONTROL_CHANNEL-1) && (mpu.mpuInstalled) && fields[ROLL].onceAvailable) {
                     // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
                     // so compensation of pitch 90° should change PWM value by 512 step
                     // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000 = pitch *ratio * 0.0569
