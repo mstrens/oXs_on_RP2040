@@ -177,7 +177,7 @@ void fillSbusFrame(){
 
 bool pwmIsUsed;
 float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
-float ratioSbusRange = 400 / (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
+float ratioSbusRange = 400.0 / (float) (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
 
 void setupPwm(){
     pwmIsUsed = false;
