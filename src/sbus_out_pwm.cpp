@@ -245,14 +245,14 @@ void updatePWM(){
                     // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
                     ratio = PITCH_RATIO;
                     #if defined(PITCH_RATIO_CHANNEL) && (PITCH_RATIO_CHANNEL >0) && (PITCH_RATIO_CHANNEL <= 16) 
-                    ratio = (float (rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] - FROM_SBUS_MIN)) * 200.0 / float( FROM_SBUS_MAX - FROM_SBUS_MIN);
+                    ratio = (float) ( ( (int) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] - (int) FROM_SBUS_MIN) * 200 / (int) ( FROM_SBUS_MAX - FROM_SBUS_MIN) );
                     #endif
                     _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * ratio * 0.00569) ; 
                     pwmMax = fmapMinMax(PITCH_MAX);
                     pwmMin = fmapMinMax(PITCH_MIN);
                     if (_pwmValue > pwmMax ) _pwmValue = pwmMax;
                     if (_pwmValue < pwmMin ) _pwmValue = pwmMin;
-                    printf("%i %i %i %i\n", (int) cameraPitch , (int) pwmValue , (int) _pwmValue) , (int) ratio;
+                    printf("%i %i %i %i %i\n", (int) cameraPitch , (int) pwmValue , (int) _pwmValue) , (int) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] , (int) ratio;
                     pwmValue = _pwmValue;
                 } 
             #endif
@@ -264,14 +264,14 @@ void updatePWM(){
                     // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
                     ratio = ROLL_RATIO;
                     #if defined(ROLL_RATIO_CHANNEL) && (ROLL_RATIO_CHANNEL >0) && (ROLL_RATIO_CHANNEL <= 16) 
-                    ratio = (float (rcSbusOutChannels[ROLL_RATIO_CHANNEL - 1] - FROM_SBUS_MIN)) * 200.0 / float( FROM_SBUS_MAX - FROM_SBUS_MIN);
+                    ratio = (float) ( ( (int) rcSbusOutChannels[ROLL_RATIO_CHANNEL - 1] - (int) FROM_SBUS_MIN) * 200 / (int) ( FROM_SBUS_MAX - FROM_SBUS_MIN) );
                     #endif
                     _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraRoll * ratio * 0.00569) ; 
                     pwmMax = fmapMinMax(ROLL_MAX);
                     pwmMin = fmapMinMax(ROLL_MIN);
                     if (_pwmValue > pwmMax ) _pwmValue = pwmMax;
                     if (_pwmValue < pwmMin ) _pwmValue = pwmMin;
-                    //printf("%i %i %i\n", (int) cameraRoll , (int) pwmValue , (int) _pwmValue);
+                    //printf("%i %i %i %i\n", (int) cameraRoll , (int) pwmValue , (int) _pwmValue), (int) ratio;
                     pwmValue = _pwmValue;
                 } 
             #endif
