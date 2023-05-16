@@ -16,7 +16,7 @@
 #include <string.h> // memcpy
 #include "param.h"
 #include <inttypes.h>
-
+#include "mpu.h"
 
 #define FRAME_TYPES_MAX 5
 uint32_t crsfFrameNextMillis[FRAME_TYPES_MAX] = {0} ; 
@@ -35,6 +35,7 @@ extern GPS gps ;
 
 extern CONFIG config;
 extern uint8_t debugTlm;
+extern MPU mpu;
 
 uint8_t CRSFBuffer[50]; // buffer that contains the frame to be sent (via dma)
 uint8_t CRSFBufferLength;
@@ -96,7 +97,6 @@ bool dataAvailable(uint8_t idx) {
         case CRSF_FRAMEIDX_VARIO :
             return fields[VSPEED].available ;    
         case CRSF_FRAMEIDX_ATTITUDE :
-            //return  fields[RPM].available || fields[PITCH].available || fields[ROLL].available ;    // in this version, attitude frame is used to transmit RPM in YAW        
             return  fields[PITCH].available || fields[ROLL].available ;           
         case CRSF_FRAMEIDX_GPS :
             return gps.gpsInstalled ;   
@@ -218,36 +218,38 @@ void fillFrameBaroAltitude(uint8_t idx){
 }
 
 void fillFrameAttitude(uint8_t idx){
-    CRSFBufferLength = 0;
-    fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
-    fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
-    fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
-    if ( fields[PITCH].available ) {
-        fillBufferI16( (int16_t) (fields[PITCH].value * 175)) ; //pitch  (must be in 1/1000 of deci rad )
-    } else {
-        fillBufferI16( (int16_t) 0);
+    if (mpu.mpuInstalled) {
+        CRSFBufferLength = 0;
+        fillBufferU8( CRSF_ADDRESS_CRSF_RECEIVER );  
+        fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
+        fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
+        //if ( fields[PITCH].available ) {
+            fillBufferI16( (int16_t) (fields[PITCH].value * 175)) ; //pitch  (must be in 1/1000 of deci rad )
+        //} else {
+        //    fillBufferI16( (int16_t) 0);
+        //}
+        //if ( fields[ROLL].available ) {
+            fillBufferI16( (int16_t) (fields[ROLL].value * 175)) ; //roll  
+        //} else {
+        //    fillBufferI16( (int16_t) 0);
+        //}
+        //if ( fields[RPM].available  ) {
+        //    fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
+        //} else {
+            fillBufferI16( (int16_t) 0);
+        //}
+        fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
+        //fields[RPM].available = false ;
+        //fields[PITCH].available = false ;
+        //fields[ROLL].available = false ;
+        crsfFrameNextMillis[idx] = millisRp() + ATTITUDE_FRAME_INTERVAL;
+            //printf("Attitude: ");
+            //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
+            //printf("\n");
+            //printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
+        dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
+        dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
     }
-    if ( fields[ROLL].available ) {
-        fillBufferI16( (int16_t) (fields[ROLL].value * 175)) ; //roll  
-    } else {
-        fillBufferI16( (int16_t) 0);
-    }
-    //if ( fields[RPM].available  ) {
-    //    fillBufferI16( (int16_t) (fields[RPM].value  )); //= yaw : int16 allows values from -32000 up to +32000; apply SCALE4 if needed
-    //} else {
-        fillBufferI16( (int16_t) 0);
-    //}
-    fillBufferU8( crsf_crc_out.calc( &CRSFBuffer[2] , CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE+ 1))  ; // CRC skip 2 bytes( addr of message and frame size); length include type + 6 for payload  
-    fields[RPM].available = false ;
-    fields[PITCH].available = false ;
-    fields[ROLL].available = false ;
-    crsfFrameNextMillis[idx] = millisRp() + ATTITUDE_FRAME_INTERVAL;
-        //printf("Attitude: ");
-        //for (uint8_t i = 0; i< CRSFBufferLength ; i++) printf( " %02X ", CRSFBuffer[i]);
-        //printf("\n");
-        //printf("p r= %d %d\n", (int16_t) (fields[PITCH].value) , (int16_t) (fields[ROLL].value));
-    dma_channel_set_read_addr (crsf_dma_chan, &CRSFBuffer[0], false);
-    dma_channel_set_trans_count (crsf_dma_chan, CRSFBufferLength, true) ;
 }
 
 void fillFrameGps(uint8_t idx){
