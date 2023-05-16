@@ -176,6 +176,8 @@ void fillSbusFrame(){
 #define DIVIDER 133
 
 bool pwmIsUsed;
+float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
+float ratioSbusRange = 400 / (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
 
 void setupPwm(){
     pwmIsUsed = false;
@@ -245,8 +247,7 @@ void updatePWM(){
                     // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
                     ratio = PITCH_RATIO;
                     #if defined(PITCH_RATIO_CHANNEL) && (PITCH_RATIO_CHANNEL >0) && (PITCH_RATIO_CHANNEL <= 16) 
-                    ratio = (float) ( ( (int) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] - (int) (( FROM_SBUS_MIN + FROM_SBUS_MAX)/2) )
-                                * 200 / (int) ( FROM_SBUS_MAX - FROM_SBUS_MIN) );
+                    ratio = ( (float) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] - sbusCenter) * ratioSbusRange;
                     #endif
                     _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * ratio * 0.00569) ; 
                     pwmMax = fmapMinMax(PITCH_MAX);
@@ -265,8 +266,7 @@ void updatePWM(){
                     // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
                     ratio = ROLL_RATIO;
                     #if defined(ROLL_RATIO_CHANNEL) && (ROLL_RATIO_CHANNEL >0) && (ROLL_RATIO_CHANNEL <= 16) 
-                    ratio = (float) ( ( (int) rcSbusOutChannels[ROLL_RATIO_CHANNEL - 1] - (int) (( FROM_SBUS_MIN + FROM_SBUS_MAX)/2) )
-                                * 200 / (int) ( FROM_SBUS_MAX - FROM_SBUS_MIN) );
+                    ratio = ( (float) rcSbusOutChannels[ROLL_RATIO_CHANNEL - 1] - sbusCenter) * ratioSbusRange;
                     #endif
                     _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraRoll * ratio * 0.00569) ; 
                     pwmMax = fmapMinMax(ROLL_MAX);
