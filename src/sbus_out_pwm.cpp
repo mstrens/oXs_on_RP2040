@@ -204,6 +204,11 @@ void setupPwm(){
 void updatePWM(){
     static uint32_t lastPwmMillis = 0 ;
     uint16_t pwmValue;
+    float ratio;
+    int16_t _pwmValue;
+    int16_t pwmMax;
+    int16_t pwmMin;
+
     if ( pwmIsUsed == false) return ; // skip when PWM is not used
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
     if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
@@ -232,21 +237,45 @@ void updatePWM(){
             //pwmValue = fmap( rcSbusOutChannels[i] , 172, 1811, 988, 2012 );
             pwmValue = fmap( rcSbusOutChannels[i]  );
             //printf("chan= %u  pin= %u pwm= %" PRIu16 "\n", i , config.pinChannels[i] , pwmValue);
-            #ifdef PITCH_RATIO
-                if ( (i==15) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
+            #ifdef PITCH_CONTROL_CHANNEL
+                if ( (i==PITCH_CONTROL_CHANNEL) && (mpu.mpuInstalled) && fields[PITCH].onceAvailable) {
                     // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
                     // so compensation of pitch 90° should change PWM value by 512 step
                     // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000 = pitch *ratio * 0.0569
                     // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
-                    int16_t _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * PITCH_RATIO * 0.00569) ; 
-                    int16_t max = fmapMinMax(PITCH_MAX);
-                    int16_t min = fmapMinMax(PITCH_MIN);
-                    if (_pwmValue > max ) _pwmValue = max;
-                    if (_pwmValue < min ) _pwmValue = min;
+                    ratio = PITCH_RATIO;
+                    #if defined(PITCH_RATIO_CHANNEL) && (PITCH_RATIO_CHANNEL >0) && (PITCH_RATIO_CHANNEL <= 16) 
+                    ratio = (float (rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] - FROM_SBUS_MIN)) * 200.0 / float( FROM_SBUS_MAX - FROM_SBUS_MIN);
+                    #endif
+                    _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraPitch * ratio * 0.00569) ; 
+                    pwmMax = fmapMinMax(PITCH_MAX);
+                    pwmMin = fmapMinMax(PITCH_MIN);
+                    if (_pwmValue > pwmMax ) _pwmValue = pwmMax;
+                    if (_pwmValue < pwmMin ) _pwmValue = pwmMin;
                     //printf("%i %i %i\n", (int) cameraPitch , (int) pwmValue , (int) _pwmValue);
                     pwmValue = _pwmValue;
                 } 
             #endif
+            #ifdef ROLL_CONTROL_CHANNEL
+                if ( (i==ROLL_CONTROL_CHANNEL) && (mpu.mpuInstalled) && fields[ROLL].onceAvailable) {
+                    // here we supposed that a PITCH_RATIO of 100 should provide a displacement of 100% of the servo and 90° of the camera
+                    // so compensation of pitch 90° should change PWM value by 512 step
+                    // so correction = pitch /90 * 512 * ratio /100 = pitch * ratio * 512 / 9000 = pitch *ratio * 0.0569
+                    // here pitch in 0.1 of degree and so we have to multiply by 512/90000 = 0.00569
+                    ratio = ROLL_RATIO;
+                    #if defined(ROLL_RATIO_CHANNEL) && (ROLL_RATIO_CHANNEL >0) && (ROLL_RATIO_CHANNEL <= 16) 
+                    ratio = (float (rcSbusOutChannels[ROLL_RATIO_CHANNEL - 1] - FROM_SBUS_MIN)) * 200.0 / float( FROM_SBUS_MAX - FROM_SBUS_MIN);
+                    #endif
+                    _pwmValue = ((int16_t) pwmValue) - (int16_t) (cameraRoll * ratio * 0.00569) ; 
+                    pwmMax = fmapMinMax(ROLL_MAX);
+                    pwmMin = fmapMinMax(ROLL_MIN);
+                    if (_pwmValue > pwmMax ) _pwmValue = pwmMax;
+                    if (_pwmValue < pwmMin ) _pwmValue = pwmMin;
+                    //printf("%i %i %i\n", (int) cameraRoll , (int) pwmValue , (int) _pwmValue);
+                    pwmValue = _pwmValue;
+                } 
+            #endif
+   
             pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
             
         }   

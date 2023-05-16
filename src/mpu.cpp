@@ -55,8 +55,6 @@ float Ki = 0.0;  // on same site, it is set on 0
 
 unsigned long now_ms, last_ms = 0; //millisRp() timers
 
-float yaw, pitch, roll; //Euler angle output
-
 Quaternion qq;                // quaternion
 VectorInt16 aa;         // [x, y, z]            accel sensor measurements
 VectorFloat gravity;          // added by mstrens to calculate Z world acc
