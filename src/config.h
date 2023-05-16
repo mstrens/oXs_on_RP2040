@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.3.12"
+#define VERSION "2.4.0"
 
-#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
@@ -192,7 +192,7 @@
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
-#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
+//#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
 #define PITCH_RATIO_CHANNEL 15   // Channel used to set up the ratio between pitch and servo movement (optional)
 #define PITCH_RATIO  100  // Ratio to use when PITCH_RATIO_CHANNEL is undefined (or 255); increase/decrease the value in case of under/over stabilisation  
 #define PITCH_MAX 100     // adapt upper limit of servo travel (should normally be the same value as on TX) 
@@ -203,8 +203,9 @@
 #define ROLL_MAX 100     // adapt upper limit of servo travel 
 #define ROLL_MIN -100    // adapt lower limit of servo travel
 
-//Note:  when a channel is used to adjust the ratio, the ratio can varies from -200 (channel = -100%) up to +200 (channel = %100%)
+//Note:  when a channel is used to adjust a ratio (for pitch or roll), the ratio can varies from -200 (channel = -100%) up to +200 (channel = %100%)
 //       the sign of the ratio define the direction of the compensation.
+//       Setting the channel on 0% dissables the compensation. This can e.g. be done using a switch on the TX
 // --------- Reserve for developer. ---------
 
 typedef struct {

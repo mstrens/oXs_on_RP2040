@@ -254,7 +254,7 @@ void updatePWM(){
                     pwmMin = fmapMinMax(PITCH_MIN);
                     if (_pwmValue > pwmMax ) _pwmValue = pwmMax;
                     if (_pwmValue < pwmMin ) _pwmValue = pwmMin;
-                    printf("%i %i %i %f %f\n", (int) cameraPitch , (int) pwmValue , (int) _pwmValue , (float) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] , ratio);
+                    //printf("%i %i %i %f %f\n", (int) cameraPitch , (int) pwmValue , (int) _pwmValue , (float) rcSbusOutChannels[PITCH_RATIO_CHANNEL - 1] , ratio);
                     pwmValue = _pwmValue;
                 } 
             #endif

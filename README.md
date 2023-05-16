@@ -7,6 +7,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - telemetry data (e.g. when a flight controller is not used)
 - PWM and/or
 - Sbus signals
+- PWM signals to stabilize a camera on pitch and roll
 
 ### For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional)
@@ -26,6 +27,10 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 
 Each function (telemetry/PWM/SBUS) can be used alone or combined with the others.
 
+### To stabilize a camera, it requires
+    - to use a mp6050 device
+    - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
+    - to edit the camera parameters in the config.h file and to compile the edited project.
 
 ## -------  Hardware -----------------
 
