@@ -279,7 +279,7 @@ void exbusPioRxHandlerIrq(){    // when a byte is received on the exbus, read th
 
 void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     //static uint8_t previous = 0;
-    //#define SIMULATE_RX_EXBUS
+    #define SIMULATE_RX_EXBUS
     #ifdef SIMULATE_RX_EXBUS
     static uint8_t exbusRcChannelsSimulation[] = {
         0x3E, 0x03, 0x28, 0x06, 0x31, 0x20, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F,
@@ -297,7 +297,9 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
             queue_try_add (&exbusRxQueue, &c);
         }
         
-        c = exbusTlmRequestSimulation[0] | 0X8000;
+        //c = exbusTlmRequestSimulation[0] | 0X8000;
+        c = exbusTlmRequestSimulation[0] ;
+        
         queue_try_add (&exbusRxQueue, &c);          // push to the queue
         for (uint8_t i = 1; i < sizeof(exbusTlmRequestSimulation); i++){
             c = exbusTlmRequestSimulation[i] ;
@@ -399,7 +401,11 @@ bool exbusProcessNextInputByte( uint8_t c){
 				} else if ( (exbusRxBuffer[0] == 0X3D) &&  (exbusRxBuffer[4] == 0X3A) ) { // packet is a telemetry request
 						exbusCreateSendTelemetry();
                         exbusIsBuffering = false;  // we have to get pause in data transmission before continuing
+				} else if ( (exbusRxBuffer[0] == 0X3D) &&  (exbusRxBuffer[4] == 0X3B) ) { // packet is a jetibox request
+						exbusCreateSendJetiBox();
+                        exbusIsBuffering = false;  // we have to get pause in data transmission before continuing
 				}
+
 					// packet is a Jetibox request
 				//	else if (m_exBusBuffer[4] == 0x3b && m_bReleaseBus )
 				//	{
@@ -414,7 +420,7 @@ bool exbusProcessNextInputByte( uint8_t c){
 
 
 void exbusDecodeRcChannels(){             // channels values are coded on 2 bytes. last bit = 1/8 usec
-	//printf("exbus decoding Rc channels\n");
+	printf("exbus decoding Rc channels\n");
     uint8_t sbus[23];
     uint8_t exbusNumRcChannels = exbusRxBuffer[5] >> 1 ; // number of channels = sub length / 2
     for (int i = 0; i < exbusNumRcChannels; i++) {
@@ -472,7 +478,8 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 //                    last byte of each data has bit 7 = 1 if negative; bits 6...5 = number of decimals 
 //                    SensorIdx = bits 7...4 ; dataType = code to say if it is 1/2/3/4 bytes or data/time/long/lat
 // so there are 3 levels of length and 2 types of CRC (1 and 2 bytes)
-
+    printf("exbus creating tlm frame\n");
+    
     waitUs(250); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
         //printf("dma is busy\n");
@@ -489,6 +496,26 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
     // this will be done in the main loop after some ms (here 2ms)
     restoreExbusPioToReceiveMillis = millisRp() + 4;  // to do  to check the delay for sending
 }
+
+void exbusCreateSendJetiBox(){
+    printf("exbus creating tlm frame\n");
+    waitUs(250); // wait a little before replying to a pooling
+    if ( dma_channel_is_busy(exbus_dma_chan) ) {
+        //printf("dma is busy\n");
+        return ; // skip if the DMA is still sending data
+    }
+    exbusCreateJetibox();  // create the frame in exbusTxBuffer[]
+    // send the buffer    
+    exbus_uart_rx_program_stop(exbusPio, exbusSmRx, config.pinPrimIn); // stop receiving
+    exbus_uart_tx_program_start(exbusPio, exbusSmTx, config.pinPrimIn, false); // prepare to transmit ; true = invert
+    // start the DMA channel with the data to transmit
+    dma_channel_set_read_addr (exbus_dma_chan, &exbusTxBuffer[0], false);
+    dma_channel_set_trans_count (exbus_dma_chan, exbusTxBuffer[2], true) ;
+    // we need a way to set the pio back in receive mode when all bytes are sent 
+    // this will be done in the main loop after some ms (here 2ms)
+    restoreExbusPioToReceiveMillis = millisRp() + 4;  // to do  to check the delay for sending
+}
+
 
 uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
     uint8_t count = sensorsParam[idx].length; 
@@ -579,10 +606,11 @@ void exbusCreateTelemetry() {
     uint8_t sensorsParamIdx;
     uint8_t totalDataLen = 0;
     uint8_t nextBufferWrite;
+    exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
 	// sensor name in frame 0
 	if ((frameCnt & 0X000F) == 0) { // once every 256 frame, send the field definition  // todo change to FF
-	    sensorsParamIdx = exbusFieldList[dictIdx] ;            // rereieve the index in sensorParam[]
+	    sensorsParamIdx = exbusFieldList[dictIdx] ;            // retrieve the index in sensorParam[]
         exbusTxBuffer[13] = sensorsParam[sensorsParamIdx].id  ;       // index of field
         uint8_t i = 0 ;
         uint8_t k = 0 ;
@@ -655,6 +683,22 @@ void exbusCreateTelemetry() {
     printf("\n");
     #endif
 
+}
+
+void exbusCreateJetibox(){  // create the frame in exbusTxBuffer[]
+    exbusTxBuffer[2] = 0X28;   // Length is always 0X28 bytes
+    exbusTxBuffer[3] = exbusPacketId ;  // packet Id received in the request
+    exbusTxBuffer[4] = 0X3B; // this byte says that it is a jetibox frame and not a tlm frame
+    exbusTxBuffer[5] = 0X20 ;  // sub len is always 0X20 bytes
+    for (uint8_t i = 6; i< (6+32); i++){
+        exbusTxBuffer[i] = '+'; 
+    }
+    // fill 2 bytes crc
+    uint16_t crcCalc = 0;
+	for (int i = 0; i < ( exbusTxBuffer[2]-2 ); i++) crcCalc = exbusCrc16Update(crcCalc,exbusTxBuffer[i]);
+	exbusTxBuffer[exbusTxBuffer[2]-2] = (uint8_t)(crcCalc & 0xFF);
+	exbusTxBuffer[exbusTxBuffer[2]-1] = (uint8_t)(crcCalc >> 8);
+    
 }
 
 uint32_t exbusFormatGpsLongLat (int32_t longLat, bool isLong ) { // return the long or latitude in Jeti format

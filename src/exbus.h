@@ -37,8 +37,10 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len);
 void exbusDecodeRcChannels();
 
 void exbusCreateSendTelemetry();
+void exbusCreateSendJetiBox();
 
 void exbusCreateTelemetry();
+void exbusCreateJetibox();
 
 uint32_t exbusFormatGpsLongLat (int32_t longLat, bool isLong ) ; // return the long or latitude in Jeti format
 
