@@ -279,7 +279,7 @@ void exbusPioRxHandlerIrq(){    // when a byte is received on the exbus, read th
 
 void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     //static uint8_t previous = 0;
-    #define SIMULATE_RX_EXBUS
+    //#define SIMULATE_RX_EXBUS
     #ifdef SIMULATE_RX_EXBUS
     static uint8_t exbusRcChannelsSimulation[] = {
         0x3E, 0x03, 0x28, 0x06, 0x31, 0x20, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F,
@@ -287,6 +287,13 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
     };
     static uint8_t exbusTlmRequestSimulation[] = { 0x3D, 0x01, 0x08, 0x06, 0x3A, 0x00, 0x98, 0x81 };
     
+    // use to check that CRC is OK; the example is copied from jeti doc
+    //static uint8_t exbusTlmExample[] = {0x3B, 0x01, 0x20, 0x08, 0x3A, 0x18, 0x9F, 0x56, 0x00, 0xA4, 0x51, 0x55, 0xEE, 0x11, 0x30, 0x20, 0x21,
+    //    0x00, 0x40, 0x34, 0xA3, 0x28, 0x00, 0x41, 0x00, 0x00, 0x51, 0x18, 0x00, 0x09, 0x91, 0xD6};
+    //uint16_t crcCalc = 0;
+	//for (int i = 0; i < ( exbusTlmExample[2]-2 ); i++) crcCalc = exbusCrc16Update(crcCalc,exbusTlmExample[i]);
+	//printf("CRC=%x\n",crcCalc);
+
     static uint32_t exbusLastSimulationMs = 0;
     if ( (millisRp() - exbusLastSimulationMs) > 999 ) { // send a message once every 10 ms
         exbusLastSimulationMs = millisRp();

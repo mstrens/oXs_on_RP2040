@@ -33,6 +33,7 @@ bool exbusProcessNextInputByte(uint8_t c);
 
 bool check_checksum(void);
 uint8_t crc_sum8(const uint8_t *p, uint8_t len);
+uint16_t exbusCrc16Update(uint16_t crc, uint8_t data);
 
 void exbusDecodeRcChannels();
 
