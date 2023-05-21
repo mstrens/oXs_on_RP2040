@@ -427,7 +427,7 @@ bool exbusProcessNextInputByte( uint8_t c){
 
 
 void exbusDecodeRcChannels(){             // channels values are coded on 2 bytes. last bit = 1/8 usec
-	printf("exbus decoding Rc channels\n");
+	//printf("exbus decoding Rc channels\n");
     uint8_t sbus[23];
     uint8_t exbusNumRcChannels = exbusRxBuffer[5] >> 1 ; // number of channels = sub length / 2
     for (int i = 0; i < exbusNumRcChannels; i++) {
@@ -485,7 +485,7 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 //                    last byte of each data has bit 7 = 1 if negative; bits 6...5 = number of decimals 
 //                    SensorIdx = bits 7...4 ; dataType = code to say if it is 1/2/3/4 bytes or data/time/long/lat
 // so there are 3 levels of length and 2 types of CRC (1 and 2 bytes)
-    printf("exbus creating tlm frame\n");
+    //printf("exbus creating tlm frame\n");
     
     waitUs(100); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
@@ -505,7 +505,7 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 }
 
 void exbusCreateSendJetiBox(){
-    printf("exbus creating tlm frame\n");
+    //printf("exbus creating Jetibox frame\n");
     waitUs(100); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
         //printf("dma is busy\n");
