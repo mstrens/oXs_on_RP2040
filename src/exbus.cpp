@@ -672,7 +672,7 @@ void exbusCreateTelemetry() {
     exbusTxBuffer[3] = exbusPacketId ; // reuse the packet id received from RX   
     // fill one byte crc
     uint8_t crc = 0;
-    for (uint8_t c = 8; c < (exbusTxBuffer[2] - 3) ; c++) crc = exbusUpdate8Crc(exbusTxBuffer[c], crc);
+    for (uint8_t c = 7; c < (exbusTxBuffer[2] - 3) ; c++) crc = exbusUpdate8Crc(exbusTxBuffer[c], crc);
     exbusTxBuffer[exbusTxBuffer[2]-3 ] = crc;
     // fill 2 bytes crc
     uint16_t crcCalc = 0;
