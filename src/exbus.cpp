@@ -286,7 +286,7 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
         0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x4F, 0xE2
     };
     static uint8_t exbusTlmRequestSimulation[] = { 0x3D, 0x01, 0x08, 0x06, 0x3A, 0x00, 0x98, 0x81 };
-    
+    deco
     // use to check that CRC is OK; the example is copied from jeti doc
     //static uint8_t exbusTlmExample[] = {0x3B, 0x01, 0x20, 0x08, 0x3A, 0x18, 0x9F, 0x56, 0x00, 0xA4, 0x51, 0x55, 0xEE, 0x11, 0x30, 0x20, 0x21,
     //    0x00, 0x40, 0x34, 0xA3, 0x28, 0x00, 0x41, 0x00, 0x00, 0x51, 0x18, 0x00, 0x09, 0x91, 0xD6};
@@ -487,7 +487,7 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 // so there are 3 levels of length and 2 types of CRC (1 and 2 bytes)
     printf("exbus creating tlm frame\n");
     
-    waitUs(250); // wait a little before replying to a pooling
+    waitUs(100); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
@@ -506,7 +506,7 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 
 void exbusCreateSendJetiBox(){
     printf("exbus creating tlm frame\n");
-    waitUs(250); // wait a little before replying to a pooling
+    waitUs(100); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
@@ -616,7 +616,7 @@ void exbusCreateTelemetry() {
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
 	// sensor name in frame 0
-	if ((frameCnt & 0X000F) == 0) { // once every 256 frame, send the field definition  // todo change to FF
+	if ((frameCnt & 0X0003) == 0) { // once every 256 frame, send the field definition  // todo change to FF
 	    sensorsParamIdx = exbusFieldList[dictIdx] ;            // retrieve the index in sensorParam[]
         exbusTxBuffer[13] = sensorsParam[sensorsParamIdx].id  ;       // index of field
         uint8_t i = 0 ;
