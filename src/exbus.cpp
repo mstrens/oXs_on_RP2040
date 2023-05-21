@@ -616,7 +616,7 @@ void exbusCreateTelemetry() {
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
 	// sensor name in frame 0
-	if ((frameCnt & 0X0003) == 0) { // once every 256 frame, send the field definition  // todo change to FF
+	if ((frameCnt & 0X00FF) == 0) { // once every 256 frame, send the field definition  // todo change to FF
 	    sensorsParamIdx = exbusFieldList[dictIdx] ;            // retrieve the index in sensorParam[]
         exbusTxBuffer[13] = sensorsParam[sensorsParamIdx].id  ;       // index of field
         uint8_t i = 0 ;
