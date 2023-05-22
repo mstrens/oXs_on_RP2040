@@ -7,11 +7,11 @@
 #include "ws2812.pio.h"
 #include "hardware/watchdog.h"
 #include "config.h"
-
+#include "param.h"
 
 #include "ws2812.h"
 
-#define IS_RGBW false
+#define IS_RGBW false // no white led are on the RP2040-zero board
 
 PIO rgbPio = pio1;
 uint rgbSm  = 3;
@@ -20,6 +20,8 @@ uint8_t rgbRed;
 uint8_t rgbGreen;
 uint8_t rgbBlue;
 bool rgbOn = false;
+
+extern CONFIG config;
 
 void setupLed(){
     rgbOn = false;
@@ -44,15 +46,15 @@ void setRgbColorOn(uint8_t red , uint8_t green , uint8_t blue){
 
 void setRgbOn(){
     rgbOn = true;
-    #ifdef INVERTED_RGB
+    if (config.ledInverted == 'I') {
         pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbGreen) <<16) |
               (((uint32_t) rgbRed) << 24) |
              (((uint32_t) rgbBlue) << 8) );
-    #else
+    } else {
         pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbRed) <<16) |
               (((uint32_t) rgbGreen) << 24) |
              (((uint32_t) rgbBlue) << 8) );
-    #endif
+    }
 }
 
 void setRgbOff(){

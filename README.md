@@ -227,7 +227,7 @@ Then, depending on the value sent by the Tx on the selected channel, oXs manages
 Note: you can use the FV command to know the current coefficient. This allow you to check that your Tx sent a Rc channel value that match the expected goal and indeed required, adjust your Tx settings.
 ## ------------------ Led -------------------
 When a RP2040-Zero is used, the firmware will handle a RGB led (internally connected to gpio16).
-* when config is wrong, led is red and ON.
+* when config is wrong, led is red and always ON.
 * when config is valid, led is blinking and the color depends on RC channels being received ot not
     * Red = Rc frames have nerver been received, Sbus and/or PWM signals are not generated.
     * Blue = Sbus and/or PWM signals are based on failsafe values. Failsafe values are given by the receiver for Sbus or are configured in oXs for CRSF protocol)
@@ -236,10 +236,7 @@ When a RP2040-Zero is used, the firmware will handle a RGB led (internally conne
 * when "Boot" button is used for setting the failsafe values, led becomes blue and white (see above)
 
 Note: some users got a RP2040-zero where red and green colors are inverted.
-If you got such a device and want to get the "normal" colors, you can uncomment a line in config.h file.
-It is line :
-
-//#define INVERTED_RGB // uncomment if red and green colors are inverted on your board
+If you got such a device and want to get the "normal" colors, you can enter a command LED=I to invert the 2 colors.
 
 
 Please note that other boards do not have a RGB led on gpio16 and so this does not applies.

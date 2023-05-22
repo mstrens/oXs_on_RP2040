@@ -138,7 +138,7 @@ void processCmd(){
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
         printf("- To disable a function, set pin number to 255\n\n");
 
-        printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
+        //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
         printf(" S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
@@ -155,6 +155,7 @@ void processCmd(){
     //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
     //    printf("     GPIO5 : enter GPIO5=xx where xx = 01 up to 13 (GPIO6...8 will generate channel xx+1...3)\n");
     //    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
+        printf("-To change (invert) led color, enter LED=N or LED=I\n");
         printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
@@ -632,6 +633,18 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    // change led color
+    if ( strcmp("LED", pkey) == 0 ) {
+        if (strcmp("N", pvalue) == 0) {
+            config.ledInverted = 'N';
+            updateConfig = true;
+        } else if (strcmp("I", pvalue) == 0) {
+            config.ledInverted = 'I';
+            updateConfig = true;
+        } else  {
+            printf("Error : LED color must be N (normal) or I(inverted)\n");
+        }
+    }
     
         
     if (updateConfig) {
@@ -892,6 +905,11 @@ void printConfig(){
     } else {
         printf("GPS is not (yet) detected\n")  ;
     }
+    if (config.ledInverted == 'I'){
+        printf("Led color is inverted\n")  ;
+    } else {
+        printf("Led color is normal (not inverted)\n")  ;
+    }
     //if (config.gpio0 == 0){
     //    printf("GPIO0 is used to output a Sbus signal\n");
     //} else if ( config.gpio0 < 17 ){
@@ -1051,6 +1069,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.gyroOffsetZ= 0;
         config.temperature = 255;
         config.VspeedCompChannel = 255;
+        config.ledInverted = 'N'; // not inverted
     }
     
 } 
