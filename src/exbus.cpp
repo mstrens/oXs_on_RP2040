@@ -610,13 +610,14 @@ void exbusCreateTelemetry() {
 	static uint8_t dictIdx = 0;
     static uint8_t dataIdx = 0;
     static uint16_t frameCnt = 0;
+    static uint32_t textFrameMask = 0X01;
     uint8_t sensorsParamIdx;
     uint8_t totalDataLen = 0;
     uint8_t nextBufferWrite;
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
 	// sensor name in frame 0
-	if ((frameCnt & 0X00FF) == 0) { // once every 256 frame, send the field definition  // todo change to FF
+	if ((frameCnt & textFrameMask) == 0) { // once every N frame, send the field definition  // todo change to FF
 	    sensorsParamIdx = exbusFieldList[dictIdx] ;            // retrieve the index in sensorParam[]
         exbusTxBuffer[13] = sensorsParam[sensorsParamIdx].id  ;       // index of field
         uint8_t i = 0 ;
@@ -639,7 +640,7 @@ void exbusCreateTelemetry() {
         dictIdx++;                                    // next field being defined
         if (dictIdx >= exbusMaxFields) dictIdx = 0;
         // at this stage, we still have to calculate the 2 crc 
-
+        if (frameCnt > (exbusMaxFields >> 2)) textFrameMask = 0x0F; // after a certain number of frames, sent text only once per 256 frame
 	} else 	{   // send EX values in all other frames -------------------------------------------------
 		nextBufferWrite = 13;
         uint8_t count = exbusMaxFields - 1;   // max number of fields (to avoid filling twice the same field)
