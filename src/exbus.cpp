@@ -493,6 +493,11 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
         return ; // skip if the DMA is still sending data
     }
     exbusCreateTelemetry();  // create the frame in exbusTxBuffer[]
+        printf("Frame=");
+        for (uint8_t i = 13 ; i < (exbusTxBuffer[2]-3); i++){ // do not print the first 13 bytes nor the 3 CRC
+            printf(" %x ", exbusTxBuffer[i]);
+        }
+        printf("\n");
     // send the buffer    
     exbus_uart_rx_program_stop(exbusPio, exbusSmRx, config.pinPrimIn); // stop receiving
     exbus_uart_tx_program_start(exbusPio, exbusSmTx, config.pinPrimIn, false); // prepare to transmit ; true = invert
@@ -562,10 +567,11 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
 //        * dataType = JETI14_0D ;
 //        break ;
         case LONGITUDE :      
-            value =  exbusFormatGpsLongLat ( fields[idx].value , true ) ; // tre says it is long
+            value =  exbusFormatGpsLongLat ( fields[idx].value , true ) ; // true says it is long
             break ;                          
         case LATITUDE :                                           
             value =  exbusFormatGpsLongLat (fields[idx].value , false ) ;
+            printf("lat orig=%x  jeti=%x\n", fields[idx].value , value);
             break ;
         case AIRSPEED :
             value = fields[idx].value   * 36 / 1000 ; // from cm/s to km/h
