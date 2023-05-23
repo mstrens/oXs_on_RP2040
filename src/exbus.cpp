@@ -496,7 +496,7 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
     exbusCreateTelemetry();  // create the frame in exbusTxBuffer[]
         printf("Frame=");
         for (uint8_t i = 13 ; i < (exbusTxBuffer[2]-3); i++){ // do not print the first 13 bytes nor the 3 CRC
-            printf(" %x ", exbusTxBuffer[i]);
+            printf(" %2x ", exbusTxBuffer[i]);
         }
         printf("\n");
     // send the buffer    
@@ -657,9 +657,12 @@ void exbusCreateTelemetry() {
         while (count--) { // we look max once into the list of fields 
             sensorsParamIdx = exbusFieldList[dataIdx] ;            // retrieve the index in sensorParam[]
             if ( fields[sensorsParamIdx].available ) {             // if the field is available, look if there is still space in the buffer
-                if (( countWritten + sensorsParam[sensorsParamIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value
+                if (( countWrittenTotal + sensorsParam[sensorsParamIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value
                     // some doc says 26 bytes for the ex frame and there are 8 other bytes (7F + 2F Type, deviceID1...4, CRC)
                 countWritten = addOneValue(sensorsParamIdx , nextBufferWrite) ;
+                    //printf("dataIdx= %i paramIdx=%i len=%i count=%i cWritten=%i CWtot=%i\n", 
+                    //(int) dataIdx, (int) sensorsParamIdx, (int) sensorsParam[sensorsParamIdx].length , (int) count, (int) countWritten,
+                    //(int) countWrittenTotal );
                 countWrittenTotal += countWritten ;
                 nextBufferWrite += countWritten ;
                 lastDataIdx = dataIdx;
@@ -674,7 +677,7 @@ void exbusCreateTelemetry() {
         } 
         exbusTxBuffer[2] = 16 + countWrittenTotal ; // total len of the frame
         exbusTxBuffer[5] = 8 + countWrittenTotal ; // total len of the frame 
-        exbusTxBuffer[7] = 0X46 + countWrittenTotal ;  // Sub lenght : bits 7...6 = 01 = data; bits 5...0 = length of folowing bytes including 1 byte CRC
+        exbusTxBuffer[7] = 0X46 + countWrittenTotal ;  // Sub length : bits 7...6 = 01 = data; bits 5...0 = length of folowing bytes including 1 byte CRC
         // at this stage, we still have to calculate the 2 crc 
     }
     exbusTxBuffer[3] = exbusPacketId ; // reuse the packet id received from RX   
