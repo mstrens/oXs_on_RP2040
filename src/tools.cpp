@@ -265,6 +265,8 @@ int32_t negFieldValues[] = {
     //printf("entering fillFields with %d\n", forcedFields);
     if (forcedFields == 1)  {   // force positive values
         for (uint8_t i = 0; i <  (sizeof(posFieldValues)/sizeof(*posFieldValues)) ; i++){
+        //for (uint8_t i = 0; i <  6 ; i++){
+        
             fields[i].value = posFieldValues[i];
             fields[i].available = true;
             fields[i].onceAvailable = true;

@@ -159,7 +159,7 @@ JETISENSOR_CONST sensorsParam[] =
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_HOLD_COUNTER,
 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
-    { 25    , "Gps cum. dist." , "km"        , EXBUS_TYPE_14,       1 , 0},  //  GPS cumulative distance,
+    { 25    , "Gps cum. dist." , "km"        , EXBUS_TYPE_14,      1 , 3},  //  GPS cumulative distance,
     { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 
@@ -572,7 +572,7 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
             break ;                          
         case LATITUDE :                                           
             value =  exbusFormatGpsLongLat (fields[idx].value , false ) ;
-            printf("lat orig=%x  jeti=%x\n", fields[idx].value , value);
+            //printf("lat orig=%x  jeti=%x\n", fields[idx].value , value);
             break ;
         case AIRSPEED :
             value = fields[idx].value   * 36 / 1000 ; // from cm/s to km/h
