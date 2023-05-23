@@ -107,7 +107,7 @@ extern uint32_t lastSecChannelsMillis;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
-uint8_t exbusFieldList[32];
+uint8_t exbusFieldList[NUMBER_MAX_IDX+1];
 uint8_t exbusMaxFields = 0;
 //uint8_t exbusDataFieldIdx = 0;
 //uint8_t exbusTxtFieldIdx = 0;
@@ -286,7 +286,7 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
         0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x4F, 0xE2
     };
     static uint8_t exbusTlmRequestSimulation[] = { 0x3D, 0x01, 0x08, 0x06, 0x3A, 0x00, 0x98, 0x81 };
-    deco
+    
     // use to check that CRC is OK; the example is copied from jeti doc
     //static uint8_t exbusTlmExample[] = {0x3B, 0x01, 0x20, 0x08, 0x3A, 0x18, 0x9F, 0x56, 0x00, 0xA4, 0x51, 0x55, 0xEE, 0x11, 0x30, 0x20, 0x21,
     //    0x00, 0x40, 0x34, 0xA3, 0x28, 0x00, 0x41, 0x00, 0x00, 0x51, 0x18, 0x00, 0x09, 0x91, 0xD6};
@@ -296,6 +296,7 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
 
     static uint32_t exbusLastSimulationMs = 0;
     if ( (millisRp() - exbusLastSimulationMs) > 999 ) { // send a message once every 10 ms
+        //printf("simulation fill queue\n");
         exbusLastSimulationMs = millisRp();
         uint16_t c = exbusRcChannelsSimulation[0] | 0X8000;
         queue_try_add (&exbusRxQueue, &c);          // push to the queue
@@ -613,8 +614,8 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
 }
 
 void exbusCreateTelemetry() {	
-	static uint8_t dictIdx = 0;
-    static uint8_t dataIdx = 0;
+	static uint8_t dictIdx = 0; // index used to retrieve the TXT in exbusFieldList[]; start at 0 
+    static uint8_t dataIdx = 1;  // index used to retrieve the parameter for data in exbusFieldList[]; start at 1
     static uint16_t frameCnt = 0;
     static uint32_t textFrameMask = 0X01;
     uint8_t sensorsParamIdx;
