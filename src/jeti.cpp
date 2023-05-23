@@ -167,11 +167,11 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;
     listOfJetiFieldsIdx = 1 ;
     
-    printf("list of jeti fields: ");
-    for (uint8_t i = 0; i <= numberOfJetiFields ; i++){
-        printf(" %2X", listOfJetiFields[i]);
-    }
-    printf("\n");
+    //printf("list of jeti fields: ");
+    //for (uint8_t i = 0; i <= numberOfJetiFields ; i++){
+    //    printf(" %2X", listOfJetiFields[i]);
+    //}
+    //printf("\n");
      
 }
 
