@@ -28,6 +28,7 @@
 #include <string.h> // used by memcpy
 
 #include "MS5611.h"
+#include "BMP280.h"
 #include "SPL06.h"
 #include "ms4525.h"
 #include "sdp3x.h"
@@ -55,6 +56,7 @@
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MS5611 baro1;
 extern SPL06 baro2;
+extern BMP280 baro3;
 extern MS4525 ms4525;
 extern SDP3X sdp3x; 
 extern GPS gps;
@@ -194,7 +196,7 @@ void setupExbusList(bool activateAllFields){
     if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = TEMP2 ;
     }
-    if (( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled)  ||  activateAllFields) {
+    if (( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled)  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = RELATIVEALT ; 
         exbusFieldList[exbusMaxFields++] = VSPEED ;
     }
@@ -208,7 +210,7 @@ void setupExbusList(bool activateAllFields){
     if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = AIRSPEED ; 
     }
-    if (( ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) && ( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled) )  ||  activateAllFields) {
+    if (( ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) && ( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled) )  ||  activateAllFields) {
         exbusFieldList[exbusMaxFields++] = AIRSPEED_COMPENSATED_VSPEED ; 
     }
     //exbusMaxFields-- ;

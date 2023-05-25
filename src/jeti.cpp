@@ -5,6 +5,7 @@
 #include "hardware/irq.h"
 #include "uart_jeti_tx.pio.h"
 #include "MS5611.h"
+#include "BMP280.h"
 #include "SPL06.h"
 #include "ms4525.h"
 #include "sdp3x.h"
@@ -44,6 +45,7 @@
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 extern MS5611 baro1;
 extern SPL06 baro2;
+extern BMP280 baro3;
 extern MS4525 ms4525;
 extern SDP3X sdp3x; 
 
@@ -139,7 +141,7 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
         listOfJetiFields[listOfJetiFieldsIdx++] = CURRENT ;
         listOfJetiFields[listOfJetiFieldsIdx++] = CAPACITY ;
     }
-    if (( baro1.baroInstalled || baro2.baroInstalled || baro1.baroInstalled)  ||  activateAllFields) {
+    if (( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RELATIVEALT ; 
         listOfJetiFields[listOfJetiFieldsIdx++] = VSPEED ;
     }
