@@ -563,7 +563,7 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
             value  = int_round(fields[idx].value , 100) ;                        // convert from cm to m 
             break ;
         case GPS_CUMUL_DIST : 
-            value  = int_round(fields[idx].value , 10000) ;                        // convert from cm to 0.1km 
+            value  = int_round(fields[idx].value , 100) ;                        // convert from m to 0.1km 
             break ;    
 //      case GPS_DISTANCE :
 //        if (GPS_no_fix ) return 0 ;
