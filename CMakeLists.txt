@@ -12,7 +12,7 @@ project(my_project LANGUAGES C CXX)
 # initialize the Raspberry Pi Pico SDK
 pico_sdk_init()
 #add_compile_options(-Werror -Wall -Wextra -Wnull-dereference)
-add_compile_options(-Wall)
+#add_compile_options(-Wall)
 add_executable(oXs)
 
 pico_generate_pio_header(oXs ${CMAKE_CURRENT_LIST_DIR}/src/uart_crsf_rx.pio )
