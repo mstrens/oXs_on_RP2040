@@ -308,7 +308,7 @@ void GPS::readGpsUblox(){
     while (!queue_is_empty(&gpsRxQueue)){
         if (queue_try_remove ( &gpsRxQueue , &data ) ){
             //printf(" %X" , data);
-            bool parsed = false;
+            //bool parsed = false;
             switch (_step) {
                 case 0: // Sync char 1 (0xB5)
                     if ( 0xB5 == data ) { // UBX sync char 1
@@ -386,9 +386,9 @@ void GPS::readGpsUblox(){
                         break;   // do not parse the packet to be skipped
                     }
                                 // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
-                    if (parseGpsUblox() && (_class == 0x01) ) {
-                        parsed = true; 
-                    }
+                    //if (parseGpsUblox() && (_class == 0x01) ) {
+                    //    parsed = true; 
+                    //}
             }  // end of case
         } // end if
     } // end While     

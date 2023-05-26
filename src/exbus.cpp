@@ -556,7 +556,7 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
             value =  int_round(fields[idx].value  , 10) ; // converted in A with 2 decimals
             break ;
         case HEADING :
-            value = int_round(fields[idx].value  , 100000) ; // convert from degree * 100000 to degree
+            value = int_round(fields[idx].value  , 100) ; // convert from 0.01 degree to degree
             break ;
         case GROUNDSPEED :
             value = ((uint32_t) fields[idx].value) * 36 /100 ;       // convert from cm/sec to 1/10 of km/h
@@ -624,7 +624,7 @@ void exbusCreateTelemetry() {
     static uint16_t frameCnt = 0;
     static uint32_t textFrameMask = 0X01;
     uint8_t sensorsParamIdx;
-    uint8_t totalDataLen = 0;
+    //uint8_t totalDataLen = 0;
     uint8_t nextBufferWrite;
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");

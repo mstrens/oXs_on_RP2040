@@ -157,7 +157,7 @@ int BMP280::getAltitude() {
     int32_t t_fine; // t_fine carries fine temperature as global value
     int32_t var1 ; 
     int32_t var2 ;
-    int32_t T; // Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
+    //int32_t T; // Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
     uint32_t p; // pressure in pascal
     uint8_t buffer[6];
     uint8_t regToRead = 0xF7 ;  // address reg of the first byte of conversion

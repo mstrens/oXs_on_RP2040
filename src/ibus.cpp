@@ -275,9 +275,9 @@ void ibusPioRxHandlerIrq(){    // when a byte is received on the ibus bus, read 
 uint32_t lastIbusRequest = 0;
 #endif
 void handleIbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
-    static uint8_t previous = 0;
+    //static uint8_t previous = 0;
     static uint8_t data[4];
-    static uint8_t pollingSimulation;
+    //static uint8_t pollingSimulation;
     uint8_t ibusCmd;
     uint8_t ibusAdr;
     uint8_t ibusType;

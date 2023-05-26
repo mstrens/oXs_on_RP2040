@@ -178,7 +178,7 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
 }
 
 bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t * dataType) { // fill fieldValue and dataType for the fieldId when data is available, return true if data is available
-  uint8_t GPS_no_fix = ( (gps.GPS_fix_type != 3 ) && (gps.GPS_fix_type != 4 ) ) ; // this flag is true when there is no fix
+  //uint8_t GPS_no_fix = ( (gps.GPS_fix_type != 3 ) && (gps.GPS_fix_type != 4 ) ) ; // this flag is true when there is no fix
 
    switch (fieldId) {
     case RELATIVEALT :

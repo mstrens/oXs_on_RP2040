@@ -191,7 +191,7 @@ void fbusPioRxHandlerIrq(){    // when a byte is received on the fbus, read the 
 //} 
 
 void handleFbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
-    static uint8_t previous = 0;
+    //static uint8_t previous = 0;
     
     uint16_t data;
     if (config.pinPrimIn == 255) return ; // skip when Tlm is not foreseen
@@ -394,7 +394,7 @@ void sendOneFbus(uint8_t idx){  // fill one frame and send it
     
     //printf("%d\n", idx); // used to get the id and check the sequence in a xls
     // the frame contains 1 byte = type, 2 bytes = value id, 4 byte( or more) for value, 1 byte CRC
-    uint8_t counter = 0;
+    //uint8_t counter = 0;
     //uint8_t value[4] = { 0, 1, 2, 3};
     uint32_t uintValue = fields[idx].value ;
     int32_t intValue = fields[idx].value ;

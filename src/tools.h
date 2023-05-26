@@ -123,7 +123,6 @@ extern int debug ; // set from conf file at runtime
 #define debugAX(txt , a, n) {} 
 #endif
 //  #define debug_print(fmt, ...)  do { if(debug == 1){plog(__FILE__, ___FUNCTION__, __LINE__, ((fmt)), ##__VA_ARGS__);} } while (0)
-//#define debug_print(fmt, ...) \
-//            do { if (DEBUG) fprintf(stderr, fmt, ##__VA_ARGS__); } while (0)
+//  #define debug_print(fmt, ...)  do { if (DEBUG) fprintf(stderr, fmt, ##__VA_ARGS__); } while (0)
 
 

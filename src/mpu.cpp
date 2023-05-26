@@ -110,7 +110,7 @@ void MPU::begin()  // initialise MPU6050
 
 void MPU::testDevicesOffsetX(){
     sleep_ms(1000);
-    int16_t gyroX[16];
+    //int16_t gyroX[16];
     printf("with existing offset = %i\n", mpu6050.getXGyroOffset());
     for (uint8_t i=0;i<16;i++)  printf("%d\n", mpu6050.getRotationX()); // get 16 values
     mpu6050.setXGyroOffset(0);
@@ -271,17 +271,17 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     
     static float deltat = 0;  //loop time in seconds
     static unsigned long now = 0, last = 0; //microsRp() timers
-    static float sumAz;
+    //static float sumAz;
     static float azWorldAverage;
-    static float azAverage; 
-    static float vSpeedAcc = 0;
-    static float vSpeedAccHighPass;
-    static float vSpeedAccLow ;
-    static float vSpeedAcc2;
-    static float accLow;
-    static float accHigh;
-    static float vSpeedAcc3;
-    static float lowPass = 0;        //initialization of EMA S
+    //static float azAverage; 
+    //static float vSpeedAcc = 0;
+    //static float vSpeedAccHighPass;
+    //static float vSpeedAccLow ;
+    //static float vSpeedAcc2;
+    //static float accLow;
+    //static float accHigh;
+    //static float vSpeedAcc3;
+    //static float lowPass = 0;        //initialization of EMA S
     static uint32_t lastMpuUs;
     if ( ( microsRp() - lastMpuUs) < 2000) return false ; // perform calculation only every 2 msec 
     lastMpuUs = microsRp();
@@ -334,7 +334,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         //printf("Va4 Va4  %d %d 50 -50\n", (int32_t) vario1.relativeAlt ,  (int32_t) (float) zTrack);
         sumAccZ= 0;
         countAccZ=0;
-        sumAz = 0;
+        //sumAz = 0;
         if ( abs((vTrack - prevVTrack) ) >  VARIOHYSTERESIS ) {
             prevVTrack = vTrack ;
         }

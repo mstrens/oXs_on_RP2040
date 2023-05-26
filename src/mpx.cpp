@@ -301,9 +301,9 @@ void mpxPioRxHandlerIrq(){    // when a byte is received on the mpx bus, read th
 uint32_t lastMpxRequest = 0;
 #endif
 void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
-    static uint8_t previous = 0;
+    //static uint8_t previous = 0;
     static uint8_t data;
-    static uint8_t pollingSimulation;
+    //static uint8_t pollingSimulation;
     if (config.pinTlm == 255) return ; // skip when Tlm is not foreseen
     switch (mpxState) {
         case RECEIVING :
@@ -359,7 +359,7 @@ void handleMpxRxTx(void){   // main loop : restore receiving mode , wait for tlm
 
 
 bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field to transmit
-    bool sendingRequired = false;
+    //bool sendingRequired = false;
     bool alarm = false;
     uint8_t fieldId = convertMpxAddToFieldId[data_id];
     int16_t mpxValue ;
