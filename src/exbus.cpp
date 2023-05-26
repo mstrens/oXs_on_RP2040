@@ -624,7 +624,7 @@ void exbusCreateTelemetry() {
     static uint16_t frameCnt = 0;
     static uint32_t textFrameMask = 0X01;
     uint8_t sensorsParamIdx;
-    //uint8_t totalDataLen = 0;
+    uint8_t totalDataLen = 0;
     uint8_t nextBufferWrite;
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
