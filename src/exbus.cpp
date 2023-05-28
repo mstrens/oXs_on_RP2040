@@ -652,7 +652,7 @@ void exbusCreateTelemetry() {
         dictIdx++;                                    // next field being defined
         if (dictIdx >= exbusMaxFields) dictIdx = 0;
         // at this stage, we still have to calculate the 2 crc 
-        if (frameCnt > (exbusMaxFields >> 2)) textFrameMask = 0x0F; // after a certain number of frames, sent text only once per 256 frame
+        if (frameCnt > (exbusMaxFields << 3)) textFrameMask = 0x07; // after a certain number of frames, sent text only once per 256 frame
 	} else 	{   // send EX values in all other frames -------------------------------------------------
 		nextBufferWrite = 13;
         uint8_t count = exbusMaxFields - 1;   // max number of fields (to avoid filling twice the same field)
