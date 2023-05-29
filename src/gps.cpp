@@ -386,7 +386,7 @@ void GPS::readGpsUblox(){
                         break;   // do not parse the packet to be skipped
                     }
                                 // if we arive here, it means that a valid frame has been received and that the gpsBuffer contains the data to be parsed
-                    //if (parseGpsUblox() && (_class == 0x01) ) {
+                    if  (_class == 0x01) parseGpsUblox() ; // we handle only msg from class 01
                     //    parsed = true; 
                     //}
             }  // end of case
