@@ -420,6 +420,7 @@ void sendOneFbus(uint8_t idx){  // fill one frame and send it
         break;    
     case CURRENT:
         uintValue =  ( ((uint32_t) uintValue) /100 ) ;// voltage in mv is divided by 100 because Fbus expect it (Amp * 10)
+        if (intValue < 0) uintValue = 0; 
         break;    
     case AIRSPEED:
         uintValue =  (uint32_t)( ((float) intValue) * 0.194384 ) ;// from cm/s to 0.1kts/h

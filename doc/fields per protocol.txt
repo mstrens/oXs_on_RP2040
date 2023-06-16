@@ -30,8 +30,8 @@ GPS distance from home  m    Same as above                                 DIY (
 GPS cumulative distance m    Same as above                                 DIY (5104)                m
 RPM        ?????             RPM pin is defined                            RPM (0X0500)              ????  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     DIY (0X5131 / 0X5138)    mVolt
-Pitch      degree            MP6050 is installed (and SCL/SDA defined)     DIY (0X5120)             degree
-Roll       degree            Same as above                                 DIY (0X5121)             degree
+Pitch      0.01 degree       MP6050 is installed (and SCL/SDA defined)     DIY (0X5120)             0.01 degree
+Roll       0.01 degree       Same as above                                 DIY (0X5121)             0.01 degree
 Airspeed   cm/s          a MS4525/sdp3x is installed (and SCL/SDA defined) Airspeed (0X0A00)        0.1 kts/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed         Vspeed (0X011F)          cm/s
 Sbus hold frames %           Sbus(2) is used                               DIY (0X5124)             %
@@ -104,8 +104,8 @@ GPS distance from home       Same as above                                 GPS d
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz ?????          RPM pin is defined                            GAM Rpm                   Hz/10
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
-Roll       degree            Same as above
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
+Roll       0.01 degree       Same as above
                                                                            GAM temperature 1 not transmitted
                                                                            GAM temperature 2 not transmitted
                                                                            GAM Airspeed      not transmitted
@@ -143,8 +143,8 @@ GPS distance from home       Same as above                                 not t
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
-Roll       degree            Same as above
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted currently
+Roll       0.01 degree       Same as above
 Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed          not transmitted 
 
@@ -178,8 +178,8 @@ GPS distance from home       Same as above                                 not t
 GPS cumulative distance m    Same as above                                 Gps cum. dist.            0.1km
 RPM        Hz                RPM pin is defined                            RPM                      Rpm (= Hz * 60)
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
-Pitch      degree            MP6050 is installed (and SCL/SDA defined)     Pitch                    degree
-Roll       degree            Same as above                                 Roll                     degree
+Pitch      0.01 degree       MP6050 is installed (and SCL/SDA defined)     Pitch                    0.1 degree
+Roll       0.01 degree       Same as above                                 Roll                     0.1 degree
 Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed         Comp Vspeed              m/s 
 
@@ -213,8 +213,8 @@ GPS distance from home       Same as above                                 Index
 GPS cumulative distance m    Same as above                                 Index = 12                0.1 km
 RPM        ?????             RPM pin is defined                            Index = 5                 100 t/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
-Roll       degree            Same as above                                 Not transmitted 
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       0.01 degree       Same as above                                 Not transmitted 
 
 
 
@@ -248,8 +248,8 @@ GPS distance from home       Same as above                                 GPS_D
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            RPM                       ???
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
-Roll       degree            Same as above                                 Not transmitted 
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       0.01 degree       Same as above                                 Not transmitted 
 
 
 ******************************************************************************************************************
@@ -282,8 +282,8 @@ GPS distance from home       Same as above                                 not t
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            RPM                       RPM
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
-Roll       degree            Same as above                                 Not transmitted 
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       0.01 degree       Same as above                                 Not transmitted 
 Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed                 cm/s ???(not sure it is ok)
 Comp.Vspeed cm/s             a Baro + a MS4525 are installed               not transmitted
 Sbus hold frames %           Sbus(2) is used                               Transmitted as temperature no unit (%)
@@ -320,8 +320,8 @@ GPS distance from home       Same as above                                 not t
 GPS cumulative distance m    Same as above                                 not transmitted 
 RPM        Hz                RPM pin is defined                            RPM                       10 tour/min
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
-Pitch      degree            Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
-Roll       degree            Same as above                                 Not transmitted 
+Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
+Roll       0.01 degree       Same as above                                 Not transmitted 
 Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed                 km/h
 Comp.Vspeed cm/s             a Baro + a MS4525 are installed               not transmitted
 

@@ -142,8 +142,8 @@ JETISENSOR_CONST sensorsParam[] =
     { 17     , "Vspeed"     , "m/s"       , EXBUS_TYPE_14 ,        2 , 3},  //VSPEED,      // baro       in cm/s
     { 18     , "Alt"        , "m"         , EXBUS_TYPE_22 ,        1 , 4},  //RELATIVEALT , // baro      in cm
       
-    { 19     , "Pitch"      , "\xB0"      , EXBUS_TYPE_14 ,        0 , 3},  //PITCH,       // 20 imu        in degree 
-    { 20     , "Roll"       , "\xB0"      , EXBUS_TYPE_14 ,        0 , 3},  //ROLL,       // 20 imu        in degree 
+    { 19     , "Pitch"      , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //PITCH,       // 20 imu        in 0.1 degree 
+    { 20     , "Roll"       , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //ROLL,       // 20 imu        in 0.1 degree 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //{ 21         , "Yaw"        , "\xB0"      , EXBUS_TYPE_14 ,        0 },  //YAW,       // 20 imu        in degree 
     { 22     , "Rpm"        , "t/min"     , EXBUS_TYPE_22 ,        0 , 4},  //RPM ,        // RPM sensor    in Herzt
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
@@ -584,7 +584,15 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
             break ;
         case RPM :
             value = fields[idx].value   * 60 ; // from Hz to RPM
-            break ;  
+            break ;
+        case PITCH :
+            value = fields[idx].value   / 10 ; // from 0.01 degree to 0.1 degree
+            break ;
+        
+        case ROLL :
+            value = fields[idx].value   / 10 ; // from 0.01 degree to 0.1 degree
+            break ;
+              
     }
     // now value contains the formatted value in 4 bytes ; we still have to fill the buffer
     uint8_t codifJeti ;
@@ -652,7 +660,7 @@ void exbusCreateTelemetry() {
         dictIdx++;                                    // next field being defined
         if (dictIdx >= exbusMaxFields) dictIdx = 0;
         // at this stage, we still have to calculate the 2 crc 
-        if (frameCnt > (exbusMaxFields << 3)) textFrameMask = 0x07; // after a certain number of frames, sent text only once per 256 frame
+        if (frameCnt > (exbusMaxFields << 3)) textFrameMask = 0x1F; // after a certain number of frames, sent text only once per 32 frames
 	} else 	{   // send EX values in all other frames -------------------------------------------------
 		nextBufferWrite = 13;
         uint8_t count = exbusMaxFields - 1;   // max number of fields (to avoid filling twice the same field)
