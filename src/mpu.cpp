@@ -344,8 +344,8 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     now_ms = millisRp(); //time to print?
     if (now_ms - last_ms >= 500) {
         last_ms = now_ms;
-        sent2Core0( PITCH , (int32_t) pitch * 100 ) ; 
-        sent2Core0( ROLL , (int32_t) roll * 100 ) ; 
+        sent2Core0( PITCH , (int32_t) (pitch * 100) ) ; 
+        sent2Core0( ROLL , (int32_t) (roll * 100) ) ; 
         // print angles for serial plotter...
         #ifdef DEBUG
         //printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack, vario1.climbRateFloat);//  Serial.print("ypr ");
