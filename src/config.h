@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.5.10"
+#define VERSION "2.6.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -21,14 +21,21 @@
 // 0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F, 
 // 0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B
 
-// The #define below allow to setup the relative priority of field transmissions
-// Value should be in range 3...250 
-// A field with a lower value will be transmitted more often than another field with a higher value  
+
+
+// -------------- for Sport, Fbus (Frsky) and Exbus (Jeti) ---------------------
+// The #define below allow to setup the relative priority of telemetry fields.
+// Do not delete the #define but change some value if you want.
+// Each Value should be in range 3...250 
 // Still value 0 means that this field may not be transmitted
+//
+// A field with a lower value will be transmitted more often than another field with a higher value  
 // The values are relative.
 //     E.g. if oXs has 3 fields to transmit; one with priority 5 and 2 with priority 50
 //        the one with priority 5 will be transmitted about 10 X more often than the 2 others   
-// There is no need to set the value to 0 for fields not available (e.g. GPS fields if GPS pins are undefined) 
+// There is no need to set the value to 0 for fields not available (e.g. for GPS fields if GPS pins are undefined)
+// Note : currently some fields are never transmitted in exbus protocol (even if they have a valid value here)
+//        For more details about the fields, look at the file doc/fields_per_protocol.txt 
 #define P_LATITUDE 50
 #define P_LONGITUDE 50
 #define P_GROUNDSPEED 50

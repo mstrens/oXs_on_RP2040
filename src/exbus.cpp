@@ -109,15 +109,22 @@ extern uint32_t lastSecChannelsMillis;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
-uint8_t exbusFieldList[NUMBER_MAX_IDX+1];
-uint8_t exbusMaxFields = 0;
+uint8_t exbusFieldList[NUMBER_MAX_IDX+1]; // keep the list of fields to be transmitted
+uint8_t exbusMaxPooling[NUMBER_MAX_IDX]; // keep the table saying that each field has to be transmitted at least once every X time
+uint8_t exbusMinPooling[NUMBER_MAX_IDX]; // keep the table saying that each field has not to be transmitted before X other trials
+uint32_t exbusLastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each field
+uint32_t exbusPoolingNr= 0; // contains the current Pooling nr
+
+
+
+uint8_t exbusMaxFields = 0; // number of fields in the list (! index 0 is used for oXs name, so list really starts at 1)
 //uint8_t exbusDataFieldIdx = 0;
 //uint8_t exbusTxtFieldIdx = 0;
 
 // sensor definition (max. 31 for DC/DS-16)
 // name plus unit must be < 20 characters
 // precision = 0 --> 0, precision = 1 --> 0.0, precision = 2 --> 0.00
-JETISENSOR_CONST sensorsParam[] =
+JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order fieldId in tools.h
 {
 	// id         name          unit         data type      precision  length 
 	{ 1      , "Gps Lat"     , "\xB0"     , EXBUS_TYPE_GPS ,       0 , 5},   //   LATITUDE   //  GPS special format
@@ -169,50 +176,143 @@ void setupExbusList(bool activateAllFields){
     exbusFieldList[0] = NUMBER_MAX_IDX;  // index of the name "oXs" = last in the list
     exbusMaxFields = 1;
     if (( config.pinGpsTx != 255 ) ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = LATITUDE ;  
-        exbusFieldList[exbusMaxFields++] = LONGITUDE ;
-        exbusFieldList[exbusMaxFields++] = GROUNDSPEED ;
-        exbusFieldList[exbusMaxFields++] = HEADING ;
-        exbusFieldList[exbusMaxFields++] = ALTITUDE ; 
-        exbusFieldList[exbusMaxFields++] = NUMSAT ;
-        exbusFieldList[exbusMaxFields++] = GPS_CUMUL_DIST ; 
+        #if defined(P_LATITUDE) && (P_LATITUDE > 0)
+            exbusMaxPooling[LATITUDE] = P_LATITUDE; 
+            exbusFieldList[exbusMaxFields++] = LATITUDE ;  
+        #endif
+        #if defined(P_LONGITUDE) && (P_LONGITUDE > 0)
+            exbusMaxPooling[LONGITUDE] = P_LONGITUDE;
+            exbusFieldList[exbusMaxFields++] = LONGITUDE ;
+        #endif
+        #if defined(P_GROUNDSPEED) && (P_GROUNDSPEED > 0)
+            exbusMaxPooling[GROUNDSPEED] = P_GROUNDSPEED;
+            exbusFieldList[exbusMaxFields++] = GROUNDSPEED ;
+        #endif
+        #if defined(P_HEADING) && (P_HEADING > 0)
+            exbusMaxPooling[HEADING] = P_HEADING;
+            exbusFieldList[exbusMaxFields++] = HEADING ;
+        #endif
+        #if defined(P_ALTITUDE) && (P_ALTITUDE > 0)
+            exbusMaxPooling[ALTITUDE] = P_ALTITUDE;
+            exbusFieldList[exbusMaxFields++] = ALTITUDE ; 
+        #endif
+        #if defined(P_NUMSAT) && (P_NUMSAT > 0)
+            exbusMaxPooling[NUMSAT] = P_NUMSAT;
+            exbusFieldList[exbusMaxFields++] = NUMSAT ;
+        #endif
+        #if defined(P_GPS_CUMUL_DIST) && (P_GPS_CUMUL_DIST > 0)
+            exbusMaxPooling[GPS_CUMUL_DIST] = P_GPS_CUMUL_DIST;
+            exbusFieldList[exbusMaxFields++] = GPS_CUMUL_DIST ;
+        #endif     
     }
     if (( config.pinVolt[0] != 255)  ||  activateAllFields){
-        exbusFieldList[exbusMaxFields++] = MVOLT ;
+        #if defined(P_MVOLT) && (P_MVOLT > 0)
+            exbusMaxPooling[MVOLT] = P_MVOLT;
+            exbusFieldList[exbusMaxFields++] = MVOLT ;
+        #endif    
     }
     if (( config.pinVolt[1] != 255)  ||  activateAllFields){
-        exbusFieldList[exbusMaxFields++] = CURRENT ;
-        exbusFieldList[exbusMaxFields++] = CAPACITY ;
+        #if defined(P_CURRENT) && (P_CURRENT > 0)
+            exbusMaxPooling[CURRENT] = P_CURRENT;
+            exbusFieldList[exbusMaxFields++] = CURRENT ;
+        #endif
+        #if defined(P_CAPACITY) && (P_CAPACITY > 0)
+            exbusMaxPooling[CAPACITY] = P_CAPACITY;
+            exbusFieldList[exbusMaxFields++] = CAPACITY ;
+        #endif
     }
     if ((( config.pinVolt[2] != 255)  && (config.temperature == 0 || config.temperature == 255)) ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = RESERVE1 ;
+        #if defined(P_RESERVE1) && (P_RESERVE1 > 0)
+            exbusMaxPooling[RESERVE1] = P_RESERVE1;
+            exbusFieldList[exbusMaxFields++] = RESERVE1 ;
+        #endif
     }
     if ((( config.pinVolt[3] != 255)  && ( config.temperature != 2))  ||  activateAllFields){
-        exbusFieldList[exbusMaxFields++] = RESERVE2 ;
+        #if defined(P_RESERVE2) && (P_RESERVE2 > 0)
+            exbusMaxPooling[RESERVE2] = P_RESERVE2;
+            exbusFieldList[exbusMaxFields++] = RESERVE2 ;
+        #endif
     }
     if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = TEMP1 ;
+        #if defined(P_TEMP1) && (P_TEMP1 > 0)
+            exbusMaxPooling[TEMP1] = P_TEMP1;
+            exbusFieldList[exbusMaxFields++] = TEMP1 ;
+        #endif
     }
     if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = TEMP2 ;
+        #if defined(P_TEMP2) && (P_TEMP2 > 0)
+            exbusMaxPooling[TEMP2] = P_TEMP2;
+            exbusFieldList[exbusMaxFields++] = TEMP2 ;
+        #endif
     }
     if (( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled)  ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = RELATIVEALT ; 
-        exbusFieldList[exbusMaxFields++] = VSPEED ;
+        #if defined(P_RELATIVEALT) && (P_RELATIVEALT > 0)
+            exbusMaxPooling[RELATIVEALT] = P_RELATIVEALT;
+            exbusFieldList[exbusMaxFields++] = RELATIVEALT ; 
+        #endif
+        #if defined(P_VSPEED) && (P_VSPEED > 0)
+            exbusMaxPooling[VSPEED] = P_VSPEED;
+            exbusFieldList[exbusMaxFields++] = VSPEED ;
+        #endif
     }
     if ((mpu.mpuInstalled)  ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = PITCH ; 
-        exbusFieldList[exbusMaxFields++] = ROLL ;
+        #if defined(P_PITCH) && (P_PITCH > 0)
+            exbusMaxPooling[PITCH] = P_PITCH;
+            exbusFieldList[exbusMaxFields++] = PITCH ; 
+        #endif
+        #if defined(P_ROLL) && (P_ROLL > 0)
+            exbusMaxPooling[ROLL] = P_ROLL;
+            exbusFieldList[exbusMaxFields++] = ROLL ;
+        #endif
     }
     if (( config.pinRpm != 255 )  ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = RPM ; 
+        #if defined(P_RPM) && (P_RPM > 0)
+            exbusMaxPooling[RPM] = P_RPM;
+            exbusFieldList[exbusMaxFields++] = RPM ; 
+        #endif
     }
     if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = AIRSPEED ; 
+        #if defined(P_AIRSPEED) && (P_AIRSPEED > 0)
+            exbusMaxPooling[AIRSPEED] = P_AIRSPEED;    
+            exbusFieldList[exbusMaxFields++] = AIRSPEED ; 
+        #endif
     }
     if (( ( ms4525.airspeedInstalled || sdp3x.airspeedInstalled) && ( baro1.baroInstalled || baro2.baroInstalled || baro3.baroInstalled) )  ||  activateAllFields) {
-        exbusFieldList[exbusMaxFields++] = AIRSPEED_COMPENSATED_VSPEED ; 
+        #if defined(P_AIRSPEED_COMPENSATED_VSPEED) && (P_AIRSPEED_COMPENSATED_VSPEED > 0)
+            exbusMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = P_AIRSPEED_COMPENSATED_VSPEED;
+            exbusFieldList[exbusMaxFields++] = AIRSPEED_COMPENSATED_VSPEED ; 
+        #endif
     }
+
+    // calculate the max and min frequency of having each field.
+        // sum of inverted values only when field is used
+    float exbusMaxBandwidth = 0;
+    uint8_t currentFieldIdx;
+    for (uint8_t i=1; i < exbusMaxFields ; i++){
+        currentFieldIdx = exbusFieldList[i];
+        if ( (exbusMaxPooling[currentFieldIdx]>0)) {
+            exbusMaxBandwidth += 1.0 / (float) exbusMaxPooling[currentFieldIdx];
+            printf("field %i , f %f\n", (int) currentFieldIdx ,  1.0 / (float) exbusMaxPooling[currentFieldIdx]);
+        }    
+    }
+    if ( exbusMaxBandwidth == 0) exbusMaxBandwidth=1.0;
+    // adapt the min and max
+    #define EXBUS_PRINT_MAX_MIN
+    #ifdef EXBUS_PRINT_MAX_MIN
+    printf("Priority list: factor = %f\n", exbusMaxBandwidth );
+    #endif
+    
+    for (uint8_t i=1; i < exbusMaxFields ; i++){
+        currentFieldIdx = exbusFieldList[i];
+        if ( (exbusMaxPooling[currentFieldIdx]>0)) {
+            exbusMaxPooling[currentFieldIdx] = ( exbusMaxPooling[currentFieldIdx] * exbusMaxBandwidth) + 1 ;
+            exbusMinPooling[currentFieldIdx] = exbusMaxPooling[currentFieldIdx] >> 1 ; // min are equal to max / 2
+            #ifdef EXBUS_PRINT_MAX_MIN
+            printf("%i = field %i,  %i , %i\n", (int)i , (int) currentFieldIdx , (int) exbusMaxPooling[currentFieldIdx] , (int) exbusMinPooling[currentFieldIdx]);
+            #endif
+        }    
+    }
+
     //exbusMaxFields-- ;
     uint16_t temp =  0x8000;
     for (uint8_t i = 0; i<24; i++) {
@@ -230,7 +330,7 @@ void setupExbusList(bool activateAllFields){
 
 void setupExbus() {
 // configure some tables to manage priorities and exbus fields codes used by exbus    
-    setupExbusList(false); 
+    setupExbusList(false);  // false means that all fields does not need to be activated
 // configure the queue to get the data from exbus in the irq handle (2 bytes because MSB says if there was a timeout; help to find start of frame)
     queue_init (&exbusRxQueue, sizeof(uint16_t), 250);
 
@@ -281,7 +381,7 @@ void exbusPioRxHandlerIrq(){    // when a byte is received on the exbus, read th
 
 void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     //static uint8_t previous = 0;
-    //#define SIMULATE_RX_EXBUS
+    #define SIMULATE_RX_EXBUS
     #ifdef SIMULATE_RX_EXBUS
     static uint8_t exbusRcChannelsSimulation[] = {
         0x3E, 0x03, 0x28, 0x06, 0x31, 0x20, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F,
@@ -490,11 +590,12 @@ void exbusCreateSendTelemetry(){ // search for the next data to be sent
 // so there are 3 levels of length and 2 types of CRC (1 and 2 bytes)
     //printf("exbus creating tlm frame\n");
     
-    waitUs(100); // wait a little before replying to a pooling
     if ( dma_channel_is_busy(exbus_dma_chan) ) {
         //printf("dma is busy\n");
         return ; // skip if the DMA is still sending data
     }
+    
+    waitUs(100); // wait a little before replying to a pooling
     exbusCreateTelemetry();  // create the frame in exbusTxBuffer[]
     //#define PRINT_EXBUS_TLM_FRAME
     #ifdef PRINT_EXBUS_TLM_FRAME
@@ -626,14 +727,50 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
     return count;
 }
 
+uint8_t exbusFindNextFieldIdx(){
+    // return the index (0= LATITUDE) of next field to be sent
+    // when there is no field available to transmit, return 255
+    // use the same principle as for Sport to manage the priority (based on exbusMaxPolling[] and exbusMinPolling[] )
+    // do not fill yet the value in the buffer
+    // exbusPoolingNr = sequence nummer of frame 
+    uint32_t currentPollingNr = exbusPoolingNr;
+    uint8_t _fieldId; 
+    // first we search the first field  
+    for (uint8_t i = 1 ; i<exbusMaxFields  ; i++ ){
+         _fieldId = exbusFieldList[i]; // retrieve field ID to be checked
+         if ((fields[_fieldId].available) && (exbusMaxPooling[_fieldId] > 0))  { // when field is available and may be transmitted
+            if (currentPollingNr > (exbusLastPoolingNr[_fieldId] + exbusMaxPooling[_fieldId])){
+                //sendOneSport(_fieldId);
+                //fields[_fieldId].available = false; // flag as sent
+                //sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
+                return _fieldId;
+            }
+         } 
+    } // end for
+    // repeat base on min 
+    for (uint8_t i = 1 ; i< exbusMaxFields ; i++ ){
+         _fieldId = exbusFieldList[i]; // retrieve field ID to be checked
+         if ((fields[_fieldId].available) && (exbusMaxPooling[_fieldId] > 0)) {
+            if (currentPollingNr > (exbusLastPoolingNr[_fieldId] + exbusMinPooling[_fieldId])){
+                //sendOneSport(_fieldId);
+                //fields[_fieldId].available = false; // flag as sent
+                //sportLastPoolingNr[_fieldId] = currentPollingNr; // store pooling that has been used 
+                return _fieldId;
+            }
+         } 
+    } // end for
+    return 255; // no field to transmit
+
+}
+
 void exbusCreateTelemetry() {	
 	static uint8_t dictIdx = 0; // index used to retrieve the TXT in exbusFieldList[]; start at 0 
-    static uint8_t dataIdx = 1;  // index used to retrieve the parameter for data in exbusFieldList[]; start at 1
+    //static uint8_t dataIdx = 1;  // index used to retrieve the parameter for data in exbusFieldList[]; start at 1
     static uint16_t frameCnt = 0;
     static uint32_t textFrameMask = 0X01;
-    uint8_t sensorsParamIdx;
+    uint8_t sensorsParamIdx;  // index to read sensorParam[]
     uint8_t totalDataLen = 0;
-    uint8_t nextBufferWrite;
+    uint8_t nextBufferWrite; // position where to write the next byte
     exbusTxBuffer[4]= 0X3A; // this byte says that it is a tlm frame and not a jetibox frame 
     //printf("creating tlm frame\n");
 	// sensor name in frame 0
@@ -662,32 +799,49 @@ void exbusCreateTelemetry() {
         // at this stage, we still have to calculate the 2 crc 
         if (frameCnt > (exbusMaxFields << 3)) textFrameMask = 0x1F; // after a certain number of frames, sent text only once per 32 frames
 	} else 	{   // send EX values in all other frames -------------------------------------------------
-		nextBufferWrite = 13;
+		nextBufferWrite = 13;  // start writing at this position
         uint8_t count = exbusMaxFields - 1;   // max number of fields (to avoid filling twice the same field)
-        uint8_t countWritten = 0 ;
-        uint8_t countWrittenTotal = 0 ;
+        uint8_t countWritten = 0 ;  // number of bytes for one telemetry field
+        uint8_t countWrittenTotal = 0 ; // total number for all telemetry fields
         uint8_t lastDataIdx = 1;
-        while (count--) { // we look max once into the list of fields 
-            sensorsParamIdx = exbusFieldList[dataIdx] ;            // retrieve the index in sensorParam[]
-            if ( fields[sensorsParamIdx].available ) {             // if the field is available, look if there is still space in the buffer
-                if (( countWrittenTotal + sensorsParam[sensorsParamIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value
-                    // some doc says 26 bytes for the ex frame and there are 8 other bytes (7F + 2F Type, deviceID1...4, CRC)
-                countWritten = addOneValue(sensorsParamIdx , nextBufferWrite) ;
-                    //printf("dataIdx= %i paramIdx=%i len=%i count=%i cWritten=%i CWtot=%i\n", 
-                    //(int) dataIdx, (int) sensorsParamIdx, (int) sensorsParam[sensorsParamIdx].length , (int) count, (int) countWritten,
-                    //(int) countWrittenTotal );
-                countWrittenTotal += countWritten ;
-                nextBufferWrite += countWritten ;
-                lastDataIdx = dataIdx;
-                fields[sensorsParamIdx].available = false;
-            } 
-            dataIdx++;                                   // continue with next field
-            if (dataIdx >= exbusMaxFields) dataIdx = 1;
+        bool noFieldAdded = true; // use to increase exbusPoolingNr when no fields have been added to the frame
+        while (countWrittenTotal < 14){ // try to fill the buffer
+            uint8_t currentFieldIdx = exbusFindNextFieldIdx(); // return the index of next field to transmit
+            if (currentFieldIdx == 255) break; // no field to be added
+            if (( countWrittenTotal + sensorsParam[currentFieldIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value 
+            countWritten = addOneValue(currentFieldIdx , nextBufferWrite) ; // fill the buffer and summerize
+            printf("add %i\n",(int) currentFieldIdx);
+            countWrittenTotal += countWritten ;
+            nextBufferWrite += countWritten ; // point to the next position
+            //lastDataIdx = dataIdx;
+            fields[sensorsParamIdx].available = false; // mark field as transmitted
+            exbusLastPoolingNr[currentFieldIdx] = exbusPoolingNr; // store the polong nr when it field was sent last time 
+            exbusPoolingNr++; // increase the polling nr 
+            noFieldAdded = false;
         }
-        if (countWrittenTotal) {  // when we write some value, we will start from the next one later on
-            dataIdx = lastDataIdx + 1;
-            if (dataIdx >= exbusMaxFields) dataIdx = 1;
-        } 
+        if (noFieldAdded) exbusPoolingNr++; // increase the polling nr 
+            
+        //while (count--) { // we look max once into the list of fields 
+        //    sensorsParamIdx = exbusFieldList[dataIdx] ;            // retrieve the index in sensorParam[]
+        //    if ( fields[sensorsParamIdx].available ) {             // if the field is available, look if there is still space in the buffer
+        //        if (( countWrittenTotal + sensorsParam[sensorsParamIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value
+        //            // some doc says 26 bytes for the ex frame and there are 8 other bytes (7F + 2F Type, deviceID1...4, CRC)
+        //        countWritten = addOneValue(sensorsParamIdx , nextBufferWrite) ;
+        //            //printf("dataIdx= %i paramIdx=%i len=%i count=%i cWritten=%i CWtot=%i\n", 
+        //            //(int) dataIdx, (int) sensorsParamIdx, (int) sensorsParam[sensorsParamIdx].length , (int) count, (int) countWritten,
+        //            //(int) countWrittenTotal );
+        //        countWrittenTotal += countWritten ;
+        //        nextBufferWrite += countWritten ;
+        //        lastDataIdx = dataIdx;
+        //        fields[sensorsParamIdx].available = false;
+        //    } 
+        //    dataIdx++;                                   // continue with next field
+        //    if (dataIdx >= exbusMaxFields) dataIdx = 1;
+        //}
+        //if (countWrittenTotal) {  // when we write some value, we will start from the next one later on
+        //    dataIdx = lastDataIdx + 1;
+        //    if (dataIdx >= exbusMaxFields) dataIdx = 1;
+        //} 
         exbusTxBuffer[2] = 16 + countWrittenTotal ; // total len of the frame
         exbusTxBuffer[5] = 8 + countWrittenTotal ; // total len of the frame 
         exbusTxBuffer[7] = 0X46 + countWrittenTotal ;  // Sub length : bits 7...6 = 01 = data; bits 5...0 = length of folowing bytes including 1 byte CRC
@@ -704,7 +858,7 @@ void exbusCreateTelemetry() {
 	exbusTxBuffer[exbusTxBuffer[2]-2] = (uint8_t)(crcCalc & 0xFF);
 	exbusTxBuffer[exbusTxBuffer[2]-1] = (uint8_t)(crcCalc >> 8);
     frameCnt++;
-    //#define EXBUS_PRINT_TX_BUFFER
+    #define EXBUS_PRINT_TX_BUFFER
     #ifdef EXBUS_PRINT_TX_BUFFER
     printf("Tx= ");
     for (uint8_t i = 0; i< exbusTxBuffer[2];i++){

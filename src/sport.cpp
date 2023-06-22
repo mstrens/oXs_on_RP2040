@@ -497,7 +497,9 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
 
 void calculateSportMaxBandwidth(){
     for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){
-        sportMaxBandwidth = 10; // dummy value just to be sure it is initialized
+        sportMaxPooling[i]= 0;
+        sportMinPooling[i] = 0;
+        //sportMaxBandwidth = 10; // dummy value just to be sure it is initialized
     }
     // fill with values from config.h
     sportMaxPooling[LATITUDE] = P_LATITUDE;
@@ -547,7 +549,7 @@ void calculateSportMaxBandwidth(){
     // adapt the min and max
     for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){
         if ((fields[i].onceAvailable) && (sportMaxPooling[i]>0)) {
-            sportMaxPooling[i] = sportMaxPooling[i] * sportMaxBandwidth ;
+            sportMaxPooling[i] = ( sportMaxPooling[i] * sportMaxBandwidth) + 1 ;
             sportMinPooling[i] = sportMaxPooling[i] >> 1 ; // min are equal to max / 2
             //printf("%i =  %i\n", (int)i , (int) sportMaxPooling[i] );
         }    
