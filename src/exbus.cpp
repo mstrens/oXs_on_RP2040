@@ -292,12 +292,12 @@ void setupExbusList(bool activateAllFields){
         currentFieldIdx = exbusFieldList[i];
         if ( (exbusMaxPooling[currentFieldIdx]>0)) {
             exbusMaxBandwidth += 1.0 / (float) exbusMaxPooling[currentFieldIdx];
-            printf("field %i , f %f\n", (int) currentFieldIdx ,  1.0 / (float) exbusMaxPooling[currentFieldIdx]);
+            //printf("field %i , f %f\n", (int) currentFieldIdx ,  1.0 / (float) exbusMaxPooling[currentFieldIdx]);
         }    
     }
     if ( exbusMaxBandwidth == 0) exbusMaxBandwidth=1.0;
     // adapt the min and max
-    #define EXBUS_PRINT_MAX_MIN
+    //#define EXBUS_PRINT_MAX_MIN
     #ifdef EXBUS_PRINT_MAX_MIN
     printf("Priority list: factor = %f\n", exbusMaxBandwidth );
     #endif
@@ -381,7 +381,7 @@ void exbusPioRxHandlerIrq(){    // when a byte is received on the exbus, read th
 
 void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for tlm request, prepare frame, start pio and dma to transmit it
     //static uint8_t previous = 0;
-    #define SIMULATE_RX_EXBUS
+    //#define SIMULATE_RX_EXBUS
     #ifdef SIMULATE_RX_EXBUS
     static uint8_t exbusRcChannelsSimulation[] = {
         0x3E, 0x03, 0x28, 0x06, 0x31, 0x20, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F, 0x82, 0x1F,
@@ -810,7 +810,7 @@ void exbusCreateTelemetry() {
             if (currentFieldIdx == 255) break; // no field to be added
             if (( countWrittenTotal + sensorsParam[currentFieldIdx].length) > 15 ) break; // exit if no space enough // todo check the real max value 
             countWritten = addOneValue(currentFieldIdx , nextBufferWrite) ; // fill the buffer and summerize
-            printf("add %i\n",(int) currentFieldIdx);
+            //printf("add %i\n",(int) currentFieldIdx);
             countWrittenTotal += countWritten ;
             nextBufferWrite += countWritten ; // point to the next position
             //lastDataIdx = dataIdx;
@@ -858,7 +858,7 @@ void exbusCreateTelemetry() {
 	exbusTxBuffer[exbusTxBuffer[2]-2] = (uint8_t)(crcCalc & 0xFF);
 	exbusTxBuffer[exbusTxBuffer[2]-1] = (uint8_t)(crcCalc >> 8);
     frameCnt++;
-    #define EXBUS_PRINT_TX_BUFFER
+    //#define EXBUS_PRINT_TX_BUFFER
     #ifdef EXBUS_PRINT_TX_BUFFER
     printf("Tx= ");
     for (uint8_t i = 0; i< exbusTxBuffer[2];i++){
