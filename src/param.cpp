@@ -123,7 +123,7 @@ void processCmd(){
     }
     if (cmdBuffer[0] == '?'){ // when help is requested we print the instruction
         printf("\nCommands can be entered to change the config parameters\n");
-        printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=1)\n");
+        printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=5)\n");
         printf("    Function                  Code        Valid pins number\n");   
         printf("    Primary channels input    PRI     = 5, 9, 21, 25\n");
         printf("    Secondary channels input  SEC     = 1, 13, 17, 29\n");
@@ -192,8 +192,12 @@ void processCmd(){
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : pin must be an unsigned integer\n");
-        } else if ( !(ui == 5 or ui == 21 or ui == 9 or ui ==25 or ui ==255)) {
-            printf("Error : pin must be 5 ,21 , 9 , 25 or 255\n");
+        } else if ((config.protocol != 'E' && config.protocol != 'F' && config.protocol != 'L') &&
+                   ( !(ui == 5 or ui == 21 or ui == 9 or ui ==25 or ui ==255))) {
+            printf("Error : PRI pin must be 5 ,21 , 9 , 25 or 255 for most protocols (except Exbus, Fbus and SRXL2)\n");
+        } else if ( (config.protocol == 'E' || config.protocol == 'F' || config.protocol == 'L') &&
+                   ( !(ui <=29 or ui ==255))) {
+            printf("Error : PRI pin must be in range 0/29 or 255 for Exbus, Fbus and SRXL2 protocol\n");
         } else {    
             config.pinPrimIn = ui;
             printf("Pin for primary channels input = %u\n" , config.pinPrimIn);
@@ -733,6 +737,11 @@ void checkConfig(){
     if (config.temperature == 2 && (config.pinVolt[2] == 255 || config.pinVolt[3] == 255)){
         printf("Error in parameters: when 2 temperature sensors are used (TEMP = 2), a pin for V3 and for V4 must be defined too)\n");
         configIsValid=false;
+    }
+    if ( config.protocol != 'E' && config.protocol != 'F' && config.protocol != 'L' &&
+        ( !(config.pinPrimIn == 5 or config.pinPrimIn == 21 or config.pinPrimIn == 9 or config.pinPrimIn ==25 or config.pinPrimIn ==255))) {
+            printf("Error : PRI pin must be 5 ,21 , 9 , 25 or 255 for most protocols (except Exbus, Fbus and SRXL2)\n");
+            configIsValid=false;
     }
     if (config.protocol == '2' && config.pinPrimIn == 255){
         printf("Error in parameters: For Futaba Sbus2 protocol, a pin must be defined for Primary channels input (PRI)\n");

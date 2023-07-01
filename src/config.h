@@ -36,6 +36,7 @@
 // There is no need to set the value to 0 for fields not available (e.g. for GPS fields if GPS pins are undefined)
 // Note : currently some fields are never transmitted in exbus protocol (even if they have a valid value here)
 //        For more details about the fields, look at the file doc/fields_per_protocol.txt 
+
 #define P_LATITUDE 50
 #define P_LONGITUDE 50
 #define P_GROUNDSPEED 50
@@ -73,6 +74,7 @@
 #define P_SBUS_HOLD_COUNTER 100
 #define P_SBUS_FAILSAFE_COUNTER 100
 #define P_GPS_CUMUL_DIST 200  
+
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future

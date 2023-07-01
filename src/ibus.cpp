@@ -409,6 +409,7 @@ bool formatIbusValue( uint8_t ibusAdr){
             break;
         case CURRENT:
             ibusValue= int_round(fields[fieldId].value , 10); // from mamp to 0.01A
+            if (ibusValue < 0) ibusValue =0;
             break;
         case NUMSAT:
             ibusValue= fields[fieldId].value * 256; // it seems that openTx discard the lowest byte
