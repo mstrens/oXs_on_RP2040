@@ -204,6 +204,12 @@ void handleIbusIn(){
         if (ibusInCounter == 0X20 ) {  // 32 byte per frame 
             ibusInState = NO_IBUS_IN_FRAME;
             ibusInCounter = 0;
+            printf("Frame= ");
+            for (uint8_t i = 0 ; i < 32 ; i++ ) { // fill a table with values
+                printf("%x ", runningIbusFrame[i] );
+            }
+            printf("\n");
+            
             if ( ( runningIbusFrame[1] = 0X40 ) &&   // byte 1 must be 0X40 for a RC channel frame
                  ( checksum == (runningIbusFrame[30] + (runningIbusFrame[31]<< 8) )) ) { // check checksum
                 ibusDecodeRcChannels();
