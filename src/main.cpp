@@ -25,6 +25,7 @@
 #include "hott.h"
 #include "mpx.h"
 #include "ibus.h"
+#include "ibus_in.h"
 #include "sbus2_tlm.h"
 #include "fbus.h"
 #include "srxl2.h"
@@ -407,8 +408,8 @@ void setup() {
         setupSbus2In();
         setupMpx();
       } else if (config.protocol == 'I') {  // ibus
-        setupSbusIn();
-        setupSbus2In();
+        setupIbusIn();
+        //setupSbus2In();
         setupIbus();
       } else if (config.protocol == '2')  {  // Sbus2 futaba
         setupSbusIn();
@@ -520,8 +521,8 @@ void loop() {
         fillSbusFrame();
       } else if (config.protocol == 'I') {  // Ibus flysky
         handleIbusRxTx();
-        handleSbusIn();           //???????????is this OK
-        handleSbus2In();
+        handleIbusIn();           
+        //handleSbus2In();
         fillSbusFrame();
       } else if (config.protocol == '2') { // Sbus2 Futaba
         handleSbusIn();
