@@ -60,8 +60,8 @@ void on_ibus_uart_rx() {
         if ( ( nowMicros - ibusInMicros) > IBUS_IN_FREE_MICROS ) ch |= 0X8000 ; // set a flag when it is the first char since a delay
         //int count = queue_get_level( &ibusInQueue );
         //printf(" level = %i\n", count);
-        //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &ibusInQueue , &ch)) printf("sbusQueue try add error\n");
+        printf( "put= %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
+        if (!queue_try_add ( &ibusInQueue , &ch)) printf("ibusInQueue try add error\n");
         ibusInMicros = nowMicros;                    // save the timestamp.    
         //printf("%x\n", ch);
     }
@@ -189,6 +189,7 @@ void handleIbusIn(){
 
         lastIbusMillis = millisRp();
         queue_try_remove ( &ibusInQueue , &c);
+        printf("get= %X\n", c);
         if (c == 0X8020) {          // First byte is length and bit 15 is 1 to say it is first byte ; Rc channel frame has a length of 0X20 (32 bytes)
             ibusInCounter = 0;
             ibusInState = RECEIVING_IBUS_IN ;
