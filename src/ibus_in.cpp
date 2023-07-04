@@ -58,9 +58,9 @@ void on_ibus_uart_rx() {
         //printf(".\n");
         uint16_t ch = (uint16_t) uart_getc(IBUS_UART_ID);
         if ( ( nowMicros - ibusInMicros) > IBUS_IN_FREE_MICROS ) ch |= 0X8000 ; // set a flag when it is the first char since a delay
-        //int count = queue_get_level( &ibusInQueue );
-        //printf(" level = %i\n", count);
-        printf( "put= %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
+          //int count = queue_get_level( &ibusInQueue );
+          //printf(" level = %i\n", count);
+        //printf( "put= %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
         if (!queue_try_add ( &ibusInQueue , &ch)) printf("ibusInQueue try add error\n");
         ibusInMicros = nowMicros;                    // save the timestamp.    
         //printf("%x\n", ch);
@@ -121,7 +121,7 @@ uint ibus_uart_init_extended(uart_inst_t *uart, uint baudrate , uint data_bits, 
 
 
 void setupIbusIn(){
-    uint8_t dummy;
+    uint16_t dummy;
     if (config.pinPrimIn == 255) return ; // skip when pinPrimIn is not defined
     queue_init(&ibusInQueue , sizeof(uint16_t), 250) ;// queue for sbus uart with 250 elements of 2 bytes
     
@@ -184,12 +184,12 @@ void handleIbusIn(){
     if (config.pinPrimIn ==255) return ; // skip when pinPrimIn is not defined
     while (! queue_is_empty (&ibusInQueue) ){
         if ( (millisRp() - lastIbusMillis ) > 2 ){
-        ibusInState = NO_IBUS_IN_FRAME ;
+            ibusInState = NO_IBUS_IN_FRAME ;
         }
 
         lastIbusMillis = millisRp();
         queue_try_remove ( &ibusInQueue , &c);
-        printf("get= %X\n", c);
+        //printf("get= %X\n", c);
         if (c == 0X8020) {          // First byte is length and bit 15 is 1 to say it is first byte ; Rc channel frame has a length of 0X20 (32 bytes)
             ibusInCounter = 0;
             ibusInState = RECEIVING_IBUS_IN ;
@@ -264,10 +264,13 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
     uint8_t high = 3;
     float ratioPwmToSbus = (FROM_SBUS_MAX/ FROM_SBUS_MIN) / (TO_PWM_MAX - TO_PWM_MIN);
     uint16_t temp;
+    printf("Rc= ");
     for (uint8_t i = 0 ; i < 16 ; i++ ) { // fill a table with values
         temp = runningIbusFrame[low++] + (runningIbusFrame[high++] << 8) ;
+        printf("%i ", (int) temp );
         ibusRcChannels[i] = (uint16_t) ((((float) (temp - TO_PWM_MIN)) * ratioPwmToSbus)+0.5) +  FROM_SBUS_MIN ; // convert in Sbus value 16 bits)
     }
+    printf("\n");
     sbus[0] = ibusRcChannels[0];
     sbus[1] = (ibusRcChannels[0] >> 8) | (ibusRcChannels[1] & 0x00FF)<<3;
     sbus[2] = ibusRcChannels[1]>>5|(ibusRcChannels[2]<<6);
