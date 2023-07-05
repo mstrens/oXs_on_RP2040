@@ -318,15 +318,14 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
 	//printf("exbus decoding Rc channels\n");
     uint8_t sbus[23];
     uint16_t ibusRcChannels[16] = {0X8000};
-    float ratioPwmToSbus = (float) (FROM_SBUS_MAX/ FROM_SBUS_MIN) / (float) (TO_PWM_MAX - TO_PWM_MIN);
+    float ratioPwmToSbus = (float) (FROM_SBUS_MAX - FROM_SBUS_MIN) / (float) (TO_PWM_MAX - TO_PWM_MIN);
     uint16_t temp;
-    printf("Rc= ");
+    //printf("Rc= ");
     for (uint8_t i = 0 ; i < 14 ; i++ ) { // Frame contains 14 channels
         temp = runningIbusFrame[2+ (i<<1)] + (((uint16_t) runningIbusFrame[3+(i<<1)]) << 8) ;
-        printf("%i ", (int) temp );
+    //    printf("%i ", (int) temp );
         ibusRcChannels[i] = (uint16_t) ((((float) (temp - TO_PWM_MIN)) * ratioPwmToSbus)+0.5) +  FROM_SBUS_MIN ; // convert in Sbus value 16 bits)
     }
-    printf("\n");
     sbus[0] = ibusRcChannels[0];
     sbus[1] = (ibusRcChannels[0] >> 8) | (ibusRcChannels[1] & 0x00FF)<<3;
     sbus[2] = ibusRcChannels[1]>>5|(ibusRcChannels[2]<<6);
