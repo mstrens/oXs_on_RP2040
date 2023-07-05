@@ -51,6 +51,32 @@ extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to
 //#define SBUS_HOLD_COUNTED_ON_FRAMES 100 // calculate the % every X frames
 //bool prevFailsafeFlag = false;
 
+/*
+ *  supports max 14 channels in this lib (with messagelength of 0x20 there is room for 14 channels)
+
+  Example set of bytes coming over the iBUS line for setting servos: 
+    20 40 DB 5 DC 5 54 5 DC 5 E8 3 D0 7 D2 5 E8 3 DC 5 DC 5 DC 5 DC 5 DC 5 DC 5 DA F3
+  Explanation
+    Protocol length: 20
+    Command code: 40 
+    Channel 0: DB 5  -> value 0x5DB
+    Channel 1: DC 5  -> value 0x5Dc
+    Channel 2: 54 5  -> value 0x554
+    Channel 3: DC 5  -> value 0x5DC
+    Channel 4: E8 3  -> value 0x3E8
+    Channel 5: D0 7  -> value 0x7D0
+    Channel 6: D2 5  -> value 0x5D2
+    Channel 7: E8 3  -> value 0x3E8
+    Channel 8: DC 5  -> value 0x5DC
+    Channel 9: DC 5  -> value 0x5DC
+    Channel 10: DC 5 -> value 0x5DC
+    Channel 11: DC 5 -> value 0x5DC
+    Channel 12: DC 5 -> value 0x5DC
+    Channel 13: DC 5 -> value 0x5DC
+    Checksum: DA F3 -> calculated by adding up all previous bytes, total must be FFFF
+ */
+
+
 // RX interrupt handler on one uart
 void on_ibus_uart_rx() {
     uint32_t nowMicros = microsRp();
@@ -181,6 +207,31 @@ void handleIbusIn(){
     static uint32_t lastIbusMillis = 0;
     uint16_t c;
     static uint16_t checksum ;
+    
+    //#define SIMULATE_IBUS_IN
+    #ifdef SIMULATE_IBUS_IN
+    static uint8_t ibusRcChannelsSimulation[] = {
+        0X20,  0X40, 0XDB, 0X05, 0XDC, 0X05, 0X54, 0X05, 0XDC, 0X05, 0XE8, 0X03, 0XD0, 0X07, 0XD2, 0X05, 0XE8,
+        0X03, 0XDC, 0X05, 0XDC, 0X05, 0XDC, 0X05, 0XDC, 0X05, 0XDC, 0X05, 0XDC, 0X05, 0XDA, 0XF3
+    };
+    
+    
+    static uint32_t ibusLastSimulationMs = 0;
+    if ( (millisRp() - ibusLastSimulationMs) > 999 ) { // send a message once every 10 ms
+        //printf("simulation fill queue\n");
+        ibusLastSimulationMs = millisRp();
+        uint16_t c = ibusRcChannelsSimulation[0] | 0X8000;
+        queue_try_add (&ibusInQueue, &c);          // push to the queue
+        for (uint8_t i = 1; i < sizeof(ibusRcChannelsSimulation); i++){
+            c = ibusRcChannelsSimulation[i] ;
+            queue_try_add (&ibusInQueue, &c);
+        }
+    }
+    #endif // end of simulation
+    
+
+    
+    
     if (config.pinPrimIn ==255) return ; // skip when pinPrimIn is not defined
     while (! queue_is_empty (&ibusInQueue) ){
         if ( (millisRp() - lastIbusMillis ) > 2 ){
@@ -197,22 +248,23 @@ void handleIbusIn(){
         }
         if ( ibusInState == RECEIVING_IBUS_IN){
             runningIbusFrame[ibusInCounter++] = (uint8_t) c;
-            if ( ibusInCounter < (32-2) ){
-                checksum -=  c & 0X00FF ; // calculate checksum 
-            }
+                if ( ibusInCounter < 31) checksum -=  c & 0X00FF ; // calculate checksum 
         }    
         if (ibusInCounter == 0X20 ) {  // 32 byte per frame 
             ibusInState = NO_IBUS_IN_FRAME;
             ibusInCounter = 0;
-            printf("Frame= ");
-            for (uint8_t i = 0 ; i < 32 ; i++ ) { // fill a table with values
-                printf("%x ", runningIbusFrame[i] );
-            }
-            printf("\n");
-            
-            if ( ( runningIbusFrame[1] = 0X40 ) &&   // byte 1 must be 0X40 for a RC channel frame
-                 ( checksum == (runningIbusFrame[30] + (runningIbusFrame[31]<< 8) )) ) { // check checksum
-                ibusDecodeRcChannels();
+            //printf("Frame= ");
+            //for (uint8_t i = 0 ; i < 32 ; i++ ) { // fill a table with values
+            //    printf("%x ", runningIbusFrame[i] );
+            //}
+            //printf("\n");
+            uint16_t checksum2 = ((uint16_t)runningIbusFrame[30]) + ((uint16_t) runningIbusFrame[31]<<8);
+            //printf("checksum2 = %x  %x  %x\n",checksum2, (uint16_t) runningIbusFrame[30] , ((uint16_t) runningIbusFrame[31])<<8) ;
+            if  ( runningIbusFrame[1] = 0X40 ) {   // byte 1 must be 0X40 for a RC channel frame
+                //printf("checksum = %x\n",checksum) ;
+                if ( checksum == checksum2 ) { // check checksum
+                    ibusDecodeRcChannels();
+                }    
             }
                   
         }
@@ -266,13 +318,11 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
 	//printf("exbus decoding Rc channels\n");
     uint8_t sbus[23];
     uint16_t ibusRcChannels[16] = {0X8000};
-    uint8_t low = 2;
-    uint8_t high = 3;
-    float ratioPwmToSbus = (FROM_SBUS_MAX/ FROM_SBUS_MIN) / (TO_PWM_MAX - TO_PWM_MIN);
+    float ratioPwmToSbus = (float) (FROM_SBUS_MAX/ FROM_SBUS_MIN) / (float) (TO_PWM_MAX - TO_PWM_MIN);
     uint16_t temp;
     printf("Rc= ");
-    for (uint8_t i = 0 ; i < 16 ; i++ ) { // fill a table with values
-        temp = runningIbusFrame[low++] + (runningIbusFrame[high++] << 8) ;
+    for (uint8_t i = 0 ; i < 14 ; i++ ) { // Frame contains 14 channels
+        temp = runningIbusFrame[2+ (i<<1)] + (((uint16_t) runningIbusFrame[3+(i<<1)]) << 8) ;
         printf("%i ", (int) temp );
         ibusRcChannels[i] = (uint16_t) ((((float) (temp - TO_PWM_MIN)) * ratioPwmToSbus)+0.5) +  FROM_SBUS_MIN ; // convert in Sbus value 16 bits)
     }
