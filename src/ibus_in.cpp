@@ -323,6 +323,8 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
     //printf("Rc= ");
     for (uint8_t i = 0 ; i < 14 ; i++ ) { // Frame contains 14 channels
         temp = runningIbusFrame[2+ (i<<1)] + (((uint16_t) runningIbusFrame[3+(i<<1)]) << 8) ;
+        if ( temp < 885) temp = 885;
+        if ( temp > 2160) temp = 2160; 
     //    printf("%i ", (int) temp );
         ibusRcChannels[i] = (uint16_t) ((((float) (temp - TO_PWM_MIN)) * ratioPwmToSbus)+0.5) +  FROM_SBUS_MIN ; // convert in Sbus value 16 bits)
     }
