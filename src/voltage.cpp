@@ -37,23 +37,25 @@ void VOLTAGE::begin(void ) {
 } // end begin
 
 void VOLTAGE::getVoltages(void){
-    static uint8_t sumCount = 0;
-    static uint32_t lastVoltagemillis = 0 ;
-    static uint32_t enlapsedMillis =0;
+    static uint16_t sumCount = 0;
+    static uint32_t lastVoltageMicros = 0 ;
+    uint32_t enlapsedMicros =0;
     static uint32_t lastConsumedMillis = millisRp();
     float value;
+    static uint8_t adcSeq = 0; // sequence 0...3 of pin to be read 
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
-    enlapsedMillis = millisRp() - lastVoltagemillis; 
-    if ( enlapsedMillis > VOLTAGEINTERVAL ) {  // every 2 msec performs 1...4 conversions
-        lastVoltagemillis = millisRp() ;
-        for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
-            if ( config.pinVolt[cntInit] != 255) {
-                adc_select_input(cntInit); // select the pin
-                sumVoltage[cntInit] += adc_read(); // convert and sum
-            }    
+    if ( (microsRp() - lastVoltageMicros) > VOLTAGEINTERVAL ) {  // performs one conversion every X usec
+        lastVoltageMicros = millisRp() ;
+        if ( config.pinVolt[adcSeq] != 255) {
+            sumVoltage[adcSeq] += adc_read(); // convert and sum
+        }     
+        adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
+        if ( config.pinVolt[adcSeq] != 255) {
+            adc_select_input(adcSeq); // select the pin (conversion is done later on when voltage is stabilized)
         }
+    
         sumCount++;
-        if ( sumCount == SUM_COUNT_MAX_VOLTAGE ) {   // after XX conversions, calculates averages
+        if ( (sumCount >> 2) == SUM_COUNT_MAX_VOLTAGE ) {   // after XX conversions, calculates averages
             sumCount = 0;
             for (int cntInit = 0 ; cntInit < 4 ; cntInit++) {
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  

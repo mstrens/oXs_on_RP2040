@@ -26,6 +26,7 @@
 #include "exbus.h"
 #include "hardware/pio.h"  // needed for sbus_out_pwm.h
 #include "sbus_out_pwm.h"  // needed to print the PWM values
+#include "sequencer.h"
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
 // GPS_TX = 0/29
@@ -83,7 +84,6 @@ extern uint8_t forcedFields;
 extern float dteCompensationFactor;
 
 extern sbusFrame_s sbusFrame;
-
 
 void handleUSBCmd(void){
     int c;
@@ -784,6 +784,8 @@ void checkConfig(){
     } else {
         printf("\nConfig parameters are OK\n");
     }
+    printSequencerStatus();
+    
     printf("Press ? + Enter to get help about the commands\n");
 }
 
@@ -945,23 +947,24 @@ void printConfig(){
         printf("Failsafe type is HOLD\n")  ;
     } else {
         printf("Failsafe uses predefined values\n")  ;
-    printf("     Chan 1...4  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch0  )\
-                                                    , (int) fmap( config.failsafeChannels.ch1 )\
-                                                    , (int) fmap( config.failsafeChannels.ch2 )\
-                                                    , (int) fmap( config.failsafeChannels.ch3 ) );
-    printf("     Chan 5...8  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch4 )\
-                                                    , (int) fmap( config.failsafeChannels.ch5 )\
-                                                    , (int) fmap( config.failsafeChannels.ch6 )\
-                                                    , (int) fmap( config.failsafeChannels.ch7 ) );
-    printf("     Chan 9...12 = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch8 )\
-                                                    , (int) fmap( config.failsafeChannels.ch9 )\
-                                                    , (int) fmap( config.failsafeChannels.ch10 )\
-                                                    , (int) fmap( config.failsafeChannels.ch11 ) );
-    printf("     Chan 13...16= %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch12 )\
-                                                    , (int) fmap( config.failsafeChannels.ch13 )\
-                                                    , (int) fmap( config.failsafeChannels.ch14 )\
-                                                    , (int) fmap( config.failsafeChannels.ch15 ) );
+        printf("     Chan 1...4  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch0  )\
+                                                        , (int) fmap( config.failsafeChannels.ch1 )\
+                                                        , (int) fmap( config.failsafeChannels.ch2 )\
+                                                        , (int) fmap( config.failsafeChannels.ch3 ) );
+        printf("     Chan 5...8  = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch4 )\
+                                                        , (int) fmap( config.failsafeChannels.ch5 )\
+                                                        , (int) fmap( config.failsafeChannels.ch6 )\
+                                                        , (int) fmap( config.failsafeChannels.ch7 ) );
+        printf("     Chan 9...12 = %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch8 )\
+                                                        , (int) fmap( config.failsafeChannels.ch9 )\
+                                                        , (int) fmap( config.failsafeChannels.ch10 )\
+                                                        , (int) fmap( config.failsafeChannels.ch11 ) );
+        printf("     Chan 13...16= %5d %5d %5d %5d\n", (int) fmap( config.failsafeChannels.ch12 )\
+                                                        , (int) fmap( config.failsafeChannels.ch13 )\
+                                                        , (int) fmap( config.failsafeChannels.ch14 )\
+                                                        , (int) fmap( config.failsafeChannels.ch15 ) );
     }
+    
     checkConfig();
 
 }

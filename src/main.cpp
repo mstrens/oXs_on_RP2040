@@ -29,6 +29,7 @@
 #include "sbus2_tlm.h"
 #include "fbus.h"
 #include "srxl2.h"
+#include "sequencer.h"
 //#include "param.h"
 
 #include "ws2812.h"
@@ -431,6 +432,7 @@ void setup() {
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
         }
+      //setupSequencer();
       setupPwm();
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 

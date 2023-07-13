@@ -59,3 +59,7 @@ add_custom_command(TARGET oXs POST_BUILD
   ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR}   
 )
 
+#add_custom_command(TARGET oXs POST_BUILD
+#  COMMAND ${CMAKE_COMMAND}
+#  ARGS -E copy oXs.uf2 E:   
+#)
