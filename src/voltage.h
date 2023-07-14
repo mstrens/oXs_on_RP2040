@@ -8,7 +8,7 @@
 
 #define MAX_NBR_VOLTAGES 4 // number of pins available for ADC
 #define VOLTAGEINTERVAL 1000 // minimum interval between 2 reads (usec)
-#define SUM_COUNT_MAX_VOLTAGE 10 // number of ADC conversions to calculate averages
+#define SUM_COUNT_MAX_VOLTAGE 30 // number of ADC conversions to calculate averages
 
 class VOLTAGE
 {

@@ -47,6 +47,8 @@ void VOLTAGE::getVoltages(void){
     if ( (microsRp() - lastVoltageMicros) > VOLTAGEINTERVAL ) {  // performs one conversion every X usec
         lastVoltageMicros = millisRp() ;
         if ( config.pinVolt[adcSeq] != 255) {
+            adc_read(); // convert and sum
+            sumVoltage[adcSeq] += adc_read(); // convert and sum
             sumVoltage[adcSeq] += adc_read(); // convert and sum
         }     
         adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
@@ -61,7 +63,7 @@ void VOLTAGE::getVoltages(void){
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
-                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
+                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 0.5) * mVoltPerStep[cntInit]) - offset[cntInit];
                         // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
                         // volt 2 is used for current and consumed capacity is then calculated too
                         if ( (cntInit == 2) && (config.temperature == 1 || config.temperature == 2) ) {

@@ -110,7 +110,7 @@ void setupSequencer(){
 uint32_t currentSeqMillis ;
 uint16_t currentChannelValue; 
 
-void loopSequencer(){
+void sequencerLoop(){
     // for each sequencer
     //     check if channel value changed and if so, if it match a valid sequence
     //     if true , apply new sequence from first step      

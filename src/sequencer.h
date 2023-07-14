@@ -61,6 +61,7 @@ uint16_t searchSeq( uint8_t sequencer , CH_RANGE searchRange);
 bool isSeqChannelChanged (uint8_t sequencer); // when true is returned, it means that there is a next step (stored in nextPossibleStepIdx) 
 void startNewSeq(uint8_t sequencer , uint16_t stepIdx); // switch to the specified step into the specified sequencer
 void startNewStep(uint8_t sequencer , uint16_t stepIdx); // start a new step
+void sequencerLoop();
 
 void updateSeqOutput(uint8_t sequencer, uint16_t stepIdx, int8_t outputVal);
 void nextAction(uint8_t sequencer);
