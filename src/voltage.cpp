@@ -63,7 +63,7 @@ void VOLTAGE::getVoltages(void){
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
-                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 0.5) * mVoltPerStep[cntInit]) - offset[cntInit];
+                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0) * mVoltPerStep[cntInit]) - offset[cntInit];
                         // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
                         // volt 2 is used for current and consumed capacity is then calculated too
                         if ( (cntInit == 2) && (config.temperature == 1 || config.temperature == 2) ) {
