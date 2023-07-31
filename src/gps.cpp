@@ -478,6 +478,7 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             GPS_pdop = _buffer.pvt.position_DOP;
             sent2Core0(GPS_PDOP, _buffer.pvt.position_DOP);
         }
+        //if (_buffer.timeutc.flag & 0b111) {
         if (( _buffer.pvt.valid & 0x03) == 0X03 ){ // if date and time are valid (bit 0 and 1 = HIGH)
             //printf("nbr sat : %X \n", GPS_numSat) ;
             gpsDate =_buffer.pvt.year % 100;

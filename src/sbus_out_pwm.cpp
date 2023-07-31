@@ -174,19 +174,22 @@ void fillSbusFrame(){
 }
 
     
-#define TOP 20000
+#define TOP (20000 - 1)
 #define DIVIDER 133
 
 bool pwmIsUsed;
 float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
 float ratioSbusRange = 400.0 / (float) (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
 
+extern SEQUENCER seq ;
+//extern bool isSequencerValid ;  
+
 void setupPwm(){
     pwmIsUsed = false;
     for (uint8_t i=0 ; i<16 ; i++){
         if ( config.pinChannels[i] != 255) pwmIsUsed = true;
     }
-    if ( pwmIsUsed == false) return ; // skip when PWM is not used
+    if ( pwmIsUsed == false && seq.defsMax == 0) return ; // skip when PWM and sequencer are not used
     for( uint8_t i = 0 ; i < 16 ; i++){
         if ( config.pinChannels[i] == 255 ) continue ; // skip i when pin is not defined for this channel
         gpio_set_function( config.pinChannels[i] , GPIO_FUNC_PWM);
@@ -201,7 +204,26 @@ void setupPwm(){
         // Load the configuration into our PWM slice, and set it running.
         pwm_init(slice_num, &configPwm, true);
         pwm_set_gpio_level ( (uint) config.pinChannels[i] , 0) ; // start PWM with 0% duty cycle
-    }    
+    }
+    for( uint8_t i = 0 ; i < seq.defsMax ; i++){ // for each sequencer
+        gpio_set_function( seq.defs[i].pin , GPIO_FUNC_PWM);
+        // Figure out which slice we just connected to the pin
+        uint slice_num = pwm_gpio_to_slice_num(seq.defs[i].pin);        
+        // Get some sensible defaults for the slice configuration. By default, the
+        // counter is allowed to wrap over its maximum range (0 to 2**16-1)
+        pwm_config configPwm = pwm_get_default_config();
+        // Set divider, reduces counter clock to sysclock/this value
+        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
+        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
+        // Load the configuration into our PWM slice, and set it running.
+        pwm_init(slice_num, &configPwm, true);
+        if ( seq.defs[i].type == SERVO) {
+            pwm_set_gpio_level ( (uint) seq.defs[i].pin , 0) ; // start PWM with 0% duty cycle when a servo is used
+        }
+        else {
+            pwm_set_gpio_level ( (uint) seq.defs[i].pin , seq.defs[i].defValue) ; // start PWM with default value when analog is used
+        }    
+    } // end of sequencer
 }
 
 
@@ -213,7 +235,7 @@ void updatePWM(){
     int16_t pwmMax;
     int16_t pwmMin;
 
-    if (( pwmIsUsed == false) && ( seqDefMax == 0 )) return ; // skip when PWM and sequencer is not used
+    if (( pwmIsUsed == false) && ( seq.defsMax == 0 )) return ; // skip when PWM and sequencer is not used
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
     if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
         lastPwmMillis = millisRp();
@@ -283,9 +305,6 @@ void updatePWM(){
                 pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
             }
         } // end PWM is used
-        if ( seqDefMax > 0 ){
-            sequencerLoop();
-        }
     }
     
 }
@@ -301,6 +320,9 @@ uint16_t fmapMinMax(int x){
     return (((x + 100) * (int)(toPwmMax - toPwmMin) / 100) + toPwmMin * 2 + 1) / 2;
 }
 
+void applyPwmValue( uint8_t pin , uint16_t pwmValue){ // apply PWM value on a pin (used by sequencer)
+    pwm_set_gpio_level (pin, pwmValue) ;
+}
 /*
 
 PIO pioPWM = pio1;

@@ -115,11 +115,14 @@ extern uint32_t lastRcChannels;
 extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
+bool multicoreIsRunning = false;
 bool blinking = true ;
 uint8_t ledState = STATE_NO_SIGNAL;
 uint8_t prevLedState = STATE_NO_SIGNAL;
 
 uint32_t lastBlinkMillis;
+
+extern SEQUENCER seq;
 
 queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
@@ -369,6 +372,8 @@ void setup() {
     }
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
+  setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
+  checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
   if (configIsValid){ // continue with setup only if config is valid
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
@@ -378,6 +383,7 @@ void setup() {
       queue_init(&qSensorData, sizeof(queue_entry_t) , 50) ; // max 50 groups of 5 bytes.  create queue to get data from core1
       queue_init(&qSendCmdToCore1, 1, 10); // queue to send a cmd to core 1 (e.g. to perform a calibration of mp6050)
       multicore_launch_core1(core1_main);// start core1 and so start I2C sensor discovery
+      multicoreIsRunning = true; // to know if multicore is running or not
       uint32_t setup1StartUs = microsRp();  
       while ( core1SetupDone == false) {
             if ((microsRp() - setup1StartUs) > (2 * 1000000)) {
@@ -432,11 +438,10 @@ void setup() {
       if (config.pinSbusOut != 255) { // configure 1 pio/sm for SBUS out (only if Sbus out is activated in config).
           setupSbusOutPio();
         }
-      //setupSequencer();
       setupPwm();
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
-  printConfig(); 
+  printConfigAndSequencers(); 
   setRgbColorOn(10,0,0); // set color on red (= no signal)
   /*
   if (clockChanged){
@@ -451,6 +456,7 @@ void setup() {
 void getSensorsFromCore1(){
     queue_entry_t entry;
     //printf("qlevel= %d\n",queue_get_level(&qSensorData));
+
     
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
@@ -488,6 +494,15 @@ void getSensorsFromCore1(){
         }
     }
     if ((forcedFields == 1) || (forcedFields == 2)) fillFields(forcedFields); // force dummy vallues for debuging a protocol
+}
+
+void printTest(int testVal){
+    static uint32_t prevTime = 0;
+    if ((millisRp() - prevTime) > 10) { // once per 5 sec
+        prevTime = millisRp();
+        printf("test value=%i\n",testVal);
+        if (configIsValid) {printf("config is valid\n");} else {printf("config is not valid\n");} 
+    }
 }
 
 void loop() {
@@ -544,15 +559,19 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      updatePWM();
+      updatePWM(); // update PWM pin only based on channel value
             //updatePioPwm();
-            
+      sequencerLoop();  // update PWM pins based on sequencer     
   }
   watchdog_update();
   //if (tud_cdc_connected()) {
+  //printf("before handleUSBCmd\n");sleep_ms(100); 
+  
   handleUSBCmd();  // process the commands received from the USB
+  //printTest((int) seq.defsMax);
   tud_task();      // I suppose that this function has to be called periodicaly
   //}  
+  //printf("after tud-task\n");sleep_ms(100); 
   if ( configIsValidPrev != configIsValid) {
     configIsValidPrev = configIsValid;
     if (configIsValid) {
@@ -562,8 +581,9 @@ void loop() {
         setRgbOn();  
     }
   }
-
+  //printf("before handleBootButton\n");sleep_ms(100); 
   handleBootButton(); // check boot button; after double click, change LED to fix blue and next HOLD within 5 sec save the current channnels as Failsafe values
+  //printf("after handleBootButton\n");sleep_ms(100); 
   if (( bootButtonState == ARMED) || ( bootButtonState == SAVED)){
     //setRgbColorOn(0, 0, 10); //blue
   } else if ( ledState != prevLedState){
@@ -578,6 +598,8 @@ void loop() {
   //  printf("p\n");
   //} 
   //enlapsedTime(0);
+  //printf("end of loop\n");sleep_ms(100); 
+  
 }
 
 // initialisation of core 1 that capture the sensor data

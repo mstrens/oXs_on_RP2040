@@ -39,6 +39,8 @@ extern uint32_t lastRcChannels ;     // Time stamp of last valid rc channels dat
 extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 
+extern volatile bool isPrinting; // avoid error msg in irq handler filling the queue while printing 
+
 //bool sbusPriMissingFlag = true;
 //bool sbusSecMissingFlag = true;
 //bool sbusPriFailsafeFlag = true;
@@ -87,7 +89,9 @@ void on_ibus_uart_rx() {
           //int count = queue_get_level( &ibusInQueue );
           //printf(" level = %i\n", count);
         //printf( "put= %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &ibusInQueue , &ch)) printf("ibusInQueue try add error\n");
+        if (!queue_try_add ( &ibusInQueue , &ch)){
+            if ( ! isPrinting) printf("ibusInQueue try add error\n"); 
+        } 
         ibusInMicros = nowMicros;                    // save the timestamp.    
         //printf("%x\n", ch);
     }

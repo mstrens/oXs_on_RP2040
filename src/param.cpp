@@ -27,6 +27,7 @@
 #include "hardware/pio.h"  // needed for sbus_out_pwm.h
 #include "sbus_out_pwm.h"  // needed to print the PWM values
 #include "sequencer.h"
+#include <errno.h>   // used by strtol() to check for errors 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
 // GPS_TX = 0/29
@@ -49,9 +50,9 @@
 //                                     pinSbusOut,pinTlm, pinVolt[4]  pinSda, pinScl,pinRpm, pinLed
 
 
-#define CMD_BUFFER_LENTGH 80
+#define CMD_BUFFER_LENTGH 2000
 uint8_t cmdBuffer[CMD_BUFFER_LENTGH];
-uint8_t cmdBufferPos = 0;
+uint16_t cmdBufferPos = 0;
 
 extern GPS gps;
 extern sbusFrame_s sbusFrame;
@@ -62,8 +63,16 @@ uint8_t debugTlm = 'N';
 uint8_t debugSbusOut = 'N';
 
 uint8_t pinCount[30] = {0};
-extern bool configIsValid; 
 
+// for sequencer
+int tempIntTable[10]; // temporary table to store n integers converted from the serial buffer (starting from pvalue)
+SEQUENCER seq;
+extern  SEQ_DATA seqDatas[16];
+
+bool pinIsduplicated ;
+extern bool configIsValid; 
+extern bool multicoreIsRunning; 
+volatile bool isPrinting = false;
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 extern MS5611 baro1 ;
@@ -108,23 +117,30 @@ void handleUSBCmd(void){
     }
 }
 
+char * pkey = NULL;
+char * pvalue = NULL;
+    
+
 void processCmd(){
     printf("processing cmd\n");
-    bool updateConfig = false;
+    bool updateConfig = false;      // after some cheks, says if we can save the config
+    bool updateSequencers = false;    // after some checks, says if we ca save the sequencers   
     char *ptr;
     uint32_t ui;
     uint32_t ui2;
     double db;    
-    char * pkey = NULL;
-    char * pvalue = NULL;
+    pkey = NULL;
+    pvalue = NULL;
     //printf("buffer0= %X\n", cmdBuffer[0]);
     if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the current config
-        
+        printConfigAndSequencers();
+        return; 
     }
     if (cmdBuffer[0] == '?'){ // when help is requested we print the instruction
+        isPrinting = true; //use to discard incoming data from Sbus... while printing a long text (to avoid having the queue saturated)
         printf("\nCommands can be entered to change the config parameters\n");
-        printf("- To activate a function, select the pin and enter function code = pin number (e.g. PRI=5)\n");
-        printf("    Function                  Code        Valid pins number\n");   
+        printf("- To activate a function, select the GPIO and enter function code = GPIO (e.g. PRI=5)\n");
+        printf("    Function                  Code        Valid GPIO's\n");   
         printf("    Primary channels input    PRI     = 5, 9, 21, 25\n");
         printf("    Secondary channels input  SEC     = 1, 13, 17, 29\n");
         printf("    Telemetry                 TLM     = 0, 1, 2, ..., 29\n");
@@ -136,7 +152,7 @@ void processCmd(){
         printf("    SCL (baro sensor)         SCL     = 3, 7, 11, 15, 19, 23, 27\n");
         printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
-        printf("- To disable a function, set pin number to 255\n\n");
+        printf("- To disable a function, set GPIO to 255\n\n");
 
         //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
@@ -158,12 +174,38 @@ void processCmd(){
         printf("-To change (invert) led color, enter LED=N or LED=I\n");
         printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
         printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
+        
+        printf("\n");
+        printf("-To define one (or several) sequencers, enter SEQ= followed by one (or several) groups {s1 s2 s3 s4 s5 s6 s7} where\n");
+        printf("        s1 = GPIO to be used by this sequencer(in range 0/16)\n");
+        printf("        s2 = type of PWM (0=SERVO , 1=ANALOG)\n");
+        printf("        s3 = number of milli seconds per sequencer clock (must be >= 20msec)\n");
+        printf("        s4 = rc channel used to select the sequence to be generated (in range 1/16)\n");
+        printf("        s5 = default PWM value (when no sequence has already been selected)\n");
+        printf("        s6 = min PWM value\n");
+        printf("        s7 = max PWM value\n");
+        printf("     note: s5, s6, s7 must be in range -100/100 for SERVO and 0/100 for ANALOG\n");
+        printf("     e.g. SEQ= {2 0 30 4 -100 -100 100} {3 1 100 5 0 0 100}\n");
+        
+        printf("-To erase all sequencers, enter SEQ=DEL\n");
+        
+        printf("-To define the steps for the sequencers, enter STEP= followed by several groups {s1 s2 s3 s4 } where\n");
+        printf("        s1 = range from RC channel that activates that step (must be -100/-75/-50/-25/0/25/50/75/100)\n");
+        printf("        s2 = number of clocks before reaching the PWM value (= smooth transition)(in range 0/255)\n");
+        printf("        s3 = PWM value for this step(same range as default PWM value)\n");
+        printf("        s4 = number of clocks where PWM value is kept before applying next step or restarting the sequence (in range 0/255; 255=do not restart)\n");
+        printf("     e.g. STEP= {-100 0 10 4} {-100 10 50 20} {100 0 100 255} {-100 0 0 255} {0 10 50 255} {100 0 100 40}\n");
+        printf("     Note: steps must be sorted per sequencer and per range\n");
+        
+        printf("\n");
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
         printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
         printf("        for dummy positive values, enter FVP; for dummy negative values, enter FVN\n")  ;
+        printf("\n");
         printf("-To get the current PWM values (in micro sec, enter PWM)\n");
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
+        isPrinting = false;
         return;  
     }
     if (cmdBuffer[0] != 0x0){
@@ -649,20 +691,60 @@ void processCmd(){
             printf("Error : LED color must be N (normal) or I(inverted)\n");
         }
     }
+    // get Sequencer definition
+    if ( strcmp("SEQ", pkey) == 0 ) { 
+        if (strcmp("DEL", pvalue) == 0) {
+            seq.defsMax=0;
+            seq.stepsMax=0;
+            //sequencerIsValid=false;
+            updateConfig = true;
+            printf("All definitions for sequencer are deleted\n");
+        } else {    
+            if (getSequencers()){ // true when valid syntax is decoded and seq structure has been updated ;
+                                  // we will save the structure and reboot; during reboot we will check if config is valid
+                updateConfig = true;
+            } else {
+                printf("\nError in syntax or in a parameter: command SEQ= is discarded\n");
+                return;
+            }
+        }  
+    }
     
-        
+    // get steps for Sequencer
+    if ( strcmp("STEP", pkey) == 0 ) { 
+        if (seq.defsMax == 0){
+            printf("\nError in command STEP=: number of sequencers = 0; fill SEQ= command before entering STEP=\n");
+            return;
+        }
+        if (getStepsSequencers()){ // true when valid syntax is decoded and seq structure has been updated ;
+                                  // we will save the structure and reboot; during reboot we will check if config is valid
+            updateConfig = true;
+        } else { 
+            printf("\nError in syntax or in a parameter: command STEP= is discarded\n");
+            return;
+        }
+    }
+    
     if (updateConfig) {
         saveConfig();
+        saveSequencers();
         printf("config has been saved\n");  
         printf("Device will reboot\n\n");
         watchdog_enable(1500,false);
         sleep_ms(1000);
         watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
+        sleep_ms(5000);
+        printf("OXS did not rebooted after 5000 ms\n");
+    }
+        
+    if ( strcmp("N", pkey) == 0 ) {
+        nextSimuSeqChVal();
+        return;
     }    
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
     if ( strcmp("G", pkey) == 0 ) printGpsFrame();      // print GPS frame
     if ( strcmp("B", pkey) == 0 ) printBatteryFrame();   // print battery frame 
-    printConfig();                                       // print the current config
+    printConfigAndSequencers();                                       // print the current config
     printf("\n >> \n");
 }
 
@@ -678,11 +760,13 @@ void addPinToCount(uint8_t pinId){
     }
 }
 
-void checkConfig(){
-    // each pin can be used only once
+void checkConfigAndSequencers(){     // set configIsValid 
+    // each pin can be used only once (also in sequencer)
     // if SDA is defined SCL must be defined too, and the opposite
     // if GPS_TX is defined GPS_RX must be defined too and the opposite
+    watchdog_update(); //sleep_ms(500);
     bool atLeastOnePwmPin = false;
+    //pinIsduplicated = false; 
     for (uint8_t i = 0 ; i<30; i++) pinCount[i] = 0; // reset the counter
     configIsValid = true;
     addPinToCount(config.pinGpsTx); 
@@ -698,10 +782,19 @@ void checkConfig(){
     for (uint8_t i = 0 ; i<16 ; i++) {
         if (config.pinChannels[i] != 255) atLeastOnePwmPin = true ;}
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
+    //for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
+    //    if (seq.defs[i].pin > 29 ) {
+    //        printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);
+    //        configIsValid = false;
+    //    } else {
+    //        pinCount[seq.defs[i].pin]++;   
+    //    }
+    //}
     for (uint8_t i = 0 ; i<30; i++) {
         if (pinCount[i] > 1) {
             printf("Error in parameters: pin %u is used %u times\n", i , pinCount[i]);
             configIsValid=false;
+            pinIsduplicated= true;
         }          
     }
     if ( (config.pinSda != 255 and config.pinScl==255) or
@@ -779,20 +872,26 @@ void checkConfig(){
         printf("Error in parameters: Vspeed compensation channel must be in range 1...16 or 255\n");
         configIsValid=false;
     }
+    checkSequencers();
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
         printf("\nConfig parameters are OK\n");
     }
-    printSequencerStatus();
+//    if ( sequencerIsValid == false) {
+//        printf("\nAttention: error in sequencer parameters\n");
+//    } else {
+//        printf("\nSequencer parameters are OK\n");
+//    }
     
     printf("Press ? + Enter to get help about the commands\n");
 }
 
-void printConfig(){
+void printConfigAndSequencers(){
+    isPrinting = true;
     uint8_t version[] =   VERSION ;
     printf("\nVersion = %s \n", version)  ;
-    printf("    Function                Pin   Change entering XXX=yyy (yyy=255 to disable)\n");   
+    printf("    Function                GPIO  Change entering XXX=yyy (yyy=255 to disable)\n");   
     printf("Primary channels input    = %4u  (PRI     = 5, 9, 21, 25)\n", config.pinPrimIn);
     printf("Secondary channels input  = %4u  (SEC     = 1, 13, 17, 29)\n", config.pinSecIn);
     printf("Telemetry . . . . . . . . = %4u  (TLM     = 0, 1, 2, ..., 29)\n", config.pinTlm );
@@ -807,7 +906,7 @@ void printConfig(){
     printf("PWM Channels 9,10,11,12   = %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
     printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
-    
+    watchdog_update(); //sleep_ms(500);
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
         } else if (config.protocol == 'C'){
@@ -963,15 +1062,16 @@ void printConfig(){
                                                         , (int) fmap( config.failsafeChannels.ch13 )\
                                                         , (int) fmap( config.failsafeChannels.ch14 )\
                                                         , (int) fmap( config.failsafeChannels.ch15 ) );
-    }
-    
-    checkConfig();
+    }    
+    watchdog_update(); //sleep_ms(500);
+    printSequencers(); 
+    checkConfigAndSequencers();
+    isPrinting = false;
+} // end printConfigAndSequencers()
 
-}
 
-
-#define FLASH_TARGET_OFFSET (256 * 1024)
-const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
+#define FLASH_CONFIG_OFFSET (256 * 1024)
+const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_CONFIG_OFFSET);
 
 void saveConfig() {
     //sleep_ms(1000); // let some printf to finish
@@ -980,12 +1080,12 @@ void saveConfig() {
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing
     watchdog_enable(3000 , true);
-    multicore_lockout_start_blocking();
+    if (multicoreIsRunning) multicore_lockout_start_blocking();
     uint32_t irqStatus = save_and_disable_interrupts();
-    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
-    flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
+    flash_range_erase(FLASH_CONFIG_OFFSET, FLASH_SECTOR_SIZE);
+    flash_range_program(FLASH_CONFIG_OFFSET, buffer, FLASH_PAGE_SIZE);
     restore_interrupts(irqStatus);
-    multicore_lockout_end_blocking();
+    if (multicoreIsRunning) multicore_lockout_end_blocking();
     //sleep_ms(1000);
     //printf("New config has been saved\n");
     //printConfig(); 
@@ -1267,4 +1367,355 @@ void printPwmValues(){
         printf("\n");
         
     }
+}
+
+//********************************** Sequencer *****************************************
+/*
+For the sequencer we have to fill 2 tables
+- one with 5 items per sequencer (key = "SEQ")
+- one with 4 items per step (key = "STEP")
+note : the table with steps can contain several sequences; 
+we consider that a new sequence begins each time the first item (= channel range) changes
+furthermore we consider that when the next first item is lower than the previous first item, then the steps become part of next sequencer
+For each table, items are comma separated.
+Each set of items starts with { and end with}
+whitespaces are skipped
+Whe define a function that takes 1 param : number of items to read (so e.g. {1,2,3,4})
+the function read from a pointer up to a '0'(or the number of item) and return true if we find the right number of param.
+
+
+*/
+
+#define FLASH_SEQUENCER_OFFSET FLASH_CONFIG_OFFSET + (4 * 1024) // Sequencer is 4K after config parameters
+const uint8_t *flash_sequencer_contents = (const uint8_t *) (XIP_BASE + FLASH_SEQUENCER_OFFSET);
+
+
+void setupSequencers(){   // The config is uploaded at power on
+    if (*flash_sequencer_contents == SEQUENCER_VERSION ) {
+        memcpy( &seq , flash_sequencer_contents, sizeof(seq));
+        //printf("loaded param defsmax=%i  stepsMax=%i\n", seq.defsMax, seq.stepsMax); 
+        //seq.defsMax = 0 ; // for testing only to be modified
+        //seq.stepsMax = 0 ; // for testing only to be modified
+    } else {
+        seq.version = SEQUENCER_VERSION;
+        seq.defsMax = 0 ;
+        seq.stepsMax = 0 ; 
+    }
+} 
+
+
+void checkSequencers(){
+    // set configIsValid = false when an error is detected
+    watchdog_update(); //sleep_ms(500);
+    if ( seq.defsMax == 0) {
+        //printf("No sequencer defined\n");
+        return ; // skip when sequencer are not defined
+    }
+    if (seq.stepsMax == 0) {
+        printf("Error in sequencer steps: no steps defined while %i sequencers are defined\n", seq.defsMax);
+        configIsValid = false;
+        return;
+    }
+    uint8_t seqIdx = 0;  // index of current sequencer
+    uint16_t stepIdx = 0;   // index of current step
+    uint16_t prevStepIdx = 0;
+    uint8_t rangeNumber = 1; // used to check that each sequencer has at least 2 sequence range
+    uint32_t currentSeqMillis = millisRp();
+    CH_RANGE prevRange = seq.steps[stepIdx].chRange; 
+    seqDatas[seqIdx].stepStartAtIdx = stepIdx;
+    seqDatas[seqIdx].state = STOPPED;
+    seqDatas[seqIdx].currentChValue = 0; // use of channel change a dummy channel value in order to force a change when a channel value will be received from Rx
+    seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+    seqDatas[seqIdx].currentStepIdx = 0xFFFF; // use a dummy value at startup (to detect when range )
+    //seqDatas[seqIdx].lastActionAtMs = 0;
+    seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
+    seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we still have to apply the default to the pwmoutput
+    while (stepIdx < seq.stepsMax) {
+        if ( seq.steps[stepIdx].chRange > prevRange) rangeNumber++; // Count the number of range for this sequencer
+        if ( seq.steps[stepIdx].chRange < prevRange ) {  // a new sequencer starts *****************
+            if ( rangeNumber < 2) {
+                printf("Error in sequencer steps: only one range for sequencers %i\n", seqIdx+1);
+                configIsValid = false;
+                return;
+            }
+            seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;
+            seqIdx++;
+            if (seqIdx >= seq.defsMax) {
+                printf("Error in sequencer steps: number of sequencers found in STEP exceeds number of sequencers defined in SEQ= (%i)\n",seq.defsMax );
+                configIsValid = false;
+                return;
+            }
+            // initilize seqDatas for new sequencer
+            seqDatas[seqIdx].stepStartAtIdx = stepIdx;
+            seqDatas[seqIdx].state = STOPPED;
+            seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+            seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+            seqDatas[seqIdx].currentStepIdx = 0xFFFF;
+            //seqDatas[seqIdx].lastActionAtMs = 0;
+            seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
+            seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
+            rangeNumber = 1; // restat a new counting
+        }
+        if ( seq.defs[seqIdx].type == 1) { // when seq has type ANALOG, PWM value must be between 0/100  
+            if (seq.steps[stepIdx].value < 0) {
+                printf("Error in sequencer steps: for sequencer nr %i, type is ANALOG(=1); PWM value must then be in range 0/100 in step %i\n"\
+                    ,seqIdx + 1 , stepIdx + 1 );
+                configIsValid = false;
+                return;
+            }
+        }
+        prevRange = seq.steps[stepIdx].chRange ; 
+        prevStepIdx = stepIdx;
+        stepIdx++;
+    } // end while
+    if ( rangeNumber < 2) {
+        printf("Error in sequencer steps: only one range for step item number %i\n",(int) stepIdx );
+        configIsValid = false;
+        return;
+    }
+    if( (seqIdx + 1) != seq.defsMax) {
+        printf("Error in sequencer steps: no enough steps (%i) defined to match the number of GPIO's (%i) in sequencer definition\n", seqIdx+1 , seq.defsMax);
+        configIsValid = false;
+        return;
+    }
+    seqDatas[seqIdx].stepEndAtIdx = prevStepIdx; // for the last sequencer, register the last valid stepIdx
+    //sequencerIsValid =  true ; // no error in sequencer detected
+    //printf("%i pins are controlled by a sequencer; setup is valid\n", seq.defsMax);   
+    
+    //#define DEBUG_PRINT_SEQDATAS
+    #ifdef DEBUG_PRINT_SEQDATAS
+        for (uint8_t i = 0; i<seq.defsMax;i++){
+            printf("Start=%i End=%i chVal=%i state=%i range=%i first=%i currStep=%i smmoth=%i nextMs=%i outVal=%i\n",\
+            seqDatas[i].stepStartAtIdx , seqDatas[i].stepEndAtIdx , (int) seqDatas[i].state , seqDatas[i].currentChValue , (int) seqDatas[i].currentRange, \
+            seqDatas[i].firstStepIdx , seqDatas[i].currentStepIdx , seqDatas[i].smoothUpToMs ,\
+            seqDatas[i].nextActionAtMs , seqDatas[i].lastOutputVal);
+        }
+        printf("\n");
+    #endif
+    watchdog_update(); //sleep_ms(500);
+}
+
+void printSequencers(){
+    //printf("\nSequencer struct uses %i bytes\n", sizeof(seq));
+    //printf("Sequencer def[] uses %i bytes\n", sizeof(seq.defs));
+    //printf("Sequencer steps[] uses %i bytes\n", sizeof(seq.steps));
+    watchdog_update(); //sleep_ms(500); // for tesing to be modified
+    if( seq.defsMax == 0 ){
+        printf("\nNo sequencers are defined\n");
+        return;
+    }
+    isPrinting = true;
+    printf("\nNumber of sequencers= %i   Number of steps= %i\n", seq.defsMax , seq.stepsMax);
+    if( seq.defsMax > 0 ){
+        printf("     { Gpio  Type(0=servo,1=analog) Clock(msec) Channel Default Min Max}...{ }\n");
+        printf("SEQ=");
+        for (uint8_t i = 0 ;i< seq.defsMax ; i++){
+            printf(" {%i %i %i %i %i %i %i} ", seq.defs[i].pin , (int) seq.defs[i].type , seq.defs[i].clockMs ,\
+             seq.defs[i].channel , seq.defs[i].defValue , seq.defs[i].minValue , seq.defs[i].maxValue );
+             printf("\n    ");
+        }
+        printf("\n");    
+    }   
+    if (( seq.defsMax > 0 ) && ( seq.stepsMax > 0)){
+        printf("\n      { Range(-100/-75/-50/-25/0/25/50/75/100) Smooth(clocks) Pwm(-100/100) Keep(clocks) } ...{}\n");
+        printf("STEP= - ");
+        for (uint8_t i = 0 ;i< seq.stepsMax ; i++){
+            printf(" {%i %i %i %i} ", (int) seq.steps[i].chRange , seq.steps[i].smooth , seq.steps[i].value , seq.steps[i].keep);
+            if ((i+1) < seq.stepsMax) {
+                if ( seq.steps[i].chRange < seq.steps[i+1].chRange) { printf("\n        ");}
+                if ( seq.steps[i].chRange > seq.steps[i+1].chRange) { printf("\n      - ");}
+            }     
+        }
+        printf("\n");        
+    } else {
+        printf("\nNo Steps defined\n");
+    }
+    isPrinting = false;
+}
+
+
+
+void saveSequencers() {
+    //sleep_ms(1000); // let some printf to finish
+    //uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
+    //memcpy(&buffer[0], &seq, sizeof(seq));
+    // Note that a whole number of sectors must be erased at a time.
+    // irq must be disable during flashing
+    watchdog_enable(5000 , true);
+    if ( multicoreIsRunning) multicore_lockout_start_blocking();
+    uint32_t irqStatus = save_and_disable_interrupts();
+    flash_range_erase(FLASH_SEQUENCER_OFFSET, FLASH_SECTOR_SIZE);
+    flash_range_program(FLASH_SEQUENCER_OFFSET,  (uint8_t*) &seq, sizeof(seq));
+    //flash_range_program(FLASH_SEQUENCER_OFFSET,  buffer, FLASH_PAGE_SIZE);
+    
+    restore_interrupts(irqStatus);
+    if (multicoreIsRunning) multicore_lockout_end_blocking();
+    //sleep_ms(1000);
+    //printf("New config has been saved\n");
+    //printConfig(); 
+}
+
+
+
+
+bool getSetOfInt(uint8_t itemsMax){  // try to read a string  with n integer space separated set between { }
+    if (itemsMax > 10) printf("!!!!!!!!!!To many parameter to get in getSeqSet!!!!!\n");
+    char * ptr ; 
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) == '-'){            // first char must be {
+        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)    
+    }
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) != '{'){            // first char must be {
+        printf("Error : group of %i values must begin with {\n",itemsMax);
+        return false ;
+    }
+    pvalue++;
+    for (uint8_t i = 0 ; i < itemsMax; i++) {
+        errno = 0;
+        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
+                                                   // *ptr = 0 when no error
+        if( ptr == pvalue ) {
+            printf("Error : can't be converted to a group of %i integers; i=%i\n", itemsMax, i);
+            return false;    
+        }
+        if ( ptr == NULL){
+            printf("Error : can't be converted to a group of %i integers\n", itemsMax);
+            return false;
+        }
+        pvalue = ptr; 
+        //printf(" seq %i = %i\n", i , tempIntTable[i]);
+    }
+    pvalue =  skipWhiteSpace(pvalue);
+    if (( * pvalue) != '}') {
+        printf("Error : group must end with } after %i values \n", itemsMax);
+        return false ;
+    }
+    pvalue++;
+    return true;
+}    
+
+bool getSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid (then seq structure is modified)
+                       // when true we still have to check if this is valid with congig (for use of pins and with steps)
+    uint8_t seqIdx = 0;
+    SEQ_DEF seqDefsTemp[16]; // temporary structure to avoid any change to seq in case of error detected here
+    //bool isSeqValid = false;
+    while ( (*pvalue) != 0X00 ) { // while not end of value buffer
+        if (seqIdx >= 16) {
+            printf("Error : to many sequencer definitions; max is 16\n");
+            return false; 
+        }
+        if ( getSetOfInt(7) == false){
+            printf("Error converting the sequencer definition numner %i\n",seqIdx+1);
+            return false; 
+        }
+        pvalue = skipWhiteSpace(pvalue);
+        if (tempIntTable[0] < 0 || tempIntTable[0] > 15){
+            printf("Error : for sequencer number %i, gpio must be in range 0 / 15\n", seqIdx+1);
+            return false;
+        }
+        if (tempIntTable[1] < 0 || tempIntTable[1] > 1){
+            printf("Error : for sequencer number %i, type must be 0 (SERVO) or 1(ANALOG)\n" , seqIdx+1);
+            return false;
+        }
+        if (tempIntTable[2] < 20 || tempIntTable[2] > 100000){
+            printf("Error : for sequencer number %i, clock must be in range 20 / 100000 (msec)\n", seqIdx+1);
+            return false;
+        }
+        if (tempIntTable[3] < 1 || tempIntTable[3] > 16){
+            printf("Error : for sequencer number %i, channel must be in range 1 / 16\n", seqIdx+1);
+            return false;
+        }
+        if (tempIntTable[1] == 0) {  // for SERVO
+            if (tempIntTable[4] < -125 || tempIntTable[4] > 125){
+                printf("Error : for sequencer number %i, when type = SERVO, default PWM value must be in range -125 / +125\n", seqIdx+1);
+                return false;
+            }
+        } else {                 // for ANALOG
+            if (tempIntTable[4] < 0 || tempIntTable[4] > 100){
+                printf("Error : for sequencer number %i, when type = ANALOG, default PWM value must be in range 0 / 100\n", seqIdx+1);
+                return false;
+            }
+        }
+        if (tempIntTable[1] == 0) {  // for SERVO
+            if (tempIntTable[5] < -125 || tempIntTable[5] > 125){
+                printf("Error : for sequencer number %i, when type = SERVO, min PWM value must be in range -125 / +125\n", seqIdx+1);
+                return false;
+            }
+        } else {                 // for ANALOG
+            if (tempIntTable[5] < 0 || tempIntTable[5] > 100){
+                printf("Error : for sequencer number %i, when type = ANALOG, min PWM value must be in range 0 / 100\n", seqIdx+1);
+                return false;
+            }
+        }if (tempIntTable[1] == 0) {  // for SERVO
+            if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
+                printf("Error : for sequencer number %i, when type = SERVO, max PWM value must be in range -125 / +125\n", seqIdx+1);
+                return false;
+            }
+        } else {                 // for ANALOG
+            if (tempIntTable[6] < 0 || tempIntTable[6] > 100){
+                printf("Error : for sequencer number %i, when type = ANALOG, max PWM value must be in range 0 / 100\n", seqIdx+1);
+                return false;
+            }
+        }
+        seqDefsTemp[seqIdx].pin = tempIntTable[0];
+        seqDefsTemp[seqIdx].type = (SEQ_OUTPUT_TYPE) tempIntTable[1];
+        seqDefsTemp[seqIdx].clockMs = tempIntTable[2];
+        seqDefsTemp[seqIdx].channel = tempIntTable[3];
+        seqDefsTemp[seqIdx].defValue = tempIntTable[4];
+        seqDefsTemp[seqIdx].minValue = tempIntTable[5];
+        seqDefsTemp[seqIdx].maxValue = tempIntTable[6];
+        seqIdx++;
+    } // end while
+    memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));
+    seq.defsMax = seqIdx;
+    printf("Number of sequencers is stored in defsMax= %i\n",seq.defsMax);
+
+    return true;
+}
+
+bool getStepsSequencers(){ // try to get all steps decoding a string pointed by pvalue
+                            // return true when steps are valid (syntax and each value); seq structure is then updated
+                            // we still have to check if this is valid compared to the number of sequencers
+    uint8_t stepIdx = 0;
+    SEQ_STEP stepsTemp[SEQUENCER_MAX_NUMBER_OF_STEPS]; 
+    //bool isStepValid = false;
+    while ( (*pvalue) != 0X00 ) { // while not end of value buffer
+        if (stepIdx >= SEQUENCER_MAX_NUMBER_OF_STEPS) {
+            printf("Error : to many steps; max is %i\n",SEQUENCER_MAX_NUMBER_OF_STEPS);
+            return false; 
+        }
+        if ( getSetOfInt(4) == false){
+            printf("Error converting the step numner %i\n",stepIdx+1);
+            return false; 
+        }
+        pvalue = skipWhiteSpace(pvalue);
+        if (tempIntTable[0]!=-100 && tempIntTable[0]!=-75 && tempIntTable[0]!=-50 && tempIntTable[0]!=-25\
+            && tempIntTable[0]!=100 && tempIntTable[0]!=75 && tempIntTable[0]!=50 && tempIntTable[0]!=25 && tempIntTable[0]!=0){
+            printf("Error : for step number %i, channel range must be -100/-75/-50/-25/0/25/50/75/100\n", stepIdx+1);
+            return false;
+        }
+        if (tempIntTable[1] < 0 || tempIntTable[1] > 255){
+            printf("Error : for step number %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
+            return false;
+        }
+        if (tempIntTable[2] < -125 || tempIntTable[2] > 125){
+            printf("Error : for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
+            return false;
+        }
+        if (tempIntTable[3] < 0 || tempIntTable[3] > 255){
+            printf("Error : for step number %i, keep must be in range 0 / 255 (included)\n" , stepIdx+1);
+            return false;
+        }
+        stepsTemp[stepIdx].chRange = ( CH_RANGE) tempIntTable[0];
+        stepsTemp[stepIdx].smooth = tempIntTable[1];
+        stepsTemp[stepIdx].value = tempIntTable[2];
+        stepsTemp[stepIdx].keep = tempIntTable[3];
+        stepIdx++;
+    } // end while
+    //isStepValid = true;
+    memcpy(&seq.steps , &stepsTemp , sizeof(stepsTemp));
+    seq.stepsMax = stepIdx;
+    printf( " Number of steps= %i\n",stepIdx);
+    return true; 
 }

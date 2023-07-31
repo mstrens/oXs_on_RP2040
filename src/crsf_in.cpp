@@ -31,6 +31,8 @@ queue_t crsf2RxQueue ; // secondary queue uses to push the data from the uart rx
 
 GENERIC_CRC8 crsf_crc_in(CRSF_CRC_POLY);
 
+extern volatile bool isPrinting;
+
 // primary RX interrupt handler
 void on_crsf_uart_rx() {
     while (uart_is_readable(CRSF_UART_ID)) {
@@ -38,7 +40,9 @@ void on_crsf_uart_rx() {
         //int count = queue_get_level( &primCrsfRxQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &crsfRxQueue , &ch)) printf("crsfRxQueue try add error\n");
+        if (!queue_try_add ( &crsfRxQueue , &ch)){
+            if ( ! isPrinting) printf("crsfRxQueue try add error\n"); 
+        } 
         //printf("%02x\n", ch);
     }
 }
@@ -50,7 +54,9 @@ void on_crsf2_uart_rx() {
         //int count = queue_get_level( &primCrsfRxQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &crsf2RxQueue , &ch)) printf("crsf2RxQueue try add error\n");
+        if (!queue_try_add ( &crsf2RxQueue , &ch)) {
+            if ( ! isPrinting) printf("crsf2RxQueue try add error\n");
+        }
         //printf("%x\n", ch);
     }
 }

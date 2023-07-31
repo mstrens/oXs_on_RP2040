@@ -48,6 +48,8 @@ uint32_t sbusFrameCounter = 0;
 #define SBUS_HOLD_COUNTED_ON_FRAMES 100 // calculate the % every X frames
 bool prevFailsafeFlag = false;
 
+extern volatile bool isPrinting;
+
 // RX interrupt handler on one uart
 void on_sbus_uart_rx() {
     while (uart_is_readable(SBUS_UART_ID)) {
@@ -56,7 +58,9 @@ void on_sbus_uart_rx() {
         int count = queue_get_level( &sbusQueue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &sbusQueue , &ch)) printf("sbusQueue try add error\n");
+        if (!queue_try_add ( &sbusQueue , &ch)){
+            if ( ! isPrinting) printf("sbusQueue try add error\n"); // avoid those msg when we are printing long messages
+        } 
         //printf("%x\n", ch);
     }
 }
@@ -69,7 +73,9 @@ void on_sbus2_uart_rx() {
         //int count = queue_get_level( &sbus2Queue );
         //printf(" level = %i\n", count);
         //printf( "val = %X\n", ch);  // printf in interrupt generates error but can be tested for debugging if some char are received
-        if (!queue_try_add ( &sbus2Queue , &ch)) printf("sbusQueue2 try add error\n");
+        if (!queue_try_add ( &sbus2Queue , &ch)){
+            if ( ! isPrinting) printf("sbusQueue2 try add error\n"); // avoid those msg when we are printing long messages
+        }
         //printf("%x\n", ch);
     }
 }

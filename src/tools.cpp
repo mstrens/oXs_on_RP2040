@@ -11,7 +11,7 @@
 
 extern queue_t qSensorData; 
 extern field fields[];
-
+extern bool multicoreIsRunning;
 
 // useful for button but moved to button2.cpp
 /////////////////////////////////////////////////////////////////
@@ -29,9 +29,11 @@ extern field fields[];
 // e.g. XIP streamer, or the other core.
 
 bool __no_inline_not_in_flash_func(get_bootsel_button)() {
+    
+    //return false; // to debug - to be modified
     const uint CS_PIN_INDEX = 1;
     //startTimerUs(0);
-    multicore_lockout_start_blocking();
+    if( multicoreIsRunning) multicore_lockout_start_blocking();
     // Must disable interrupts, as interrupt handlers may be in flash, and we
     // are about to temporarily disable flash access!
     uint32_t flags = save_and_disable_interrupts();
@@ -55,7 +57,8 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
                     IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
 
     restore_interrupts(flags);
-    multicore_lockout_end_blocking();
+    
+    if (multicoreIsRunning) multicore_lockout_end_blocking();
     //getTimerUs(0);
     return button_state;
 }
