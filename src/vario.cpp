@@ -114,7 +114,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     static float totalEnergyLowPassCm =0 ;
     static float totalEnergyHighPassCm =0 ;
     static float smoothCompensatedClimbRateCmS = 0;
-    float difPressureAvgPa = 0; 
+    static float difPressureAvgPa = 0; 
 
     // for 4525:
         // airspeed = sqr(2 * differential_pressure / air_density) ; air density = pressure  pa / (287.05 * (Temp celcius + 273.15))

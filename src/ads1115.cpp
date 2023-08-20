@@ -10,7 +10,7 @@
 
 
 extern CONFIG config;
-
+//extern int32_t i2cError;
 
 
 

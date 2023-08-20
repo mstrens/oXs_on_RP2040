@@ -45,15 +45,18 @@ void VOLTAGE::getVoltages(void){
     static uint8_t adcSeq = 0; // sequence 0...3 of pin to be read 
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
     if ( (microsRp() - lastVoltageMicros) > VOLTAGEINTERVAL ) {  // performs one conversion every X usec
-        lastVoltageMicros = millisRp() ;
+        lastVoltageMicros = microsRp() ;
         if ( config.pinVolt[adcSeq] != 255) {
             adc_read(); // convert and sum
+            //printf("V=%i\n",(int) adc_read());
             sumVoltage[adcSeq] += adc_read(); // convert and sum
             sumVoltage[adcSeq] += adc_read(); // convert and sum
         }     
         adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
         if ( config.pinVolt[adcSeq] != 255) {
             adc_select_input(adcSeq); // select the pin (conversion is done later on when voltage is stabilized)
+            //printf("a=%i p=%i V=%i\n", adcSeq, config.pinVolt[adcSeq] , (int) adc_read());
+            
         }
     
         sumCount++;

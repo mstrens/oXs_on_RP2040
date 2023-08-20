@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.7.0"
+#define VERSION "2.7.12"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -17,6 +17,7 @@
 #define DATA_ID_GPS    0x83  //          3 used as P3
 #define DATA_ID_RPM    0xE4  //          4
 #define DATA_ID_ACC    0x67  //          7
+
 //list of all possible 28 device ID codes (in sequence)
 // 0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F, 
 // 0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B
@@ -25,7 +26,7 @@
 
 // -------------- for Sport, Fbus (Frsky) and Exbus (Jeti) ---------------------
 // The #define below allow to setup the relative priority of telemetry fields.
-// Do not delete the #define but change some value if you want.
+// Do not delete the #define but change some values if you want.
 // Each Value should be in range 3...250 
 // Still value 0 means that this field may not be transmitted
 //
@@ -37,44 +38,44 @@
 // Note : currently some fields are never transmitted in exbus protocol (even if they have a valid value here)
 //        For more details about the fields, look at the file doc/fields_per_protocol.txt 
 
-#define P_LATITUDE 50
-#define P_LONGITUDE 50
-#define P_GROUNDSPEED 50
-#define P_HEADING 80
-#define P_ALTITUDE 80
-#define P_NUMSAT 200
-#define P_GPS_DATE 200
-#define P_GPS_TIME 200
-#define P_GPS_PDOP 200
-#define P_GPS_HOME_BEARING 80
-#define P_GPS_HOME_DISTANCE 80
-#define P_MVOLT 80
-#define P_CURRENT 80
-#define P_RESERVE1 80
-#define P_RESERVE2 80
-#define P_CAPACITY 200
-#define P_TEMP1 80
-#define P_TEMP2 80
-#define P_VSPEED 10
-#define P_RELATIVEALT 20
-#define P_PITCH 30
-#define P_ROLL 30
-#define P_YAW 200
-#define P_RPM 80
-#define P_ADS_1_1 200
-#define P_ADS_1_2 200
-#define P_ADS_1_3 200
-#define P_ADS_1_4 200
-#define P_ADS_2_1 200
-#define P_ADS_2_2 200
-#define P_ADS_2_3 200
-#define P_ADS_2_4 200
-#define P_AIRSPEED 30
-#define P_AIRSPEED_COMPENSATED_VSPEED 10
-#define P_SBUS_HOLD_COUNTER 100
-#define P_SBUS_FAILSAFE_COUNTER 100
-#define P_GPS_CUMUL_DIST 200  
 
+#define P_LATITUDE             50
+#define P_LONGITUDE            50
+#define P_GROUNDSPEED          50
+#define P_HEADING              80
+#define P_ALTITUDE             80
+#define P_NUMSAT              200
+#define P_GPS_DATE            200
+#define P_GPS_TIME            200
+#define P_GPS_PDOP            200
+#define P_GPS_HOME_BEARING     80
+#define P_GPS_HOME_DISTANCE    80
+#define P_MVOLT                80
+#define P_CURRENT              80
+#define P_RESERVE1             80
+#define P_RESERVE2             80
+#define P_CAPACITY            200
+#define P_TEMP1                80
+#define P_TEMP2                80
+#define P_VSPEED               10
+#define P_RELATIVEALT          20
+#define P_PITCH                30
+#define P_ROLL                 30
+#define P_YAW                 200
+#define P_RPM                  80
+#define P_ADS_1_1             200
+#define P_ADS_1_2             200
+#define P_ADS_1_3             200
+#define P_ADS_1_4             200
+#define P_ADS_2_1             200
+#define P_ADS_2_2             200
+#define P_ADS_2_3             200
+#define P_ADS_2_4             200
+#define P_AIRSPEED             30
+#define P_AIRSPEED_COMPENSATED_VSPEED 10
+#define P_SBUS_HOLD_COUNTER   100
+#define P_SBUS_FAILSAFE_COUNTER 100
+#define P_GPS_CUMUL_DIST      200  
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
@@ -185,9 +186,9 @@
 
 // --------- Parameters for SDP3x ----------------
 
-#define SDPXX_ADDRESS 0X21 // 0x21 is the default I2C adress of a SDP3X sensor
-//#define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
-
+//#define SDPXX_ADDRESS 0X21 // 0x21 is the default I2C adress of a SDP3X sensor
+#define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
+//#define USE_ADP810_INSTEAD_OF_SDPxx  // uncoment this line if you use a ADP810 instead of a SDPxx
 
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor

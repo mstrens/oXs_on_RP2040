@@ -17,7 +17,7 @@
 
 extern CONFIG config;
 extern float actualPressurePa; // used to calculate airspeed
-
+extern int32_t i2cError;
 /////////////////////////////////////////////////////
 //
 // PUBLIC
@@ -71,9 +71,14 @@ void MS5611::begin()  // return true when baro exist
   if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
   uint8_t rxdata;
   rxdata = MS5611_CMD_RESET ;
+  #ifdef DEBUG  
+  printf("Trying to detect MS5611 sensor at I2C Addr=%X\n", _address);
+  #endif
+
   //printf("before baro reset\n");
-  if (i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false, 1000 ) <0 ) {// ask for a reset
-    printf("error write reset MS5611\n");
+  i2cError = i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false, 1000) ; 
+  if (i2cError <0 ) {// ask for a reset
+    printf("error write reset MS5611: %i\n",i2cError);
     return;
   }  
   sleep_ms(10) ; // wait that data are loaded from eprom to memory (2.8msec in data sheet)
@@ -86,24 +91,33 @@ void MS5611::begin()  // return true when baro exist
       uint8_t readBuffer[2];
       _calibrationData[reg] = 0;
       rxdata = MS5611_CMD_READ_PROM + (reg <<1) ; // this is the address to be read
-      if ( i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false , 1000) <0 ) {
-        printf("error write calibration MS5611\n");
+      i2cError = i2c_write_timeout_us (i2c1 , _address, &rxdata , 1 , false , 1000);
+      if (  i2cError < 0 ) {
+        printf("error write calibration MS5611: %i\n",i2cError);
         return ; // command to get access to one register '0xA0 + 2* offset
       //sleep_ms(1);
       }
-      if ( i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500) < 0)  {
-        printf("error read calibration MS5611\n");
+      i2cError = i2c_read_timeout_us (i2c1 , _address , &readBuffer[0] , 2 , false, 1500);
+      if ( i2cError < 0)  {
+        printf("error read calibration MS5611: %i\n",i2cError);
         return ;
       }  
       _calibrationData[reg] = (readBuffer[0]<<8 ) | (readBuffer[1] );
       //printf("cal=%x\n",_calibrationData[reg]) ;    
   }
-  if (ms56xx_crc(_calibrationData) != 0) return;  // Check the crc
+  if (ms56xx_crc(_calibrationData) != 0) {
+      printf("error in CRC of calibration for MS5611\n");
+    return;  // Check the crc
+  }
   //watchdog_enable(1500, 0);
   //rxdata = MS5611_CMD_READ_PROM + 0 ; // this is the address to be read
   //printf("write i2c %d\n" ,  i2c_write_blocking (i2c1 , _address, &rxdata , 1 , false) );
   //printf("readI2C baro1 %d\n",i2c_read_blocking (i2c1 , _address, &rxdata , 1 , false) );
   //printf("generic %d\n",PICO_ERROR_GENERIC );  
+  #ifdef DEBUG  
+  printf("MS5611 sensor is successfully detected\n");
+  #endif
+
   baroInstalled = true; // if we reach this point, baro is installed (and calibration is loaded)
 }
 
@@ -112,8 +126,9 @@ void MS5611::command(const uint8_t command) // send a command. return 0 if succe
 {
   uint8_t cmd = command;
   _result = 0 ;
-  if ( i2c_write_timeout_us (i2c1 , _address, &cmd , 1 , false, 1000) <0 ) { // i2c_write return the number of byte written or an error code
-     printf("error write MS5611 cmd\n");
+  i2cError = i2c_write_timeout_us (i2c1 , _address, &cmd , 1 , false, 1000);
+  if ( i2cError <0 ) { // i2c_write return the number of byte written or an error code
+     printf("error write MS5611 cmd: %i\n",i2cError);
     _result = -1 ;  // Error
   } 
 }
@@ -123,14 +138,14 @@ uint32_t MS5611::readADC() // returned value = 0 in case of error (and _result i
   uint8_t buffer[3] ;
   uint32_t adcValue = 0 ;
   command(MS5611_CMD_READ_ADC);
-  if (_result == 0)
-  {
+  if (_result == 0) {
     _result = 1; // error
-    if ( i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 3 , false, 1500) != PICO_ERROR_TIMEOUT) {
+    i2cError = i2c_read_timeout_us (i2c1 , _address , &buffer[0] , 3 , false, 1500) ; 
+    if ( i2cError >= 0) {
       adcValue = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
       _result = 0 ; // no error
     } else {
-        printf("read error MS5611\n");
+        printf("read error MS5611: %i\n",i2cError);
     }
   }
   if (_result ) adcValue = 0; //  

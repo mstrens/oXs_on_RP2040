@@ -64,6 +64,9 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 void MPU::begin()  // initialise MPU6050 
 {
     if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+    #ifdef DEBUG  
+    printf("Trying to detect MPU6050 sensor at I2C Addr=%X\n", MPU6050_DEFAULT_ADDRESS);
+    #endif
 
     // Two byte reset. First byte register, second byte data
     // There are a load more options to set up the device in different ways that could be added here
@@ -371,7 +374,7 @@ bool MPU::calibrateAccelGyro(void){
 	gxAccum = gyAccum = gzAccum = 0;
 	// use a lower dlpf
     uint8_t buffer[2] = {MPU6050_RA_CONFIG , MPU6050_DLPF_BW_20};
-    if( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &buffer[0], 2, false,30000)<0){ // true to keep master control of bus
+    if( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &buffer[0], 2, false,3000)<0){ // true to keep master control of bus
         printf("Write error for MPU6050 calibration DLPF\n");
         return false;
     }   
