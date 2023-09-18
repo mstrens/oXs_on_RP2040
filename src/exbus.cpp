@@ -530,7 +530,7 @@ bool exbusProcessNextInputByte( uint8_t c){
     return true; // currently return value has no meaning
 }
 
-int exbusMapRatio = ((FROM_SBUS_MAX - FROM_SBUS_MIN) << 16) / (TO_PWM_MAX - TO_PWM_MIN); // it has to be divided by 2^16 to be in usec
+int exbusMapRatio = ( ((int) (FROM_SBUS_MAX - FROM_SBUS_MIN)) << 16) / (int) (TO_PWM_MAX - TO_PWM_MIN); // it has to be divided by 2^16 to be in usec
 
 uint16_t mapUsec2Sbus(uint16_t x){
     // X is in 1/8 of usec
