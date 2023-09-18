@@ -32,6 +32,9 @@ uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
 extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
+extern bool newRcChannelsReceivedForLogger;  // used to update the PWM data
+
 
 extern bool sbusPriMissingFlag;
 extern bool sbusSecMissingFlag;
@@ -181,6 +184,9 @@ bool pwmIsUsed;
 float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
 float ratioSbusRange = 400.0 / (float) (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
 
+bool newRcChannelsReceivedForLogger = false;  // used to generate a log of rc channels
+
+
 extern SEQUENCER seq ;
 //extern bool isSequencerValid ;  
 
@@ -228,17 +234,20 @@ void setupPwm(){
 
 
 void updatePWM(){
-    static uint32_t lastPwmMillis = 0 ;
+    //static uint32_t lastPwmMillis = 0 ;
     uint16_t pwmValue;
     float ratio;
     int16_t _pwmValue;
     int16_t pwmMax;
     int16_t pwmMin;
 
-    if (( pwmIsUsed == false) && ( seq.defsMax == 0 )) return ; // skip when PWM and sequencer is not used
+    if (( pwmIsUsed == false) && ( seq.defsMax == 0 ) && (config.pinLogger == 255)) return ; // skip when PWM, sequencer and logger are not used
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
-    if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
-        lastPwmMillis = millisRp();
+    if ( newRcChannelsReceivedForPWM){  // when new Rc channel is received (flag set by CRSF_IN, SBUS, FBUS, EXBUS, SRXL2, IBUS...)
+        newRcChannelsReceivedForPWM = false;  // reset the flag
+
+    //if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
+    //    lastPwmMillis = millisRp();
         if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
@@ -258,6 +267,7 @@ void updatePWM(){
         rcSbusOutChannels[13] = (uint16_t) sbusFrame.rcChannelsData.ch13 ;
         rcSbusOutChannels[14] = (uint16_t) sbusFrame.rcChannelsData.ch14 ;
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
+        newRcChannelsReceivedForLogger = true;  // used to update the logger data
         if ( pwmIsUsed == true) {
             for( uint8_t i = 0 ; i < 16 ; i++){    
                 if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 

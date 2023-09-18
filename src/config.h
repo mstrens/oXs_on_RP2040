@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.0"
+#define VERSION "2.8.1"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -210,6 +210,69 @@
 //Note:  when a channel is used to adjust a ratio (for pitch or roll), the ratio can varies from -200 (channel = -100%) up to +200 (channel = %100%)
 //       the sign of the ratio define the direction of the compensation.
 //       Setting the channel on 0% dissables the compensation. This can e.g. be done using a switch on the TX
+
+// --------- Default parameters -------------
+// Many parameters can be edited using a serial monitor without having to compile/reflash the RP2040  
+// If you want to make an uf2 flie with specific parameters (and so, avoid having to use the serial monitor commands),
+//     you can change the default parameters in this section
+// Note: those parameters are used only for a RP2040 that did not yet had been configured (or when it has been completely erased)
+
+ #define _pinChannels_1  0XFF
+ #define _pinChannels_2  0XFF
+ #define _pinChannels_3  0XFF
+ #define _pinChannels_4  0XFF
+ #define _pinChannels_5  0XFF
+ #define _pinChannels_6  0XFF
+ #define _pinChannels_7  0XFF
+ #define _pinChannels_8  0XFF
+ #define _pinChannels_9  0XFF
+ #define _pinChannels_10  0XFF
+ #define _pinChannels_11  0XFF
+ #define _pinChannels_12  0XFF
+ #define _pinChannels_13  0XFF
+ #define _pinChannels_14  0XFF
+ #define _pinChannels_15  0XFF
+ #define _pinChannels_16  0XFF
+ #define _pinGpsTx  0XFF
+ #define _pinGpsRx  0XFF
+ #define _pinPrimIn  0XFF
+ #define _pinSecIn  0XFF 
+ #define _pinSbusOut  0XFF
+ #define _pinTlm  0XFF
+ #define _pinVolt_1  0XFF
+ #define _pinVolt_2  0XFF
+ #define _pinVolt_3  0XFF
+ #define _pinVolt_4  0XFF
+ #define _pinSda  0XFF
+ #define _pinScl  0XFF
+ #define _pinRpm  0XFF
+ #define _pinLed  16
+ #define _protocol  'S' // S = Sport, C = crossfire, J = Jeti
+ #define _crsfBaudrate  420000
+ #define _scaleVolt1  1.0
+ #define _scaleVolt2  1.0
+ #define _scaleVolt3  1.0
+ #define _scaleVolt4  1.0
+ #define _offset1  0.0
+ #define _offset2  0.0
+ #define _offset3  0.0
+ #define _offset4  0.0
+ #define _gpsType  'U' 
+ #define _rpmMultiplicator 1.0
+ #define _failsafeType  'H'
+//    crsf_channels_s failsafeChannels ;
+// #define _accOffsetX;
+// #define _accOffsetY;
+// #define _accOffsetZ;
+// #define _gyroOffsetX;
+// #define _gyroOffsetY;
+// #define _gyroOffsetZ;
+ #define _temperature 0XFF
+ #define _VspeedCompChannel 0XFF
+ #define _ledInverted 'N'
+ #define _pinLogger 0xFF
+ #define _loggerBaudrate 115200
+
 // --------- Reserve for developer. ---------
 
 typedef struct {

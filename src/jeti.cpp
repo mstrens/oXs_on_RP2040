@@ -125,8 +125,10 @@ void setupJeti() {
 // Set up the state machine for transmit but do not yet start it (it starts only when a request from receiver is received)
     jetiOffsetTx = pio_add_program(jetiPio, &uart_jeti_tx_program);
     uart_jeti_tx_program_init(jetiPio, jetiSmTx, jetiOffsetTx, config.pinTlm, 9700 );  
+
     degreeChar[0] = 0xB0 ; // for the symbol °, fill with 0xB0 followed by 0x00 as showed in jetiprotocol example and in datasheet (code A02 for european set of char))
     degreeChar[1] = 0x00 ;
+    
     initListOfJetiFields(false) ;  // do not activate all fields but only those with pin defined od installed  
 }
 

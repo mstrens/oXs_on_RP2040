@@ -44,8 +44,8 @@ uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;
 
-PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
-uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
+PIO gpsPio = pio1; // we use pio 0; 
+uint gpsSmTx = 0;  // we use the state machine 0 for Tx;  
 uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
 
 #define CFG_RATE_MEAS 0x30210001 // U2 0.001 s Nominal time between GNSS measurements ; 100 = 10hz; 1000 = 1Hz
@@ -274,6 +274,8 @@ void GPS::handleGpsUblox(){
                 if ( initGpsIdx >= sizeof( initGpsM6Part2)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
+                        pio_sm_unclaim(gpsPio, gpsSmTx);                           // free the SM used for GPS TX
+                        pio_remove_program(gpsPio, &uart_tx_program, gpsOffsetTx); // remove the GPS TX program 
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;

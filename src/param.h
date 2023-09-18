@@ -6,35 +6,35 @@
 #define CONFIG_VERSION 6
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
-    uint8_t pinChannels[16] = {0XFF};
-    uint8_t pinGpsTx = 0xFF;
-    uint8_t pinGpsRx = 0xFF;
-    uint8_t pinPrimIn = 0xFF;
-    uint8_t pinSecIn = 0xFF; 
-    uint8_t pinSbusOut = 0xFF;
-    uint8_t pinTlm = 0xFF;
-    uint8_t pinVolt[4] = {0xFF};
-    uint8_t pinSda = 0xFF;
-    uint8_t pinScl = 0xFF;
-    uint8_t pinRpm = 0xFF;
-    uint8_t pinLed = 16;
-    uint8_t protocol = 'S' ; // S = Sport, C = crossfire, J = Jeti
-    uint32_t crsfBaudrate = 420000;
-    float scaleVolt1 = 1.0;
-    float scaleVolt2 = 1.0;
-    float scaleVolt3 = 1.0;
-    float scaleVolt4 = 1.0;
-    float offset1 = 0.0;
-    float offset2 = 0.0;
-    float offset3= 0.0;
-    float offset4 = 0.0;
-    uint8_t gpsType = 'U' ;
-    float rpmMultiplicator = 1;
+    uint8_t pinChannels[16] ;
+    uint8_t pinGpsTx ;
+    uint8_t pinGpsRx ;
+    uint8_t pinPrimIn ;
+    uint8_t pinSecIn ; 
+    uint8_t pinSbusOut ;
+    uint8_t pinTlm ;
+    uint8_t pinVolt[4] ;
+    uint8_t pinSda  ;
+    uint8_t pinScl ;
+    uint8_t pinRpm ;
+    uint8_t pinLed ;
+    uint8_t protocol  ; // S = Sport, C = crossfire, J = Jeti
+    uint32_t crsfBaudrate ;
+    float scaleVolt1 ;
+    float scaleVolt2 ;
+    float scaleVolt3 ;
+    float scaleVolt4 ;
+    float offset1 ;
+    float offset2 ;
+    float offset3 ;
+    float offset4 ;
+    uint8_t gpsType  ;
+    float rpmMultiplicator ;
     //uint8_t gpio0 = 0; // 0 mean SBUS, 1 up to 16  = a RC channel
     //uint8_t gpio1 = 1;
     //uint8_t gpio5 = 6;
     //uint8_t gpio11 = 11;
-    uint8_t failsafeType = 'H';
+    uint8_t failsafeType ;
     crsf_channels_s failsafeChannels ;
     int16_t accOffsetX;
     int16_t accOffsetY;
@@ -45,6 +45,8 @@ struct CONFIG{
     uint8_t temperature; 
     uint8_t VspeedCompChannel;
     uint8_t ledInverted;
+    uint8_t pinLogger ;
+    uint32_t loggerBaudrate ;
 };
 
 void handleUSBCmd(void);

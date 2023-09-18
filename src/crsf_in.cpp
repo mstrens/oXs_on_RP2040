@@ -130,6 +130,7 @@ enum CRSFState{
 uint32_t lastRcChannels = 0;   // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 uint32_t lastPriChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 uint32_t lastSecChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+bool newRcChannelsReceivedForPWM = false;  // used to update the PWM data
 
 
 void handleCrsfIn(void){   // called by main loop : receive the CRSF frame

@@ -9,7 +9,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - Sbus signals
 - PWM signals to stabilize a camera on pitch and roll
 - different sequences of PWM signals (to control Servo or to generate an analog/digital voltage) based on Rc channel values
-
+- data's (telemetry and/or PWM Rc channels) to be logged on a SD card
 ### For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional)
    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
@@ -20,20 +20,25 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
-### It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus signal (e.g Frsky,Jeti,Flysky ).
+### It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum).
  
 ### It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
  When connected to 2 receivers, the output signals (e.g. PWM or Sbus) will be issued from the last received Rc channels.
- So this provide a kind of redundancy/diversity.
+ So this provides a kind of redundancy/diversity.
 
-Each function (telemetry/PWM/SBUS/sequencer) can be used alone or combined with the others.
 
 ### To stabilize a camera, it requires
     - to use a mp6050 device
     - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
     - to edit the camera parameters in the config.h file and to compile the edited project.
 
-### To use some sequencers, it requires to configure oXs in order to get Rc channels
+### To use some sequencers, it requires to configure oXs in order to get Rc channels.
+
+### To log data's on a SD card, you must build another module with another RP2040: see oXs_logger project
+
+
+Each function (telemetry/PWM/SBUS/logger/sequencer) can be used alone or combined with the others.
+
 
 ## -------  Hardware -----------------
 
@@ -136,11 +141,13 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |SEC = 1, 13 , 17 ,29     |secondary RC channel input|  
 SBUS_OUT = 0/29           |Sbus output|  
 TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
-VOLT1= 26/29 ... VOLT4 = 26/29 |voltage measurements|  
+V1= 26/29 ... V4 = 26/29 |voltage measurements|  
 SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
 SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
 RPM = 0/29                     | RPM|
 LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
+LOG = 0/29                     | data to be logged |  
+
 
 ## --------- Software -------------------
 This software has been developped using the RP2040 SDK provided by Rapsberry.
@@ -188,6 +195,8 @@ You have to compile your self the firmware if you want to change some values in 
 * avoid or change priorities of some telemetry fields for Sport in Sport/Fbus protocols
 * assign another sequence number and/of generate alarms for some telemetry fields in Multiplex protocol
 * change the I2C address of some I2C sensors
+* use other default paramaters in order to avoid using commands via the USB/serial monitor. 
+
 
 ## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.
@@ -286,6 +295,35 @@ Different sequencers can also control several gpio's outputs from the same chann
     * Consistency between SEQ and STEP is checked as well as on use of each gpio (each gpio may have only one functionality).
     
 * SEQ and STEP parameters are displayed as all other parameters when you press only ENTER. Even if the parameters are displayed on several lines and with extra tokens ("-" before "{" will automatically be discarded), it is possible to make a complete copy/paste to the input aera of the serial terminal in order to easily edit some parameters (at least with the serial monitor extension of vscode).
+
+## ------------------ Logging -------------------
+If the LOG Gpio is defined, all telemetry data and all PWM Rc channel values (usec) captured by oXs are transmitted on the LOG pin in a compressed format.
+
+
+Each time a set of data is ready, oXs generates a packet (with only the newly generated data). 
+
+
+The packet is generated with an UART 8N1 (8 bits, no parity, 1 stop bit) at the defined logger baudrate.
+
+
+Each packet starts with 0X7E (= synchro byte) followed by 4 bytes (number of micro sec since RP2040 start up) and by  
+* For telemetry :  one or several data blocks; each one contains
+    * one byte to identify the type of data (max 63 types e.g. Vspeed, Altitude, ...). The 2 most significant bits gives the number of "0" bytes that should be added to the data value in order to get a in32_t (code on 4 bytes)
+    * 1, 2, 3 or 4 bytes with the value
+* For Rc channels : 
+    * one byte equal to "41" (= type for Rc channels)
+    * 32 bytes = 16 X 2 bytes; each 2 bytes (=uint16_t) represent the PWM values in microsec (1500 usec = neutral) of one Rc channel.
+
+There is some stuffing mecanism (like in Frsky Sport protocol) in order to ensure that the value 0X7E can only be present at the begining of a packet.
+\
+\
+This format allows to compress the data transmitted via the (quite slow) UART to the logger.
+\
+\
+The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
+
+
+
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).
 * when config is wrong, led is red and always ON.

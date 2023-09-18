@@ -58,6 +58,7 @@ extern GPS gps;
 extern sbusFrame_s sbusFrame;
 extern uint32_t lastRcChannels;
 
+
 CONFIG config;
 uint8_t debugTlm = 'N';
 uint8_t debugSbusOut = 'N';
@@ -152,12 +153,14 @@ void processCmd(){
         printf("    SCL (baro sensor)         SCL     = 3, 7, 11, 15, 19, 23, 27\n");
         printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
+        printf("    Logger                    LOG     = 0, 1, 2, ..., 29\n");
         printf("- To disable a function, set GPIO to 255\n\n");
 
         //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
         printf(" S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
-        printf("-To change the CRSF baudrate, enter e.g. BAUD=420000\n");
+        printf("-To change the CRSF baudrate, enter e.g. CRSFBAUD=420000\n");
+        printf("-To change the logger baudrate, enter e.g. LOGBAUD=115200\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
         printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
@@ -404,14 +407,14 @@ void processCmd(){
         }
     }
         
-    // change baudrate
-    if ( strcmp("BAUD", pkey) == 0 ) { // if the key is BAUD
+    // change crsf baudrate
+    if ( strcmp("CRSFBAUD", pkey) == 0 ) { // if the key is CRSFBAUD
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
-            printf("Error : baudrate must be an unsigned integer\n");
+            printf("Error : CRSF baudrate must be an unsigned integer\n");
         } else {
             config.crsfBaudrate = ui;
-            printf("baud = %" PRIu32 "\n" , config.crsfBaudrate);
+            printf("CRSF baudrate = %" PRIu32 "\n" , config.crsfBaudrate);
             updateConfig = true;
         }
     }
@@ -475,7 +478,7 @@ void processCmd(){
             return;
     }
     // change protocol
-    if ( strcmp("PROTOCOL", pkey) == 0 ) { // if the key is BAUD
+    if ( strcmp("PROTOCOL", pkey) == 0 ) { // 
         if (strcmp("S", pvalue) == 0) {
             config.protocol = 'S';
             updateConfig = true;
@@ -691,6 +694,34 @@ void processCmd(){
             printf("Error : LED color must be N (normal) or I(inverted)\n");
         }
     }
+
+    // change for RPM pin
+    if ( strcmp("LOG", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui <=29 or ui ==255)) {
+            printf("Error : pin must be in range 0/29 or 255\n");
+        } else {    
+            config.pinLogger = ui;
+            printf("Pin for Logger = %u\n" , config.pinLogger );
+            updateConfig = true;
+        }
+    }
+    
+    // change logger baudrate
+    if ( strcmp("LOGBAUD", pkey) == 0 ) { // if the key is LOGBAUD
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : logger baudrate must be an unsigned integer\n");
+        } else {
+            config.loggerBaudrate = ui;
+            printf("Logger baudrate = %" PRIu32 "\n" , config.loggerBaudrate);
+            updateConfig = true;
+        }
+    }
+
+
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -782,6 +813,7 @@ void checkConfigAndSequencers(){     // set configIsValid
     for (uint8_t i = 0 ; i<16 ; i++) {
         if (config.pinChannels[i] != 255) atLeastOnePwmPin = true ;}
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
+    addPinToCount(config.pinLogger);
     //for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
     //    if (seq.defs[i].pin > 29 ) {
     //        printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);
@@ -906,6 +938,7 @@ void printConfigAndSequencers(){
     printf("PWM Channels 9,10,11,12   = %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
     printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
+    printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
     watchdog_update(); //sleep_ms(500);
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
@@ -930,7 +963,8 @@ void printConfigAndSequencers(){
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
-    printf("CRSF baudrate = %" PRIu32 "\n", config.crsfBaudrate)  ;
+    printf("CRSF baudrate   = %" PRIu32 "\n", config.crsfBaudrate)  ;
+    printf("Logger baudrate = %" PRIu32 "\n", config.loggerBaudrate)  ;
     printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
@@ -1128,35 +1162,53 @@ void setupConfig(){   // The config is uploaded at power on
         memcpy( &config , flash_target_contents, sizeof(config));
     } else {
         config.version = CONFIG_VERSION;
-        for (uint8_t i=0 ; i<16 ; i++) { config.pinChannels[i] = 0XFF; }
-        config.pinGpsTx = 0xFF;
-        config.pinGpsRx = 0xFF;
-        config.pinPrimIn = 0xFF;
-        config.pinSecIn = 0xFF; 
-        config.pinSbusOut = 0xFF;
-        config.pinTlm = 0xFF;
-        for (uint8_t i=0 ; i<4 ; i++) { config.pinVolt[i] = {0xFF}; }
-        config.pinSda = 0xFF;
-        config.pinScl = 0xFF;
-        config.pinRpm = 0xFF;
-        config.pinLed = 16;
-        config.protocol = 'S'; // default = sport
-        config.crsfBaudrate = 420000;
-        config.scaleVolt1 = 1.0;
-        config.scaleVolt2 = 1.0;
-        config.scaleVolt3 = 1.0;
-        config.scaleVolt4 = 1.0;
-        config.offset1 = 0.0;
-        config.offset2 = 0.0;
-        config.offset3 = 0.0;
-        config.offset4 = 0.0;
-        config.gpsType = 'U' ;
-        config.rpmMultiplicator = 1.0;
+        config.pinChannels[0] = _pinChannels_1;
+        config.pinChannels[1] = _pinChannels_2;
+        config.pinChannels[2] = _pinChannels_3;
+        config.pinChannels[3] = _pinChannels_4;
+        config.pinChannels[4] = _pinChannels_5;
+        config.pinChannels[5] = _pinChannels_6;
+        config.pinChannels[6] = _pinChannels_7;
+        config.pinChannels[7] = _pinChannels_8;
+        config.pinChannels[8] = _pinChannels_9;
+        config.pinChannels[9] = _pinChannels_10;
+        config.pinChannels[10] = _pinChannels_11;
+        config.pinChannels[11] = _pinChannels_12;
+        config.pinChannels[12] = _pinChannels_13;
+        config.pinChannels[13] = _pinChannels_14;
+        config.pinChannels[14] = _pinChannels_15;
+        config.pinChannels[15] = _pinChannels_16;
+        config.pinGpsTx = _pinGpsTx;
+        config.pinGpsRx = _pinGpsRx;
+        config.pinPrimIn = _pinPrimIn;
+        config.pinSecIn = _pinSecIn; 
+        config.pinSbusOut = _pinSbusOut;
+        config.pinTlm = _pinTlm;
+        config.pinVolt[0] = _pinVolt_1;
+        config.pinVolt[1] = _pinVolt_2;
+        config.pinVolt[2] = _pinVolt_3;
+        config.pinVolt[3] = _pinVolt_4;
+        config.pinSda = _pinSda;
+        config.pinScl = _pinScl;
+        config.pinRpm = _pinRpm;
+        config.pinLed = _pinLed;
+        config.protocol = _protocol; // default = sport
+        config.crsfBaudrate = _crsfBaudrate;
+        config.scaleVolt1 = _scaleVolt1;
+        config.scaleVolt2 = _scaleVolt2;
+        config.scaleVolt3 = _scaleVolt3;
+        config.scaleVolt4 = _scaleVolt4;
+        config.offset1 = _offset1;
+        config.offset2 = _offset2;
+        config.offset3 = _offset3;
+        config.offset4 = _offset4;
+        config.gpsType = _gpsType ;
+        config.rpmMultiplicator = _rpmMultiplicator;
         //config.gpio0 = 0;
         //config.gpio1 = 1;
         //config.gpio5 = 6;
         //config.gpio11 = 11;
-        config.failsafeType = 'H';
+        config.failsafeType = _failsafeType;
         config.failsafeChannels.ch0 = 1<<10 ; // set default failsafe value to 1/2 of 11 bits
         config.failsafeChannels.ch1 = config.failsafeChannels.ch0 ;
         config.failsafeChannels.ch2 = config.failsafeChannels.ch0 ;
@@ -1179,11 +1231,12 @@ void setupConfig(){   // The config is uploaded at power on
         config.gyroOffsetX = 0;
         config.gyroOffsetY = 0;
         config.gyroOffsetZ= 0;
-        config.temperature = 255;
-        config.VspeedCompChannel = 255;
-        config.ledInverted = 'N'; // not inverted
-    }
-    
+        config.temperature = _temperature;
+        config.VspeedCompChannel = _VspeedCompChannel;
+        config.ledInverted = _ledInverted; 
+        config.pinLogger = _pinLogger;
+        config.loggerBaudrate =_loggerBaudrate;
+    }   
 } 
 
 
