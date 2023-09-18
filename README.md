@@ -139,14 +139,14 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |GPS_RX = 0/29            |configuring GPS|
 |PRI = 5 ,9, 21 ,25       |primary RC channel input|  
 |SEC = 1, 13 , 17 ,29     |secondary RC channel input|  
-SBUS_OUT = 0/29           |Sbus output|  
-TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
-V1= 26/29 ... V4 = 26/29 |voltage measurements|  
-SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
-SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
-RPM = 0/29                     | RPM|
-LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
-LOG = 0/29                     | data to be logged |  
+|SBUS_OUT = 0/29           |Sbus output|  
+|TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
+|V1= 26/29 ... V4 = 26/29 |voltage measurements|  
+|SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
+|SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
+|RPM = 0/29                     | RPM|
+|LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
+|LOG = 0/29                     | data to be logged |  
 
 
 ## --------- Software -------------------

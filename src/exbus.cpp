@@ -539,7 +539,7 @@ uint16_t mapUsec2Sbus(uint16_t x){
     //#define TO_PWM_MIN 988
     //#define FROM_SBUS_MAX 1811
     //#define TO_PWM_MAX 2012
-    x = x >> 8 ; //(divide by 8 to get usec)
+    x = x >> 3 ; //(divide by 8 to get usec)
     if (x < 950) {x = 950;} else if (x > 2050){ x = 2050;} 
     return (uint16_t)( (((int)(x - TO_PWM_MIN) * exbusMapRatio) >> 16 ) +  FROM_SBUS_MIN ) ; 
 } 
