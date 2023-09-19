@@ -97,7 +97,7 @@ void LOGGER::logByteNoStuff(uint8_t c){
         lastLogMillis = millisRp();                    // reset the timestamp  
         // set read address of dma and start it
         //printf("sending by DMA buffer %i\n",logWritingBuffer );
-        dma_channel_set_read_addr (logger_dma_chan, &logBuffer[0][logWritingBuffer], false);
+        dma_channel_set_read_addr (logger_dma_chan, &logBuffer[logWritingBuffer][0], false);
         dma_channel_set_trans_count (logger_dma_chan, logLen , true) ; // in principe DMA could already be started when changing the read address
         logWritingBuffer++;
         if (logWritingBuffer > 1) logWritingBuffer = 0;
