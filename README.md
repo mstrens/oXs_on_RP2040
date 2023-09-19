@@ -306,7 +306,7 @@ Each time a set of data is ready, oXs generates a packet (with only the newly ge
 The packet is generated with an UART 8N1 (8 bits, no parity, 1 stop bit) at the defined logger baudrate.
 
 
-Each packet starts with 0X7E (= synchro byte) followed by 4 bytes (number of micro sec since RP2040 start up) and by  
+Each packet starts with 0X7E (= synchro byte) followed by 4 bytes (number of milli sec since RP2040 start up) and by  
 * For telemetry :  one or several data blocks; each one contains
     * one byte to identify the type of data (max 63 types e.g. Vspeed, Altitude, ...). The 2 most significant bits gives the number of "0" bytes that should be added to the data value in order to get a in32_t (code on 4 bytes)
     * 1, 2, 3 or 4 bytes with the value

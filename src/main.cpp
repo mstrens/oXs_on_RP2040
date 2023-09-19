@@ -509,6 +509,7 @@ void getSensorsFromCore1(){
                 if (config.pinLogger != 255) { // when logger is on
                     if ( loggerHeaderSent == false) {  // log once per function call the synchro byte 
                         logger.logByteNoStuff(0X7E);
+                        logger.logTimestampMs(millisRp());
                         loggerHeaderSent = true; 
                     }
                     logger.logint32withStuff(entry.type ,entry.data);    // log the type (index) and value of the tlm field
