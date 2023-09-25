@@ -53,12 +53,14 @@
 //         test 16 rc channel values in log interface 
 //         test logger param in config parameters
 //         test tlm data in log interface
+//         add esc hobbiwing V4 interface
 
 // Look at file in folder "doc" for more details
 //
 // So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2  (it uses max 6 bytes for Hott and a dma)
 //        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2  (it uses 9 bytes and no dma)
 //        0   2            sbus out                                                            (it uses 4 bytes and one dma)       
+//        0   3            esc  Rx
 
 //        1   0 is used for gps Tx  (was used for one pwm)  and for logger TX (when gps setup is done) (it uses 4 bytes no dma)      
 //        1   1 is used for gps Rx  (was used for one pwm)                                             (it uses 9 bytes no dma)

@@ -47,6 +47,7 @@ struct CONFIG{
     uint8_t ledInverted;
     uint8_t pinLogger ;
     uint32_t loggerBaudrate ;
+    uint8_t pinEsc;
 };
 
 void handleUSBCmd(void);

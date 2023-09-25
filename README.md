@@ -105,7 +105,7 @@ Note: pins between () means that they are optional.
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
-Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
+Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max. V2 is normally used to measure a current (based on the analog voltage). V3 and V4 can be used to measure or a voltage or a temperature (based on a voltage). For each voltage being measured, you probably have to specify the offset and scale to be applied.
 
 One RPM (Hz) can be measured
 * Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
@@ -222,6 +222,7 @@ oXs measures different fields depending on the sensors being detected.
 Please note that the data being transmitted depends also on the protocol being used (Sport, ELRS, ...).
 
 For more information, please look at document "fields per protocol.txt" in folder "doc"
+
 
 When a baro sensor and an airspeed sensor are both used, oXs calculates 2 vertical speeds: 
 * the normal one based only on the baro sensor; this one is always transmitted

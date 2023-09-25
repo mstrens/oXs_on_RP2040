@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.3" 
+#define VERSION "2.8.4" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -267,11 +267,12 @@
 // #define _gyroOffsetX;
 // #define _gyroOffsetY;
 // #define _gyroOffsetZ;
- #define _temperature 0XFF
- #define _VspeedCompChannel 0XFF
- #define _ledInverted 'N'
- #define _pinLogger 0xFF
- #define _loggerBaudrate 115200
+#define _temperature 0XFF
+#define _VspeedCompChannel 0XFF
+#define _ledInverted 'N'
+#define _pinLogger 0xFF
+#define _loggerBaudrate 115200
+#define _pinEsc 0xFF
 
 // --------- Reserve for developer. ---------
 

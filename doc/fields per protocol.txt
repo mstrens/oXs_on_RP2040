@@ -7,7 +7,7 @@ field       measured in      mesured and transmitted when                 transm
 -----       -----------      ----------------------------                 --------------            ---------------  
 VOLT1       0.001V           V1 pin is defined                            VFAS (0x0210)              0.01V
 VOLT2       0.001V=0.001A    V2 pin is defined                            Current (0x0200)           0.001A
-Capacity    mAh              V2 pin is defined (reset after power down)   DIY (0x5123)              mAh
+Capacity    mAh              V2 pin is defined (reset after power down)   DIY (0x5123)               mAh
 VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           DIY (0X5113)               0.001V
                              V3 pin is defined & TEMP=1 or TEMP=2         T1 (0X400)                  degree
 VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           DIY (0X5114)               0.001V

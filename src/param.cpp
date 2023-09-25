@@ -695,7 +695,7 @@ void processCmd(){
         }
     }
 
-    // change for RPM pin
+    // change for Log pin
     if ( strcmp("LOG", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
@@ -721,7 +721,20 @@ void processCmd(){
         }
     }
 
-
+    // change for Esc pin
+    if ( strcmp("ESC", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui <=29 or ui ==255)) {
+            printf("Error : pin must be in range 0/29 or 255\n");
+        } else {    
+            config.pinEsc = ui;
+            printf("Pin for ESC = %u\n" , config.pinEsc );
+            updateConfig = true;
+        }
+    }
+    
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -904,6 +917,10 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: Vspeed compensation channel must be in range 1...16 or 255\n");
         configIsValid=false;
     }
+    if (( config.loggerBaudrate < 9600) || (config.loggerBaudrate > 1000000 )){
+        printf("Error in parameters: Logger baudrate must be in range 9600...1000000\n");
+        configIsValid=false;
+    }
     checkSequencers();
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
@@ -939,6 +956,8 @@ void printConfigAndSequencers(){
     printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
+    printf("ESC . . . . . . . . . . . = %4u  (ESC    = 0, 1, 2, ..., 29)\n", config.pinEsc );
+    
     watchdog_update(); //sleep_ms(500);
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
@@ -1236,9 +1255,9 @@ void setupConfig(){   // The config is uploaded at power on
         config.ledInverted = _ledInverted; 
         config.pinLogger = _pinLogger;
         config.loggerBaudrate =_loggerBaudrate;
+        config.pinEsc = _pinEsc ;
     }   
 } 
-
 
 void requestMpuCalibration()  // 
 {
