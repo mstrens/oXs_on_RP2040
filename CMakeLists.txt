@@ -61,6 +61,6 @@ add_custom_command(TARGET oXs POST_BUILD
   COMMAND ${CMAKE_COMMAND}
   ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR}   
 )
-
+#  ARGS -E copy oXs.uf2 ${CMAKE_SOURCE_DIR} it was with -E   
 # copy the uf2 file to E: drive
 add_custom_command(TARGET oXs POST_BUILD COMMAND ${CMAKE_COMMAND} ARGS -E copy oXs.uf2 E: )

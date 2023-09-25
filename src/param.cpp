@@ -827,6 +827,7 @@ void checkConfigAndSequencers(){     // set configIsValid
         if (config.pinChannels[i] != 255) atLeastOnePwmPin = true ;}
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
     addPinToCount(config.pinLogger);
+    addPinToCount(config.pinEsc);
     //for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
     //    if (seq.defs[i].pin > 29 ) {
     //        printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);

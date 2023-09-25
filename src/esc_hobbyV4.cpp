@@ -62,6 +62,7 @@ uint8_t escLen = 0; // length of frame
 
 
 void setupEscHobbyV4(){
+    if (config.pinEsc == 255) return;  // skip when there is no ESC
 // configure the queue to get the data from ESC in the irq handle
     queue_init (&escRxQueue, sizeof(uint16_t), 50);
 
@@ -150,6 +151,7 @@ void processNextEscInputByte( uint8_t c){ // process the incoming byte
                     current = 0;
                 }     
                 
+                printf("Esc Volt=%i   current=%i\n", voltage , current);
                 //throttle += ALPHA*(update_throttle(raw_throttle)-throttle);
                 //rpm += ALPHA*(update_rpm(raw_rpm)-rpm);
                 //pwm += ALPHA*(update_pwm(raw_pwm)-pwm);

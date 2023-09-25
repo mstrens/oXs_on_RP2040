@@ -42,6 +42,7 @@
 #include "ds18b20.h"
 #include "hardware/timer.h"
 #include "logger.h"
+#include "esc_hobbyV4.h"
 
 // to do : add rpm, temp telemetry fields to jeti protocol
 //         try to detect MS5611 and other I2C testing the different I2C addresses
@@ -229,6 +230,8 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       setupRpm(); // this function perform the setup of pio Rpm
       //printf("rpm done\n");
       
+    setupEscHobbyV4() ; 
+
       core1SetupDone = true;
       //printf("end core1 setup\n") ;    
       //getTimerUs(0);   // xxxxx
@@ -264,6 +267,7 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
     vario1.calculateVspeedDte();
   } 
   readRpm();
+  handleEscHobbyV4();
   #ifdef USE_DS18B20
   ds18b20Read(); 
   #endif
