@@ -11,6 +11,7 @@
 #include "stdint.h"
 #include "config.h"
 #include "esc_hobbyV4.h"
+#include "math.h"
 
 // one pio (0) and 1 state machines is used to get data from ESC
 // to receive data, the sm is initialised and use an IRQ handler when rx fifo is not empty
@@ -27,6 +28,9 @@
 // [13..14] raw current (to convert)
 // [15..16] temp FET (to convert)
 // [17..18] temp BEC (to convert)
+
+
+// this code is based on the code developped here https://github.com/derFliegendeHamburger/msrc/tree/master
 
 
 #define ESC_HOBBYV4_BAUDRATE 19200
@@ -127,31 +131,33 @@ void processNextEscInputByte( uint8_t c){ // process the incoming byte
             int current = escRxBuffer[13] << 8 | escRxBuffer[14];
             int tempFet = escRxBuffer[15] << 8 | escRxBuffer[16];
             int tempBec = escRxBuffer[17] << 8 | escRxBuffer[18];
-            if (throttle > 1024 || pwm > 1024 || rpm > 200000 || escRxBuffer[11] & 0xF0 || escRxBuffer[13] & 0xF0 || escRxBuffer[15] & 0xF0 || escRxBuffer[17] & 0xF0)
+            if (throttle > 1024 || pwm > 1024 || rpm > 200000 || escRxBuffer[11] & 0xF0 ||\
+                 escRxBuffer[13] & 0xF0 || escRxBuffer[15] & 0xF0 || escRxBuffer[17] & 0xF0 || escRxBuffer[1] == 0x9B)
+                 // escRxBuffer[1] == 0x9B added by mstrens to perhaps avoid info frame; in principe LEN is different and so should already be omitted
             {
             }
             else 
             {
-                rpm = rpm * 2 / POLES ;
+                sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator)) ; //Multiplicator should be 2/number of poles
                 // original formule = raw_voltage*(V_REF/ADC_RES)*V_DIV
-                //                  =            * 3300 /4096 * V_DIV
-                //                  =            * 3300 * V_DIV >> 12
-                //                but V_DIV must have a decimal and so 12.0 must be encoded 120. So 3300 must be divided by 10
-                voltage = (voltage * 330 * V_DIVISOR) >> 12; 
+                //                  =            * 3300 /4096 * V_DIV with V_DIV = e.g. 12
+                sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
 
-                current = 0;
+                float currentf = 0;
                 if ( throttle > 256) { // current is calculated only when throttle is more than 1/4 of max value
                     // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
-                    //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000)
-                    //                         * 3222.7 / DIFFAMP_GAIN
-                    //     but gain must be with 1 decimal; so in int it must be 100 instead of 10; so multiplier is also * 10            
-                    current = current * 32227 *   DIFFAMP_GAIN;
+                    //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000) with DIFFAMP_GAIN = e.g. 10
+                    currentf = (current) * config.scaleVolt2 - config.offset2;
                 }
-                if (current > HWV4_CURRENT_MAX) { // reset if value is to high
-                    current = 0;
-                }     
+                if (currentf<0) currentf = 0;
+                sent2Core0( CURRENT, (int32_t)  currentf) ; 
+                sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
+                sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
+                //if (current > HWV4_CURRENT_MAX) { // reset if value is to high
+                //    currentf = 0;
+                //}     
                 
-                printf("Esc Volt=%i   current=%i\n", voltage , current);
+                //printf("Esc Volt=%i   current=%i\n", voltage , current);
                 //throttle += ALPHA*(update_throttle(raw_throttle)-throttle);
                 //rpm += ALPHA*(update_rpm(raw_rpm)-rpm);
                 //pwm += ALPHA*(update_pwm(raw_pwm)-pwm);
@@ -162,6 +168,24 @@ void processNextEscInputByte( uint8_t c){ // process the incoming byte
         }
     }
 }
+
+#define ESCHW4_NTC_BETA 3950.0
+#define ESCHW4_NTC_R1 10000.0
+#define ESCHW4_NTC_R_REF 47000.0
+#define ESCHW4_V_REF 3.3
+#define ESCHW4_ADC_RES 4096.0
+
+int32_t calcTemp(float tempRaw){
+    float voltage = tempRaw * ESCHW4_V_REF / ESCHW4_ADC_RES;
+    float ntcR_Rref = (voltage * ESCHW4_NTC_R1 / (ESCHW4_V_REF - voltage)) / ESCHW4_NTC_R_REF;
+    if (ntcR_Rref < 0.001)
+        return 0;
+    float temperature = 1 / (log(ntcR_Rref) / ESCHW4_NTC_BETA + 1 / 298.15) - 273.15;
+    if (temperature < 0)
+        return 0;
+    return (int32_t) temperature;
+}
+
 
 /*
 #define POLES 14.0
