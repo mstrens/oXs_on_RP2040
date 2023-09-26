@@ -54,7 +54,7 @@ uint32_t lastEscReceivedUs = 0;  // used to check the delay between char.
 extern field fields[];  // list of all telemetry fields and parameters used by oXs
 extern CONFIG config;
 
-#define ESC_HOBBYV4_MAX_FRAME_LEN 30
+#define ESC_HOBBYV4_MAX_FRAME_LEN 19
 uint8_t escRxBuffer[ESC_HOBBYV4_MAX_FRAME_LEN];
 uint8_t escRxBufferIdx = 0 ;
 uint8_t escLen = 0; // length of frame
@@ -118,7 +118,7 @@ void handleEscHobbyV4(){
 
 void processNextEscInputByte( uint8_t c){ // process the incoming byte 
     escRxBuffer[escRxBufferIdx++] = c;  // save the received byte
-    if (escRxBufferIdx == 19 ){ // when frame is received
+    if (escRxBufferIdx == ESC_HOBBYV4_MAX_FRAME_LEN ){ // when frame is received
         if (escRxBuffer[0] == 0x9B) {
             int throttle = escRxBuffer[4] << 8 | escRxBuffer[5];  // in range 0...1024
             int pwm = escRxBuffer[6] << 8 | escRxBuffer[7];

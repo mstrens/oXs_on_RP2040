@@ -154,6 +154,7 @@ void processCmd(){
         printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
         printf("    Logger                    LOG     = 0, 1, 2, ..., 29\n");
+        printf("    ESC                       ESC     = 0, 1, 2, ..., 29\n");
         printf("- To disable a function, set GPIO to 255\n\n");
 
         //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
