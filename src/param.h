@@ -48,6 +48,7 @@ struct CONFIG{
     uint8_t pinLogger ;
     uint32_t loggerBaudrate ;
     uint8_t pinEsc;
+    uint8_t escType;
 };
 
 void handleUSBCmd(void);
@@ -117,3 +118,7 @@ bool getSequencers();
 bool getStepsSequencers();
 void checkSequencers();
 void saveSequencers(); // save pin sequencers and step definitions
+
+#define HW4 4
+#define HW3 3
+#define KONTRONIK 2

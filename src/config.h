@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.7" 
+#define VERSION "2.8.8" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -193,6 +193,10 @@
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
 
+// ---------- ESC --------------------------------------------------------
+#define ESC_MAX_CURRENT 250.0
+#define ESC_MIN_THROTTLE 256    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
+
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
@@ -273,7 +277,7 @@
 #define _pinLogger 0xFF
 #define _loggerBaudrate 115200
 #define _pinEsc 0xFF
-
+#define _escType 0xFF
 // --------- Reserve for developer. ---------
 
 typedef struct {

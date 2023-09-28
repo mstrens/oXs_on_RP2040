@@ -154,9 +154,9 @@ void processCmd(){
         printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
         printf("    Logger                    LOG     = 0, 1, 2, ..., 29\n");
-        printf("    ESC                       ESC     = 0, 1, 2, ..., 29\n");
+        printf("    ESC                       ESC_PIN = 0, 1, 2, ..., 29\n");
         printf("- To disable a function, set GPIO to 255\n\n");
-
+        printf("- To declare the type of ESC, enter ESC_TYPE=xxx where XXX = HW4(Hobbywing V4) or KON (Kontronik)\n");
         //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
         printf("-To change the protocol, enter PROTOCOL=x where x=");
         printf(" S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
@@ -723,7 +723,7 @@ void processCmd(){
     }
 
     // change for Esc pin
-    if ( strcmp("ESC", pkey) == 0 ) { 
+    if ( strcmp("ESC_PIN", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : pin must be an unsigned integer\n");
@@ -736,6 +736,22 @@ void processCmd(){
         }
     }
     
+    // change for type of esc
+    if ( strcmp("ESC_TYPE", pkey) == 0 ) { 
+        if (strcmp("HW4", pvalue) == 0) {
+            config.escType = HW4 ;
+            updateConfig = true; 
+        //} else if  (strcmp("HW3", pvalue) == 0) {
+        //    config.escType = HW3 ;
+        //    updateConfig = true;
+        } else if (strcmp("KON", pvalue) == 0) {
+            config.escType = KONTRONIK ;
+            updateConfig = true;
+        } else {    
+            printf("Error : ESC_TYPE must be HW4 or KON\n");
+        }
+    }
+
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -923,7 +939,7 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: Logger baudrate must be in range 9600...1000000\n");
         configIsValid=false;
     }
-    if ( (config.pinEsc != 255) && (config.pinVolt[0]!=255)) {
+    if ( (config.pinEsc != 255) && (config.pinVolt[0]!=255) ) {
         printf("Error in parameters: When gpio is defined for ESC, gpio for Volt1 (V1) must be undefined (=255)\n");
         configIsValid=false;
     }    
@@ -939,7 +955,14 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: When gpio is defined for ESC, parameter about number of temperature (TEMP) must be 0 or 255\n");
         configIsValid=false;
     }    
+    if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && (config.escType!=KONTRONIK)) {
+        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4 or KON\n");
+        configIsValid=false;
+    }    
     
+
+
+
     checkSequencers();
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
@@ -975,8 +998,18 @@ void printConfigAndSequencers(){
     printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
-    printf("ESC . . . . . . . . . . . = %4u  (ESC    = 0, 1, 2, ..., 29)\n", config.pinEsc );
+    printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)\n", config.pinEsc );
     
+    if (config.escType == HW4) {
+        printf("\nEsc type is HW4 (Hobbywing V4)\n")  ;
+    } else if (config.escType == HW3) {
+        printf("\nEsc type is HW3 (Hobbywing V3)\n")  ;
+    } else if (config.escType == KONTRONIK) {
+        printf("\nEsc type is KON (Kontronik)\n")  ;
+    } else {
+        printf("\nEsc type is defined\n")  ;
+    }    
+
     watchdog_update(); //sleep_ms(500);
     if (config.protocol == 'S'){
             printf("\nProtocol is Sport (Frsky)\n")  ;
@@ -1275,6 +1308,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.pinLogger = _pinLogger;
         config.loggerBaudrate =_loggerBaudrate;
         config.pinEsc = _pinEsc ;
+        config.escType = _escType; 
     }   
 } 
 
