@@ -1007,7 +1007,7 @@ void printConfigAndSequencers(){
     } else if (config.escType == KONTRONIK) {
         printf("\nEsc type is KON (Kontronik)\n")  ;
     } else {
-        printf("\nEsc type is defined\n")  ;
+        printf("\nEsc type is not defined\n")  ;
     }    
 
     watchdog_update(); //sleep_ms(500);
