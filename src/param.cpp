@@ -935,7 +935,7 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: Vspeed compensation channel must be in range 1...16 or 255\n");
         configIsValid=false;
     }
-    if (( config.loggerBaudrate < 9600) || (config.loggerBaudrate > 1000000 )){
+    if ( (config.pinLogger != 255) && ( config.loggerBaudrate < 9600) || (config.loggerBaudrate > 1000000 )){
         printf("Error in parameters: Logger baudrate must be in range 9600...1000000\n");
         configIsValid=false;
     }
