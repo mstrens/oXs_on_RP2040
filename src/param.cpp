@@ -1450,6 +1450,15 @@ void printFieldValues(){
                 case GPS_CUMUL_DIST :
                     printf("Gps cumulative distance = %d\n", (int) fields[i].value) ;
                     break;
+                case ACC_X :
+                    printf("Acc X = %d\n", (int) fields[i].value) ;
+                    break;
+                case ACC_Y :
+                    printf("Acc Y = %d\n", (int) fields[i].value) ;
+                    break;
+                case ACC_Z :
+                    printf("Acc Z = %d\n", (int) fields[i].value) ;
+                    break;
                             
             } // end switch
         }

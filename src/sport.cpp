@@ -94,6 +94,9 @@ void setupSportList(){     // table used by sport
         AIRSPEED,    //       in cm/s
         HEADING,      //  GPS 0.01 degree        50
         ALTITUDE ,    //  GPS cm                 50
+        ACC_X,        // ACC X in g with 3 dec
+        ACC_Y,        // ACC Y in g with 3 dec  
+        ACC_Z,        // ACC Z in g with 3 dec
         GPS_HOME_BEARING, // GPS degree          50
         GPS_HOME_DISTANCE, // 10 GPS  in m       50
         MVOLT,        // volt1   in mVolt        50
@@ -162,7 +165,11 @@ void setupSportList(){     // table used by sport
     sportFieldId[AIRSPEED_COMPENSATED_VSPEED] = VARIO_LAST_ID;
     sportFieldId[SBUS_HOLD_COUNTER] = DIY_SBUS_HOLD_COUNTER;
     sportFieldId[SBUS_FAILSAFE_COUNTER] = DIY_SBUS_FAILSAFE_COUNTER;
-    sportFieldId[GPS_CUMUL_DIST] =  DIY_GPS_CUMUL_DISTANCE; 
+    sportFieldId[GPS_CUMUL_DIST] =  DIY_GPS_CUMUL_DISTANCE;
+    sportFieldId[ACC_X] = ACCX_FIRST_ID;
+    sportFieldId[ACC_Y] = ACCY_FIRST_ID;
+    sportFieldId[ACC_Z] = ACCZ_FIRST_ID;
+     
 /*
     sportMaxPooling[LATITUDE] = 50;
     sportMaxPooling[LONGITUDE] = 50;
@@ -538,7 +545,11 @@ void calculateSportMaxBandwidth(){
     sportMaxPooling[AIRSPEED_COMPENSATED_VSPEED] = P_AIRSPEED_COMPENSATED_VSPEED;
     sportMaxPooling[SBUS_HOLD_COUNTER] = P_SBUS_HOLD_COUNTER;
     sportMaxPooling[SBUS_FAILSAFE_COUNTER] = P_SBUS_FAILSAFE_COUNTER;
-    sportMaxPooling[GPS_CUMUL_DIST] = P_GPS_CUMUL_DIST;  
+    sportMaxPooling[GPS_CUMUL_DIST] = P_GPS_CUMUL_DIST;
+    sportMaxPooling[ACC_X] = P_ACC_X ;
+    sportMaxPooling[ACC_Y] = P_ACC_Y ;
+    sportMaxPooling[ACC_Z] = P_ACC_Z ;
+      
     // sum of inverted values only when field is used
     sportMaxBandwidth = 0;
     for (uint8_t i=0; i<NUMBER_MAX_IDX ; i++){

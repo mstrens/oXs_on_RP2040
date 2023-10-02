@@ -111,7 +111,10 @@ uint8_t oXsToMpxUnits[NUMBER_MAX_IDX] = { // same sequence as fieldIdx in tool.h
     0XFF, //  SBUS_HOLD_COUNTER,
 
     0XFF, //  SBUS_FAILSAFE_COUNTER,                                        // 35        
-    MU_DIST,  //  GPS_CUMUL_DIST,  from ???? to   0.1 km    0 à +16000     
+    MU_DIST,  //  GPS_CUMUL_DIST,  from ???? to   0.1 km    0 à +16000
+    0XFF,     // ACC X     
+    0XFF,     // ACC Y     
+    0XFF,     // ACC Z     
 };
 
 /*

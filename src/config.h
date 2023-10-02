@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.8" 
+#define VERSION "2.8.9" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -76,6 +76,10 @@
 #define P_SBUS_HOLD_COUNTER   100
 #define P_SBUS_FAILSAFE_COUNTER 100
 #define P_GPS_CUMUL_DIST      200  
+#define P_ACC_X                80
+#define P_ACC_Y                80
+#define P_ACC_Z                80
+
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future

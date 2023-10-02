@@ -34,7 +34,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 
 ### To use some sequencers, it requires to configure oXs in order to get Rc channels.
 
-### To log data's on a SD card, you must build another module with another RP2040: see oXs_logger project
+### To log data's on a SD card, you must also build another module with another RP2040: see oXs_logger project
 
 
 Each function (telemetry/PWM/SBUS/logger/sequencer) can be used alone or combined with the others.
@@ -60,7 +60,9 @@ This board can be connected to:
        * a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds  
            This can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
-      note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage 
+      note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
+   * a RPM sensor
+   * a ESC from Hobbywing (using V4 telemetry protocol) or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -126,7 +128,12 @@ When a GPS is used:
 *  Connect the RX pin from GPS to the RX pin selected in parameter for RP2040 
 *  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
 *  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
-      
+
+When a Hobbywing or a Kontronik ESC is used:
+ * Connect the serial pin from ESC to the pin selected in parameter for RP2040 (for ESC_PIN)
+ * Connect GND from ESC to RP2040 GND
+ * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.
+
 About sequencers, see below.
 
 The affectation of the pins has to be defined by the user.  

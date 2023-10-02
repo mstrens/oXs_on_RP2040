@@ -57,18 +57,25 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       SBUS_HOLD_COUNTER,
 
       SBUS_FAILSAFE_COUNTER,                                        // 35        
-      GPS_CUMUL_DIST,   
+      GPS_CUMUL_DIST,
+      ACC_X,
+      ACC_Y,
+      ACC_Z,   
       NUMBER_MAX_IDX, // used to count the number of entries       
 };
 // note : when a new field is added to this list we have to change also:
 //    - in tools.cpp to add the positive and the negative values for FVP and FVN commands
-//    - in param.cpp to add the text (printf) for FV command (adding case...) 
-//    - in sport.cpp in setupSportList() there are several tables
-//    - in ibus.cpp there is a list to complete
+//    - in param.cpp to add the text (printf) for FV command (adding case...in printFieldValues()) 
+//    - in sport.cpp in setupSportList() there are several tables; in calculateSportMaxBandwidth() also
+//    - in ibus.cpp there is a list to complete ibusTypes[]
 //    - in sbus2_tlm.cpp add code (for a slot)
 //    - in config.h , add slot for sbus2
-//    - in exbus.cpp , adapt one table and program (name and unit)
-//    - For mpx there is also some check to be done (???)
+//    - in config.h , add #define for priority of telemetry fields
+//    - in exbus.cpp , adapt one table (sensorsParam[]) and program (name and unit)
+//    - for HOTT, only 2 sensors are emulated; there is no change if new fields are not transmitted
+//    - For mpx there is also some check to be done (???); table oXsToMpxUnits[] to be filled
+//    - For spectrum (SRXL2) there are also some change to transmit the data (eg ACC are currently not transmitted)
+//    - in doc/fields_per_protocol.txt, update the doc of fields transmitted or not
 
 #define SAVE_CONFIG_ID 0XFF
 #define CAMERA_PITCH_ID 0XFE

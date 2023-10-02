@@ -53,7 +53,6 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 float Kp = 30.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
 float Ki = 0.0;  // on same site, it is set on 0
 
-unsigned long now_ms, last_ms = 0; //millisRp() timers
 
 Quaternion qq;                // quaternion
 VectorInt16 aa;         // [x, y, z]            accel sensor measurements
@@ -274,6 +273,15 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     
     static float deltat = 0;  //loop time in seconds
     static unsigned long now = 0, last = 0; //microsRp() timers
+    static int32_t sumAx;
+    static int32_t sumAy;
+    static int32_t sumAz;
+    static int32_t countSumAcc;
+
+    static uint32_t now_ms = 0;
+    static uint32_t lastRollPitchMs = 0; //millisRp() timers
+    static uint32_t lastAccXYZMs = 0;
+
     //static float sumAz;
     static float azWorldAverage;
     //static float azAverage; 
@@ -302,6 +310,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     ax = ((int16_t) (buffer[0] << 8 | buffer[1])) - config.accOffsetX ;
     ay = ((int16_t) (buffer[2] << 8 | buffer[3])) - config.accOffsetY ;
     az = ((int16_t) (buffer[4] << 8 | buffer[5])) - config.accOffsetZ ;
+    sumAx += ax;  // prepare calculation of averages
+    sumAy += ay;
+    sumAz += az;
+    countSumAcc++;
+
     //printf("az=%.0f\n", (float) az ); 
     gx = ((int16_t) (buffer[8] << 8 | buffer[9])) - config.gyroOffsetX ;
     gy = ((int16_t) (buffer[10] << 8 | buffer[11])) - config.gyroOffsetY ;
@@ -344,9 +357,9 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         vario1.compensatedVpseed =  (int32_t) prevVTrack ; // we save it here first, so we can reuse this field for compensated Vspeed when it is disabled  
         sent2Core0( VSPEED , (int32_t) vario1.compensatedVpseed) ;     
     }
-    now_ms = millisRp(); //time to print?
-    if (now_ms - last_ms >= 500) {
-        last_ms = now_ms;
+    now_ms = millisRp(); //time to send roll and pitch
+    if (now_ms - lastRollPitchMs >= 500) {
+        lastRollPitchMs = now_ms;
         sent2Core0( PITCH , (int32_t) (pitch * 100) ) ; 
         sent2Core0( ROLL , (int32_t) (roll * 100) ) ; 
         // print angles for serial plotter...
@@ -354,6 +367,18 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         //printf("pitch, roll, acc: %6.0f %6.0f %6.0f %6.0f\n", pitch, roll, vTrack, vario1.climbRateFloat);//  Serial.print("ypr ");
         #endif
     }
+    if (now_ms - lastAccXYZMs >= 200) {
+        lastAccXYZMs = now_ms;
+        // * 1000 because sport is in mg; mpu is 16 bits = + or - 32768; when ACC max is +/-2g, it gives 16384 steps / g 
+        sent2Core0( ACC_X , (int32_t) (sumAx / countSumAcc * 1000 / 16384) ) ;  
+        sent2Core0( ACC_Y , (int32_t) (sumAy / countSumAcc * 1000 / 16384) ) ;  
+        sent2Core0( ACC_Z , (int32_t) (sumAz / countSumAcc * 1000 / 16384) ) ;
+        sumAx  = 0;
+        sumAy  = 0;
+        sumAz  = 0;
+        countSumAcc = 0; 
+    }
+
     return false; 
 }
 

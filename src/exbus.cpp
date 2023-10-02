@@ -53,7 +53,7 @@
 //    We set up a dma to transfer the data to the TX fifo of the Tx state machine
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
-extern field fields[];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by oXs
 extern MS5611 baro1;
 extern SPL06 baro2;
 extern BMP280 baro3;
@@ -171,6 +171,10 @@ JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order 
 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
     { 25    , "Gps cum. dist." , "km"        , EXBUS_TYPE_14,      1 , 3},  //  GPS cumulative distance,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_X,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Y,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Z,
+    
     { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 
