@@ -37,6 +37,10 @@ THE SOFTWARE.
 #include "MPU6050.h"
 //#include "MPU650_6axis.h"
 
+extern uint8_t accScaleCode ;
+extern float accScale1G ;  
+
+
 
 #ifndef BUFFER_LENGTH
 // band-aid fix for platforms without Wire-defined BUFFER_LENGTH (removed from some official implementations)
@@ -68,9 +72,10 @@ MPU6050::MPU6050(uint8_t address):devAddr(address) {
 void MPU6050::initialize() {
     setClockSource(MPU6050_CLOCK_PLL_XGYRO);
     setFullScaleGyroRange(MPU6050_GYRO_FS_250);
-    setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
+    setFullScaleAccelRange(accScaleCode);
     setSleepEnabled(false); // thanks to Jack Elston for pointing this one out!
 }
+
 
 /** Verify the I2C connection.
  * Make sure the device is connected and responds as expected.

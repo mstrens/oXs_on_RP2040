@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.11" 
+#define VERSION "2.8.12" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -193,6 +193,9 @@
 //#define SDPXX_ADDRESS 0X21 // 0x21 is the default I2C adress of a SDP3X sensor
 #define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
 //#define USE_ADP810_INSTEAD_OF_SDPxx  // uncoment this line if you use a ADP810 instead of a SDPxx
+
+// --------- Parameter for MPU6050 ---------------------------------------
+#define ACC_MAX_SCALE_G 2 // maximum acceleration in G (can only be 2,4,8, 16)
 
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor

@@ -37,9 +37,12 @@ MPU::MPU(int a)
 
 #define PI 3.1416
 #define RAD_TO_DEGREE 57.296 //180 / 3.1416
+
 //float A_cal[6] = {335.0, 79.0, 1132.0, 1.0, 1.000, 1.0}; // 0..2 offset xyz, 3..5 scale xyz
 //float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
 float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> rad/s
+uint8_t accScaleCode ;
+float accScale1G ;  
 
 // ^^^^^^^^^^^^^^^^^^^ VERY VERY IMPORTANT ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -65,6 +68,25 @@ void MPU::begin()  // initialise MPU6050
     if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
     #ifdef DEBUG  
     printf("Trying to detect MPU6050 sensor at I2C Addr=%X\n", MPU6050_DEFAULT_ADDRESS);
+    #endif
+
+    #ifndef ACC_MAX_SCALE_G
+    #error "ACC_MAX_SCALE_G must be defined in config.h"
+    #endif
+    #if (ACC_MAX_SCALE_G == 2)
+    accScaleCode = MPU6050_ACCEL_FS_2;
+    accScale1G = 16384.0;
+    #elif (ACC_MAX_SCALE_G == 4)
+    accScaleCode = MPU6050_ACCEL_FS_4;
+    accScale1G = 16384.0/2.0;
+    #elif (ACC_MAX_SCALE_G == 8)
+    accScaleCode = MPU6050_ACCEL_FS_8;
+    accScale1G = 16384.0/4.0;
+    #elif (ACC_MAX_SCALE_G == 16)
+    accScaleCode = MPU6050_ACCEL_FS_16;
+    accScale1G = 16384.0/8.0;
+    #else
+    #error "ACC_MAX_SCALE_G must be equal to 2,4,8 or 16"
     #endif
 
     // Two byte reset. First byte register, second byte data
@@ -328,12 +350,12 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     // in imu_gravityCompensatedAccel()
     // and gives the same result as previous formula
     float accVert = 2.0*(qh[1]*qh[3] - qh[0]*qh[2])*( (float) ax) + 2.0f*(qh[0]*qh[1] + qh[2]*qh[3])*((float)ay)
-     + (qh[0]*qh[0] - qh[1]*qh[1] - qh[2]*qh[2] + qh[3]*qh[3])*((float)az) - 16384.0f; // 16384 = 1g to be substracted
+     + (qh[0]*qh[0] - qh[1]*qh[1] - qh[2]*qh[2] + qh[3]*qh[3])*((float)az) - accScale1G; // scale =16384 for 1g when max is 2g (to be substracted)
     sumAccZ += accVert;
     //printf("aaw=%.0f acc=%.0f  az=%.0f\n", (float) aaWorld.z , accVert, (float) az);
     //acc *= 0.9807f; // in cm/s/s, assuming ax, ay, az are in milli-Gs
     countAccZ++;
-        //printf("az azworld %d %d %d\n", az +16384, aaWorld.z, (int32_t) deltat *1000000 ); 
+        //printf("az azworld %d %d %d\n", az +accScale1G, aaWorld.z, (int32_t) deltat *1000000 ); 
     // here above is executed nearly once per millisec 
     roll  = RAD_TO_DEGREE * atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
     pitch = RAD_TO_DEGREE * asin(2.0 * (qh[0] * qh[2] - qh[1] * qh[3]));
@@ -345,7 +367,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         kfUs = microsRp(); 
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
         lastKfUs = kfUs;  
-        kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /16384.0 * 981.0 , (float*) &zTrack , (float*)&vTrack);
+        kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /accScale1G * 981.0 , (float*) &zTrack , (float*)&vTrack);
         //printf("Vv4 Vk4  %d %d 50 -50\n", (int32_t) vario1.climbRateFloat ,  (int32_t) (float) vTrack);
         //printf("Va4 Va4  %d %d 50 -50\n", (int32_t) vario1.relativeAlt ,  (int32_t) (float) zTrack);
         sumAccZ= 0;
@@ -370,9 +392,9 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     if (now_ms - lastAccXYZMs >= 200) {
         lastAccXYZMs = now_ms;
         // * 1000 because sport is in mg; mpu is 16 bits = + or - 32768; when ACC max is +/-2g, it gives 16384 steps / g 
-        sent2Core0( ACC_X , (int32_t) (sumAx / countSumAcc * 1000 / 16384) ) ;  
-        sent2Core0( ACC_Y , (int32_t) (sumAy / countSumAcc * 1000 / 16384) ) ;  
-        sent2Core0( ACC_Z , (int32_t) (sumAz / countSumAcc * 1000 / 16384) ) ;
+        sent2Core0( ACC_X , (int32_t) (sumAx / countSumAcc * 1000 / (int) accScale1G) ) ;  
+        sent2Core0( ACC_Y , (int32_t) (sumAy / countSumAcc * 1000 / (int) accScale1G) ) ;  
+        sent2Core0( ACC_Z , (int32_t) (sumAz / countSumAcc * 1000 / (int) accScale1G) ) ;
         sumAx  = 0;
         sumAy  = 0;
         sumAz  = 0;
@@ -435,7 +457,7 @@ bool MPU::calibrateAccelGyro(void){
 	config.accOffsetX = (int16_t)(axAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.accOffsetY = (int16_t)(ayAccum / ACCEL_NUM_AVG_SAMPLES);
 	az1g = (int16_t)(azAccum / ACCEL_NUM_AVG_SAMPLES);
-    config.accOffsetZ = az1g > 0 ? az1g - 16384 : az1g + 16384 ; // 16384 = 1G
+    config.accOffsetZ = az1g > 0 ? az1g - (int16_t) accScale1G : az1g + (int16_t) accScale1G ; // 16384 = 1G when max is 2g
     config.gyroOffsetX = (int16_t)(gxAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.gyroOffsetY = (int16_t)(gyAccum / ACCEL_NUM_AVG_SAMPLES);
 	config.gyroOffsetZ = (int16_t)(gzAccum / ACCEL_NUM_AVG_SAMPLES);
