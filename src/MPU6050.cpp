@@ -1826,7 +1826,7 @@ void MPU6050::getMotion6(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int
  * per LSB in ACCEL_xOUT is shown in the table below:
  *
  * <pre>
- * AFS_SEL | Full Scale Range | LSB Sensitivity
+ * AFS_SEL | Full Scale Range | LSB Sensitivity  // additional note from MStrens: I think that the values LSB/mg are wrong and must be * 2
  * --------+------------------+----------------
  * 0       | +/- 2g           | 8192 LSB/mg
  * 1       | +/- 4g           | 4096 LSB/mg

@@ -1400,13 +1400,13 @@ void printFieldValues(){
                     printf("Baro Rel altitude = %d cm\n", (int) fields[i].value) ;
                     break;        
                 case PITCH:
-                    printf("Pitch = %d degree\n", (int) fields[i].value) ;
+                    printf("Pitch = %f degree\n", (float) fields[i].value * 0.01) ;
                     break;        
                 case ROLL:
-                    printf("Roll = %d degree\n", (int) fields[i].value) ;
+                    printf("Roll = %f degree\n", (float) fields[i].value * 0.01) ;
                     break;        
                 case YAW:
-                    printf("Yaw = %d degree\n", (int) fields[i].value) ;
+                    printf("Yaw = %f degree\n", (float) fields[i].value * 0.01);
                     break;        
                 case RPM:
                     printf("RPM = %d Hertz\n", (int) fields[i].value) ;
@@ -1451,13 +1451,13 @@ void printFieldValues(){
                     printf("Gps cumulative distance = %d\n", (int) fields[i].value) ;
                     break;
                 case ACC_X :
-                    printf("Acc X = %d\n", (int) fields[i].value) ;
+                    printf("Acc X = %fg\n", (float) fields[i].value * 0.001) ;
                     break;
                 case ACC_Y :
-                    printf("Acc Y = %d\n", (int) fields[i].value) ;
+                    printf("Acc Y = %fg\n", (float) fields[i].value * 0.001) ;
                     break;
                 case ACC_Z :
-                    printf("Acc Z = %d\n", (int) fields[i].value) ;
+                    printf("Acc Z = %fg\n", (float) fields[i].value * 0.001) ;
                     break;
                             
             } // end switch
