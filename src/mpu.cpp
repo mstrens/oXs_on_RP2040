@@ -99,13 +99,12 @@ void MPU::begin()  // initialise MPU6050
     sleep_us(100);
     mpu6050.initialize();
     // set offsets with values saved in config
-    // not used whith new calib
-    //mpu6050.setXAccelOffset(config.accOffsetX);
-    //mpu6050.setYAccelOffset(config.accOffsetY);
-    //mpu6050.setZAccelOffset(config.accOffsetZ);
-    //mpu6050.setXGyroOffset(config.gyroOffsetX);
-    //mpu6050.setYGyroOffset(config.gyroOffsetY);
-    //mpu6050.setZGyroOffset(config.gyroOffsetZ);
+    mpu6050.setXAccelOffset(config.accOffsetX);
+    mpu6050.setYAccelOffset(config.accOffsetY);
+    mpu6050.setZAccelOffset(config.accOffsetZ);
+    mpu6050.setXGyroOffset(config.gyroOffsetX);
+    mpu6050.setYGyroOffset(config.gyroOffsetY);
+    mpu6050.setZGyroOffset(config.gyroOffsetZ);
     
     mpu6050.setDLPFMode(MPU6050_DLPF_BW_188);
     //mpu6050.setDLPFMode(MPU6050_DLPF_BW_10);
