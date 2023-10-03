@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include "stdio.h"
 #include "ws2812.h"
-#include "pwm.pio.h"
+//#include "pwm.pio.h"
 #include "mpu.h"
 #include "sequencer.h"
 

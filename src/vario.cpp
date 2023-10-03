@@ -139,14 +139,14 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
     uint16_t dteChannelValue = 0X400;  // default value = send compensation
     if (( config.VspeedCompChannel != 255) && lastRcChannels) { // when a channel is used and has been received
         dteChannelValue =  findVspeedCompensation();
-        
+        printf("CompRcVal %X\n", dteChannelValue);
         #define DTE_MIN_CHANNEL_COMP_VALUE 0X0500
         #define DTE_MAX_CHANNEL_COMP_VALUE 0X0700
         #define DTE_NO_CHANNEL_COMP_VALUE  0X0300
         if ( dteChannelValue > DTE_MIN_CHANNEL_COMP_VALUE) {
             if (dteChannelValue > DTE_MAX_CHANNEL_COMP_VALUE) dteChannelValue = DTE_MAX_CHANNEL_COMP_VALUE;
             dteCompensationFactor = 0.9 + ((float) (dteChannelValue - DTE_MIN_CHANNEL_COMP_VALUE)
-                 * 8 / ((float) (DTE_MAX_CHANNEL_COMP_VALUE - DTE_MIN_CHANNEL_COMP_VALUE)) );
+                 * 8.0 / ((float) (DTE_MAX_CHANNEL_COMP_VALUE - DTE_MIN_CHANNEL_COMP_VALUE)) );
         } else if ( dteChannelValue >= DTE_NO_CHANNEL_COMP_VALUE) {
             dteCompensationFactor = DTE_DEFAULT_COMPENSATION_FACTOR;
         } // when dteChannelValue < DTE_NO_CHANNEL_COMP_VALUE, we calculate with the previous dteCompensationFactor
