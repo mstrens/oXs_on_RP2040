@@ -49,6 +49,7 @@ struct CONFIG{
     uint32_t loggerBaudrate ;
     uint8_t pinEsc;
     uint8_t escType;
+    uint16_t pwmHz ; 
 };
 
 void handleUSBCmd(void);

@@ -31,6 +31,7 @@ extern uint32_t lastRcChannels;
 
 
 extern SEQUENCER seq;
+extern uint16_t pwmTop;
 
 uint32_t currentSeqMillis ;
 uint16_t currentChannelValue; 
@@ -138,10 +139,10 @@ void updateSeqOutput(uint8_t sequencer, uint16_t stepIdx, int8_t outputVal){
         pwmValue =  ((((int)outputVal - (int)-100) * 10) + 2000 + 1) / 2;
         if (pwmValue < 900) pwmValue = 900;
         if (pwmValue > 2200) pwmValue = 2200;   
-    } else { // for analog we have to map 0 /100 to 0/20000  
-        pwmValue = (int)outputVal * 200 ;
+    } else { // for analog we have to map 0...100 to 0...(pwmTop)  
+        pwmValue = (int)outputVal * (int) pwmTop / 100 ;
         if (pwmValue < 0) pwmValue = 0;
-        if (pwmValue > 20000) pwmValue = 20000;
+        if (pwmValue > pwmTop) pwmValue = (int) pwmTop;
     }
     //printf("seq out val=%i pwm=%i\n", outputVal, pwmValue);
     applyPwmValue(seq.defs[sequencer].pin , (uint16_t) pwmValue); 

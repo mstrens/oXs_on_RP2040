@@ -177,8 +177,11 @@ void fillSbusFrame(){
 }
 
     
-#define TOP (20000 - 1)
+
+//#define TOP (20000 - 1)
 #define DIVIDER 133
+uint16_t pwmTop = 20000;  // max value for 50 hz (when divider = 133 => 1Mz)
+
 
 bool pwmIsUsed;
 float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
@@ -192,6 +195,8 @@ extern SEQUENCER seq ;
 
 void setupPwm(){
     pwmIsUsed = false;
+    pwmTop = (1000000 / config.pwmHz) ; // maximum value of the PWM counter ; define the interval between 2 pulses// used also in sequencer
+
     for (uint8_t i=0 ; i<16 ; i++){
         if ( config.pinChannels[i] != 255) pwmIsUsed = true;
     }
@@ -205,8 +210,8 @@ void setupPwm(){
         // counter is allowed to wrap over its maximum range (0 to 2**16-1)
         pwm_config configPwm = pwm_get_default_config();
         // Set divider, reduces counter clock to sysclock/this value
-        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
-        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
+        pwm_config_set_wrap (&configPwm , pwmTop-1) ; // set top value for wrapping
+        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);     // with 133, it means 1usec
         // Load the configuration into our PWM slice, and set it running.
         pwm_init(slice_num, &configPwm, true);
         pwm_set_gpio_level ( (uint) config.pinChannels[i] , 0) ; // start PWM with 0% duty cycle
@@ -219,7 +224,7 @@ void setupPwm(){
         // counter is allowed to wrap over its maximum range (0 to 2**16-1)
         pwm_config configPwm = pwm_get_default_config();
         // Set divider, reduces counter clock to sysclock/this value
-        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
+        pwm_config_set_wrap (&configPwm , pwmTop-1) ; // set top value for wrapping  // TOP value defines the interval between 2 pulses.
         pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
         // Load the configuration into our PWM slice, and set it running.
         pwm_init(slice_num, &configPwm, true);

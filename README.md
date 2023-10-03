@@ -20,7 +20,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
-### It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum).
+### It can also provide up to 16 PWM RC channels to drive servos from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum). The refresh rate can be set between 50Hz(default) and 333Hz.
  
 ### It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
  When connected to 2 receivers, the output signals (e.g. PWM or Sbus) will be issued from the last received Rc channels.
@@ -62,7 +62,7 @@ This board can be connected to:
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
       note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
    * a RPM sensor
-   * a ESC from Hobbywing (using V4 telemetry protocol) or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
+   * an ESC from Hobbywing (using V4 telemetry protocol) or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -259,8 +259,8 @@ Different sequencers can also control several gpio's outputs from the same chann
 * Each "sequencer" is defined by 7 parameters:
     * The GPIO on which PWM signal is generated ( must be in range 0/15); the same GPIO may not be used for another purpose or by another sequencer
     * The type of PWM signal
-        * 0 = SERVO =  PWM signal to control a servo (every 20 msec a pulse in range 1ms/2ms is generated)
-        * 1 = ANALOG = PWM signal to control a LED or analog voltage ( every 20 msec, a pulse in range 0/20ms is generated)
+        * 0 = SERVO =  PWM signal to control a servo (every xx msec a pulse in range 1ms/2ms is generated)
+        * 1 = ANALOG = PWM signal to control a LED or analog voltage ( every xx msec, a pulse in range 0/xx ms is generated)
     * The duration of one "clock" in msec (must be greater than 20); this defines the base unit of the "smooth" and the "keep" delays used in steps definition (see below) 
     * The Rc channel that control this sequencer (must be in range 1/16); the same Rc channel may be used in several sequencers 
     * The default PWM value (to apply when no Rc channel has yet been received) (must be in range -100/100 for SERVO, 0/100 for ANALOG outputs)
@@ -329,7 +329,6 @@ This format allows to compress the data transmitted via the (quite slow) UART to
 \
 \
 The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
-
 
 
 ## ------------------ Led -------------------

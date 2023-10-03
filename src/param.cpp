@@ -162,6 +162,7 @@ void processCmd(){
         printf(" S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("-To change the CRSF baudrate, enter e.g. CRSFBAUD=420000\n");
         printf("-To change the logger baudrate, enter e.g. LOGBAUD=115200\n");
+        printf("-To change the refresh rate of servos (PWM) and sequencer, enter e.g. PWMHZ=50 (value in range 50...333)\n");
         printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
         printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
         printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
@@ -752,6 +753,20 @@ void processCmd(){
         }
     }
 
+    // change PWM HZ
+    if ( strcmp("PWMHZ", pkey) == 0 ) { // if the key is PWMHZ
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : PWMHZ must be an unsigned integer\n");
+        } else if ((ui < 50 ) || (ui > 333)){
+            printf("Error : PWMHZ must be in range 50...333 (included)\n");
+        } else {
+            config.pwmHz = ui;
+            printf("PwmHz = %" PRIu32 "\n" , config.pwmHz);
+            updateConfig = true;
+        }
+    }
+
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -959,7 +974,10 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4 or KON\n");
         configIsValid=false;
     }    
-    
+    if ( (config.pwmHz < 50) || (config.pwmHz > 333)){
+        printf("Error in parameters: pwmHz must be in range 50...333 (included)\n");
+        configIsValid=false;
+    }    
 
 
 
@@ -1036,7 +1054,9 @@ void printConfigAndSequencers(){
         }
     printf("CRSF baudrate   = %" PRIu32 "\n", config.crsfBaudrate)  ;
     printf("Logger baudrate = %" PRIu32 "\n", config.loggerBaudrate)  ;
-    printf("Voltage parameters:\n")  ;
+    printf("PWM is generated at = % Hz" PRIu32 "\n", config.pwmHz)  ;
+    
+    printf("\nVoltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
     if ( config.pinVolt[2] !=255 && config.temperature == 1) {
@@ -1231,6 +1251,7 @@ void removeTrailingWhiteSpace( char * str)
 void setupConfig(){   // The config is uploaded at power on
     if (*flash_target_contents == CONFIG_VERSION ) {
         memcpy( &config , flash_target_contents, sizeof(config));
+        if (config.pwmHz == 0XFFFF) config.pwmHz = _pwmHz; // set default value when it has not been defined manually
     } else {
         config.version = CONFIG_VERSION;
         config.pinChannels[0] = _pinChannels_1;
@@ -1309,6 +1330,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.loggerBaudrate =_loggerBaudrate;
         config.pinEsc = _pinEsc ;
         config.escType = _escType; 
+        config.pwmHz = _pwmHz;
     }   
 } 
 

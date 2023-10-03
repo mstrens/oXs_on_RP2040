@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.15" 
+#define VERSION "2.8.16" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -285,6 +285,7 @@
 #define _loggerBaudrate 115200
 #define _pinEsc 0xFF
 #define _escType 0xFF
+#define _pwmHz 50  // 50 hz per default
 // --------- Reserve for developer. ---------
 
 typedef struct {
