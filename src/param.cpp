@@ -702,7 +702,7 @@ void processCmd(){
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : pin must be an unsigned integer\n");
-        } else if ( !(ui <=29 or ui ==255)) {
+        } else if ( !(ui <=29 or ui==255)) {
             printf("Error : pin must be in range 0/29 or 255\n");
         } else {    
             config.pinLogger = ui;
@@ -1846,10 +1846,19 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
             return false; 
         }
         pvalue = skipWhiteSpace(pvalue);
-        if (tempIntTable[0]!=-100 && tempIntTable[0]!=-75 && tempIntTable[0]!=-50 && tempIntTable[0]!=-25\
-            && tempIntTable[0]!=100 && tempIntTable[0]!=75 && tempIntTable[0]!=50 && tempIntTable[0]!=25 && tempIntTable[0]!=0){
-            printf("Error : for step number %i, channel range must be -100/-75/-50/-25/0/25/50/75/100\n", stepIdx+1);
-            return false;
+        //if (tempIntTable[0]!=-100 && tempIntTable[0]!=-75 && tempIntTable[0]!=-50 && tempIntTable[0]!=-25\
+        //    && tempIntTable[0]!=100 && tempIntTable[0]!=75 && tempIntTable[0]!=50 && tempIntTable[0]!=25 && tempIntTable[0]!=0){
+        //    printf("Error : for step number %i, channel range must be -100/-75/-50/-25/0/25/50/75/100\n", stepIdx+1);
+        //    return false;
+        //}
+        if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
+            printf("Error : for step number %i, channel range value must in range -100...100 (included)\n" , stepIdx+1);
+            return false;    
+        }
+        
+        if (( tempIntTable[0] % 10) != 0){
+            printf("Error : for step number %i, channel range value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
+            return false;    
         }
         if (tempIntTable[1] < 0 || tempIntTable[1] > 255){
             printf("Error : for step number %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);

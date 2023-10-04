@@ -90,10 +90,17 @@ struct SEQ_DEF {
     int8_t maxValue ;
 } ;
 
+//enum CH_RANGE : int8_t {
+//    m100 = -100, m75 = -75, m50 = -50, m25 = -25, m0 = 0,
+//    p0 = 0, p25 = 25 , p50 = 50, p75 = 75, p100 = 100 , dummy = 127
+//};
+
 enum CH_RANGE : int8_t {
-    m100 = -100, m75 = -75, m50 = -50, m25 = -25, m0 = 0,
-    p0 = 0, p25 = 25 , p50 = 50, p75 = 75, p100 = 100 , dummy = 127
+    m100=-100, m90=-90, m80=-80, m70=-70, m60=-60, m50 = -50, m40=-40, m30=-30, m20=-20, m10=-10, m0 = 0,
+    p0=0, p10=10 , p20=20 , p30=30 , p40=40 , p50=50, p60=60 , p70=70 , p80=80 , p90=90 , p100=100 , dummy = 127
 };
+
+
 struct SEQ_STEP {
     CH_RANGE chRange {}; // channel value (converted in range) to activate this seq
     uint8_t smooth {};

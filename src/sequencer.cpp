@@ -95,7 +95,7 @@ void sequencerLoop(){
 
 #define SBUS_AT_M100 191
 #define SBUS_AT_P100 1792
-#define SEQ_NUMBER_OF_INTERVALS 8
+#define SEQ_NUMBER_OF_INTERVALS 20
 #define SEQ_SBUS_INTERVAL ( (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS )
 
 void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specified step into the specified sequencer
