@@ -1676,7 +1676,7 @@ void printSequencers(){
         printf("\n");    
     }   
     if (( seq.defsMax > 0 ) && ( seq.stepsMax > 0)){
-        printf("\n      { Range(-100/-75/-50/-25/0/25/50/75/100) Smooth(clocks) Pwm(-100/100) Keep(clocks) } ...{}\n");
+        printf("\n      { Range(-100/-90/-80...0/10/20...90/100) Smooth(clocks) Pwm(-100/100) Keep(clocks) } ...{}\n");
         printf("STEP= - ");
         for (uint8_t i = 0 ;i< seq.stepsMax ; i++){
             printf(" {%i %i %i %i} ", (int) seq.steps[i].chRange , seq.steps[i].smooth , seq.steps[i].value , seq.steps[i].keep);

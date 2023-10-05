@@ -7,6 +7,14 @@
 #include "param.h"
 
 #define NO_SEQ 0xFFFF  
+
+#define SBUS_AT_M100 172
+#define SBUS_AT_P100 1811
+#define SEQ_NUMBER_OF_INTERVALS 20
+//#define SEQ_SBUS_INTERVAL ( (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS )
+
+float seqSbusInterval = (float) (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS ; // interval in Sbus value between 2 intervals
+
 //#ifdef SEQ_DEFINITIONS
 //    SEQ_DEF seqDefs[] = { SEQ_DEFINITIONS }; 
 //    SEQ_STEP seqSteps[] = { SEQ_STEPS };
@@ -36,13 +44,14 @@ extern uint16_t pwmTop;
 uint32_t currentSeqMillis ;
 uint16_t currentChannelValue; 
 
-//#define DEBUG_SIMULATE_SEQ_RC_CHANNEL
-#define DEBUG_SIMULATE_SEQ_RC_CHANNEL_m100 191
-#define DEBUG_SIMULATE_SEQ_RC_CHANNEL_STEP 200
+//#define DEBUG_SIMULATE_SEQ_RC_CHANNEL    // use the command N to let oXs apply the next value for the RC channel
+
+
+#define DEBUG_SIMULATE_SEQ_RC_CHANNEL_m100 FROM_SBUS_MIN  //172 // this is the value of sbus for -100
+#define DEBUG_SIMULATE_SEQ_RC_CHANNEL_STEP 81.95 // = (1811-172)/20 = 81.95
 #define DEBUG_SIMULATE_SEQ_INTERVAL 1000 // increase every 10 sec
 
-uint16_t simuSeqChannelValue = DEBUG_SIMULATE_SEQ_RC_CHANNEL_m100;
-
+float simuSeqChannelValue = SBUS_AT_M100; //  172
     
 void nextSimuSeqChVal(){
         simuSeqChannelValue = simuSeqChannelValue + DEBUG_SIMULATE_SEQ_RC_CHANNEL_STEP;
@@ -58,6 +67,7 @@ void sequencerLoop(){
     //          if next action is reached, apply next action (depend on state, ...)          
     //          else do nothing
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
+    if (lastRcChannels == 0) lastRcChannels = 1; // force a dummy value to let sequencerLoop to run
     //static uint32_t lastSimuSeqMs = 0;
     //static uint16_t simuSeqChannelValue = DEBUG_SIMULATE_SEQ_RC_CHANNEL_m100;
     //if ( (millisRp() - lastSimuSeqMs) > DEBUG_SIMULATE_SEQ_INTERVAL ){
@@ -79,11 +89,11 @@ void sequencerLoop(){
         #ifndef DEBUG_SIMULATE_SEQ_RC_CHANNEL
         currentChannelValue = rcSbusOutChannels[seq.defs[seqIdx].channel - 1];
         #else
-        currentChannelValue = simuSeqChannelValue; 
+        currentChannelValue = (uint16_t) simuSeqChannelValue; 
         #endif
         //if ( seq == 0 && currentChannelValue == 391) printf("ch is 391\n");
         if ( isSeqChannelChanged ( seqIdx)) {  // if channel value changed and is another range and steps are defined for it
-            //printf("chan changed\n");
+            printf("chan changed\n");
             startNewSeq(seqIdx, nextPossibleStepIdx); // activate new sequence
         } else { // channel did not changed 
             if (currentSeqMillis >= seqDatas[seqIdx].nextActionAtMs) {
@@ -93,15 +103,11 @@ void sequencerLoop(){
     }
 }
 
-#define SBUS_AT_M100 191
-#define SBUS_AT_P100 1792
-#define SEQ_NUMBER_OF_INTERVALS 20
-#define SEQ_SBUS_INTERVAL ( (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS )
 
 void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specified step into the specified sequencer
     // update 
     //seqDatas[sequencer].currentChValue = currentChannelValue ; 
-    //printf("Start new sequencer %i at step %i\n",sequencer, stepIdx);
+    printf("Start new sequencer %i at step %i\n",sequencer, stepIdx);
     seqDatas[sequencer].firstStepIdx = stepIdx; // store idx of the first step in this sequence
     startNewStep(sequencer, stepIdx); // start a new step
 }
@@ -109,7 +115,7 @@ void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specifi
 void startNewStep(uint8_t sequencer , uint16_t stepIdx){ // start a new step
     seqDatas[sequencer].currentStepIdx = stepIdx;
     
-    //printf("Start new step for sequencer %i at step %i\n",sequencer, stepIdx);
+    printf("Start new step for sequencer %i at step %i\n",sequencer, stepIdx);
     if (seq.steps[stepIdx].smooth == 0){ // When there is no smoothing delay, nextaction = currentSeqMillis + keep and stait = wait
         seqDatas[sequencer].state = WAITING;
         seqDatas[sequencer].nextActionAtMs = currentSeqMillis + (seq.defs[sequencer].clockMs * seq.steps[stepIdx].keep) ;
@@ -206,9 +212,9 @@ bool isSeqChannelChanged (uint8_t sequencer){ // when true is returned, it means
     if ( currentChannelValue == seqDatas[sequencer].currentChValue ) {
         //if ( sequencer == 0 && currentChannelValue == 391) printf("case1\n");
         return false;
-    } // when value is not exactly the same, find range (e.g. -100, -75, -50, -25, 0, 25, 50, 75, 100 )
+    } // when value is not exactly the same, find range (e.g. -100, -90, -70,... 100 )
     seqDatas[sequencer].currentChValue = currentChannelValue ;
-    int rangeInt = (( ( (int) currentChannelValue - SBUS_AT_M100 )  + (SEQ_SBUS_INTERVAL / 2)) / SEQ_SBUS_INTERVAL)  ;
+    int rangeInt =  (int) (( ( (float) currentChannelValue - SBUS_AT_M100 )  + (seqSbusInterval / 2)) / seqSbusInterval)  ; // so normally 988=>0,, 988+89.1, ... 1, 2..
     CH_RANGE range =  (CH_RANGE) (rangeInt  * (200 / SEQ_NUMBER_OF_INTERVALS) - 100) ;
     //printf("range=%i\n", (int) range);
     //if ( sequencer == 0 && currentChannelValue == 391) printf("r=%i sSR=%i\n", (int) range, (int) rangeInt, (int) range);

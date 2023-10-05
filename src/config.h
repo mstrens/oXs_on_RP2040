@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.20" 
+#define VERSION "2.8.21" 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -147,9 +147,9 @@
 
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
 #define FROM_SBUS_MIN 172  // This is equivalent to -100 on openTx
-#define TO_PWM_MIN 988
+#define TO_PWM_MIN 988     // this is the PWM usec for -100
 #define FROM_SBUS_MAX 1811  // This is equivalent to +100 on openTx
-#define TO_PWM_MAX 2012
+#define TO_PWM_MAX 2012     // this is the PWM usec for +100
 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100
