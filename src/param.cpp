@@ -862,14 +862,14 @@ void checkConfigAndSequencers(){     // set configIsValid
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
     addPinToCount(config.pinLogger);
     addPinToCount(config.pinEsc);
-    //for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
-    //    if (seq.defs[i].pin > 29 ) {
-    //        printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);
-    //        configIsValid = false;
-    //    } else {
-    //        pinCount[seq.defs[i].pin]++;   
-    //    }
-    //}
+    for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
+        if (seq.defs[i].pin > 29 ) {
+            printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);
+            configIsValid = false;
+        } else {
+            pinCount[seq.defs[i].pin]++;   
+        }
+    }
     for (uint8_t i = 0 ; i<30; i++) {
         if (pinCount[i] > 1) {
             printf("Error in parameters: pin %u is used %u times\n", i , pinCount[i]);
