@@ -95,6 +95,8 @@ extern float dteCompensationFactor;
 
 extern sbusFrame_s sbusFrame;
 
+extern uint16_t pwmTop; // just used for debugging
+
 void handleUSBCmd(void){
     int c;
     while (1) {
@@ -1054,7 +1056,7 @@ void printConfigAndSequencers(){
         }
     printf("CRSF baudrate   = %" PRIu32 "\n", config.crsfBaudrate)  ;
     printf("Logger baudrate = %" PRIu32 "\n", config.loggerBaudrate)  ;
-    printf("PWM is generated at = % Hz" PRIu32 "\n", config.pwmHz)  ;
+    printf("PWM is generated at = %i Hz\n", (int) config.pwmHz)  ;
     
     printf("\nVoltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
@@ -1488,6 +1490,7 @@ void printFieldValues(){
     if (config.VspeedCompChannel != 255){
         printf("Vspeed compensation = %.2f\n", dteCompensationFactor);
     }
+    printf("pwmTop= %i",pwmTop);
 }
 
 void printPwmValues(){

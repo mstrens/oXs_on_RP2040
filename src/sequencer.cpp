@@ -72,7 +72,7 @@ void sequencerLoop(){
     currentSeqMillis =  millisRp(); 
     for (uint8_t seqIdx = 0; seqIdx < seq.defsMax ; seqIdx++){ //same process for each sequencer
         if (seqDatas[seqIdx].nextActionAtMs == 0){ // this is when we are just starting; so we have to apply default value            
-            // to do : apply seqDatas[seq].lastOutputVal); // take care to output the servo or analog value
+           updateSeqOutput(seqIdx, seqDatas[seqIdx].firstStepIdx , seqDatas[seqIdx].lastOutputVal);
            seqDatas[seqIdx].nextActionAtMs = 0XFFFFFFFF ; // wait for a channel change 
         }
         
@@ -135,8 +135,8 @@ void updateSeqOutput(uint8_t sequencer, uint16_t stepIdx, int8_t outputVal){
     //    printf("time=%u  seq=%i  range=%i  step=%i  val=%i state=%i\n",currentSeqMillis , sequencer , (int) seqDatas[sequencer].currentChValue,stepIdx , outputVal , (int) seqDatas[sequencer].state);
     //}
     int pwmValue;
-    if (seq.defs[sequencer].type == SERVO) { // PWM signal varies from -100 to +100 and is mapped from 191 to 1792 usec
-        pwmValue =  ((((int)outputVal - (int)-100) * 10) + 2000 + 1) / 2;
+    if (seq.defs[sequencer].type == SERVO) { // PWM signal varies from -100 to +100 and is mapped from 191 to 1792 in sbus and to 988 to 2012 usec
+        pwmValue =  (int)((((float)outputVal + 100.0) * 10.24) + 1977) / 2; // 1977 = 988*2+1
         if (pwmValue < 900) pwmValue = 900;
         if (pwmValue > 2200) pwmValue = 2200;   
     } else { // for analog we have to map 0...100 to 0...(pwmTop)  
