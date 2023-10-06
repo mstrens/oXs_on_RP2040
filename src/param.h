@@ -73,7 +73,7 @@ void printPwmValues();
 
 
 // for sequencer
-#define SEQUENCER_VERSION 1
+#define SEQUENCER_VERSION 2
 enum SEQ_OUTPUT_TYPE : uint8_t {
     SERVO = 0,
     ANALOG = 1
@@ -106,6 +106,7 @@ struct SEQ_STEP {
     uint8_t smooth {};
     int8_t value {} ;
     uint8_t keep {} ;
+    bool nextSequencerBegin {} ;
 };
 
 

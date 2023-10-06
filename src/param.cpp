@@ -67,6 +67,7 @@ uint8_t pinCount[30] = {0};
 
 // for sequencer
 int tempIntTable[10]; // temporary table to store n integers converted from the serial buffer (starting from pvalue)
+bool nextSequencerBegin;    // true when a step is the first of the next sequencer
 SEQUENCER seq;
 extern  SEQ_DATA seqDatas[16];
 
@@ -196,13 +197,15 @@ void processCmd(){
         
         printf("-To erase all sequencers, enter SEQ=DEL\n");
         
-        printf("-To define the steps for the sequencers, enter STEP= followed by several groups {s1 s2 s3 s4 } where\n");
-        printf("        s1 = range from RC channel that activates that step (must be -100/-75/-50/-25/0/25/50/75/100)\n");
+        printf("-To define the sequences and the steps for the sequencers, enter STEP= followed by several groups {s1 s2 s3 s4 } where\n");
+        printf("        s1 = RC channel value that activates that step (must be a multiple of 10 and in range -100...100; e.g. -100, -90,...0,10,...100)\n");
         printf("        s2 = number of clocks before reaching the PWM value (= smooth transition)(in range 0/255)\n");
         printf("        s3 = PWM value for this step(same range as default PWM value)\n");
         printf("        s4 = number of clocks where PWM value is kept before applying next step or restarting the sequence (in range 0/255; 255=do not restart)\n");
-        printf("     e.g. STEP= {-100 0 10 4} {-100 10 50 20} {100 0 100 255} {-100 0 0 255} {0 10 50 255} {100 0 100 40}\n");
-        printf("     Note: steps must be sorted per sequencer and per range\n");
+        printf("     To mark the first step of a new sequencer, insert a '+' just before the '{' of this group\n");
+        printf("     e.g. STEP= {-100 0 10 4} {-100 10 50 20} {100 0 100 255} + {-100 0 0 255} {0 10 50 255} {100 0 100 40}\n");
+        printf("     Note: steps must be declared in the same order as the sequencers\n");
+        printf("           For each sequencer, rc channel value of step n+1 must be >= value of step n\n");
         
         printf("\n");
         printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
@@ -1579,27 +1582,29 @@ void checkSequencers(){
     uint8_t seqIdx = 0;  // index of current sequencer
     uint16_t stepIdx = 0;   // index of current step
     uint16_t prevStepIdx = 0;
-    uint8_t rangeNumber = 1; // used to check that each sequencer has at least 2 sequence range
+    uint8_t rangeNumber = 0; // used to check that each sequencer has at least 2 sequence range
     uint32_t currentSeqMillis = millisRp();
     CH_RANGE prevRange = seq.steps[stepIdx].chRange; 
-    seqDatas[seqIdx].stepStartAtIdx = stepIdx;
-    seqDatas[seqIdx].state = STOPPED;
-    seqDatas[seqIdx].currentChValue = 0; // use of channel change a dummy channel value in order to force a change when a channel value will be received from Rx
-    seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-    seqDatas[seqIdx].currentStepIdx = 0xFFFF; // use a dummy value at startup (to detect when range )
-    //seqDatas[seqIdx].lastActionAtMs = 0;
-    seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
-    seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we still have to apply the default to the pwmoutput
-    while (stepIdx < seq.stepsMax) {
-        if ( seq.steps[stepIdx].chRange > prevRange) rangeNumber++; // Count the number of range for this sequencer
-        if ( seq.steps[stepIdx].chRange < prevRange ) {  // a new sequencer starts *****************
+    //seqDatas[seqIdx].stepStartAtIdx = stepIdx;
+    //seqDatas[seqIdx].state = STOPPED;
+    //seqDatas[seqIdx].currentChValue = 0; // use of channel change a dummy channel value in order to force a change when a channel value will be received from Rx
+    //seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+    //seqDatas[seqIdx].currentStepIdx = 0xFFFF; // use a dummy value at startup (to detect when range )
+        //seqDatas[seqIdx].lastActionAtMs = 0;
+    //seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
+    //seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we still have to apply the default to the pwmoutput
+    while (stepIdx < seq.stepsMax) {                     // process all steps
+        //printf("Seq=%i   Step=%i  range=%i", (int) seqIdx+1, (int) stepIdx+1 , (int) rangeNumber );
+        if (( seq.steps[stepIdx].nextSequencerBegin ) && (stepIdx > 0)) {   // When the next (not the first one) sequencer begin , close the current
             if ( rangeNumber < 2) {
-                printf("Error in sequencer steps: only one range for sequencers %i\n", seqIdx+1);
+                printf("Error in sequencer steps: only one RC channel value for sequencers %i\n", seqIdx+1);
                 configIsValid = false;
                 return;
             }
-            seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;
-            seqIdx++;
+            seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;                 // store end of current sequencer
+            seqIdx++;                                                    // handle next sequencer
+        }
+        if ((seq.steps[stepIdx].nextSequencerBegin ) || (stepIdx == 0) ){    // for each begin of sequencer (including the first one)
             if (seqIdx >= seq.defsMax) {
                 printf("Error in sequencer steps: number of sequencers found in STEP exceeds number of sequencers defined in SEQ= (%i)\n",seq.defsMax );
                 configIsValid = false;
@@ -1610,11 +1615,42 @@ void checkSequencers(){
             seqDatas[seqIdx].state = STOPPED;
             seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
             seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-            seqDatas[seqIdx].currentStepIdx = 0xFFFF;
+            seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
             //seqDatas[seqIdx].lastActionAtMs = 0;
             seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
             seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
-            rangeNumber = 1; // restat a new counting
+            rangeNumber = 1; // restat a new counting of the number of different RC values
+            prevRange = seq.steps[stepIdx].chRange;    // set Prev equal to allow counting the number of different RC channel values (ranges) 
+        }
+        
+        if ( seq.steps[stepIdx].chRange > prevRange) rangeNumber++; // Count the number of Rc channel values (range) for this sequencer
+        
+        if ( ( seq.steps[stepIdx].chRange < prevRange )  && (seq.steps[stepIdx].nextSequencerBegin == false )){  // a new sequencer starts *****************
+            printf("Error in sequencer steps: in the same sequencer, Rc values of step n+1 (%i) must be >= to the value of step n\n", seqIdx+1);
+            configIsValid = false;
+            return;
+            //if ( rangeNumber < 2) {
+            //    printf("Error in sequencer steps: only one range for sequencers %i\n", seqIdx+1);
+            //    configIsValid = false;
+            //    return;
+            //}
+            //seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;
+            //seqIdx++;
+            //if (seqIdx >= seq.defsMax) {
+            //    printf("Error in sequencer steps: number of sequencers found in STEP exceeds number of sequencers defined in SEQ= (%i)\n",seq.defsMax );
+            //    configIsValid = false;
+            //    return;
+            //}
+            //// initilize seqDatas for new sequencer
+            //seqDatas[seqIdx].stepStartAtIdx = stepIdx;
+            //seqDatas[seqIdx].state = STOPPED;
+            //seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+            //seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+            //seqDatas[seqIdx].currentStepIdx = 0xFFFF;
+            ////seqDatas[seqIdx].lastActionAtMs = 0;
+            //seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
+            //seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
+            //rangeNumber = 1; // restat a new counting
         }
         if ( seq.defs[seqIdx].type == 1) { // when seq has type ANALOG, PWM value must be between 0/100  
             if (seq.steps[stepIdx].value < 0) {
@@ -1667,7 +1703,7 @@ void printSequencers(){
     isPrinting = true;
     printf("\nNumber of sequencers= %i   Number of steps= %i\n", seq.defsMax , seq.stepsMax);
     if( seq.defsMax > 0 ){
-        printf("     { Gpio  Type(0=servo,1=analog) Clock(msec) Channel Default Min Max}...{ }\n");
+        printf("     { Gpio  Type(0=servo,1=analog) Clock(msec) ChannelNr Default Min Max}...{ }\n");
         printf("SEQ=");
         for (uint8_t i = 0 ;i< seq.defsMax ; i++){
             printf(" {%i %i %i %i %i %i %i} ", seq.defs[i].pin , (int) seq.defs[i].type , seq.defs[i].clockMs ,\
@@ -1678,13 +1714,17 @@ void printSequencers(){
     }   
     if (( seq.defsMax > 0 ) && ( seq.stepsMax > 0)){
         printf("\n      { Range(-100/-90/-80...0/10/20...90/100) Smooth(clocks) Pwm(-100/100) Keep(clocks) } ...{}\n");
-        printf("STEP= - ");
+        printf("STEP=");
         for (uint8_t i = 0 ;i< seq.stepsMax ; i++){
+            if (( seq.steps[i].nextSequencerBegin) || (i==0)) { 
+                printf("\n      + . ");
+            } else if ( seq.steps[i].chRange != seq.steps[i-1].chRange) { 
+                printf("\n        . ");
+            } else {
+                printf("\n          ");
+            }
             printf(" {%i %i %i %i} ", (int) seq.steps[i].chRange , seq.steps[i].smooth , seq.steps[i].value , seq.steps[i].keep);
-            if ((i+1) < seq.stepsMax) {
-                if ( seq.steps[i].chRange < seq.steps[i+1].chRange) { printf("\n        ");}
-                if ( seq.steps[i].chRange > seq.steps[i+1].chRange) { printf("\n      - ");}
-            }     
+                 
         }
         printf("\n");        
     } else {
@@ -1719,15 +1759,24 @@ void saveSequencers() {
 
 
 bool getSetOfInt(uint8_t itemsMax){  // try to read a string  with n integer space separated set between { }
-    if (itemsMax > 10) printf("!!!!!!!!!!To many parameter to get in getSeqSet!!!!!\n");
-    char * ptr ; 
-    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
-    if (( * pvalue) == '-'){            // first char must be {
-        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)    
+    if (itemsMax > 10) {
+        printf("!!!!!!!!!!To many parameter to get in getSeqSet!!!!!\n");
+        return false;
     }
+    char * ptr ; 
+    nextSequencerBegin = false;
     pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) == '+'){            //  A "+" before "{" marks the first step of next sequencer
+        pvalue++;                       // skip + before { (used to separate sequencer when we print the definition of steps)
+        nextSequencerBegin = true;      // + indicates that the next sequencer begins now
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces 
+    }
+    if(( * pvalue) == '.') {     // "." is used when ve print to mark the first step of a new seuqence
+        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+    }
     if (( * pvalue) != '{'){            // first char must be {
-        printf("Error : group of %i values must begin with {\n",itemsMax);
+        printf("Error : group of %i values must begin with { and only + or . are allowed between groups)\n",itemsMax);
         return false ;
     }
     pvalue++;
@@ -1829,7 +1878,7 @@ bool getSequencers(){  // try to get sequencer definition from a string pointed 
     } // end while
     memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));
     seq.defsMax = seqIdx;
-    printf("Number of sequencers is stored in defsMax= %i\n",seq.defsMax);
+    printf("Number of sequencers stored in defsMax= %i\n",seq.defsMax);
 
     return true;
 }
@@ -1856,12 +1905,12 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
         //    return false;
         //}
         if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
-            printf("Error : for step number %i, channel range value must in range -100...100 (included)\n" , stepIdx+1);
+            printf("Error : for step number %i, channel value must in range -100...100 (included)\n" , stepIdx+1);
             return false;    
         }
         
         if (( tempIntTable[0] % 10) != 0){
-            printf("Error : for step number %i, channel range value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
+            printf("Error : for step number %i, channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
             return false;    
         }
         if (tempIntTable[1] < 0 || tempIntTable[1] > 255){
@@ -1880,6 +1929,7 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
         stepsTemp[stepIdx].smooth = tempIntTable[1];
         stepsTemp[stepIdx].value = tempIntTable[2];
         stepsTemp[stepIdx].keep = tempIntTable[3];
+        stepsTemp[stepIdx].nextSequencerBegin = nextSequencerBegin;
         stepIdx++;
     } // end while
     //isStepValid = true;
