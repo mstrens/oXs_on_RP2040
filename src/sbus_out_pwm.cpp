@@ -232,8 +232,11 @@ void setupPwm(){
             pwm_set_gpio_level ( (uint) seq.defs[i].pin , 0) ; // start PWM with 0% duty cycle when a servo is used
         }
         else {
-            //    to do map defValue to a good pwm value (based on pwmTop)
-            pwm_set_gpio_level ( (uint) seq.defs[i].pin , seq.defs[i].defValue) ; // start PWM with default value when analog is used
+            //   convert 0...100 value to 0...pwmTop
+            int pwmValue = (int)seq.defs[i].defValue * (int) pwmTop / 100 ;
+            if (pwmValue < 0) pwmValue = 0;
+            if (pwmValue > pwmTop) pwmValue = (int) pwmTop;
+            pwm_set_gpio_level ( (uint) seq.defs[i].pin , (uint16_t) pwmValue) ; // start PWM with default value when analog is used
         }    
     } // end of sequencer
 }

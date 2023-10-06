@@ -1202,7 +1202,8 @@ const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_CONFI
 
 void saveConfig() {
     //sleep_ms(1000); // let some printf to finish
-    uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
+    uint8_t buffer[FLASH_PAGE_SIZE] ;
+    memset(buffer, 0xff, FLASH_PAGE_SIZE);
     memcpy(&buffer[0], &config, sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing

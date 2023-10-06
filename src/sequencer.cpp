@@ -93,7 +93,7 @@ void sequencerLoop(){
         #endif
         //if ( seq == 0 && currentChannelValue == 391) printf("ch is 391\n");
         if ( isSeqChannelChanged ( seqIdx)) {  // if channel value changed and is another range and steps are defined for it
-            printf("chan changed\n");
+            //printf("chan changed\n");
             startNewSeq(seqIdx, nextPossibleStepIdx); // activate new sequence
         } else { // channel did not changed 
             if (currentSeqMillis >= seqDatas[seqIdx].nextActionAtMs) {
@@ -107,7 +107,7 @@ void sequencerLoop(){
 void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specified step into the specified sequencer
     // update 
     //seqDatas[sequencer].currentChValue = currentChannelValue ; 
-    printf("Start new sequencer %i at step %i\n",sequencer, stepIdx);
+    //printf("Start new sequencer %i at step %i\n",sequencer, stepIdx);
     seqDatas[sequencer].firstStepIdx = stepIdx; // store idx of the first step in this sequence
     startNewStep(sequencer, stepIdx); // start a new step
 }
@@ -115,7 +115,7 @@ void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specifi
 void startNewStep(uint8_t sequencer , uint16_t stepIdx){ // start a new step
     seqDatas[sequencer].currentStepIdx = stepIdx;
     
-    printf("Start new step for sequencer %i at step %i\n",sequencer, stepIdx);
+    //printf("Start new step for sequencer %i at step %i\n",sequencer, stepIdx);
     if (seq.steps[stepIdx].smooth == 0){ // When there is no smoothing delay, nextaction = currentSeqMillis + keep and stait = wait
         seqDatas[sequencer].state = WAITING;
         seqDatas[sequencer].nextActionAtMs = currentSeqMillis + (seq.defs[sequencer].clockMs * seq.steps[stepIdx].keep) ;
