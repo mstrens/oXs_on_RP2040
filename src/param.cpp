@@ -69,7 +69,8 @@ uint8_t pinCount[30] = {0};
 int tempIntTable[10]; // temporary table to store n integers converted from the serial buffer (starting from pvalue)
 bool nextSequencerBegin;    // true when a step is the first of the next sequencer
 SEQUENCER seq;
-extern  SEQ_DATA seqDatas[16];
+extern  SEQ_DATA seqDatas[16];   // internal table to remember the state of each sequencer
+extern bool seqDatasToUpload;    // flag to say if seqDatas[] must be updated or not
 
 bool pinIsduplicated ;
 extern bool configIsValid; 
@@ -797,10 +798,11 @@ void processCmd(){
             printf("\nError in command STEP=: number of sequencers = 0; fill SEQ= command before entering STEP=\n");
             return;
         }
-        if (getStepsSequencers()){ // true when valid syntax is decoded and seq structure has been updated ;
+        if (getStepsSequencers()){ // true when valid syntax is decoded and step structure has been updated (not yet the seqDatas[] table);
                                   // we will save the structure and reboot; during reboot we will check if config is valid
             updateConfig = true;
         } else { 
+            // in case of error, we just discard the command
             printf("\nError in syntax or in a parameter: command STEP= is discarded\n");
             return;
         }
@@ -1001,7 +1003,11 @@ void checkConfigAndSequencers(){     // set configIsValid
     printf("Press ? + Enter to get help about the commands\n");
 }
 
+
+
+
 void printConfigAndSequencers(){
+    //startTimerUs(0) ;  // to debug only - to know how long it takes to print the config
     isPrinting = true;
     uint8_t version[] =   VERSION ;
     printf("\nVersion = %s \n", version)  ;
@@ -1196,6 +1202,8 @@ void printConfigAndSequencers(){
     watchdog_update(); //sleep_ms(500);
     printSequencers(); 
     checkConfigAndSequencers();
+    //getTimerUs(0);        // print the time enlapsed is the function print.
+
     isPrinting = false;
 } // end printConfigAndSequencers()
 
@@ -1556,6 +1564,7 @@ const uint8_t *flash_sequencer_contents = (const uint8_t *) (XIP_BASE + FLASH_SE
 void setupSequencers(){   // The config is uploaded at power on
     if (*flash_sequencer_contents == SEQUENCER_VERSION ) {
         memcpy( &seq , flash_sequencer_contents, sizeof(seq));
+        seqDatasToUpload = true; // set a flag to update the table seqDatas[] when perfroming a checkSequencer()
         //printf("loaded param defsmax=%i  stepsMax=%i\n", seq.defsMax, seq.stepsMax); 
         //seq.defsMax = 0 ; // for testing only to be modified
         //seq.stepsMax = 0 ; // for testing only to be modified
@@ -1566,8 +1575,10 @@ void setupSequencers(){   // The config is uploaded at power on
     }
 } 
 
-
 void checkSequencers(){
+    // this function use flag (seqDatasToUpdate) to say if the table seqData has to be updated or not
+    // it must be to be updated after a restart, a SEQ or a STEP command, not after a ENTER that only print the current config
+    
     // set configIsValid = false when an error is detected
     watchdog_update(); //sleep_ms(500);
     if ( seq.defsMax == 0) {
@@ -1601,7 +1612,9 @@ void checkSequencers(){
                 configIsValid = false;
                 return;
             }
-            seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;                 // store end of current sequencer
+            if (seqDatasToUpload) {
+                seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;                 // store end of current sequencer
+            }
             seqIdx++;                                                    // handle next sequencer
         }
         if ((seq.steps[stepIdx].nextSequencerBegin ) || (stepIdx == 0) ){    // for each begin of sequencer (including the first one)
@@ -1610,15 +1623,17 @@ void checkSequencers(){
                 configIsValid = false;
                 return;
             }
-            // initilize seqDatas for new sequencer
-            seqDatas[seqIdx].stepStartAtIdx = stepIdx;
-            seqDatas[seqIdx].state = STOPPED;
-            seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-            seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-            seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
-            //seqDatas[seqIdx].lastActionAtMs = 0;
-            seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
-            seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
+            if (seqDatasToUpload) {
+                // initilize seqDatas for new sequencer
+                seqDatas[seqIdx].stepStartAtIdx = stepIdx;
+                seqDatas[seqIdx].state = STOPPED;
+                seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+                seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+                seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
+                //seqDatas[seqIdx].lastActionAtMs = 0;
+                seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
+                seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
+            }
             rangeNumber = 1; // restat a new counting of the number of different RC values
             prevRange = seq.steps[stepIdx].chRange;    // set Prev equal to allow counting the number of different RC channel values (ranges) 
         }
@@ -1629,28 +1644,6 @@ void checkSequencers(){
             printf("Error in sequencer steps: in the same sequencer, Rc values of step n+1 (%i) must be >= to the value of step n\n", seqIdx+1);
             configIsValid = false;
             return;
-            //if ( rangeNumber < 2) {
-            //    printf("Error in sequencer steps: only one range for sequencers %i\n", seqIdx+1);
-            //    configIsValid = false;
-            //    return;
-            //}
-            //seqDatas[seqIdx].stepEndAtIdx = prevStepIdx;
-            //seqIdx++;
-            //if (seqIdx >= seq.defsMax) {
-            //    printf("Error in sequencer steps: number of sequencers found in STEP exceeds number of sequencers defined in SEQ= (%i)\n",seq.defsMax );
-            //    configIsValid = false;
-            //    return;
-            //}
-            //// initilize seqDatas for new sequencer
-            //seqDatas[seqIdx].stepStartAtIdx = stepIdx;
-            //seqDatas[seqIdx].state = STOPPED;
-            //seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-            //seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-            //seqDatas[seqIdx].currentStepIdx = 0xFFFF;
-            ////seqDatas[seqIdx].lastActionAtMs = 0;
-            //seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
-            //seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
-            //rangeNumber = 1; // restat a new counting
         }
         if ( seq.defs[seqIdx].type == 1) { // when seq has type ANALOG, PWM value must be between 0/100  
             if (seq.steps[stepIdx].value < 0) {
@@ -1670,11 +1663,13 @@ void checkSequencers(){
         return;
     }
     if( (seqIdx + 1) != seq.defsMax) {
-        printf("Error in sequencer steps: no enough steps (%i) defined to match the number of GPIO's (%i) in sequencer definition\n", seqIdx+1 , seq.defsMax);
+        printf("Error in sequencer steps: number of sequencers (%i) detected in STEP do not match the number of sequencers in SEQ (%i)\n", seqIdx+1 , seq.defsMax);
         configIsValid = false;
         return;
     }
-    seqDatas[seqIdx].stepEndAtIdx = prevStepIdx; // for the last sequencer, register the last valid stepIdx
+    if (seqDatasToUpload) {
+        seqDatas[seqIdx].stepEndAtIdx = prevStepIdx; // for the last sequencer, register the last valid stepIdx
+    }
     //sequencerIsValid =  true ; // no error in sequencer detected
     //printf("%i pins are controlled by a sequencer; setup is valid\n", seq.defsMax);   
     
@@ -1688,6 +1683,7 @@ void checkSequencers(){
         }
         printf("\n");
     #endif
+    seqDatasToUpload = false; // reset the flag asking for an update of table seqDatas[]
     watchdog_update(); //sleep_ms(500);
 }
 
@@ -1878,6 +1874,7 @@ bool getSequencers(){  // try to get sequencer definition from a string pointed 
     } // end while
     memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));
     seq.defsMax = seqIdx;
+    seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
     printf("Number of sequencers stored in defsMax= %i\n",seq.defsMax);
 
     return true;
@@ -1935,6 +1932,7 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
     //isStepValid = true;
     memcpy(&seq.steps , &stepsTemp , sizeof(stepsTemp));
     seq.stepsMax = stepIdx;
+    seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
     printf( " Number of steps= %i\n",stepIdx);
     return true; 
 }

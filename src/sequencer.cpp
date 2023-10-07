@@ -22,7 +22,8 @@ float seqSbusInterval = (float) (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INT
 //#else
 //    SEQ_DEF seqDefs[] = { }; 
 //    SEQ_STEP seqSteps[] = { };
-    SEQ_DATA seqDatas[16];
+SEQ_DATA seqDatas[16];          // store the current state of all sequencers
+bool seqDatasToUpload = false;  // flag to say if seqDatas must be uploaded (after reset, SEQ or STEP command) or not (after ENTER); process is done in checkSequencer()
 //
 //#endif
 //uint8_t seqDefMax = sizeof(seqDefs) / sizeof(SEQ_DEF) ; 
