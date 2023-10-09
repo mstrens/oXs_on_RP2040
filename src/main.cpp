@@ -54,8 +54,7 @@
 //         test 16 rc channel values in log interface 
 //         test logger param in config parameters
 //         test tlm data in log interface
-//         add esc hobbiwing V4 interface
-//         in Sbus_out_pwm.cpp change pwm_set_gpio_level ( (uint) seq.defs[i].pin , seq.defs[i].defValue) to map 0/100 to a PWM value between 0 and pwmTop!!
+//         it seems that in ELRS protocol, PWM are not generated since some version.
 
 
 // Look at file in folder "doc" for more details
