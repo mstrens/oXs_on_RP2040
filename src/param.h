@@ -73,7 +73,7 @@ void printPwmValues();
 
 
 // for sequencer
-#define SEQUENCER_VERSION 2
+#define SEQUENCER_VERSION 4
 enum SEQ_OUTPUT_TYPE : uint8_t {
     SERVO = 0,
     ANALOG = 1
@@ -106,7 +106,16 @@ struct SEQ_STEP {
     uint8_t smooth {};
     int8_t value {} ;
     uint8_t keep {} ;
-    bool nextSequencerBegin {} ;
+    uint8_t nextSequencerBegin:1; // 1 means that this is the first step of a new sequencer
+    uint8_t nextSequenceBegin:1; // 1 means that this is the first step of a new sequence
+    uint8_t toRepeat:1; // 1 means that this is the sequence must be repeated when reaching the end
+    uint8_t neverInterrupted:1 ;// 1 means that this sequence may never be interrupted by another one
+    uint8_t priorityInterruptOnly:1 ; // 1 means that this sequence may only be interrupted by a sequence marqued as priority
+    uint8_t isPriority:1 ;         // 1 means that this sequence must always interrupt a sequence that may be interrupted
+    uint8_t reserver1:1;           // not used currently
+    uint8_t reserver2:1;           // not used currently
+    
+    //bool nextSequencerBegin {} ;
 };
 
 
@@ -115,16 +124,23 @@ struct SEQUENCER{
     uint8_t version = SEQUENCER_VERSION;
     uint8_t defsMax = 0;
     SEQ_DEF defs[16] ;
+    uint16_t sequencesMax = 0;
     uint16_t stepsMax = 0;
     SEQ_STEP steps[SEQUENCER_MAX_NUMBER_OF_STEPS];  
 };    
 
  //uint8_t * find(uint8_t * search, uint8_t in , uint16_t max); // search for first occurence of search string in "in" buffer  
-bool getSetOfInt(uint8_t itemsMax); // fill a table with n integers ; format is e.g. { 1 2 3 5}
+//bool parseOneSequencer(); // fill a table with 7 integers for a sequencer; format is e.g. { 1 2 3 5 6 7}
+bool getAllSequencers();    // get all sequencers, sequences and steps (call parseOneSequencer)
+bool parseOneSequencer(); // get one sequencer and all his sequences and steps in seqdefsTemp[] and stepsTemp.
+bool parseOneSequence(); // get one sequence and his steps in stepsTemp.
+bool parseOneStep();      // parse one step and save parameter in stepsTemp[]
+//bool parseOneStep();      // fill a table with sequence parameter and with step parameter.
 void printSequencers();
 void setupSequencers();
-bool getSequencers();
-bool getStepsSequencers();
+
+//bool getSequencers();
+//bool getStepsSequencers();
 void checkSequencers();
 void saveSequencers(); // save pin sequencers and step definitions
 

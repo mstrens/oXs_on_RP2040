@@ -56,7 +56,7 @@ struct SEQ_DATA {
     CH_RANGE currentRange;   // range (-100, -75 , -25, ...+75, +100 , dummy)
     uint16_t firstStepIdx;   // first step to be played for current sequence
     uint16_t currentStepIdx; //step being played 
-    //uint32_t smoothFromMs;
+    uint16_t delayedStepIdx; // step to be played at the end of current step
     uint32_t smoothUpToMs;     // smoothing must end at this ms
     //uint32_t lastActionAtMs; // when last output update has been done (used for smoothing to calculate next value)
     uint32_t nextActionAtMs; // when an action has to be taken (increment smoothing or next step)

@@ -252,8 +252,11 @@ With oXs, one single channel on the handset can control one or several SERVOS in
 
 It can also generate one or several ANALOG signals in sequences (e.g. to blink leds or to start/stop motors).
 
+One output is controlled by only one Rc channel.
 
-You can use several Rc channels; each channel controlling one or serveral outputs (SERVO and/or ANALOG).
+
+You can use several Rc channels; each channel controls one or serveral outputs (SERVO and/or ANALOG).
+
 
 oXs uses 3 concepts : sequencer, sequence and step.
 
@@ -272,46 +275,50 @@ oXs uses 3 concepts : sequencer, sequence and step.
     * The min PWM value (must be in same range as default PWM value); if a step requests a lower PWM value, the min PWM will be used
     * The max PWM value (must be in same range as default PWM value); if a step requests a greater PWM value, the max PWM will be used.
     * note: Min and Max defined at sequencer level can be usefull in order to define the end points of servo travel; they can avoid having to change many values at step level while using servos.
+* Each "sequence" is defined by 5 parameters
+    * The Rc channel value that activates this sequence. The value must be a multiple of 10 and in range -100...100 (so like -100, -90, -80... 0, 10, 20,...100);so there a 21 valid values. Note: the rc channel value sent by the handset can slightly differ from those values because oXs applies a tolerance of +/- 4%. So, if handset sent e.g. a value equal to -86, it will be handeld like -90.
+    * an optional flag ("R" = Repeat) to say if the sequence must be automatically repeated after the last step; by default, sequence is not repeated
+    * an optional flag ("U" = Uninterrupted) to say that the sequence may be interrupted before end of the last step; by default sequence may be interrupted
+    * an optional flag ("O" = Only interrupted by priority sequence) to say that the sequence may be interrupted but only by a "priority" sequence
+    * an optional flag ("P" = priority) to say that the sequence is a "priority" sequence (so it may interrupt a sequence with flag "O")  
 * Each "step" is defined by 4 parameters
-    * The Rc channel value (in %) that activates this sequence. The value must be a multiple of 10 and in range -100...100 (so like -100, -90, -80... 0, 10, 20,...100);so there a 21 valid values. Note: the rc channel value sent by the handset can slightly differ from those values because oXs applies a tolerance of +/- 4%. So, if handset sent e.g. a value equal to -86, it will be handeld like -90. 
     * The number of clocks (=delay) for a smooth transition from current PWM value up to the PWM value from this step (must be in range 0/255)
     * The PWM value to apply in this step at the end of the transition (in range -100/100 for SERVO, 0/100 for ANALOG pwm)
-    * The number of clocks the PWM value must be kept before applying next step (if any) or going back to the first step of this sequence. Must be in range 0/255; If this parameter is 255 on the last step of a sequence, oXs does not restart the sequence and kept the last PWM value (up to next change of RC channel value). 
-* For each sequencer, when the handset sent a Rc value that matches another defined range, oXs starts "playing" all steps of the new related range (= a sequence). When the last step of this sequence is played, oXs restarts the same steps except when the last "keep" parameter is equal to 255 (in which case, oXs maintains the last PWM value waiting that another range value is sent by the handset)
-* For each sequencer, if the handset sent a Rc value that does not match a defined value (taking care of tolerance), the change of Rc value has no effect; oXs continues to "play" the current sequence.   
-* Sequencers and steps are defined sending commands via the USB port using a serial terminal. So there is no need to compile/flash to change some parameters.
-* All sequencers are defined by only one command:  SEQ={...} {...} {...} etc...
-    * each {...} contains the 7 parameters of one sequencer (space delimited)
-    * e.g. SEQ={3 0 100 15 -100 -100 +90} {4 1 500 16 0 0 100 } defines 2 sequencers
-        * one on gpio 3, for a servo , 100ms/clock, controlled by channel 15, PWM = -100 (default), -100 (min) and 90(max)
-        * one on gpio 4, for analog voltage, 500ms/clock, controlled by channel 16, PWM = 0 (default), 0 (min) and 100(max = Vcc)
-* All steps are defined by only one command: STEP={...} {...} {...} + {...} {...} etc...
-    * Each {...} contains the 4 parameters of one step (space delimited)
-    * A sign "+" must be inserted to separate steps being part of 2 different sequencers
-    * Steps must be sorted in the same order as the sequencers.
-    * Per serquencer, steps must be set in ascending order of the Rc channel value that activate the sequence.
-    * When several steps are part of the same sequence, they must have the same Rc channel value
-    * e.g. STEP={-100 0 50 3} {-100 10 100 2} {100 0 -100 255} + {-100 0 0 255} { -30 0 0 2} { -30 0 100 1} { 70 0 100 20} {70 0 20 255} defines
-        * 8 steps
-        * The first 3 are part of sequencer nr 1; the next 5 (after "+) are part of sequencer 2 
-        * Sequencer nr 1 contains 2 sequences (one when Rc value = -100%, the other when 100%).
-            * First sequence (of sequencer 1) contains 2 steps (both have the same Rc channel value -100);the sequence is activated when Rc channel change to -100%; the first step says that PWM must be set immediately(smooth=0) on 50%, stay on 50% for 3 clocks and then switch to step 2 which says that PWM must increase gradualy up to 100% over a timelaps of 10 clocks and then stay on 100% for 2 clocks before repeating step 1.  
-            * Second sequence (of sequencer 1) is defined only by one step (step 3). It says that when Rc channel change to 100%, PWM must be set immediately (smooth =0) on -100% and stay on this value (keep = 255 = always) up to a change of Rc value
-        * Sequencer nr 2 contains 3 sequences (activated by -100, -30, 70).
-            * First sequence (of sequencer 2) contains 1 step (step 4); the sequence is activated when Rc channel change to -100%; the step says that PWM must be set immediately(smooth=0) on 0 and stay on 0 for ever (keep = 255) up to a change of Rc channel value.  
-            * Second sequence (of sequencer 2) is defined by 2 steps (steps 5 and 6 having the same RC value=-30). When Rc channel change to -30%, PWM must be set immediately (smooth=0) on 0 and stay on this value for 2 clocks (=step5) , then switch immediately to 100 for 1 clock (=step 6) before going back to 0 for 2 clocks (=step 5) etc...
-            * Third sequence (of sequencer 2) contains 2 steps (step 7 and 8); the sequence is activated when Rc channel change to 70; the step says that PWM must be set immediately(smooth=0) on 100 and stay on 100 for 20 clock and then change PWM to 20 (keep = 255) up to a change of Rc channel value.
-* Processing of SEQ and STEP commands
-    * SEQ and STEP commands are just discarded in case of syntax error or if some parameters are out of range.
-    * Valid individual SEQ and STEP commands are saved in flash memory and oXs is rebooted.
-    * Consistency between SEQ and STEP is checked.
-    * oXs checks also that each gpio has only one functionality.
-    
-* SEQ and STEP parameters are displayed as all other parameters when you press only ENTER.
-    * oXs display one line per sequencer and one line per step.
-    * In STEP, there is a "+" in front of the first step of a new sequencer.
-    * There is a ";" in front of the first step of a sequence.
-    * It is possible to make a complete copy/paste of the displayed SEQ or STEP to the input aera of the serial terminal in order to easily edit some parameter. 
+    * The number of clocks the PWM value must be kept before applying next step (if any) or going back to the first step of this sequence. Must be in range 0/255 
+* For each sequencer, when the handset sent a different Rc value that matches the value of a sequence, oXs starts "playing" all steps of the related sequence. If this happens while oXs is already playing a sequence, oXs will continue or stop playing the current sequence depending on the flags U, O and P (see above). If the current step may not be interrupted, oXs, will delay the new requested sequence up to the end of the current sequence. When the current sequence reaches his end, oXs will or play the delayed sequence (if any), or repeat the current sequence (if flag = "R") or keep the last PWM output.
+* For each sequencer, if the handset sent a Rc value that does not match a defined value (taking care of tolerance), the change of Rc value has no effect; oXs continues to "play" the current sequence.
+* Sequencers, sequence and steps are defined sending a command via the USB port using a serial terminal. So there is no need to compile/flash to change some parameters.
+* All sequencers are defined by only one command:  SEQ=[...] (...) {...} {...} (...) {...} etc...
+    * each [...] contains the 7 parameters of one sequencer (space delimited)
+    * each (...) contains the parameters (Rc value + 4 optional flags) of one sequence (space delimited)
+    * each {...} contains the 3 parameters of of one step (space delimited)
+    * each [...] must be followed by (...) to specify the first sequence of this sequencer 
+    * each (...) must be followed by one or several {...} to specify the steps of this sequence
+    * a sequencer must contain a least 2 sequences.
+    * sequences of one sequencer must be in ascending order of RC channel values      
+    * e.g. SEQ=[3 0 100 15 -100 -100 +90] (-100 R O) {0 50 3} {10 100 2} (100 P) {0 -100 10} 
+               [4 1 500 16 0 0 100 ] (-100) {0 0 20} (-30) {0 100 1} (70 R) {0 100 20} {5 20 10}
+    * this defines 2 sequencers:        
+        * Sequencer nr 1 [3 0 100 15 -100 -100 +90] has PWM output on gpio 3, for a servo , 100ms/clock, controlled by channel 15, PWM = -100 (default), -100 (min) and 90(max); it contains 2 sequences:
+            * First sequence (-100 R O) is activated when Rc channel changes to -100%, may be repeated automatically and may be interrupted only by a priority sequence; it contains 2 steps:
+                * first step {0 50 3} says that PWM must be set immediately(smooth=0) on 50%, stay on 50% for 3 clocks and then switch to step 2 
+                * second step {10 100 2} says that PWM must increase gradualy up to 100% over a timelaps of 10 clocks and then stay on 100% for 2 clocks before repeating the sequence
+            * Second sequence (100 P) is activated when Rc channel change to 100% and is a priority sequence (so it may interrupt sequence 1)
+                * step {0 -100 10} says that PWM must be set immediately (smooth =0) on -100% and stay on this value for at least 10 clock units
+        * Sequencer nr 2 [4 1 500 16 0 0 100 ] has PWM output on gpio 4, for analog voltage, 500ms/clock, controlled by channel 16, PWM = 0 (default), 0 (min) and 100(max = Vcc); it contains 3 sequences
+            * First sequence (-100) is activated when Rc channel change to -100% (does not repeat and may be interrupted) 
+                * step {0 0 20} says that PWM must be set immediately (smooth=0) on 0 and stay on 0; note: as the sequence may not be repeated automatically but may be interrupted by any new sequence, the delay of 20 clock units has in practice no effect  
+            * Second sequence (-30) is activated when Rc channel change to -30%  (does not repeat and may be interrupted); it contains 2 steps: 
+                * step {0 100 1} says PWM must be set immediately (smooth=0) on 100% and stay on this value for 1 clock. note: as the sequence may not be repeated automatically but may be interrupted by any new sequence, the delay of 1 clock units has in practice no effect
+            * Third sequence (70 R) is activated when Rc channel change to 70 and may be repeated automatically; it contains 2 steps;
+                * step one {0 100 20} says that PWM must be set immediately(smooth=0) on 100 and stay on 100 for 20 clock and then next step is applied.
+                * step two {0 20 10} says that PWM must be set smoothly (over 5 clock units) to 20 and stay so for 10 clock units before repeating the sequence.
+* Processing of SEQ commands
+    * most controls on SEQ commands are performed before saving the parameters. In case of error, the command is just discarded and not saved
+    * commands that fit those controls are saved in flash memory and oXs is rebooted. It can be that you have to make a manual reset (or power off+on)
+    * After reset, oXs performs some more controls that could lead to an invalid config (e.g. if a gpio is used for several functionalities)
+
+* Sequencers parameters are displayed as all other parameters when you press only ENTER. It is possible to make a complete copy/paste of the displayed SEQ to the input aera of the serial terminal in order to easily edit some parameters. 
 
 ## ------------------ Logging -------------------
 If the LOG Gpio is defined, all telemetry data and all PWM Rc channel values (usec) captured by oXs are transmitted on the LOG pin in a compressed format.

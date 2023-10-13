@@ -63,7 +63,9 @@ void nextSimuSeqChVal(){
 void sequencerLoop(){
     // for each sequencer
     //     check if channel value changed and if so, if it match a valid sequence
-    //     if true , apply new sequence from first step      
+    //     if true , 
+    //           if sequencer is stopped (state = STOPPED), new sequence starts immediately from first step
+    //           else       
     //     else (if channel value is the same or does not match) : continue what means
     //          if next action is reached, apply next action (depend on state, ...)          
     //          else do nothing
@@ -94,8 +96,21 @@ void sequencerLoop(){
         #endif
         //if ( seq == 0 && currentChannelValue == 391) printf("ch is 391\n");
         if ( isSeqChannelChanged ( seqIdx)) {  // if channel value changed and is another range and steps are defined for it
+                                               //  then nextPossibleStepIdx contains the step to be activated
             //printf("chan changed\n");
-            startNewSeq(seqIdx, nextPossibleStepIdx); // activate new sequence
+            if ( seqDatas[seqIdx].state == STOPPED ) {   // activate new sequence when no seq was running
+                startNewSeq(seqIdx, nextPossibleStepIdx);
+            } else {
+                uint16_t firstStepIdx = seqDatas[seqIdx].firstStepIdx; 
+                // if current sequence may be interrupted and new sequence is a priority one or current may be interrupted also by normal, activate new sequence
+                if ( ( seq.steps[firstStepIdx].neverInterrupted == 0) && \
+                       ( (seq.steps[nextPossibleStepIdx].isPriority == 1) || (seq.steps[firstStepIdx].priorityInterruptOnly == 0) )) {
+                    startNewSeq(seqIdx, nextPossibleStepIdx);
+                } else {
+                // here we may not activate immediately the new sequence but we have to store it.
+                    seqDatas[seqIdx].delayedStepIdx = nextPossibleStepIdx ; // store the step that can start only at the end of current sequence
+                }
+            }    
         } else { // channel did not changed 
             if (currentSeqMillis >= seqDatas[seqIdx].nextActionAtMs) {
                 nextAction(seqIdx);
@@ -110,6 +125,7 @@ void startNewSeq(uint8_t sequencer , uint16_t stepIdx){ // switch to the specifi
     //seqDatas[sequencer].currentChValue = currentChannelValue ; 
     //printf("Start new sequencer %i at step %i\n",sequencer, stepIdx);
     seqDatas[sequencer].firstStepIdx = stepIdx; // store idx of the first step in this sequence
+    seqDatas[sequencer].delayedStepIdx = 0xFFFF;  // reset index of a delayed step to a dummy value
     startNewStep(sequencer, stepIdx); // start a new step
 }
 
@@ -164,8 +180,9 @@ void nextAction(uint8_t sequencer){
     //           change current stepidx
     //           start new sequence
     //     else
-    //           if keep (of current step) == 255, keep current output value and set nextAction = 0XFFFFFFFF
-    //           else go back to first step of same sequence 
+    //           if a delayed sequence exist, then start the delayed sequence            
+    //           else if current step has the flag "Repeat", go back to the first step of the same sequence
+    //           else set STATE=STOPPED.
     uint16_t currentStepIdx = seqDatas[sequencer].currentStepIdx ;
     if (seqDatas[sequencer].state == SMOOTHING){
         if ( ( seqDatas[sequencer].nextActionAtMs + 20) >=  seqDatas[sequencer].smoothUpToMs) {
@@ -192,12 +209,14 @@ void nextAction(uint8_t sequencer){
         if ( nextStepExist(sequencer, currentStepIdx) == true) { // return true when there a next step in the sequence, currentStepidx not updated and true is returned
             currentStepIdx++;
             startNewStep(sequencer, currentStepIdx); // start a new step with updated idx
-        } else if ( seq.steps[currentStepIdx].keep == 255){ // we are on the last step and 255 means that we have to old the value
-            //seqDatas[sequencer].lastActionAtMs = currentSeqMillis;
-            seqDatas[sequencer].nextActionAtMs = 0XFFFFFFFF ; // new action in future 
-            // keep last output val
-        } else { // go back to first step of this sequence           
-            startNewStep(sequencer , seqDatas[sequencer].firstStepIdx);
+        } else {         // we are at the end of a sequence
+            if ( seqDatas[sequencer].delayedStepIdx != 0xFFFF){       // when a step was delayed, start new sequence
+                startNewSeq(sequencer , seqDatas[sequencer].delayedStepIdx); 
+            } else if ( seq.steps[currentStepIdx].toRepeat == 1) {    // when current sequence must be repeated, go to first step
+                startNewStep(sequencer , seqDatas[sequencer].firstStepIdx);
+            } else {
+                seqDatas[sequencer].state = STOPPED;             // mark the sequence as STOPPED; so next change can restart it immediately    
+            }
         }
     }
 }

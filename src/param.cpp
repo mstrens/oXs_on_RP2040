@@ -67,7 +67,9 @@ uint8_t pinCount[30] = {0};
 
 // for sequencer
 int tempIntTable[10]; // temporary table to store n integers converted from the serial buffer (starting from pvalue)
-bool nextSequencerBegin;    // true when a step is the first of the next sequencer
+uint8_t nextSequencerBegin;    // true when a step is the first of the next sequencer
+uint8_t nextSequenceBegin;    // true when a step is the first of the next sequence
+
 SEQUENCER seq;
 extern  SEQ_DATA seqDatas[16];   // internal table to remember the state of each sequencer
 extern bool seqDatasToUpload;    // flag to say if seqDatas[] must be updated or not
@@ -782,7 +784,7 @@ void processCmd(){
             updateConfig = true;
             printf("All definitions for sequencer are deleted\n");
         } else {    
-            if (getSequencers()){ // true when valid syntax is decoded and seq structure has been updated ;
+            if (getAllSequencers()){ // true when valid syntax is decoded and seq structure has been updated ;
                                   // we will save the structure and reboot; during reboot we will check if config is valid
                 updateConfig = true;
             } else {
@@ -792,6 +794,7 @@ void processCmd(){
         }  
     }
     
+    /*
     // get steps for Sequencer
     if ( strcmp("STEP", pkey) == 0 ) { 
         if (seq.defsMax == 0){
@@ -807,12 +810,13 @@ void processCmd(){
             return;
         }
     }
-    
+    */
+
     if (updateConfig) {
         saveConfig();
         saveSequencers();
         printf("config has been saved\n");  
-        printf("Device will reboot\n\n");
+        printf("Device will reboot but it could be that a reset or a (power down + power on) is required\n\n");
         watchdog_enable(1500,false);
         sleep_ms(1000);
         watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
@@ -1560,6 +1564,12 @@ the function read from a pointer up to a '0'(or the number of item) and return t
 #define FLASH_SEQUENCER_OFFSET FLASH_CONFIG_OFFSET + (4 * 1024) // Sequencer is 4K after config parameters
 const uint8_t *flash_sequencer_contents = (const uint8_t *) (XIP_BASE + FLASH_SEQUENCER_OFFSET);
 
+uint8_t seqIdx = 0;        // count the sequencer
+uint16_t sequenceIdx = 0;  // count the sequence
+uint8_t stepIdx = 0;       // count the steps
+SEQ_DEF seqDefsTemp[16];   // temporary structure to avoid any change to seq in case of error detected here
+SEQ_STEP stepsTemp[SEQUENCER_MAX_NUMBER_OF_STEPS]; // temporary structure to avoid any change to seq in case of error detected here
+
 
 void setupSequencers(){   // The config is uploaded at power on
     if (*flash_sequencer_contents == SEQUENCER_VERSION ) {
@@ -1591,24 +1601,17 @@ void checkSequencers(){
         return;
     }
     uint8_t seqIdx = 0;  // index of current sequencer
+    uint16_t sequenceIdx = 0; // index of current sequence
     uint16_t stepIdx = 0;   // index of current step
     uint16_t prevStepIdx = 0;
-    uint8_t rangeNumber = 0; // used to check that each sequencer has at least 2 sequence range
+    uint8_t rangeNumber = 0; // used to check that each sequencer has at least 2 sequences 
     uint32_t currentSeqMillis = millisRp();
     CH_RANGE prevRange = seq.steps[stepIdx].chRange; 
-    //seqDatas[seqIdx].stepStartAtIdx = stepIdx;
-    //seqDatas[seqIdx].state = STOPPED;
-    //seqDatas[seqIdx].currentChValue = 0; // use of channel change a dummy channel value in order to force a change when a channel value will be received from Rx
-    //seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-    //seqDatas[seqIdx].currentStepIdx = 0xFFFF; // use a dummy value at startup (to detect when range )
-        //seqDatas[seqIdx].lastActionAtMs = 0;
-    //seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
-    //seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we still have to apply the default to the pwmoutput
     while (stepIdx < seq.stepsMax) {                     // process all steps
         //printf("Seq=%i   Step=%i  range=%i", (int) seqIdx+1, (int) stepIdx+1 , (int) rangeNumber );
-        if (( seq.steps[stepIdx].nextSequencerBegin ) && (stepIdx > 0)) {   // When the next (not the first one) sequencer begin , close the current
+        if (( seq.steps[stepIdx].nextSequencerBegin == 1 ) && (stepIdx > 0)) {   // When the next (not the first one) sequencer begin , close the current
             if ( rangeNumber < 2) {
-                printf("Error in sequencer steps: only one RC channel value for sequencers %i\n", seqIdx+1);
+                printf("Error in sequencer: only one sequence for sequencers %i\n", seqIdx+1);
                 configIsValid = false;
                 return;
             }
@@ -1617,9 +1620,9 @@ void checkSequencers(){
             }
             seqIdx++;                                                    // handle next sequencer
         }
-        if ((seq.steps[stepIdx].nextSequencerBegin ) || (stepIdx == 0) ){    // for each begin of sequencer (including the first one)
+        if ((seq.steps[stepIdx].nextSequencerBegin == 1 ) || (stepIdx == 0) ){    // for each begin of sequencer (including the first one)
             if (seqIdx >= seq.defsMax) {
-                printf("Error in sequencer steps: number of sequencers found in STEP exceeds number of sequencers defined in SEQ= (%i)\n",seq.defsMax );
+                printf("Error in sequencer: number of sequencers found in STEP exceeds number of sequencers defined in sequencer%i)\n",seq.defsMax );
                 configIsValid = false;
                 return;
             }
@@ -1630,6 +1633,7 @@ void checkSequencers(){
                 seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
                 seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
                 seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
+                seqDatas[seqIdx].delayedStepIdx = 0xFFFF;  // use a dummy value to say that there is no delayed step.
                 //seqDatas[seqIdx].lastActionAtMs = 0;
                 seqDatas[seqIdx].lastOutputVal = seq.defs[seqIdx].defValue ; // set default value
                 seqDatas[seqIdx].nextActionAtMs = 0; // 0 means that we have still to apply the default value      
@@ -1638,9 +1642,10 @@ void checkSequencers(){
             prevRange = seq.steps[stepIdx].chRange;    // set Prev equal to allow counting the number of different RC channel values (ranges) 
         }
         
+        
         if ( seq.steps[stepIdx].chRange > prevRange) rangeNumber++; // Count the number of Rc channel values (range) for this sequencer
         
-        if ( ( seq.steps[stepIdx].chRange < prevRange )  && (seq.steps[stepIdx].nextSequencerBegin == false )){  // a new sequencer starts *****************
+        if ( ( seq.steps[stepIdx].chRange < prevRange )  && (seq.steps[stepIdx].nextSequencerBegin == 0 )){  
             printf("Error in sequencer steps: in the same sequencer, Rc values of step n+1 (%i) must be >= to the value of step n\n", seqIdx+1);
             configIsValid = false;
             return;
@@ -1658,7 +1663,7 @@ void checkSequencers(){
         stepIdx++;
     } // end while
     if ( rangeNumber < 2) {
-        printf("Error in sequencer steps: only one range for step item number %i\n",(int) stepIdx );
+        printf("Error in sequencer steps: only one sequence for step item number %i\n",(int) stepIdx );
         configIsValid = false;
         return;
     }
@@ -1670,6 +1675,7 @@ void checkSequencers(){
     if (seqDatasToUpload) {
         seqDatas[seqIdx].stepEndAtIdx = prevStepIdx; // for the last sequencer, register the last valid stepIdx
     }
+    if (seq.steps[stepIdx].nextSequenceBegin == 1) sequenceIdx++; // count the number of sequence
     //sequencerIsValid =  true ; // no error in sequencer detected
     //printf("%i pins are controlled by a sequencer; setup is valid\n", seq.defsMax);   
     
@@ -1692,44 +1698,37 @@ void printSequencers(){
     //printf("Sequencer def[] uses %i bytes\n", sizeof(seq.defs));
     //printf("Sequencer steps[] uses %i bytes\n", sizeof(seq.steps));
     watchdog_update(); //sleep_ms(500); // for tesing to be modified
+    uint8_t seqIdx = 0; 
     if( seq.defsMax == 0 ){
         printf("\nNo sequencers are defined\n");
         return;
     }
     isPrinting = true;
-    printf("\nNumber of sequencers= %i   Number of steps= %i\n", seq.defsMax , seq.stepsMax);
-    if( seq.defsMax > 0 ){
-        printf("     { Gpio  Type(0=servo,1=analog) Clock(msec) ChannelNr Default Min Max}...{ }\n");
-        printf("SEQ=");
-        for (uint8_t i = 0 ;i< seq.defsMax ; i++){
-            printf(" {%i %i %i %i %i %i %i} ", seq.defs[i].pin , (int) seq.defs[i].type , seq.defs[i].clockMs ,\
-             seq.defs[i].channel , seq.defs[i].defValue , seq.defs[i].minValue , seq.defs[i].maxValue );
-             printf("\n    ");
+    printf("\nNumber of: sequencers=%i   sequences=%i   steps= %i\n", seq.defsMax , seq.sequencesMax, seq.stepsMax);
+    printf("Sequencer = [  Gpio  Type(0=servo,1=analog) Clock(msec) ChannelNr Default Min Max ]\n");
+    printf("Sequence  = (  RC_value(-100...100)  to_Repeat  Uninterrupted   Only_priority_interrupted   is_a_Priority_seq  )\n");
+    printf("Step      = {  Smooth(clocks) Pwm%(-100...100) Keep(clocks)  }\n");
+    printf("SEQ=");
+    for (uint16_t i = 0 ; i < seq.stepsMax; i++){
+        // for each step, look if the step is the first of a sequencer
+        if ( seq.steps[i].nextSequencerBegin == 1){
+            printf("\n[ %i %i %i %i %i %i %i ] ", seq.defs[seqIdx].pin , (int) seq.defs[seqIdx].type , seq.defs[seqIdx].clockMs ,\
+             seq.defs[seqIdx].channel , seq.defs[seqIdx].defValue , seq.defs[seqIdx].minValue , seq.defs[seqIdx].maxValue );
+            seqIdx++;
         }
-        printf("\n");    
-    }   
-    if (( seq.defsMax > 0 ) && ( seq.stepsMax > 0)){
-        printf("\n      { Range(-100/-90/-80...0/10/20...90/100) Smooth(clocks) Pwm(-100/100) Keep(clocks) } ...{}\n");
-        printf("STEP=");
-        for (uint8_t i = 0 ;i< seq.stepsMax ; i++){
-            if (( seq.steps[i].nextSequencerBegin) || (i==0)) { 
-                printf("\n      + . ");
-            } else if ( seq.steps[i].chRange != seq.steps[i-1].chRange) { 
-                printf("\n        . ");
-            } else {
-                printf("\n          ");
-            }
-            printf(" {%i %i %i %i} ", (int) seq.steps[i].chRange , seq.steps[i].smooth , seq.steps[i].value , seq.steps[i].keep);
-                 
+        if ( seq.steps[i].nextSequenceBegin == 1){
+            printf("\n  ( %i", seq.steps[i].chRange);
+            if (seq.steps[i].toRepeat == 1) { printf(" R");}
+            if (seq.steps[i].neverInterrupted == 1) {printf(" U");}
+            if (seq.steps[i].priorityInterruptOnly == 1) {printf(" O");}
+            if (seq.steps[i].isPriority == 1) {printf(" P");}
+            printf(" )\n    ");
         }
-        printf("\n");        
-    } else {
-        printf("\nNo Steps defined\n");
+        printf("{%i %i %i} ", seq.steps[i].smooth , seq.steps[i].value , seq.steps[i].keep);             
     }
+    printf("\n");    
     isPrinting = false;
 }
-
-
 
 void saveSequencers() {
     //sleep_ms(1000); // let some printf to finish
@@ -1751,41 +1750,379 @@ void saveSequencers() {
     //printConfig(); 
 }
 
+bool getAllSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid (then seq structure is modified)
+                       // when true we still have to check if this is valid with config (for use of pins and with steps)
+    seqIdx = 0;        // count the sequencer
+    sequenceIdx = 0;  // count the sequence
+    stepIdx = 0;       // count the steps
+    
+    while ( (*pvalue) != 0X00 ) { // while not end of value buffer
+        if (seqIdx >= 16) {
+            printf("Error : to many sequencer definitions; max is 16\n");
+            return false; 
+        }
+        if ( parseOneSequencer() == false){ // this will also parse the sequences and the steps
+            printf("Error converting the sequencer definition numner %i\n",seqIdx+1);
+            return false; 
+        }
+        seqIdx++;    // count number of sequencers
+    } // end while
+    memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));  // copy all sequencer definitions
+    memcpy(&seq.steps , stepsTemp, sizeof(stepsTemp));      // copy all sequence & steps definitions
+    seq.defsMax = seqIdx;        // store the number of sequencers
+    seq.sequencesMax = sequenceIdx ; // store the number of sequences
+    seq.stepsMax = stepIdx;      // store the number of steps
+    seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
+    printf("Number of sequencers= %i   sequences=%i   steps=%i\n",seq.defsMax, seq.sequencesMax , seq.stepsMax);
+    return true;
+}
 
 
-
-bool getSetOfInt(uint8_t itemsMax){  // try to read a string  with n integer space separated set between { }
-    if (itemsMax > 10) {
-        printf("!!!!!!!!!!To many parameter to get in getSeqSet!!!!!\n");
+bool parseOneSequencer(){  // try to read a string  with n integer space separated set between [ ]
+                            // and then try to get all sequences and steps for this sequencer
+    char * ptr ;                        // get the pos of first non converted integer 
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) != '['){            // first char must be {
+        printf("Error : sequencer must begin with [ \n");
+        return false ;
+    }
+    nextSequencerBegin = 1;
+    pvalue++;
+    for (uint8_t i = 0 ; i < 7; i++) {       // try to convert 7 integers
+        errno = 0;
+        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
+                                                   // *ptr = 0 when no error
+        if ( ( ptr == pvalue ) || ( ptr == NULL)) {
+            printf("Error : parameter %i of sequencer %i can't be converted to an integers\n",i,seqIdx+1 );
+            return false;    
+        }
+        pvalue = ptr; 
+        //printf(" seq %i = %i\n", i , tempIntTable[i]);
+    }
+    pvalue =  skipWhiteSpace(pvalue);
+    if (( * pvalue) != ']') {
+        printf("Error : parameters of sequencer %i must end with ] after 7 values\n",seqIdx+1);
+        return false ;
+    }
+    if (tempIntTable[0] < 0 || tempIntTable[0] > 15){
+        printf("Error : for sequencer number %i, gpio must be in range 0 / 15\n", seqIdx+1);
         return false;
     }
-    char * ptr ; 
-    nextSequencerBegin = false;
-    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
-    if (( * pvalue) == '+'){            //  A "+" before "{" marks the first step of next sequencer
-        pvalue++;                       // skip + before { (used to separate sequencer when we print the definition of steps)
-        nextSequencerBegin = true;      // + indicates that the next sequencer begins now
-        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces 
+    if (tempIntTable[1] < 0 || tempIntTable[1] > 1){
+        printf("Error : for sequencer number %i, type must be 0 (SERVO) or 1(ANALOG)\n" , seqIdx+1);
+        return false;
     }
-    if(( * pvalue) == '.') {     // "." is used when ve print to mark the first step of a new seuqence
-        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)
+    if (tempIntTable[2] < 20 || tempIntTable[2] > 100000){
+        printf("Error : for sequencer number %i, clock must be in range 20 / 100000 (msec)\n", seqIdx+1);
+        return false;
+    }
+    if (tempIntTable[3] < 1 || tempIntTable[3] > 16){
+        printf("Error : for sequencer number %i, channel must be in range 1 / 16\n", seqIdx+1);
+        return false;
+    }
+    if (tempIntTable[1] == 0) {  // for SERVO
+        if (tempIntTable[4] < -125 || tempIntTable[4] > 125){
+            printf("Error : for sequencer number %i, when type = SERVO, default PWM value must be in range -125 / +125\n", seqIdx+1);
+            return false;
+        }
+    } else {                 // for ANALOG
+        if (tempIntTable[4] < 0 || tempIntTable[4] > 100){
+            printf("Error : for sequencer number %i, when type = ANALOG, default PWM value must be in range 0 / 100\n", seqIdx+1);
+            return false;
+        }
+    }
+    if (tempIntTable[1] == 0) {  // for SERVO
+        if (tempIntTable[5] < -125 || tempIntTable[5] > 125){
+            printf("Error : for sequencer number %i, when type = SERVO, min PWM value must be in range -125 / +125\n", seqIdx+1);
+            return false;
+        }
+    } else {                 // for ANALOG
+        if (tempIntTable[5] < 0 || tempIntTable[5] > 100){
+            printf("Error : for sequencer number %i, when type = ANALOG, min PWM value must be in range 0 / 100\n", seqIdx+1);
+            return false;
+        }
+    }if (tempIntTable[1] == 0) {  // for SERVO
+        if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
+            printf("Error : for sequencer number %i, when type = SERVO, max PWM value must be in range -125 / +125\n", seqIdx+1);
+            return false;
+        }
+    } else {                 // for ANALOG
+        if (tempIntTable[6] < 0 || tempIntTable[6] > 100){
+            printf("Error : for sequencer number %i, when type = ANALOG, max PWM value must be in range 0 / 100\n", seqIdx+1);
+            return false;
+        }
+    }
+    // here we have a valid set of parameter for a sequencer that we can save in a temp structure
+    seqDefsTemp[seqIdx].pin = tempIntTable[0];
+    seqDefsTemp[seqIdx].type = (SEQ_OUTPUT_TYPE) tempIntTable[1];
+    seqDefsTemp[seqIdx].clockMs = tempIntTable[2];
+    seqDefsTemp[seqIdx].channel = tempIntTable[3];
+    seqDefsTemp[seqIdx].defValue = tempIntTable[4];
+    seqDefsTemp[seqIdx].minValue = tempIntTable[5];
+    seqDefsTemp[seqIdx].maxValue = tempIntTable[6];    
+    pvalue++;
+    pvalue =  skipWhiteSpace(pvalue);
+    if (( * pvalue) != '(') {
+        printf("Error : after [...] for sequencer %i there must a ( to define a sequence\n",seqIdx+1);
+        return false ;
+    }
+    // parse all sequences and steps from one sequencer (up to the end or up to next sequencer)
+    while ( (( * pvalue) != 0x00)  && (( * pvalue) != '[')) {    
+        // for each sequence
+        if ( parseOneSequence() == false ) {  // when true, stepsTemp will be filled for this sequencer
+            return false;
+        }
+        sequenceIdx++;                       // prepare next sequence.
+    }        
+    return true;
+}    
+
+bool parseOneSequence() { // parse one sequence and all steps from this sequence (up to the end or up to next sequence or sequencer)
+    // seqIdx, sequenceIdx, stepIdx and stepsTemp[] are used and updated
+    char * ptr ;
+    // look for one sequence and n steps    
+    if(( * pvalue) != '(') {     // "(" is used to mark a new sequence
+        printf("Error: expecting a sequence beginning with ( for sequencer %i\n", seqIdx+1);
+        return false;
+    }    
+    nextSequenceBegin = 1;
+    pvalue++;                       // skip '(' 
+    pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+    errno = 0;
+    tempIntTable[0] =  strtol(pvalue , &ptr ,10);  // convert Rc value to integer 
+                                                    // *ptr = 0 when no error
+    if ((ptr == pvalue) || ( ptr == NULL)) {
+        printf("Error: for sequence %i, parameter RC channel value can't be converted to an integer\n",sequenceIdx+1);
+        return false;    
+    }
+    pvalue = ptr;
+    if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
+        printf("Error: for sequence %i, Rc channel value must in range -100...100 (included)\n" , sequenceIdx+1);
+        return false;    
+    }
+    if (( tempIntTable[0] % 10) != 0){
+        printf("Error: for sequence %i, Rc channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , sequenceIdx+1);
+        return false;    
+    }
+    
+    
+    tempIntTable[1] = 0; // set 4 optional flags to 0
+    tempIntTable[2] = 0;
+    tempIntTable[3] = 0;
+    tempIntTable[4] = 0;
+    for (uint8_t i=0;i<4;i++){ // search for a R, U O or P
         pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+        if (( * pvalue) == 'R' ){
+            tempIntTable[1]=1;
+        } else if (( * pvalue) == 'U' ){
+            tempIntTable[2]=1;
+        } else if (( * pvalue) == 'O' ){
+            tempIntTable[3]=1;
+        } else if (( * pvalue) == 'P' ){
+            tempIntTable[4]=1;
+        } else if (( * pvalue) == ')' ){
+            break;
+        } else {
+            printf("Error: sequence definition %i contains an invalid optional character (can only be R,U,O and/or P)\n", sequenceIdx+1);
+            return false;
+        }
+        pvalue++;
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
+    } // end for (4 optional sequence param)
+    if ( (tempIntTable[2]==1) && (tempIntTable[3]==1)){
+        printf("Error: in sequence definition %i: options U and O may not be used toegether\n",sequenceIdx+1);
+        return false;    
     }
+    pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
+    if (( * pvalue) != ')'){            // sequence must end with )
+        printf("Error: sequence definition %i must have a ) after max 4 optionnal characters\n",sequenceIdx+1);
+        return false ;
+    }
+    pvalue++; // skip )
+    pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
+    if (( * pvalue) != '{'){            // a step befinning with { must exist after a sequence 
+        printf("Error: after sequence definition %i we must have a steps beginning with {\n",sequenceIdx+1);
+        return false ;
+    }
+    // parse one or several steps
+    while ( (( * pvalue) != 0X00) && (( * pvalue) != '(') && (( * pvalue) != '[')) {     // get one or several steps
+        if (parseOneStep() == false) {  // data are stored in stepsTemp[] 
+            return false;
+        }
+        stepIdx++;   // prepare for next step
+    }
+    return true;
+}
+
+bool parseOneStep(){
+    char * ptr;
+    pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
     if (( * pvalue) != '{'){            // first char must be {
-        printf("Error : group of %i values must begin with { and only + or . are allowed between groups)\n",itemsMax);
+        printf("Error: in sequence %i, each step parameters must begin with { ; step=%i\n",sequenceIdx+1, stepIdx+1);
         return false ;
     }
     pvalue++;
-    for (uint8_t i = 0 ; i < itemsMax; i++) {
+    for (uint8_t i = 5 ; i < 8; i++) {
+        errno = 0;
+        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
+                                                // *ptr = 0 when no error
+        if( ( ptr == pvalue ) || (ptr == NULL) ){
+            printf("Error : for step %i, parameter %i can't be converted to an integer\n", stepIdx+1, i+1);
+            return false;    
+        }
+        pvalue = ptr; 
+        //printf(" seq %i = %i\n", i , tempIntTable[i]);
+    }  // end for 
+    // Check each of the 3 parameters                
+    if (tempIntTable[5] < 0 || tempIntTable[5] > 255){
+        printf("Error: for step %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
+        return false;
+    }
+    if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
+        printf("Error: for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
+        return false;
+    }
+    if (tempIntTable[7] < 0 || tempIntTable[7] > 255){
+        printf("Error: for step number %i, keep must be in range 0 / 255 (included)\n" , stepIdx+1);
+        return false;
+    }
+    pvalue =  skipWhiteSpace(pvalue);
+    if (( * pvalue) != '}') {
+        printf("Error : for step %i, group of parameters must end with } after 3 values\n",stepIdx+1);
+        return false ;
+    }
+    pvalue++;
+    pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
+    // here we have a valid step (that includes also the sequence parameters)
+    // all parameters of one step have been processed and are valid; store them in temp
+    stepsTemp[stepIdx].chRange = ( CH_RANGE) tempIntTable[0];
+    stepsTemp[stepIdx].toRepeat = tempIntTable[1];
+    stepsTemp[stepIdx].neverInterrupted =  tempIntTable[2];
+    stepsTemp[stepIdx].priorityInterruptOnly =  tempIntTable[3];
+    stepsTemp[stepIdx].isPriority =  tempIntTable[4];
+    stepsTemp[stepIdx].smooth = tempIntTable[5];
+    stepsTemp[stepIdx].value = tempIntTable[6];
+    stepsTemp[stepIdx].keep = tempIntTable[7];
+    stepsTemp[stepIdx].nextSequencerBegin = nextSequencerBegin;
+    stepsTemp[stepIdx].nextSequenceBegin = nextSequenceBegin; 
+    nextSequencerBegin = 0; // reset the flags
+    nextSequenceBegin = 0;
+    //printf("rc val= %i  R=%i  U=%i  O=%i  P=%i sm=%i pos=%i ke=%i nrb=%i nsb=%i\n", \
+    //            stepsTemp[stepIdx].chRange , stepsTemp[stepIdx].toRepeat , stepsTemp[stepIdx].neverInterrupted , \
+    //            stepsTemp[stepIdx].priorityInterruptOnly , stepsTemp[stepIdx].isPriority , stepsTemp[stepIdx].smooth,\
+    //            stepsTemp[stepIdx].value , stepsTemp[stepIdx].keep ,\
+    //            stepsTemp[stepIdx].nextSequencerBegin , stepsTemp[stepIdx].nextSequenceBegin );
+    return true; 
+}  // end of handling one step; 
+
+
+/*
+bool parseOneSequencer(){  // try to read a string  with n integer space separated set between { }
+    char * ptr ;                        // get the pos of first non converted integer 
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) != '['){            // first char must be {
+        printf("Error : group of 7 values must begin with { \n");
+        return false ;
+    }
+    pvalue++;
+    for (uint8_t i = 0 ; i < 7; i++) {
+        errno = 0;
+        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
+                                                   // *ptr = 0 when no error
+        if ( ( ptr == pvalue ) || ( ptr == NULL)) {
+            printf("Error : parameter %i of one sequencer can't be converted to an integers\n",i);
+            return false;    
+        }
+        pvalue = ptr; 
+        //printf(" seq %i = %i\n", i , tempIntTable[i]);
+    }
+    pvalue =  skipWhiteSpace(pvalue);
+    if (( * pvalue) != ']') {
+        printf("Error : group of parameter of a sequencer must end with ] after %7 values \n");
+        return false ;
+    }
+
+
+    pvalue++;
+    return true;
+}    
+
+bool parseOneStep(){  
+    // try to read a string with 
+    //    a "+" (optionnal) as first char to identify a new sequencer
+    //    a "/" (optionnal) as first char to identify a new sequence
+    //          then 5 parameters space separated (Rc value, to repeat, never interrupt, priority interrupt only, is priority)
+    //    then (mandatory) a "{" followed by
+    //           3 integers space separated
+    //           "}""
+    // return true if OK
+    char * ptr ; 
+    nextSequencerBegin = 0;
+    nextSequenceBegin = 0;
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) == '+'){            //  A "+" before "{" marks the first step of next sequencer
+        pvalue++;                       // skip + before { (used to separate sequencer when we print the definition of steps)
+        nextSequencerBegin = 1;      // 1 indicates that the next sequencer begins now
+        //printf("new sequencer\n");
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces 
+    }
+    if(( * pvalue) == 'S') {     // "S" is used to mark the first step of a new sequence
+        nextSequenceBegin = 1;     //
+        //printf("new sequence\n");
+        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+        errno = 0;
+        tempIntTable[0] =  strtol(pvalue , &ptr ,10);  // convert Rc value to integer 
+                                                    // *ptr = 0 when no error
+        if ((ptr == pvalue) || ( ptr == NULL)) {
+            printf("Error: for a sequence, parameter RC channel value can't be converted to an integer\n");
+            return false;    
+        }
+        pvalue = ptr;
+        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+        tempIntTable[1] = 0; // set 4 optional flags to 0
+        tempIntTable[2] = 0;
+        tempIntTable[3] = 0;
+        tempIntTable[4] = 0;
+        for (uint8_t i=0;i<4;i++){ // search for a R, U O or P
+            pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
+            if (( * pvalue) == 'R' ){
+                tempIntTable[1]=1;
+            } else if (( * pvalue) == 'U' ){
+                tempIntTable[2]=1;
+            } else if (( * pvalue) == 'O' ){
+                tempIntTable[3]=1;
+            } else if (( * pvalue) == 'P' ){
+                tempIntTable[4]=1;
+            } else if (( * pvalue) == '{' ){
+                break;
+            } else {
+                printf("Error: sequence definition contains an invalid character (can only be R,U,O and/or P)\n");
+                return false;
+            }
+            pvalue++;
+            pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
+        }
+        if ( (tempIntTable[2]==1) && (tempIntTable[3]==1)){
+            printf("Error: in sequence definition options U and O may not be used toegether)\n");
+            return false;    
+        }
+    }
+    if (( * pvalue) != '{'){            // first char must be {
+        printf("Error: step parameters must begin with { (after some optionnal other parameters)\n");
+        return false ;
+    }
+    pvalue++;
+    for (uint8_t i = 5 ; i < 8; i++) {
         errno = 0;
         tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
                                                    // *ptr = 0 when no error
         if( ptr == pvalue ) {
-            printf("Error : can't be converted to a group of %i integers; i=%i\n", itemsMax, i);
+            printf("Error : for a step, parameter %i can't be converted to an integer\n", (int) (i+1));
             return false;    
         }
         if ( ptr == NULL){
-            printf("Error : can't be converted to a group of %i integers\n", itemsMax);
+            printf("Error : for a step, parameter %i can't be converted to an integer\n", (int) (i+1));
             return false;
         }
         pvalue = ptr; 
@@ -1793,24 +2130,27 @@ bool getSetOfInt(uint8_t itemsMax){  // try to read a string  with n integer spa
     }
     pvalue =  skipWhiteSpace(pvalue);
     if (( * pvalue) != '}') {
-        printf("Error : group must end with } after %i values \n", itemsMax);
+        printf("Error : for a step, group of parameters must end with } after 3 values \n");
         return false ;
     }
     pvalue++;
     return true;
 }    
+*/
 
+
+/*
 bool getSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid (then seq structure is modified)
-                       // when true we still have to check if this is valid with congig (for use of pins and with steps)
-    uint8_t seqIdx = 0;
-    SEQ_DEF seqDefsTemp[16]; // temporary structure to avoid any change to seq in case of error detected here
+                       // when true we still have to check if this is valid with config (for use of pins and with steps)
+    uint8_t seqIdx = 0;        // count the sequencer
+    SEQ_DEF seqDefsTemp[16];   // temporary structure to avoid any change to seq in case of error detected here
     //bool isSeqValid = false;
     while ( (*pvalue) != 0X00 ) { // while not end of value buffer
         if (seqIdx >= 16) {
             printf("Error : to many sequencer definitions; max is 16\n");
             return false; 
         }
-        if ( getSetOfInt(7) == false){
+        if ( parseOneSequencer() == false){
             printf("Error converting the sequencer definition numner %i\n",seqIdx+1);
             return false; 
         }
@@ -1875,7 +2215,7 @@ bool getSequencers(){  // try to get sequencer definition from a string pointed 
     memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));
     seq.defsMax = seqIdx;
     seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
-    printf("Number of sequencers stored in defsMax= %i\n",seq.defsMax);
+    printf("Number of sequencers= %i\n",seq.defsMax);
 
     return true;
 }
@@ -1883,7 +2223,9 @@ bool getSequencers(){  // try to get sequencer definition from a string pointed 
 bool getStepsSequencers(){ // try to get all steps decoding a string pointed by pvalue
                             // return true when steps are valid (syntax and each value); seq structure is then updated
                             // we still have to check if this is valid compared to the number of sequencers
-    uint8_t stepIdx = 0;
+    uint8_t sequencerIdx = 0;  // count the number of sequencer
+    uint16_t sequenceIdx = 0;  // count the sequence
+    uint8_t stepIdx = 0;       // count the steps
     SEQ_STEP stepsTemp[SEQUENCER_MAX_NUMBER_OF_STEPS]; 
     //bool isStepValid = false;
     while ( (*pvalue) != 0X00 ) { // while not end of value buffer
@@ -1891,7 +2233,7 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
             printf("Error : to many steps; max is %i\n",SEQUENCER_MAX_NUMBER_OF_STEPS);
             return false; 
         }
-        if ( getSetOfInt(4) == false){
+        if ( parseOneStep() == false){
             printf("Error converting the step numner %i\n",stepIdx+1);
             return false; 
         }
@@ -1901,38 +2243,76 @@ bool getStepsSequencers(){ // try to get all steps decoding a string pointed by 
         //    printf("Error : for step number %i, channel range must be -100/-75/-50/-25/0/25/50/75/100\n", stepIdx+1);
         //    return false;
         //}
-        if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
-            printf("Error : for step number %i, channel value must in range -100...100 (included)\n" , stepIdx+1);
+        if ((nextSequencerBegin == 1) && (nextSequenceBegin == 0)) {
+            printf("Error: when a new sequence begins (with a +), a new sequence must exist (with a /)");
             return false;    
+        }
+        if ( nextSequencerBegin == 1){ // for a new sequencer
+            sequencerIdx++; // count the number of sequencers
+        }
+        if ( nextSequenceBegin == 1){ // for a sequence, fields are : channel value, toRepeat, neverInterrupted , priorityInterruptOnly ,isPriority
+            sequenceIdx++;       // count the sequences
+            if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
+                printf("Error: for sequence number %i, channel value must in range -100...100 (included)\n" , sequenceIdx);
+                return false;    
+            }
+            if (( tempIntTable[0] % 10) != 0){
+                printf("Error: for step number %i, channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
+                return false;    
+            }
+            if (tempIntTable[1] < 0 || tempIntTable[1] > 1){
+                printf("Error: for sequence number %i, the first flag must be 0 (no repeat) or 1 (repeat sequence)\n" , sequenceIdx);
+                return false;    
+            }
+            if (tempIntTable[2] < 0 || tempIntTable[2] > 1){
+                printf("Error: for sequence number %i, the second flag must be 0 (may be interrupted) or 1 (never interrupted)\n" , sequenceIdx);
+                return false;    
+            }
+            if (tempIntTable[3] < 0 || tempIntTable[3] > 1){
+                printf("Error: for sequence number %i, the third flag must be 0 (interrupted by other seq.) or 1 (interrupted only by priority seq.)\n" , sequenceIdx);
+                return false;    
+            }
+            if (tempIntTable[4] < 0 || tempIntTable[4] > 1){
+                printf("Error: for sequence number %i, the fourth flag must be 0 (not a priority seq.) or 1 (is a priority seq.)\n" , sequenceIdx);
+                return false;    
+            }
         }
         
-        if (( tempIntTable[0] % 10) != 0){
-            printf("Error : for step number %i, channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
-            return false;    
-        }
-        if (tempIntTable[1] < 0 || tempIntTable[1] > 255){
-            printf("Error : for step number %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
+        if (tempIntTable[5] < 0 || tempIntTable[5] > 255){
+            printf("Error: for step number %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
             return false;
         }
-        if (tempIntTable[2] < -125 || tempIntTable[2] > 125){
-            printf("Error : for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
+        if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
+            printf("Error: for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
             return false;
         }
-        if (tempIntTable[3] < 0 || tempIntTable[3] > 255){
-            printf("Error : for step number %i, keep must be in range 0 / 255 (included)\n" , stepIdx+1);
+        if (tempIntTable[7] < 0 || tempIntTable[7] > 255){
+            printf("Error: for step number %i, keep must be in range 0 / 255 (included)\n" , stepIdx+1);
             return false;
         }
         stepsTemp[stepIdx].chRange = ( CH_RANGE) tempIntTable[0];
-        stepsTemp[stepIdx].smooth = tempIntTable[1];
-        stepsTemp[stepIdx].value = tempIntTable[2];
-        stepsTemp[stepIdx].keep = tempIntTable[3];
+        stepsTemp[stepIdx].toRepeat = tempIntTable[1];
+        stepsTemp[stepIdx].neverInterrupted =  tempIntTable[2];
+        stepsTemp[stepIdx].priorityInterruptOnly =  tempIntTable[3];
+        stepsTemp[stepIdx].isPriority =  tempIntTable[4];
+        stepsTemp[stepIdx].smooth = tempIntTable[5];
+        stepsTemp[stepIdx].value = tempIntTable[6];
+        stepsTemp[stepIdx].keep = tempIntTable[7];
         stepsTemp[stepIdx].nextSequencerBegin = nextSequencerBegin;
+        stepsTemp[stepIdx].nextSequenceBegin = nextSequenceBegin; 
+        //printf("rc val= %i  R=%i  U=%i  O=%i  P=%i sm=%i pos=%i ke=%i nrb=%i nsb=%i\n", \
+        //            stepsTemp[stepIdx].chRange , stepsTemp[stepIdx].toRepeat , stepsTemp[stepIdx].neverInterrupted , \
+        //            stepsTemp[stepIdx].priorityInterruptOnly , stepsTemp[stepIdx].isPriority , stepsTemp[stepIdx].smooth,\
+        //            stepsTemp[stepIdx].value , stepsTemp[stepIdx].keep ,\
+        //            stepsTemp[stepIdx].nextSequencerBegin , stepsTemp[stepIdx].nextSequenceBegin );
         stepIdx++;
     } // end while
     //isStepValid = true;
     memcpy(&seq.steps , &stepsTemp , sizeof(stepsTemp));
     seq.stepsMax = stepIdx;
+    seq.sequencesMax = sequenceIdx;
     seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
-    printf( " Number of steps= %i\n",stepIdx);
+    printf( "In STEP, number of: sequencers= %i   sequences= %i   steps= %i\n", sequencerIdx , sequenceIdx , stepIdx);
     return true; 
 }
+*/
