@@ -50,7 +50,7 @@
 //                                     pinSbusOut,pinTlm, pinVolt[4]  pinSda, pinScl,pinRpm, pinLed
 
 
-#define CMD_BUFFER_LENTGH 2000
+#define CMD_BUFFER_LENTGH 3000
 uint8_t cmdBuffer[CMD_BUFFER_LENTGH];
 uint16_t cmdBufferPos = 0;
 
@@ -1620,12 +1620,12 @@ void checkSequencers(){
             }
             seqIdx++;                                                    // handle next sequencer
         }
-        if ((seq.steps[stepIdx].nextSequencerBegin == 1 ) || (stepIdx == 0) ){    // for each begin of sequencer (including the first one)
-            if (seqIdx >= seq.defsMax) {
-                printf("Error in sequencer: number of sequencers found in STEP exceeds number of sequencers defined in sequencer%i)\n",seq.defsMax );
-                configIsValid = false;
-                return;
-            }
+        if (seq.steps[stepIdx].nextSequencerBegin == 1 ) {    // for each begin of sequencer 
+            //if (seqIdx >= seq.defsMax) {
+            //    printf("Error in sequencer: number of sequencers found in STEP exceeds number of sequencers defined in sequencer%i)\n",seq.defsMax );
+            //    configIsValid = false;
+            //    return;
+            //}
             if (seqDatasToUpload) {
                 // initilize seqDatas for new sequencer
                 seqDatas[seqIdx].stepStartAtIdx = stepIdx;
@@ -1651,8 +1651,8 @@ void checkSequencers(){
             return;
         }
         if ( seq.defs[seqIdx].type == 1) { // when seq has type ANALOG, PWM value must be between 0/100  
-            if (seq.steps[stepIdx].value < 0) {
-                printf("Error in sequencer steps: for sequencer nr %i, type is ANALOG(=1); PWM value must then be in range 0/100 in step %i\n"\
+            if (seq.steps[stepIdx].value < 0 || ( seq.steps[stepIdx].value > 100 && seq.steps[stepIdx].value != 127))  {
+                printf("Error in sequencer steps: for sequencer %i  step %i, type is ANALOG(=1); PWM output value must then be in range 0/100 or 127(=stop)\n"\
                     ,seqIdx + 1 , stepIdx + 1 );
                 configIsValid = false;
                 return;
@@ -1949,6 +1949,10 @@ bool parseOneSequence() { // parse one sequence and all steps from this sequence
         if (parseOneStep() == false) {  // data are stored in stepsTemp[] 
             return false;
         }
+        if (stepIdx == SEQUENCER_MAX_NUMBER_OF_STEPS) {
+            printf("Error: to many steps; maximum is %i\n",SEQUENCER_MAX_NUMBER_OF_STEPS);
+        return false ;
+        }
         stepIdx++;   // prepare for next step
     }
     return true;
@@ -1978,8 +1982,12 @@ bool parseOneStep(){
         printf("Error: for step %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
         return false;
     }
-    if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
-        printf("Error: for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
+    if (tempIntTable[6] < -125 || tempIntTable[6] > 127 || tempIntTable[6] == 126)  {
+        printf("Error: for step number %i, output value must be in range -125 / 125 (included) or 127 (stop at current position)\n", stepIdx+1);
+        return false;
+    }
+    if (tempIntTable[5] >0 && tempIntTable[6] == 127)  {
+        printf("Error: for step number %i, smooth must be 0 when output value is 127 (stop at current position)\n", stepIdx+1);
         return false;
     }
     if (tempIntTable[7] < 0 || tempIntTable[7] > 255){

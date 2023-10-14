@@ -281,9 +281,9 @@ oXs uses 3 concepts : sequencer, sequence and step.
     * an optional flag ("U" = Uninterrupted) to say that the sequence may be interrupted before end of the last step; by default sequence may be interrupted
     * an optional flag ("O" = Only interrupted by priority sequence) to say that the sequence may be interrupted but only by a "priority" sequence
     * an optional flag ("P" = priority) to say that the sequence is a "priority" sequence (so it may interrupt a sequence with flag "O")  
-* Each "step" is defined by 4 parameters
+* Each "step" is defined by 3 parameters
     * The number of clocks (=delay) for a smooth transition from current PWM value up to the PWM value from this step (must be in range 0/255)
-    * The PWM value to apply in this step at the end of the transition (in range -100/100 for SERVO, 0/100 for ANALOG pwm)
+    * The PWM value to apply in this step at the end of the transition (in range -125/125 for SERVO, 0/100 for ANALOG pwm); a value 127 is also possible and has a special function: it means that oXs must keep the current value. This can be useful only when a running sequence must be interrupted and the position must remain unchanged.
     * The number of clocks the PWM value must be kept before applying next step (if any) or going back to the first step of this sequence. Must be in range 0/255 
 * For each sequencer, when the handset sent a different Rc value that matches the value of a sequence, oXs starts "playing" all steps of the related sequence. If this happens while oXs is already playing a sequence, oXs will continue or stop playing the current sequence depending on the flags U, O and P (see above). If the current step may not be interrupted, oXs, will delay the new requested sequence up to the end of the current sequence. When the current sequence reaches his end, oXs will or play the delayed sequence (if any), or repeat the current sequence (if flag = "R") or keep the last PWM output.
 * For each sequencer, if the handset sent a Rc value that does not match a defined value (taking care of tolerance), the change of Rc value has no effect; oXs continues to "play" the current sequence.

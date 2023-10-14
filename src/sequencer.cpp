@@ -92,11 +92,11 @@ void sequencerLoop(){
         #ifndef DEBUG_SIMULATE_SEQ_RC_CHANNEL
         currentChannelValue = rcSbusOutChannels[seq.defs[seqIdx].channel - 1];
         #else
-        currentChannelValue = (uint16_t) simuSeqChannelValue; 
+        currentChannelValue = (uint16_t) simuSeqChannelValue; // is changed by sending a command N via USB
         #endif
         //if ( seq == 0 && currentChannelValue == 391) printf("ch is 391\n");
         if ( isSeqChannelChanged ( seqIdx)) {  // if channel value changed and is another range and steps are defined for it
-                                               //  then nextPossibleStepIdx contains the step to be activated
+                                               //  then nextPossibleStepIdx contains the step to be activated (or delayed)
             //printf("chan changed\n");
             if ( seqDatas[seqIdx].state == STOPPED ) {   // activate new sequence when no seq was running
                 startNewSeq(seqIdx, nextPossibleStepIdx);
@@ -136,7 +136,9 @@ void startNewStep(uint8_t sequencer , uint16_t stepIdx){ // start a new step
     if (seq.steps[stepIdx].smooth == 0){ // When there is no smoothing delay, nextaction = currentSeqMillis + keep and stait = wait
         seqDatas[sequencer].state = WAITING;
         seqDatas[sequencer].nextActionAtMs = currentSeqMillis + (seq.defs[sequencer].clockMs * seq.steps[stepIdx].keep) ;
-        seqDatas[sequencer].lastOutputVal = seq.steps[stepIdx].value; 
+        if ( seq.steps[stepIdx].value != 127 ) {  // avoid to update PWM when new value == 127 (= stop at current position)
+            seqDatas[sequencer].lastOutputVal = seq.steps[stepIdx].value;
+        }     
     } else {   // when there is a smooth parameter > 0, next action is 20 after current and state = SMOOTHING
         seqDatas[sequencer].state = SMOOTHING;
         //  lastOutputVal is not changed
@@ -215,7 +217,7 @@ void nextAction(uint8_t sequencer){
             } else if ( seq.steps[currentStepIdx].toRepeat == 1) {    // when current sequence must be repeated, go to first step
                 startNewStep(sequencer , seqDatas[sequencer].firstStepIdx);
             } else {
-                seqDatas[sequencer].state = STOPPED;             // mark the sequence as STOPPED; so next change can restart it immediately    
+                seqDatas[sequencer].state = STOPPED;             // mark the sequence as STOPPED; so next change can start a new sequence immediately    
             }
         }
     }
