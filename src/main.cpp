@@ -591,10 +591,11 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      updatePWM(); // update PWM pin only based on channel value
+      updatePWM(); // update PWM pins only based on channel value (not sequencer)
             //updatePioPwm();
       sequencerLoop();  // update PWM pins based on sequencer
       if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16
+        newRcChannelsReceivedForLogger = false; // reset the flag allowing a log of RC channels
         logger.logAllRcChannels();  // log all rc channels
       }       
   }

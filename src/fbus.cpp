@@ -257,7 +257,7 @@ bool processNextInputByte( uint8_t c){
             break;
         default:
             // definately not fbus, missing header byte
-            printf("fbus: first pos not a valid length frame\n");
+            printf("fbus: first pos not a valid length frame; value is %X\n", c);
             return false;
         }
     }
