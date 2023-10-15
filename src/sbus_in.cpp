@@ -288,7 +288,7 @@ void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, chan
     }
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
-    bool newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
 
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);

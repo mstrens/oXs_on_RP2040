@@ -313,6 +313,7 @@ oXs uses 3 concepts : sequencer, sequence and step.
             * Third sequence (70 R) is activated when Rc channel change to 70 and may be repeated automatically; it contains 2 steps;
                 * step one {0 100 20} says that PWM must be set immediately(smooth=0) on 100 and stay on 100 for 20 clock and then next step is applied.
                 * step two {0 20 10} says that PWM must be set smoothly (over 5 clock units) to 20 and stay so for 10 clock units before repeating the sequence.
+* To delete all sequencers, enter SEQ=DEL
 * Processing of SEQ commands
     * most controls on SEQ commands are performed before saving the parameters. In case of error, the command is just discarded and not saved
     * commands that fit those controls are saved in flash memory and oXs is rebooted. It can be that you have to make a manual reset (or power off+on)

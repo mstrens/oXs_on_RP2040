@@ -255,8 +255,8 @@ void updatePWM(){
     if ( newRcChannelsReceivedForPWM){  // when new Rc channel is received (flag set by CRSF_IN, SBUS, FBUS, EXBUS, SRXL2, IBUS...)
         newRcChannelsReceivedForPWM = false;  // reset the flag
 
-    //if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
-    //    lastPwmMillis = millisRp();
+        //if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
+        //    lastPwmMillis = millisRp();
         if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
