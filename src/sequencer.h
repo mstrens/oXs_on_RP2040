@@ -53,7 +53,7 @@ struct SEQ_DATA {
     uint16_t stepEndAtIdx ; // this is filled during setup
     SEQ_STATE state;        // Stopped, SMoothing, Waiting
     uint16_t currentChValue; // last channel value used to activated this sequence
-    CH_RANGE currentRange;   // range (-100, -75 , -25, ...+75, +100 , dummy)
+    CH_RANGE lastreceivedRange;   // range (-100, -75 , -25, ...+75, +100 , dummy) last range received from handset (even if not defined in the sequence)
     uint16_t firstStepIdx;   // first step to be played for current sequence
     uint16_t currentStepIdx; //step being played 
     uint16_t delayedStepIdx; // step to be played at the end of current step

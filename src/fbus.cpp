@@ -257,7 +257,7 @@ bool processNextInputByte( uint8_t c){
             break;
         default:
             // definately not fbus, missing header byte
-            printf("fbus: first pos not a valid length frame; value is %X\n", c);
+            printf("fbus: first character of the frame is not a valid length frame; received value is %X\n", c);
             return false;
         }
     }
@@ -265,7 +265,7 @@ bool processNextInputByte( uint8_t c){
     if (fbusRxBufferIdx == 1) {
         if ( (fbusIsDownlink==false) && (c != FRAME_TYPE_CHANNEL)) { // for a Rc channel, byte must be FF, 
             // not channel data
-            printf("fbus: second pos not = FF for channel frame\n");
+            printf("fbus: second character is not = 0xFF for channel frame\n");
             fbusRxBufferIdx = 0;
             return false;
         }

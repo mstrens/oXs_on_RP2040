@@ -176,7 +176,7 @@ void updateSeqOutput(uint8_t sequencer, uint16_t stepIdx, int8_t outputVal){
 void nextAction(uint8_t sequencer){
     // if state = Smoothing
     //     if (nextActionMs + 20) > smoothUpToMs, change state to Waiting, change value , set nextaction = currentSeqMillis + (keep * clockMs) 
-    //     else calculate next value to apply and keep state = smoothing
+    //     else calculate next value to apply and keep state = smoothingcurrentStepIdx
     //else (state = waiting) perform nextstep()
     //     if there is a next step in current sequence
     //           change current stepidx
@@ -238,13 +238,17 @@ bool isSeqChannelChanged (uint8_t sequencer){ // when true is returned, it means
     seqDatas[sequencer].currentChValue = currentChannelValue ;
     int rangeInt =  (int) (( ( (float) currentChannelValue - SBUS_AT_M100 )  + (seqSbusInterval / 2)) / seqSbusInterval)  ; // so normally 988=>0,, 988+89.1, ... 1, 2..
     CH_RANGE range =  (CH_RANGE) (rangeInt  * (200 / SEQ_NUMBER_OF_INTERVALS) - 100) ;
+    if (seqDatas[sequencer].lastreceivedRange == range) {   // when range did not change
+        return false; 
+    }
+    seqDatas[sequencer].lastreceivedRange = range; // store the current range
     //printf("range=%i\n", (int) range);
-    //if ( sequencer == 0 && currentChannelValue == 391) printf("r=%i sSR=%i\n", (int) range, (int) rangeInt, (int) range);
-    if ( seqDatas[sequencer].currentStepIdx != 0XFFFF ) { // do not check the current range when currentIdx is still a dummy value
-        if (range == seq.steps[seqDatas[sequencer].currentStepIdx].chRange) { // flase when range does not change
-            return false;
-        }
-    }    
+    //if ( seqDatas[sequencer].currentStepIdx != 0XFFFF ) { // do not check the current range when currentIdx is still a dummy value
+    //    if (range == seq.steps[seqDatas[sequencer].currentStepIdx].chRange) { // flase when range does not change
+    //        return false;
+    //    }
+    //}    
+    
     nextPossibleStepIdx = searchSeq( sequencer , range); // Search a sequence that match the range; searchSeq return NO_SEQ (=0XFFFF) if there is no step defined
     //if (nextPossibleStepIdx != NO_SEQ) {
     //    printf("At %i Sequencer %i chan= %i range= %i\n", (int) millisRp(), (int) sequencer , (int) currentChannelValue , (int) range);

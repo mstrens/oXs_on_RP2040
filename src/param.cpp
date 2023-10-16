@@ -1631,7 +1631,7 @@ void checkSequencers(){
                 seqDatas[seqIdx].stepStartAtIdx = stepIdx;
                 seqDatas[seqIdx].state = STOPPED;
                 seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
-                seqDatas[seqIdx].currentRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+                seqDatas[seqIdx].lastreceivedRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
                 seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
                 seqDatas[seqIdx].delayedStepIdx = 0xFFFF;  // use a dummy value to say that there is no delayed step.
                 //seqDatas[seqIdx].lastActionAtMs = 0;
