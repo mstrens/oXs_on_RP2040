@@ -64,8 +64,10 @@
 //        0   2            sbus out                                                            (it uses 4 bytes and one dma)       
 //        0   3            esc  Rx
 
-//        1   0 is used for gps Tx  (was used for one pwm)  and for logger TX (when gps setup is done) (it uses 4 bytes no dma)      
-//        1   1 is used for gps Rx  (was used for one pwm)                                             (it uses 9 bytes no dma)
+//        1   0 is used for gps Tx  ; is unclaim when GPS config is done and reused             (it uses 4 bytes no dma)      
+//        1   0 is also used for gps Rx                                                         (it uses 9 bytes no dma)
+
+//        1   1  is used for rpm                                                                        (it uses 3 bytes)
 //        1   2 is used for logger uart Tx                                                             (it uses 4 bytes and one dma) 
 //        1   3 is used for RGB led                                                                    (it uses 4 bytes and no dma)     
 // So UART0 is used for Secondary crsf of Sbus in ( was GPS before)
