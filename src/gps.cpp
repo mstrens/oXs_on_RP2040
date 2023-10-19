@@ -193,12 +193,14 @@ void GPS::gpsInitRx(){
     irq_set_exclusive_handler( PIO1_IRQ_0 , gpsPioRxHandlerIrq) ;
     irq_set_enabled (PIO1_IRQ_0 , true) ;
     if (pio_can_add_program(gpsPio, &uart_rx_program) == false) {
-        printf("Error: can't add pio program for GPS Rx");
+        printf("Error: can't add pio program for GPS Rx\n");
         sleep_ms(1000); // wait that message is displayed
         while (1) { ; }  // stop the program
     }
     uint gpsOffsetRx = pio_add_program(gpsPio, &uart_rx_program);
+    //printf("uart rx program init will be performed\n");
     uart_rx_program_init(gpsPio, gpsSmRx, gpsOffsetRx, config.pinGpsTx, 38400);
+    //printf("uart rx program init has been be performed\n");
     busy_wait_us(1000);
     uint8_t dummy;
     while (! queue_is_empty (&gpsRxQueue)) queue_try_remove ( &gpsRxQueue , &dummy ) ;
