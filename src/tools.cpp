@@ -102,6 +102,14 @@ void startTimerUs(uint8_t idx){
     startAtUs[idx] = microsRp() ;
 }
 
+void alarmTimerUs(uint8_t idx, uint32_t alarmExceedUs){
+    if (idx >= sizeof(startAtUs)) return ;
+    if (( microsRp()-startAtUs[idx]) > alarmExceedUs) { 
+        printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);
+    }    
+
+}
+
 void getTimerUs(uint8_t idx){
     if (idx >= sizeof(startAtUs)) return ;
     printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);

@@ -101,8 +101,9 @@ typedef struct
 void sent2Core0( uint8_t fieldType, int32_t value);
 
 void enlapsedTime(uint8_t idx);
-void startTimerUs(uint8_t idx); 
-void getTimerUs(uint8_t idx);
+void startTimerUs(uint8_t idx);                            // start a timer to measure enlapsed time
+void alarmTimerUs(uint8_t idx, uint32_t alarmExceedUs);    //  print a warning if enlapsed time exceed xx usec
+void getTimerUs(uint8_t idx);                              // print always the enlapsed time
 
 void calculateAirspeed();
 

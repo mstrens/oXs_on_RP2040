@@ -539,8 +539,11 @@ void printTest(int testVal){
     }
 }
 
+#define MAIN_LOOP 0
 void loop() {
   //debugBootButton();
+    //startTimerUs(MAIN_LOOP);                            // start a timer to measure enlapsed time
+
   if (configIsValid){
       getSensorsFromCore1(); // this also generate the LOG signal on pio UART
       mergeSeveralSensors();
@@ -601,6 +604,8 @@ void loop() {
         logger.logAllRcChannels();  // log all rc channels
       }       
   }
+  //alarmTimerUs(MAIN_LOOP, 1000);    //  print a warning if enlapsed time exceed xx usec
+
   watchdog_update();
   //if (tud_cdc_connected()) {
   //printf("before handleUSBCmd\n");sleep_ms(100); 
@@ -646,7 +651,9 @@ void setup1(){
     setupSensors();    
 }
 // main loop on core 1 in order to read the sensors and send the data to core0
+#define MAIN_LOOP1 1
 void loop1(){
+    //startTimerUs(MAIN_LOOP1);
     uint8_t qCmd;
     getSensors(); // get sensor
     if ( ! queue_is_empty(&qSendCmdToCore1)){
@@ -655,6 +662,7 @@ void loop1(){
             mpu.calibrationExecute();
         }
     }
+    //alarmTimerUs(MAIN_LOOP1, 500);
 }
 
 void core1_main(){
