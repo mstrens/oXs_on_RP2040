@@ -26,10 +26,11 @@ bool rgbOn = false;
 extern CONFIG config;
 
 void setupLed(){
-    rgbOn = false;
-    uint offset = pio_add_program(rgbPio, &ws2812_program);
-    ws2812_program_init(rgbPio, rgbSm, offset, config.pinLed, 800000, IS_RGBW);
-
+    if ((config.pinLed >= 0 ) && (config.pinLed <= 29 ) ){
+        rgbOn = false;
+        uint offset = pio_add_program(rgbPio, &ws2812_program);
+        ws2812_program_init(rgbPio, rgbSm, offset, config.pinLed, 800000, IS_RGBW);
+    }
 }
 
 void setRgbColor(uint8_t red , uint8_t green , uint8_t blue){
@@ -47,21 +48,25 @@ void setRgbColorOn(uint8_t red , uint8_t green , uint8_t blue){
 }
 
 void setRgbOn(){
-    rgbOn = true;
-    if (config.ledInverted == 'I') {
-        pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbGreen) <<16) |
-              (((uint32_t) rgbRed) << 24) |
-             (((uint32_t) rgbBlue) << 8) );
-    } else {
-        pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbRed) <<16) |
-              (((uint32_t) rgbGreen) << 24) |
-             (((uint32_t) rgbBlue) << 8) );
-    }
+    if ((config.pinLed >= 0 ) && (config.pinLed <= 29 ) ){
+        rgbOn = true;
+        if (config.ledInverted == 'I') {
+            pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbGreen) <<16) |
+                (((uint32_t) rgbRed) << 24) |
+                (((uint32_t) rgbBlue) << 8) );
+        } else {
+            pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbRed) <<16) |
+                (((uint32_t) rgbGreen) << 24) |
+                (((uint32_t) rgbBlue) << 8) );
+        }
+    }    
 }
 
 void setRgbOff(){
-    rgbOn = false;
-    pio_sm_put_blocking(rgbPio, rgbSm , 0);
+    if ((config.pinLed >= 0 ) && (config.pinLed <= 29 ) ){
+        rgbOn = false;
+        pio_sm_put_blocking(rgbPio, rgbSm , 0);
+    }    
 }
 
 void toggleRgb(){

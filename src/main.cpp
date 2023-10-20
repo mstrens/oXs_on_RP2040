@@ -338,15 +338,15 @@ void setup() {
   //bool clockChanged; 
   //clockChanged = set_sys_clock_khz(133000, false);
   set_sys_clock_khz(133000, false);
-  setupLed();
-  setRgbColorOn(10,0,10); // start with 2 color
+  //setupLed();               This has to be done after checking the config
+  //setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
   uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
     sleep_ms(100);
-    toggleRgb();
+    //toggleRgb();
     }
   sleep_ms(2000);  // in debug mode, wait a little to let USB on PC be able to display all messages
   uint8_t a1[2] = {1, 2};
@@ -392,10 +392,13 @@ void setup() {
         printf("Clean boot\n");
         //sleep_ms(1000); // wait that GPS is initialized
     }
-  setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
+  setupLed();
+  //setRgbColorOn(10,0,10); // start with 2 color
+  setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
+  
   if (configIsValid){ // continue with setup only if config is valid
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
