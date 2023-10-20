@@ -13,9 +13,11 @@
 
 #define IS_RGBW false // no white led are on the RP2040-zero board
 
+extern CONFIG config;
+
 PIO rgbPio = pio1;
 uint rgbSm  = 3;
-uint8_t rgbPin = 16;  // RP2040 zero uses a rgb neopixel on pin 16
+//uint8_t rgbPin = 16;  // RP2040 zero uses a rgb neopixel on pin 16
 uint8_t rgbRed;
 uint8_t rgbGreen;
 uint8_t rgbBlue;
@@ -26,7 +28,7 @@ extern CONFIG config;
 void setupLed(){
     rgbOn = false;
     uint offset = pio_add_program(rgbPio, &ws2812_program);
-    ws2812_program_init(rgbPio, rgbSm, offset, rgbPin, 800000, IS_RGBW);
+    ws2812_program_init(rgbPio, rgbSm, offset, config.pinLed, 800000, IS_RGBW);
 
 }
 
