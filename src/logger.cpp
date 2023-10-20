@@ -118,14 +118,14 @@ void LOGGER::logBytewithStuff(uint8_t c){
 }
 
 void LOGGER::logint32withStuff(uint8_t type ,int32_t value){
-    if (value & 0XFFFFFF00) { // if only one byte to send for value
+    if ((value & 0XFFFFFF00) == 0) { // if only one byte to send for value
         logBytewithStuff( type  | 0XC0);
         logBytewithStuff( (uint8_t) value);
-    } else if (value & 0XFFFF0000) { //2 bytes to send
+    } else if ((value & 0XFFFF0000) == 0) { //2 bytes to send
         logBytewithStuff( type | 0X80);
         logBytewithStuff( (uint8_t) (value >> 8));
         logBytewithStuff( (uint8_t) value );
-    } else if (value & 0XFF000000) { //3 bytes to send
+    } else if ( (value & 0XFF000000) == 0) { //3 bytes to send
         logBytewithStuff( type | 0X40);
         logBytewithStuff( (uint8_t) (value >> 16));
         logBytewithStuff( (uint8_t) (value >> 8));
