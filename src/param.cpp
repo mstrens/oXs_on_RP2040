@@ -159,8 +159,10 @@ void processCmd(){
         printf("    SCL (baro sensor)         SCL     = 3, 7, 11, 15, 19, 23, 27\n");
         printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
         printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
+        printf("    RGB led                   RGB     = 0, 1, 2, ..., 29\n");
         printf("    Logger                    LOG     = 0, 1, 2, ..., 29\n");
         printf("    ESC                       ESC_PIN = 0, 1, 2, ..., 29\n");
+
         printf("- To disable a function, set GPIO to 255\n\n");
         printf("- To declare the type of ESC, enter ESC_TYPE=xxx where XXX = HW4(Hobbywing V4) or KON (Kontronik)\n");
         //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
@@ -683,7 +685,7 @@ void processCmd(){
     if ( strcmp("ACC", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
-            printf("Error : pin must be an unsigned integer\n");
+            printf("Error : channel must be an unsigned integer\n");
         } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
             printf("Error : channel must be 1...16 or 255");
         } else {    
@@ -692,6 +694,21 @@ void processCmd(){
             updateConfig = true;
         }
     }
+
+    // change for RGB led gpio
+    if ( strcmp("RGB", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gpio must be an unsigned integer\n");
+        } else if ( !(ui <=29 or ui==255)) {
+            printf("Error : gpio must be in range 0/29 or 255\n");
+        } else {    
+            config.pinLed = ui;
+            printf("gpio for RGB led = %u\n" , config.pinLed );
+            updateConfig = true;
+        }
+    }
+    
     // change led color
     if ( strcmp("LED", pkey) == 0 ) {
         if (strcmp("N", pvalue) == 0) {
@@ -709,12 +726,12 @@ void processCmd(){
     if ( strcmp("LOG", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
-            printf("Error : pin must be an unsigned integer\n");
+            printf("Error : gpio must be an unsigned integer\n");
         } else if ( !(ui <=29 or ui==255)) {
-            printf("Error : pin must be in range 0/29 or 255\n");
+            printf("Error : gpio must be in range 0/29 or 255\n");
         } else {    
             config.pinLogger = ui;
-            printf("Pin for Logger = %u\n" , config.pinLogger );
+            printf("Gpio for Logger = %u\n" , config.pinLogger );
             updateConfig = true;
         }
     }
@@ -865,6 +882,7 @@ void checkConfigAndSequencers(){     // set configIsValid
     addPinToCount(config.pinSda);
     addPinToCount(config.pinScl);
     addPinToCount(config.pinRpm);
+    addPinToCount(config.pinLed);
     for (uint8_t i = 0 ; i<16 ; i++) {addPinToCount(config.pinChannels[i]);}
     for (uint8_t i = 0 ; i<16 ; i++) {
         if (config.pinChannels[i] != 255) atLeastOnePwmPin = true ;}
@@ -1030,6 +1048,7 @@ void printConfigAndSequencers(){
     printf("PWM Channels 9,10,11,12   = %4u %4u %4u %4u\n", config.pinChannels[8] , config.pinChannels[9] , config.pinChannels[10] , config.pinChannels[11]);
     printf("PWM Channels 13,14,15,16  = %4u %4u %4u %4u\n", config.pinChannels[12] , config.pinChannels[13] , config.pinChannels[14] , config.pinChannels[15]);
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
+    printf("RGB led . . . . . . . . . = %4u  (RGB    = 0, 1, 2, ..., 29)\n", config.pinLed);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
     printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)\n", config.pinEsc );
     
