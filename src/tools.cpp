@@ -102,6 +102,14 @@ void startTimerUs(uint8_t idx){
     startAtUs[idx] = microsRp() ;
 }
 
+void alarmTimerUs(uint8_t idx, uint32_t alarmExceedUs){
+    if (idx >= sizeof(startAtUs)) return ;
+    if (( microsRp()-startAtUs[idx]) > alarmExceedUs) { 
+        printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);
+    }    
+
+}
+
 void getTimerUs(uint8_t idx){
     if (idx >= sizeof(startAtUs)) return ;
     printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);
@@ -215,8 +223,10 @@ int32_t posFieldValues[] = {
     167,         //     AIRSPEED_COMPENSATED_VSPEED,
     98,         //  SBUS_HOLD_COUNTER,
     12,          //  SBUS_FAILSAFE_COUNTER,
-    135791       // GPS cumulative dist in m
-            
+    135791,       // GPS cumulative dist in m
+    2468,         // ACC_X in 0.001G
+    3579,         // ACC_Y
+    1478          // Acc_Z        
 };
 
 int32_t negFieldValues[] = {    
@@ -261,11 +271,14 @@ int32_t negFieldValues[] = {
     -167,         //     AIRSPEED_COMPENSATED_VSPEED,      
     0,         //  SBUS_HOLD_COUNTER,
     0,          //  SBUS_FAILSAFE_COUNTER,   
-    0           // cumulative GPS dist m
+    0,           // cumulative GPS dist m
+    -2468,         // ACC_X in 0.001G
+    -3579,         // ACC_Y
+    -1478          // Acc_Z        
 };
 // fill all fields with dummy values (useful to test a protocol)
  void fillFields( uint8_t forcedFields){
-    //printf("entering fillFields with %d\n", forcedFields);
+    //printf("entering fillFields wi,th %d\n", forcedFields);
     if (forcedFields == 1)  {   // force positive values
         for (uint8_t i = 0; i <  (sizeof(posFieldValues)/sizeof(*posFieldValues)) ; i++){
         //for (uint8_t i = 0; i <  6 ; i++){

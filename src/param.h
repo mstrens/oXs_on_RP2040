@@ -6,35 +6,35 @@
 #define CONFIG_VERSION 6
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
-    uint8_t pinChannels[16] = {0XFF};
-    uint8_t pinGpsTx = 0xFF;
-    uint8_t pinGpsRx = 0xFF;
-    uint8_t pinPrimIn = 0xFF;
-    uint8_t pinSecIn = 0xFF; 
-    uint8_t pinSbusOut = 0xFF;
-    uint8_t pinTlm = 0xFF;
-    uint8_t pinVolt[4] = {0xFF};
-    uint8_t pinSda = 0xFF;
-    uint8_t pinScl = 0xFF;
-    uint8_t pinRpm = 0xFF;
-    uint8_t pinLed = 16;
-    uint8_t protocol = 'S' ; // S = Sport, C = crossfire, J = Jeti
-    uint32_t crsfBaudrate = 420000;
-    float scaleVolt1 = 1.0;
-    float scaleVolt2 = 1.0;
-    float scaleVolt3 = 1.0;
-    float scaleVolt4 = 1.0;
-    float offset1 = 0.0;
-    float offset2 = 0.0;
-    float offset3= 0.0;
-    float offset4 = 0.0;
-    uint8_t gpsType = 'U' ;
-    float rpmMultiplicator = 1;
+    uint8_t pinChannels[16] ;
+    uint8_t pinGpsTx ;
+    uint8_t pinGpsRx ;
+    uint8_t pinPrimIn ;
+    uint8_t pinSecIn ; 
+    uint8_t pinSbusOut ;
+    uint8_t pinTlm ;
+    uint8_t pinVolt[4] ;
+    uint8_t pinSda  ;
+    uint8_t pinScl ;
+    uint8_t pinRpm ;
+    uint8_t pinLed ;
+    uint8_t protocol  ; // S = Sport, C = crossfire, J = Jeti
+    uint32_t crsfBaudrate ;
+    float scaleVolt1 ;
+    float scaleVolt2 ;
+    float scaleVolt3 ;
+    float scaleVolt4 ;
+    float offset1 ;
+    float offset2 ;
+    float offset3 ;
+    float offset4 ;
+    uint8_t gpsType  ;
+    float rpmMultiplicator ;
     //uint8_t gpio0 = 0; // 0 mean SBUS, 1 up to 16  = a RC channel
     //uint8_t gpio1 = 1;
     //uint8_t gpio5 = 6;
     //uint8_t gpio11 = 11;
-    uint8_t failsafeType = 'H';
+    uint8_t failsafeType ;
     crsf_channels_s failsafeChannels ;
     int16_t accOffsetX;
     int16_t accOffsetY;
@@ -45,6 +45,11 @@ struct CONFIG{
     uint8_t temperature; 
     uint8_t VspeedCompChannel;
     uint8_t ledInverted;
+    uint8_t pinLogger ;
+    uint32_t loggerBaudrate ;
+    uint8_t pinEsc;
+    uint8_t escType;
+    uint16_t pwmHz ; 
 };
 
 void handleUSBCmd(void);
@@ -68,7 +73,7 @@ void printPwmValues();
 
 
 // for sequencer
-#define SEQUENCER_VERSION 1
+#define SEQUENCER_VERSION 4
 enum SEQ_OUTPUT_TYPE : uint8_t {
     SERVO = 0,
     ANALOG = 1
@@ -85,15 +90,32 @@ struct SEQ_DEF {
     int8_t maxValue ;
 } ;
 
+//enum CH_RANGE : int8_t {
+//    m100 = -100, m75 = -75, m50 = -50, m25 = -25, m0 = 0,
+//    p0 = 0, p25 = 25 , p50 = 50, p75 = 75, p100 = 100 , dummy = 127
+//};
+
 enum CH_RANGE : int8_t {
-    m100 = -100, m75 = -75, m50 = -50, m25 = -25, m0 = 0,
-    p0 = 0, p25 = 25 , p50 = 50, p75 = 75, p100 = 100 , dummy = 127
+    m100=-100, m90=-90, m80=-80, m70=-70, m60=-60, m50 = -50, m40=-40, m30=-30, m20=-20, m10=-10, m0 = 0,
+    p0=0, p10=10 , p20=20 , p30=30 , p40=40 , p50=50, p60=60 , p70=70 , p80=80 , p90=90 , p100=100 , dummy = 127
 };
+
+
 struct SEQ_STEP {
     CH_RANGE chRange {}; // channel value (converted in range) to activate this seq
     uint8_t smooth {};
     int8_t value {} ;
     uint8_t keep {} ;
+    uint8_t nextSequencerBegin:1; // 1 means that this is the first step of a new sequencer
+    uint8_t nextSequenceBegin:1; // 1 means that this is the first step of a new sequence
+    uint8_t toRepeat:1; // 1 means that this is the sequence must be repeated when reaching the end
+    uint8_t neverInterrupted:1 ;// 1 means that this sequence may never be interrupted by another one
+    uint8_t priorityInterruptOnly:1 ; // 1 means that this sequence may only be interrupted by a sequence marqued as priority
+    uint8_t isPriority:1 ;         // 1 means that this sequence must always interrupt a sequence that may be interrupted
+    uint8_t reserver1:1;           // not used currently
+    uint8_t reserver2:1;           // not used currently
+    
+    //bool nextSequencerBegin {} ;
 };
 
 
@@ -102,15 +124,26 @@ struct SEQUENCER{
     uint8_t version = SEQUENCER_VERSION;
     uint8_t defsMax = 0;
     SEQ_DEF defs[16] ;
+    uint16_t sequencesMax = 0;
     uint16_t stepsMax = 0;
     SEQ_STEP steps[SEQUENCER_MAX_NUMBER_OF_STEPS];  
 };    
 
  //uint8_t * find(uint8_t * search, uint8_t in , uint16_t max); // search for first occurence of search string in "in" buffer  
-bool getSetOfInt(uint8_t itemsMax); // fill a table with n integers ; format is e.g. { 1 2 3 5}
+//bool parseOneSequencer(); // fill a table with 7 integers for a sequencer; format is e.g. { 1 2 3 5 6 7}
+bool getAllSequencers();    // get all sequencers, sequences and steps (call parseOneSequencer)
+bool parseOneSequencer(); // get one sequencer and all his sequences and steps in seqdefsTemp[] and stepsTemp.
+bool parseOneSequence(); // get one sequence and his steps in stepsTemp.
+bool parseOneStep();      // parse one step and save parameter in stepsTemp[]
+//bool parseOneStep();      // fill a table with sequence parameter and with step parameter.
 void printSequencers();
 void setupSequencers();
-bool getSequencers();
-bool getStepsSequencers();
+
+//bool getSequencers();
+//bool getStepsSequencers();
 void checkSequencers();
 void saveSequencers(); // save pin sequencers and step definitions
+
+#define HW4 4
+#define HW3 3
+#define KONTRONIK 2

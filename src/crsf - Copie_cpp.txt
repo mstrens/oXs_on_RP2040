@@ -1,3 +1,5 @@
+
+// not used anymore ; crsf rx use internal uart
 /*
 #include "pico/stdlib.h"
 #include <stdlib.h>

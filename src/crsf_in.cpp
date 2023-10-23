@@ -130,6 +130,7 @@ enum CRSFState{
 uint32_t lastRcChannels = 0;   // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 uint32_t lastPriChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 uint32_t lastSecChannelsMillis = 0; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+bool newRcChannelsReceivedForPWM = false;  // used to update the PWM data
 
 
 void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
@@ -180,6 +181,7 @@ void handleCrsfIn(void){   // called by main loop : receive the CRSF frame
                     memcpy(&sbusFrame.rcChannelsData, crsfBufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millisRp();
                     lastPriChannelsMillis = lastRcChannels ;
+                    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
                     #ifdef DEBUGPRIM
                     printf("Prim= ");
                     for (uint8_t i=0 ; i < RC_PAYLOAD_LENGTH; i++) {
@@ -244,7 +246,8 @@ void handleCrsf2In(void){   // called by main loop : receive the CRSF frame
                     // we got a good frame; we can save for later use
                     memcpy(&sbusFrame.rcChannelsData, crsf2BufferRcChannels , RC_PAYLOAD_LENGTH) ;
                     lastRcChannels = millisRp();
-                    lastSecChannelsMillis = lastRcChannels ; 
+                    lastSecChannelsMillis = lastRcChannels ;
+                    newRcChannelsReceivedForPWM = true;  // used to update the PWM data 
                     //printf("S\n");
                     #ifdef DEBUGSEC
                     printf("Sec = ");

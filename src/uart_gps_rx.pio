@@ -24,7 +24,7 @@ good_stop:              ; No delay before returning to start; a little slack is
 #include "hardware/gpio.h"
 #include "hardware/clocks.h"
 static inline void uart_rx_program_init(PIO pio, uint sm, uint offset, uint pin_rx, uint baud) {
-    //pio_sm_set_pins_with_mask(pio, sm, 1u << pin_tx, 1u << pin_tx); // was in Tx program but is normally not required for Rx
+    //pio_sm_set_pins_with_mask(pio, sm, 1u << pin_rx, 1u << pin_rx); // was in Tx program but is normally not required for Rx
     pio_sm_set_pindirs_with_mask(pio, sm, 0 , 1u << pin_rx); // set pin as input
     //pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false); // remove by ms
     pio_gpio_init(pio, pin_rx);
@@ -44,7 +44,9 @@ static inline void uart_rx_program_init(PIO pio, uint sm, uint offset, uint pin_
     sm_config_set_clkdiv(&c, div);
     
     pio_sm_init(pio, sm, offset, &c);
-    pio_set_irq0_source_enabled(pio ,  pis_sm1_rx_fifo_not_empty , true ); // added by ms to get an irq int0 from pio
+    //pio_set_irq0_source_enabled(pio ,  pis_sm0_rx_fifo_not_empty , true ); // added by ms to get an irq int0 from pio
+    pio_set_irq0_source_enabled(pio ,  pis_sm0_rx_fifo_not_empty , true ); // added by ms to get an irq int0 from pio
+    
     pio_sm_set_enabled(pio, sm, true);
 }
 /*static inline void uart_rx_program_stop(PIO pio, uint sm, uint offset, uint pin_rx, uint baud) {

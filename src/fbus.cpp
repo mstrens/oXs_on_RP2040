@@ -129,6 +129,7 @@ extern uint32_t lastPriChannelsMillis ;
 extern uint32_t lastSecChannelsMillis; 
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
 
 
 void setupFbus() {
@@ -256,7 +257,7 @@ bool processNextInputByte( uint8_t c){
             break;
         default:
             // definately not fbus, missing header byte
-            printf("fbus: first pos not a valid length frame\n");
+            printf("fbus: first character of the frame is not a valid length frame; received value is %X\n", c);
             return false;
         }
     }
@@ -264,7 +265,7 @@ bool processNextInputByte( uint8_t c){
     if (fbusRxBufferIdx == 1) {
         if ( (fbusIsDownlink==false) && (c != FRAME_TYPE_CHANNEL)) { // for a Rc channel, byte must be FF, 
             // not channel data
-            printf("fbus: second pos not = FF for channel frame\n");
+            printf("fbus: second character is not = 0xFF for channel frame\n");
             fbusRxBufferIdx = 0;
             return false;
         }
@@ -331,6 +332,8 @@ void fbusDecodeRcChannels(){             // this code is similar to Sbus in
     }
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
+    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+
     
 }
 

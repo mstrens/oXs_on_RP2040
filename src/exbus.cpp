@@ -53,7 +53,7 @@
 //    We set up a dma to transfer the data to the TX fifo of the Tx state machine
 //    We also set up a timestamp to stop after some msec the Tx state machine and start again the Rx one   
 
-extern field fields[];  // list of all telemetry fields and parameters used by Sport
+extern field fields[];  // list of all telemetry fields and parameters used by oXs
 extern MS5611 baro1;
 extern SPL06 baro2;
 extern BMP280 baro3;
@@ -108,6 +108,8 @@ extern uint32_t lastPriChannelsMillis ;
 extern uint32_t lastSecChannelsMillis; 
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsReceivedForPWM;  // used to update the PWM data
+
 
 uint8_t exbusFieldList[NUMBER_MAX_IDX+1]; // keep the list of fields to be transmitted
 uint8_t exbusMaxPooling[NUMBER_MAX_IDX]; // keep the table saying that each field has to be transmitted at least once every X time
@@ -169,6 +171,10 @@ JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order 
 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
     { 25    , "Gps cum. dist." , "km"        , EXBUS_TYPE_14,      1 , 3},  //  GPS cumulative distance,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_X,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Y,
+    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Z,
+    
     { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 
@@ -528,13 +534,27 @@ bool exbusProcessNextInputByte( uint8_t c){
     return true; // currently return value has no meaning
 }
 
+int exbusMapRatio = ( ((int) (FROM_SBUS_MAX - FROM_SBUS_MIN)) << 16) / (int) (TO_PWM_MAX - TO_PWM_MIN); // it has to be divided by 2^16 to be in usec
+
+uint16_t mapUsec2Sbus(uint16_t x){
+    // X is in 1/8 of usec
+    // use set up in config.h 
+    //#define FROM_SBUS_MIN 172
+    //#define TO_PWM_MIN 988
+    //#define FROM_SBUS_MAX 1811
+    //#define TO_PWM_MAX 2012
+    x = x >> 3 ; //(divide by 8 to get usec)
+    if (x < 950) {x = 950;} else if (x > 2050){ x = 2050;} 
+    return (uint16_t)( (((int)(x - TO_PWM_MIN) * exbusMapRatio) >> 16 ) +  FROM_SBUS_MIN ) ; 
+} 
 
 void exbusDecodeRcChannels(){             // channels values are coded on 2 bytes. last bit = 1/8 usec
+                                          
 	//printf("exbus decoding Rc channels\n");
     uint8_t sbus[23];
     uint8_t exbusNumRcChannels = exbusRxBuffer[5] >> 1 ; // number of channels = sub length / 2
     for (int i = 0; i < exbusNumRcChannels; i++) {
-		exbusRcChannels[i] = ((exbusRxBuffer[6 + (i << 1)]) | (exbusRxBuffer[7 + (i << 1)] << 8 )) >> 5;   
+		exbusRcChannels[i] = mapUsec2Sbus( ((exbusRxBuffer[6 + (i << 1)]) | (exbusRxBuffer[7 + (i << 1)] << 8 )) );   
     }
     sbus[0] = exbusRcChannels[0];
     sbus[1] = (exbusRcChannels[0] >> 8) | (exbusRcChannels[1] & 0x00FF)<<3;
@@ -565,6 +585,7 @@ void exbusDecodeRcChannels(){             // channels values are coded on 2 byte
     memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
+    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
 } 
  
 /*

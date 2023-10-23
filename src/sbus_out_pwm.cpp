@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include "stdio.h"
 #include "ws2812.h"
-#include "pwm.pio.h"
+//#include "pwm.pio.h"
 #include "mpu.h"
 #include "sequencer.h"
 
@@ -32,6 +32,9 @@ uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
 extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
+extern bool newRcChannelsReceivedForLogger;  // used to update the PWM data
+
 
 extern bool sbusPriMissingFlag;
 extern bool sbusSecMissingFlag;
@@ -174,18 +177,26 @@ void fillSbusFrame(){
 }
 
     
-#define TOP (20000 - 1)
+
+//#define TOP (20000 - 1)
 #define DIVIDER 133
+uint16_t pwmTop = 20000;  // max value for 50 hz (when divider = 133 => 1Mz)
+
 
 bool pwmIsUsed;
 float sbusCenter = (FROM_SBUS_MIN + FROM_SBUS_MAX) /2; 
 float ratioSbusRange = 400.0 / (float) (FROM_SBUS_MAX - FROM_SBUS_MIN) ; // full range of Sbus should provide a difference of 400 (from -200 up to 200)
+
+bool newRcChannelsReceivedForLogger = false;  // used to generate a log of rc channels
+
 
 extern SEQUENCER seq ;
 //extern bool isSequencerValid ;  
 
 void setupPwm(){
     pwmIsUsed = false;
+    pwmTop = (1000000 / config.pwmHz) ; // maximum value of the PWM counter ; define the interval between 2 pulses// used also in sequencer
+
     for (uint8_t i=0 ; i<16 ; i++){
         if ( config.pinChannels[i] != 255) pwmIsUsed = true;
     }
@@ -199,8 +210,8 @@ void setupPwm(){
         // counter is allowed to wrap over its maximum range (0 to 2**16-1)
         pwm_config configPwm = pwm_get_default_config();
         // Set divider, reduces counter clock to sysclock/this value
-        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
-        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
+        pwm_config_set_wrap (&configPwm , pwmTop-1) ; // set top value for wrapping
+        pwm_config_set_clkdiv_int (&configPwm , DIVIDER);     // with 133, it means 1usec
         // Load the configuration into our PWM slice, and set it running.
         pwm_init(slice_num, &configPwm, true);
         pwm_set_gpio_level ( (uint) config.pinChannels[i] , 0) ; // start PWM with 0% duty cycle
@@ -213,7 +224,7 @@ void setupPwm(){
         // counter is allowed to wrap over its maximum range (0 to 2**16-1)
         pwm_config configPwm = pwm_get_default_config();
         // Set divider, reduces counter clock to sysclock/this value
-        pwm_config_set_wrap (&configPwm , TOP) ; // set top value for wrapping
+        pwm_config_set_wrap (&configPwm , pwmTop-1) ; // set top value for wrapping  // TOP value defines the interval between 2 pulses.
         pwm_config_set_clkdiv_int (&configPwm , DIVIDER);
         // Load the configuration into our PWM slice, and set it running.
         pwm_init(slice_num, &configPwm, true);
@@ -221,24 +232,31 @@ void setupPwm(){
             pwm_set_gpio_level ( (uint) seq.defs[i].pin , 0) ; // start PWM with 0% duty cycle when a servo is used
         }
         else {
-            pwm_set_gpio_level ( (uint) seq.defs[i].pin , seq.defs[i].defValue) ; // start PWM with default value when analog is used
+            //   convert 0...100 value to 0...pwmTop
+            int pwmValue = (int)seq.defs[i].defValue * (int) pwmTop / 100 ;
+            if (pwmValue < 0) pwmValue = 0;
+            if (pwmValue > pwmTop) pwmValue = (int) pwmTop;
+            pwm_set_gpio_level ( (uint) seq.defs[i].pin , (uint16_t) pwmValue) ; // start PWM with default value when analog is used
         }    
     } // end of sequencer
 }
 
 
 void updatePWM(){
-    static uint32_t lastPwmMillis = 0 ;
+    //static uint32_t lastPwmMillis = 0 ;
     uint16_t pwmValue;
     float ratio;
     int16_t _pwmValue;
     int16_t pwmMax;
     int16_t pwmMin;
 
-    if (( pwmIsUsed == false) && ( seq.defsMax == 0 )) return ; // skip when PWM and sequencer is not used
+    if (( pwmIsUsed == false) && ( seq.defsMax == 0 ) && (config.pinLogger == 255)) return ; // skip when PWM, sequencer and logger are not used
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
-    if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
-        lastPwmMillis = millisRp();
+    if ( newRcChannelsReceivedForPWM){  // when new Rc channel is received (flag set by CRSF_IN, SBUS, FBUS, EXBUS, SRXL2, IBUS...)
+        newRcChannelsReceivedForPWM = false;  // reset the flag
+
+        //if ( (millisRp() - lastPwmMillis) > 5 ){ // we update once every 5 msec ???? perhaps better to update at each new crsf frame in order to reduce the latency
+        //    lastPwmMillis = millisRp();
         if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
@@ -258,6 +276,7 @@ void updatePWM(){
         rcSbusOutChannels[13] = (uint16_t) sbusFrame.rcChannelsData.ch13 ;
         rcSbusOutChannels[14] = (uint16_t) sbusFrame.rcChannelsData.ch14 ;
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
+        newRcChannelsReceivedForLogger = true;  // used to update the logger data
         if ( pwmIsUsed == true) {
             for( uint8_t i = 0 ; i < 16 ; i++){    
                 if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 

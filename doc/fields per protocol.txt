@@ -1,13 +1,13 @@
 Here the list of fields being calculated and transmitted per protocol
 
 ******************************************************************************************************************
-**                                          Sport or Fport protocol                                             **
+**                                          Sport or FBus protocols (Frsky)                                     **
 ******************************************************************************************************************
 field       measured in      mesured and transmitted when                 transmitted as            transmitted in
 -----       -----------      ----------------------------                 --------------            ---------------  
 VOLT1       0.001V           V1 pin is defined                            VFAS (0x0210)              0.01V
 VOLT2       0.001V=0.001A    V2 pin is defined                            Current (0x0200)           0.001A
-Capacity    mAh              V2 pin is defined (reset after power down)   DIY (0x5123)              mAh
+Capacity    mAh              V2 pin is defined (reset after power down)   DIY (0x5123)               mAh
 VOLT3       0.001V           V3 pin is defined & TEMP=0 or =255           DIY (0X5113)               0.001V
                              V3 pin is defined & TEMP=1 or TEMP=2         T1 (0X400)                  degree
 VOLT4       0.001V           V4 pin is defined & TEMP=0 or =255           DIY (0X5114)               0.001V
@@ -36,6 +36,9 @@ Airspeed   cm/s          a MS4525/sdp3x is installed (and SCL/SDA defined) Airsp
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed         Vspeed (0X011F)          cm/s
 Sbus hold frames %           Sbus(2) is used                               DIY (0X5124)             %
 Sbus failsafe frames count   Same as above                                 DIY (0X5125)             no unit
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     AccX (0700)              0.001g
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     AccY (0710)              0.001g
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     AccZ (0720)              0.001g
 
 
 ******************************************************************************************************************
@@ -69,6 +72,10 @@ Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not t
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
 Pitch      degree            MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
 Roll       degree            Same as above                                 roll                     Rad (1/10000)
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+
 
 Note: to analyse if handset can display a rpm value in YAW (which is supposed to be in degree; perhaps to redefine on handset)
 
@@ -106,6 +113,10 @@ RPM        Hz ?????          RPM pin is defined                            GAM R
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
 Roll       0.01 degree       Same as above
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+
                                                                            GAM temperature 1 not transmitted
                                                                            GAM temperature 2 not transmitted
                                                                            GAM Airspeed      not transmitted
@@ -147,6 +158,10 @@ Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA 
 Roll       0.01 degree       Same as above
 Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed          not transmitted 
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+
 
 ******************************************************************************************************************
 **                                           Jeti Exbus protocol                                                      **
@@ -182,6 +197,9 @@ Pitch      0.01 degree       MP6050 is installed (and SCL/SDA defined)     Pitch
 Roll       0.01 degree       Same as above                                 Roll                     0.1 degree
 Airspeed   cm/s              a MS4525/SDP3x is installed (and SCL/SDA defined) Airspeed             km/h
 Comp.Vspeed cm/s             a Baro + a MS4525/SDP3x are installed         Comp Vspeed              m/s 
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
 
 ******************************************************************************************************************
@@ -215,6 +233,9 @@ RPM        ?????             RPM pin is defined                            Index
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       0.01 degree       Same as above                                 Not transmitted 
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
 
 
@@ -250,6 +271,9 @@ RPM        ?????             RPM pin is defined                            RPM  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       0.01 degree       Same as above                                 Not transmitted 
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
 
 ******************************************************************************************************************
@@ -288,6 +312,9 @@ Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airsp
 Comp.Vspeed cm/s             a Baro + a MS4525 are installed               not transmitted
 Sbus hold frames %           Sbus(2) is used                               Transmitted as temperature no unit (%)
 Sbus failsafe frames count   Same as above                                 Transmitted as temperature no unit
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
 
 ******************************************************************************************************************
@@ -324,6 +351,9 @@ Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA 
 Roll       0.01 degree       Same as above                                 Not transmitted 
 Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed                 km/h
 Comp.Vspeed cm/s             a Baro + a MS4525 are installed               not transmitted
+Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
+Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
 
 

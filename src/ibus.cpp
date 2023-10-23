@@ -133,7 +133,9 @@ uint8_t ibusTypes[NUMBER_MAX_IDX] = {  // list of ibus type in the same sequence
       IBUS_SENSOR_TYPE_UNKNOWN,      //SBUS_HOLD_COUNTER,
       IBUS_SENSOR_TYPE_UNKNOWN,      //SBUS_FAILSAFE_COUNTER,
       IBUS_SENSOR_TYPE_UNKNOWN,      // GPS CUMULATIVE DISTANCE,      
-       
+      IBUS_SENSOR_TYPE_UNKNOWN,      // ACC_X 
+      IBUS_SENSOR_TYPE_UNKNOWN,      // ACC_Y
+      IBUS_SENSOR_TYPE_UNKNOWN,      // ACC_Z
 };
 
 void setupIbus() {                                                 

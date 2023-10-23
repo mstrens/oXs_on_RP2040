@@ -13,7 +13,7 @@ extern field fields[];  // list of all telemetry fields and parameters used by S
 
 
 PIO pioRpm = pio1; // we use pio 1; 
-uint smRpm = 2;  // we use the state machine 2 for rpm 
+uint smRpm = 1;  // we use the state machine 1 for rpm 
 
 //#define PIN_RPM 29
 #define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec  

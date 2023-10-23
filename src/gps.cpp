@@ -44,9 +44,9 @@ uint8_t baudIdx = 0 ;
 
 uint32_t prevRxChangeUs = 0;
 
-PIO gpsPio = pio1; // we use pio 0; DMA is hardcoded to use it
-uint gpsSmTx = 0;  // we use the state machine 0 for Tx; DMA is harcoded to use it (DREQ) 
-uint gpsSmRx = 1;  // we use the state machine 1 for Rx; 
+PIO gpsPio = pio1; // we use pio 0; 
+uint gpsSmTx = 0;  // we use the state machine 0 for Tx for a short time only (sending the config to a ublox);  
+uint gpsSmRx = 0;  // we use the state machine 0 for Rx also (only when TX is unclaim); 
 
 #define CFG_RATE_MEAS 0x30210001 // U2 0.001 s Nominal time between GNSS measurements ; 100 = 10hz; 1000 = 1Hz
 #define CFG_MSGOUT_UBX_NAV_POSLLH_UART1 0x2091002a // U1 - - Output rate of the UBX-NAV-POSLLH message on port UART1
@@ -136,7 +136,7 @@ const uint8_t initGpsM6Part2[] = {
 */        
         }  ;   
 
-void uboxChecksum(){   // this function is used to calculate ublox checksum; It mus be activated in a line of code below
+void uboxChecksum(){   // this function is used to calculate ublox checksum; It must be activated in a line of code below
     uint8_t buffer[]= {
         0xB5,0x62,0x06,0x00,
         0x14,0x00,
@@ -192,9 +192,15 @@ void GPS::gpsInitRx(){
     // set an irq on pio to handle a received byte
     irq_set_exclusive_handler( PIO1_IRQ_0 , gpsPioRxHandlerIrq) ;
     irq_set_enabled (PIO1_IRQ_0 , true) ;
-
+    if (pio_can_add_program(gpsPio, &uart_rx_program) == false) {
+        printf("Error: can't add pio program for GPS Rx\n");
+        sleep_ms(1000); // wait that message is displayed
+        while (1) { ; }  // stop the program
+    }
     uint gpsOffsetRx = pio_add_program(gpsPio, &uart_rx_program);
+    //printf("uart rx program init will be performed\n");
     uart_rx_program_init(gpsPio, gpsSmRx, gpsOffsetRx, config.pinGpsTx, 38400);
+    //printf("uart rx program init has been be performed\n");
     busy_wait_us(1000);
     uint8_t dummy;
     while (! queue_is_empty (&gpsRxQueue)) queue_try_remove ( &gpsRxQueue , &dummy ) ;
@@ -233,14 +239,14 @@ void GPS::handleGpsUblox(){
                 lastActionUs = microsRp();   
                 }
                 if ((microsRp() - lastActionUs ) > 5000000) { // wait at least  5 sec
-                //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
-                //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
-                sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
-                
+                    //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch???
+                    //sleep_ms(10); // wait to be sure the char is sent and line goes high again.
+                    sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0); // send in 9600 baud asking for 38400
                     
+                        
                     //sleep_ms(2);
-                //sleep_ms(5);
-                //sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
+                    //sleep_ms(5);
+                    //sendGpsConfig(&initGpsM6Part1[0] , sizeof(initGpsM6Part1), 0);
                     gpsState = GPS_M10_IN_RECONFIGURATION;
                     lastActionUs = microsRp();
                     //baudIdx = 0;       
@@ -248,7 +254,7 @@ void GPS::handleGpsUblox(){
             }    
             break;
         case GPS_M10_IN_RECONFIGURATION:
-            if ((microsRp() - lastActionUs ) > 3000000) { // wait at least  4mse between baudrate change 
+            if ((microsRp() - lastActionUs ) > 5000) { // wait at least  4mse between baudrate change 
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 38400); 
                 //sleep_ms(2); // to avoid perhaps a pulse due to change of baudrate
                 //pio_sm_put (gpsPio, gpsSmTx, (uint32_t) 0 ); // send a dummy char to avoid glitch
@@ -274,6 +280,9 @@ void GPS::handleGpsUblox(){
                 if ( initGpsIdx >= sizeof( initGpsM6Part2)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
+                        pio_sm_unclaim(gpsPio, gpsSmTx);                           // free the SM used for GPS TX
+                        pio_remove_program(gpsPio, &uart_tx_program, gpsOffsetTx); // remove the GPS TX program 
+                        
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;

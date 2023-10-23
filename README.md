@@ -9,7 +9,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - Sbus signals
 - PWM signals to stabilize a camera on pitch and roll
 - different sequences of PWM signals (to control Servo or to generate an analog/digital voltage) based on Rc channel values
-
+- data's (telemetry and/or PWM Rc channels) to be logged on a SD card
 ### For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional)
    - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
@@ -20,20 +20,25 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
-### It can also provide up to 16 PWM RC channels from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus signal (e.g Frsky,Jeti,Flysky ).
+### It can also provide up to 16 PWM RC channels to drive servos from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum). The refresh rate can be set between 50Hz(default) and 333Hz.
  
 ### It can also provide SBUS signal (e.g. from 1 or 2 ELRS receivers). 
  When connected to 2 receivers, the output signals (e.g. PWM or Sbus) will be issued from the last received Rc channels.
- So this provide a kind of redundancy/diversity.
+ So this provides a kind of redundancy/diversity.
 
-Each function (telemetry/PWM/SBUS/sequencer) can be used alone or combined with the others.
 
 ### To stabilize a camera, it requires
     - to use a mp6050 device
     - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
     - to edit the camera parameters in the config.h file and to compile the edited project.
 
-### To use some sequencers, it requires to configure oXs in order to get Rc channels
+### To use some sequencers, it requires to configure oXs in order to get Rc channels.
+
+### To log data's on a SD card, you must also build another module with another RP2040: see oXs_logger project
+
+
+Each function (telemetry/PWM/SBUS/logger/sequencer) can be used alone or combined with the others.
+
 
 ## -------  Hardware -----------------
 
@@ -55,7 +60,9 @@ This board can be connected to:
        * a CASIC gps has to be configured before use in order to generate only NAV-PV messages at 38400 bauds  
            This can be done using a FTDI and the program GnssToolkit3.exe (to download from internet)
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
-      note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage 
+      note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
+   * a RPM sensor
+   * an ESC from Hobbywing (using V4 telemetry protocol) or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -100,7 +107,7 @@ Note: pins between () means that they are optional.
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
-Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max 
+Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max. V2 is normally used to measure a current (based on the analog voltage). V3 and V4 can be used to measure or a voltage or a temperature (based on a voltage). For each voltage being measured, you probably have to specify the offset and scale to be applied.
 
 One RPM (Hz) can be measured
 * Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
@@ -121,7 +128,12 @@ When a GPS is used:
 *  Connect the RX pin from GPS to the RX pin selected in parameter for RP2040 
 *  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
 *  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
-      
+
+When a Hobbywing or a Kontronik ESC is used:
+ * Connect the serial pin from ESC to the pin selected in parameter for RP2040 (for ESC_PIN)
+ * Connect GND from ESC to RP2040 GND
+ * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.
+
 About sequencers, see below.
 
 The affectation of the pins has to be defined by the user.  
@@ -134,13 +146,15 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |GPS_RX = 0/29            |configuring GPS|
 |PRI = 5 ,9, 21 ,25       |primary RC channel input|  
 |SEC = 1, 13 , 17 ,29     |secondary RC channel input|  
-SBUS_OUT = 0/29           |Sbus output|  
-TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
-VOLT1= 26/29 ... VOLT4 = 26/29 |voltage measurements|  
-SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
-SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
-RPM = 0/29                     | RPM|
-LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
+|SBUS_OUT = 0/29           |Sbus output|  
+|TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
+|V1= 26/29 ... V4 = 26/29 |voltage measurements|  
+|SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
+|SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
+|RPM = 0/29                     | RPM|
+|LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
+|LOG = 0/29                     | data to be logged |  
+
 
 ## --------- Software -------------------
 This software has been developped using the RP2040 SDK provided by Rapsberry.
@@ -188,6 +202,8 @@ You have to compile your self the firmware if you want to change some values in 
 * avoid or change priorities of some telemetry fields for Sport in Sport/Fbus protocols
 * assign another sequence number and/of generate alarms for some telemetry fields in Multiplex protocol
 * change the I2C address of some I2C sensors
+* use other default paramaters in order to avoid using commands via the USB/serial monitor. 
+
 
 ## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.
@@ -214,6 +230,7 @@ Please note that the data being transmitted depends also on the protocol being u
 
 For more information, please look at document "fields per protocol.txt" in folder "doc"
 
+
 When a baro sensor and an airspeed sensor are both used, oXs calculates 2 vertical speeds: 
 * the normal one based only on the baro sensor; this one is always transmitted
 * an airspeed compensated Vspeed (=dte) that take care of the variation of airspeed.
@@ -231,61 +248,106 @@ Then, depending on the value sent by the Tx on the selected channel, oXs manages
 
 Note: you can use the FV command to know the current coefficient. This allow you to check that your Tx sent a Rc channel value that match the expected goal and indeed required, adjust your Tx settings.
 ## ---------------- Sequencers ---------------
-With oXs, the handset can control one or several SERVOS in sequences defined by the user (e.g. for landing gears with doors and wheels).
+With oXs, one single channel on the handset can control one or several SERVOS in sequences defined by the user (e.g. for landing gears with doors and wheels).
 
-oXs can also generate one or several ANALOG signals in sequences (e.g. to blink leds or to start/stop motors). 
-Different sequencers can also control several gpio's outputs from the same channel (e.g. one single Rc channel can manage 3 outputs = 8 combinations). 
+It can also generate one or several ANALOG signals in sequences (e.g. to blink leds or to start/stop motors).
 
-* oXs uses a "sequencer" per GPIO to be controlled. There can be up to 16 sequencers.
-* Each "sequencer" has several (min 2, max 9) "sequences". 
-* Each "sequence" has one or several steps.
+One output is controlled by only one Rc channel.
+
+
+You can use several Rc channels; each channel controls one or serveral outputs (SERVO and/or ANALOG).
+
+
+oXs uses 3 concepts : sequencer, sequence and step.
+
+* oXs uses ONE "sequencer" per GPIO to be controlled. There can be up to 16 sequencers (one per gpio 0...15).
+* Each "sequencer" has several (min 2, max 21) "sequences". Each sequence is activated by a specific RC channel value (-100%,- 90%, ... 90%,100%) 
+* Each "sequence" has one or several steps. Each step correspond to one action (move servo to position X, set led on power Y)
+* oXs can repeat continously one sequence or just stay on the last step waiting for a new Rc channel value to start a new sequence.
 * Each "sequencer" is defined by 7 parameters:
-    * The GPIO on which PWM signal is generated ( must be in range 0/15); the same GPIO may not be used for another purpose or by another sequencer
+    * The GPIO on which a PWM signal is generated ( must be in range 0/15); the same GPIO may not be used for another purpose or by another sequencer
     * The type of PWM signal
-        * 0 = SERVO =  PWM signal to control a servo (every 20 msec a pulse in range 1ms/2ms is generated)
-        * 1 = ANALOG = PWM signal to control a LED or analog voltage ( every 20 msec, a pulse in range 0/20ms is generated)
+        * 0 = SERVO =  PWM signal to control a servo (every xx msec a pulse in range 1ms/2ms is generated)
+        * 1 = ANALOG = PWM signal to control a LED or analog voltage ( every xx msec, a pulse in range 0/xx ms is generated)
     * The duration of one "clock" in msec (must be greater than 20); this defines the base unit of the "smooth" and the "keep" delays used in steps definition (see below) 
     * The Rc channel that control this sequencer (must be in range 1/16); the same Rc channel may be used in several sequencers 
     * The default PWM value (to apply when no Rc channel has yet been received) (must be in range -100/100 for SERVO, 0/100 for ANALOG outputs)
     * The min PWM value (must be in same range as default PWM value); if a step requests a lower PWM value, the min PWM will be used
     * The max PWM value (must be in same range as default PWM value); if a step requests a greater PWM value, the max PWM will be used.
-    * note: Min and Max defined at sequencer level can be usefull to define the end points of servo travel; they can avoid having to change to many values at step level while using servos.
-* Each "step" is defined by 4 parameters
-    * The Rc range value that activates this sequence (must be -100,-75,-50,-25,0,25,50,75 or 100); note: the rc channel value sent by the handset can slightly differ from those values because oXs applies a tolerance of +/- 12. So, if handset sent e.g. a value equal to -85, it will be handeld like -75. 
+    * note: Min and Max defined at sequencer level can be usefull in order to define the end points of servo travel; they can avoid having to change many values at step level while using servos.
+* Each "sequence" is defined by 5 parameters
+    * The Rc channel value that activates this sequence. The value must be a multiple of 10 and in range -100...100 (so like -100, -90, -80... 0, 10, 20,...100);so there a 21 valid values. Note: the rc channel value sent by the handset can slightly differ from those values because oXs applies a tolerance of +/- 4%. So, if handset sent e.g. a value equal to -86, it will be handeld like -90.
+    * an optional flag ("R" = Repeat) to say if the sequence must be automatically repeated after the last step; by default, sequence is not repeated
+    * an optional flag ("U" = Uninterrupted) to say that the sequence may be interrupted before end of the last step; by default sequence may be interrupted
+    * an optional flag ("O" = Only interrupted by priority sequence) to say that the sequence may be interrupted but only by a "priority" sequence
+    * an optional flag ("P" = priority) to say that the sequence is a "priority" sequence (so it may interrupt a sequence with flag "O")  
+* Each "step" is defined by 3 parameters
     * The number of clocks (=delay) for a smooth transition from current PWM value up to the PWM value from this step (must be in range 0/255)
-    * The PWM value to apply in this step at the end of the transition (in range -100/100 for SERVO, 0/100 for ANALOG pwm)
-    * The number of clocks the PWM value must be kept before applying next step (if any) or going back to the first step of this sequence. Must be in range 0/255; If this parameter is 255 on the last step of a sequence, oXs does not restart the sequence and kept the last PWM value (up to next change of RC channel value). 
-* For each sequencer, when the handset sent a Rc value that matches another defined range, oXs starts "playing" all steps of the new related range (= a sequence). When the last step of this sequence is played, oXs restarts the same steps except when the last "keep" parameter is equal to 255 (in which case, oXs maintains the last PWM value waiting that another range value is sent by the handset)
-* For each sequencer, if the handset sent a Rc value that does not match a defined range, the change of Rc value has no effect; oXs continues to "play" the current sequence.   
-* Sequencers and steps are defined sending commands via the USB port using a serial terminal. So there is no need to compile/flash to change some parameters.
-* All sequencers are defined by only one command:  SEQ={...} {...} {...} etc...
-    * each {...} contains the 7 parameters of one sequencer (space delimited)
-    * e.g. SEQ={3 0 100 15 -100 -100 +90} {4 1 500 16 0 0 100 } defines 2 sequencers
-        * one on gpio 3, for a servo , 100ms/clock, controlled by channel 15, PWM = -100 (default), -100 (min) and 90(max)
-        * one on gpio 4, for analog voltage, 500ms/clock, controlled by channel 16, PWM = 0 (default), 0 (min) and 100(max = Vcc)
-* All steps are defined by only one command: STEP={...} {...} {...} etc...
-    * Each {...} contains the 4 parameters of one step (space delimited)
-    * Steps must be sorted in such a way they are in the same order as the sequencers and (per serquencer) sorted by the Rc range value to activate it and finaly in step order.
-    * oXs compares Rc range values of consecutive steps to identify a new sequencer, a new sequence or just a next step of the same sequence
-        * when next Rc range value is the same as previous, then the next step defines a new step of the same sequencer+sequence
-        * when next Rc range value is greater than previous, then the next step defines a new sequence from the same sequencer
-        * when next Rc range value is smaller than previous, then the next step is the first step of the first sequence of the next sequencer
-    * e.g. STEP={-100 0 50 3} {-100 10 100 2} {100 0 -100 255} {-100 0 0 255} { -25 0 0 2} { -25 0 100 1} { 75 0 100 255} defines
-        * 7 steps
-        * The first 3 are part of sequencer nr 1; steps from sequencer 2 are defined from step number 4 (because Rc channel value of 4th(=-25) is less than of 3rd(=100))
-        * Sequencer nr 1 contains 2 sequences.
-            * First sequence (of sequencer 1) contains 2 steps (steps 1 and 2 because they both have the same Rc channel value -100);the sequence is activated when Rc channel change to -100; the first step says that PWM must be set immediately(smooth=0) on 50, stay on 50 for 3 clocks and then switch to step 2 which says that PWM must increase gradualy up to 100 over a timelaps of 10 clocks and then stay on 100 for 2 clocks before going back to step 1.  
-            * Second sequence (of sequencer 1) is defined only by one step (step 3). It says that when Rc channel change to 100, PWM must be set immediately (smooth =0) on -100 and stay on this value (keep = 255 = always) up to a change of Rc value
-        * Sequencer nr 2 contains 3 sequences.
-            * First sequence (of sequencer 2) contains 1 step (step 4); the sequence is activated when Rc channel change to -100; the step says that PWM must be set immediately(smooth=0) on 0 and stay on 0 for ever (keep = 255) up to a change of Rc channel value.  
-            * Second sequence (of sequencer 2) is defined by 2 steps (steps 5 and 6 having the same RC value=-25). When Rc channel change to -25, PWM must be set immediately (smooth=0) on 0 and stay on this value for 2 clocks (=step5) , then switch immediately to 100 for 1 clock (=step 6) before going back to 0 for 2 clocks (=step 5) etc...
-            * Third sequence (of sequencer 2) contains 1 step (step 7); the sequence is activated when Rc channel change to 75; the step says that PWM must be set immediately(smooth=0) on 100 and stay on 100 for ever (keep = 255) up to a change of Rc channel value.
-* Processing of SEQ and STEP commands
-    * SEQ and STEP commands are just discarded in case of syntax error or if some parameters are out of range.
-    * Valid individual SEQ and STEP commands are saved in flash memory and oXs is rebooted.
-    * Consistency between SEQ and STEP is checked as well as on use of each gpio (each gpio may have only one functionality).
-    
-* SEQ and STEP parameters are displayed as all other parameters when you press only ENTER. Even if the parameters are displayed on several lines and with extra tokens ("-" before "{" will automatically be discarded), it is possible to make a complete copy/paste to the input aera of the serial terminal in order to easily edit some parameters (at least with the serial monitor extension of vscode).
+    * The PWM value to apply in this step at the end of the transition (in range -125/125 for SERVO, 0/100 for ANALOG pwm); a value 127 is also possible and has a special function: it means that oXs must keep the current value. This can be useful only when a running sequence must be interrupted and the position must remain unchanged.
+    * The number of clocks the PWM value must be kept before applying next step (if any) or going back to the first step of this sequence. Must be in range 0/255 
+* For each sequencer, when the handset sent a different Rc value that matches the value of a sequence, oXs starts "playing" all steps of the related sequence. If this happens while oXs is already playing a sequence, oXs will continue or stop playing the current sequence depending on the flags U, O and P (see above). If the current step may not be interrupted, oXs, will delay the new requested sequence up to the end of the current sequence. When the current sequence reaches his end, oXs will or play the delayed sequence (if any), or repeat the current sequence (if flag = "R") or keep the last PWM output.
+* For each sequencer, if the handset sent a Rc value that does not match a defined value (taking care of tolerance), the change of Rc value has no effect; oXs continues to "play" the current sequence.
+* Sequencers, sequence and steps are defined sending a command via the USB port using a serial terminal. So there is no need to compile/flash to change some parameters.
+* All sequencers are defined by only one command:  SEQ=[...] (...) {...} {...} (...) {...} etc...
+    * each [...] contains the 7 parameters of one sequencer (space delimited)
+    * each (...) contains the parameters (Rc value + 4 optional flags) of one sequence (space delimited)
+    * each {...} contains the 3 parameters of of one step (space delimited)
+    * each [...] must be followed by (...) to specify the first sequence of this sequencer 
+    * each (...) must be followed by one or several {...} to specify the steps of this sequence
+    * a sequencer must contain a least 2 sequences.
+    * sequences of one sequencer must be in ascending order of RC channel values      
+    * e.g. SEQ=[3 0 100 15 -100 -100 +90] (-100 R O) {0 50 3} {10 100 2} (100 P) {0 -100 10} 
+               [4 1 500 16 0 0 100 ] (-100) {0 0 20} (-30) {0 100 1} (70 R) {0 100 20} {5 20 10}
+    * this defines 2 sequencers:        
+        * Sequencer nr 1 [3 0 100 15 -100 -100 +90] has PWM output on gpio 3, for a servo , 100ms/clock, controlled by channel 15, PWM = -100 (default), -100 (min) and 90(max); it contains 2 sequences:
+            * First sequence (-100 R O) is activated when Rc channel changes to -100%, may be repeated automatically and may be interrupted only by a priority sequence; it contains 2 steps:
+                * first step {0 50 3} says that PWM must be set immediately(smooth=0) on 50%, stay on 50% for 3 clocks and then switch to step 2 
+                * second step {10 100 2} says that PWM must increase gradualy up to 100% over a timelaps of 10 clocks and then stay on 100% for 2 clocks before repeating the sequence
+            * Second sequence (100 P) is activated when Rc channel change to 100% and is a priority sequence (so it may interrupt sequence 1)
+                * step {0 -100 10} says that PWM must be set immediately (smooth =0) on -100% and stay on this value for at least 10 clock units
+        * Sequencer nr 2 [4 1 500 16 0 0 100 ] has PWM output on gpio 4, for analog voltage, 500ms/clock, controlled by channel 16, PWM = 0 (default), 0 (min) and 100(max = Vcc); it contains 3 sequences
+            * First sequence (-100) is activated when Rc channel change to -100% (does not repeat and may be interrupted) 
+                * step {0 0 20} says that PWM must be set immediately (smooth=0) on 0 and stay on 0; note: as the sequence may not be repeated automatically but may be interrupted by any new sequence, the delay of 20 clock units has in practice no effect  
+            * Second sequence (-30) is activated when Rc channel change to -30%  (does not repeat and may be interrupted); it contains 2 steps: 
+                * step {0 100 1} says PWM must be set immediately (smooth=0) on 100% and stay on this value for 1 clock. note: as the sequence may not be repeated automatically but may be interrupted by any new sequence, the delay of 1 clock units has in practice no effect
+            * Third sequence (70 R) is activated when Rc channel change to 70 and may be repeated automatically; it contains 2 steps;
+                * step one {0 100 20} says that PWM must be set immediately(smooth=0) on 100 and stay on 100 for 20 clock and then next step is applied.
+                * step two {0 20 10} says that PWM must be set smoothly (over 5 clock units) to 20 and stay so for 10 clock units before repeating the sequence.
+* To delete all sequencers, enter SEQ=DEL
+* Processing of SEQ commands
+    * most controls on SEQ commands are performed before saving the parameters. In case of error, the command is just discarded and not saved
+    * commands that fit those controls are saved in flash memory and oXs is rebooted. It can be that you have to make a manual reset (or power off+on)
+    * After reset, oXs performs some more controls that could lead to an invalid config (e.g. if a gpio is used for several functionalities)
+
+* Sequencers parameters are displayed as all other parameters when you press only ENTER. It is possible to make a complete copy/paste of the displayed SEQ to the input aera of the serial terminal in order to easily edit some parameters. 
+
+## ------------------ Logging -------------------
+If the LOG Gpio is defined, all telemetry data and all PWM Rc channel values (usec) captured by oXs are transmitted on the LOG pin in a compressed format.
+
+
+Each time a set of data is ready, oXs generates a packet (with only the newly generated data). 
+
+
+The packet is generated with an UART 8N1 (8 bits, no parity, 1 stop bit) at the defined logger baudrate.
+
+
+Each packet starts with 0X7E (= synchro byte) followed by 4 bytes (number of milli sec since RP2040 start up) and by  
+* For telemetry :  one or several data blocks; each one contains
+    * one byte to identify the type of data (max 63 types e.g. Vspeed, Altitude, ...). The 2 most significant bits gives the number of "0" bytes that should be added to the data value in order to get a in32_t (code on 4 bytes)
+    * 1, 2, 3 or 4 bytes with the value
+* For Rc channels : 
+    * one byte equal to "41" (= type for Rc channels)
+    * 32 bytes = 16 X 2 bytes; each 2 bytes (=uint16_t) represent the PWM values in microsec (1500 usec = neutral) of one Rc channel.
+
+There is some stuffing mecanism (like in Frsky Sport protocol) in order to ensure that the value 0X7E can only be present at the begining of a packet.
+\
+\
+This format allows to compress the data transmitted via the (quite slow) UART to the logger.
+\
+\
+The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
+
+
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).
 * when config is wrong, led is red and always ON.

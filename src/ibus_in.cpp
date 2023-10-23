@@ -29,6 +29,7 @@ uint32_t ibusInMicros;
 extern CONFIG config;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
 
 
 uint8_t runningIbusFrame[32];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
@@ -361,6 +362,8 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
     memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
+    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+
 } 
 
 /*

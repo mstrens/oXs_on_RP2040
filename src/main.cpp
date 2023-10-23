@@ -41,28 +41,40 @@
 #include "pico/util/queue.h"
 #include "ds18b20.h"
 #include "hardware/timer.h"
+#include "logger.h"
+#include "esc.h"
+
 // to do : add rpm, temp telemetry fields to jeti protocol
-//         support ex bus jeti protocol on top of ex jeti protocol (not sure it makes lot of sense because bandwitdth is limited)
-//         add switching 8 gpio from one channel
 //         try to detect MS5611 and other I2C testing the different I2C addresses
 //         if ds18b20 would be supported, then change the code in order to avoid long waiting time that should block other tasks.
 //         stop core1 when there is no I2C activity while saving the config (to avoid I2C conflict)
-//         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport)
+//         add airspeed field and compensated Vspeed to all protocols (currently it is only in sport and some other)
 //         add spektrum protocol (read the bus already in set up, change baudrate, fill all fields in different frames)
-//         look to use pitch and roll to stabilize 2 servos for a gimball
+
+//         test 16 rc channel values in log interface 
+//         test logger param in config parameters
+//         test tlm data in log interface
+//         it seems that in ELRS protocol, PWM are not generated since some version.
+
 
 // Look at file in folder "doc" for more details
 //
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX
-//        0   1                         for Sport Rx            or HOTT RX or MPX RX
-//        0   2            sbus out             
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2  (it uses max 6 bytes for Hott and a dma)
+//        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2  (it uses 9 bytes, 1 irq and no dma)
+//        0   2            sbus out                                                            (it uses 4 bytes and one dma)       
+//        0   3            esc  Rx                                                             (it uses 9 bytes, 1 irq and no dma)
 
-//        1   0 is used for gps Tx  (was used for one pwm)        
-//        1   1 is used for gps Rx  (was used for one pwm)
-//        1   3 is used for RGB led
+//        1   0 is used for gps Tx  ; is unclaim when GPS config is done and reused             (it uses 4 bytes no dma)      
+//        1   0 is also used for gps Rx                                                         (it uses 9 bytes, 1 irq and no dma)
+
+//        1   1  is used for rpm                                                                       (it uses 3 bytes , no Irq, no dma)
+//        1   2 is used for logger uart Tx                                                             (it uses 4 bytes, no irq and one dma) 
+//        1   3 is used for RGB led                                                                    (it uses 4 bytes, no irq and no dma)     
 // So UART0 is used for Secondary crsf of Sbus in ( was GPS before)
 //    UART1 is used for primary crsf in of SBUS IN (was only Sbus in before)
  
+// note : GPS setup (on core 1) can end when core 1 is already in main loop; setup of logger (pio/dma) has to wait that gps set up is done 
+
 // Pin that can be used are:
 // C1 = 0/15  ... C16 = 0/15
 // GPS_TX = 0/29
@@ -101,6 +113,8 @@ GPS gps;
 // objet to manage the mpu6050
 MPU mpu(1);
 
+LOGGER logger;
+
 field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters that can be measured (not only used by Sport)
 
 // remapping from sbus value to pwm value
@@ -114,6 +128,9 @@ uint16_t toPwmMax = TO_PWM_MAX;
 EMFButton btn (3, 0); // button object will be associated to the boot button of rp2040; requires a special function to get the state (see tool.cpp)
                        // parameters are not used with RP2040 boot button 
 extern uint32_t lastRcChannels;
+extern bool newRcChannelsReceivedForLogger;  // used to know when we have to update the logger data
+
+
 extern CONFIG config;
 bool configIsValid = true;
 bool configIsValidPrev = true;
@@ -204,7 +221,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       mpu.begin(); 
       //printf("mpu done\n");
     //blinkRgb(0,10,0,500,1000000); blink red, green, blue at 500 msec for 1000 0000 X
-      gps.setupGps();  //use a Pio
+      gps.setupGps();  //use a Pio and 2 sm
       //printf("gps done\n");
       ms4525.begin();
       if (! ms4525.airspeedInstalled) {
@@ -216,6 +233,8 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       setupRpm(); // this function perform the setup of pio Rpm
       //printf("rpm done\n");
       
+    setupEsc() ; 
+
       core1SetupDone = true;
       //printf("end core1 setup\n") ;    
       //getTimerUs(0);   // xxxxx
@@ -251,6 +270,7 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
     vario1.calculateVspeedDte();
   } 
   readRpm();
+  handleEsc();
   #ifdef USE_DS18B20
   ds18b20Read(); 
   #endif
@@ -318,52 +338,18 @@ void setup() {
   //bool clockChanged; 
   //clockChanged = set_sys_clock_khz(133000, false);
   set_sys_clock_khz(133000, false);
-  setupLed();
-  setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
   uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
   while ( (!tud_cdc_connected()) && (counter--)) { 
   //while ( (!tud_cdc_connected()) ) { 
     sleep_ms(100);
-    toggleRgb();
+    //toggleRgb();
     }
   sleep_ms(2000);  // in debug mode, wait a little to let USB on PC be able to display all messages
   uint8_t a1[2] = {1, 2};
   int debug = 2;
   debugAX("aa", a1 , 2);
-  //int debug = 2;
-  //dp("test\n");
-  // test
-  //int32_t testValue = -10;
-  //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = -60;
-  //printf("rounding -60 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = -200;
-  //printf("rounding -200 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = +10;
-  //printf("rounding +10 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = +60;
-  //printf("rounding +60 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //uint8_t readBuffer[2] = {0XFF, 0XFE}; 
-  //printf("test %f\n",(float) ((int16_t) (readBuffer[0] << 8 | readBuffer[1] & 0X00FF)));
-  //int16_t test = 0X7B03;
-  //int32_t testi32 = (int32_t) test;
-  //uint8_t testFirst = * (&test);
-  //printf("test %X %X %X\n",  test , testi32 , testFirst) ; 
-  //if (hardware_alarm_is_claimed(0)) printf("alarm 0 is used\n");
-  //if (hardware_alarm_is_claimed(1)) printf("alarm 1 is used\n");
-  //if (hardware_alarm_is_claimed(2)) printf("alarm 2 is used\n");
-  //if (hardware_alarm_is_claimed(3)) printf("alarm 3 is used\n");
-  //hardware_alarm_set_callback(2 , test_callback);
-  //hardware_alarm_set_target(2 , time_us_64()+200);
-  //hardware_alarm_set_target(2 , time_us_64()+700);
-  //sleep_us(100);
-  //printf("testU8= %d\n", (int) testU8);
-  //sleep_us(200);
-  //printf("testU8= %d\n", (int) testU8);
-  //sleep_us(700);
-  //printf("testU8= %d\n", (int) testU8);
   #endif
   
   if (watchdog_caused_reboot()) {
@@ -372,10 +358,13 @@ void setup() {
         printf("Clean boot\n");
         //sleep_ms(1000); // wait that GPS is initialized
     }
-  setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
+  setupLed();
+  //setRgbColorOn(10,0,10); // start with 2 color
+  setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
+  
   if (configIsValid){ // continue with setup only if config is valid
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
@@ -441,6 +430,9 @@ void setup() {
           setupSbusOutPio();
         }
       setupPwm();
+      if ( config.pinLogger != 255) {
+        logger.begin();           // set up the logger
+      }
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
   printConfigAndSequencers(); 
@@ -459,6 +451,7 @@ void getSensorsFromCore1(){
     queue_entry_t entry;
     //printf("qlevel= %d\n",queue_get_level(&qSensorData));
 
+    bool loggerHeaderSent = false;  // used to sent the synchro byte 0X7E only once per function call.
     
     while( !queue_is_empty(&qSensorData)){
         if ( queue_try_remove(&qSensorData,&entry)){
@@ -491,11 +484,19 @@ void getSensorsFromCore1(){
                     // update sportMaxBandwidth for some protocols
                     if ( (config.protocol == 'S') || (config.protocol == 'F') )  calculateSportMaxBandwidth(); 
                 }    
+                if (config.pinLogger != 255) { // when logger is on
+                    if ( loggerHeaderSent == false) {  // log once per function call the synchro byte 
+                        logger.logByteNoStuff(0X7E);
+                        logger.logTimestampMs(millisRp());
+                        loggerHeaderSent = true; 
+                    }
+                    logger.logint32withStuff(entry.type ,entry.data);    // log the type (index) and value of the tlm field
+                }                                                     // !!! can wait that previous buffer is totally sent by dma
                 //printf("t=%d  %10.0f\n",entry.type ,  (float)entry.data);
             }    
         }
     }
-    if ((forcedFields == 1) || (forcedFields == 2)) fillFields(forcedFields); // force dummy vallues for debuging a protocol
+    if ((forcedFields == 1) || (forcedFields == 2)) fillFields(forcedFields); // force dummy values for debuging a protocol
 }
 
 void printTest(int testVal){
@@ -507,10 +508,13 @@ void printTest(int testVal){
     }
 }
 
+#define MAIN_LOOP 0
 void loop() {
   //debugBootButton();
+    //startTimerUs(MAIN_LOOP);                            // start a timer to measure enlapsed time
+
   if (configIsValid){
-      getSensorsFromCore1();
+      getSensorsFromCore1(); // this also generate the LOG signal on pio UART
       mergeSeveralSensors();
       watchdog_update();
       if ( config.protocol == 'C'){   //elrs/crsf
@@ -561,10 +565,16 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      updatePWM(); // update PWM pin only based on channel value
+      updatePWM(); // update PWM pins only based on channel value (not sequencer)
             //updatePioPwm();
-      sequencerLoop();  // update PWM pins based on sequencer     
+      sequencerLoop();  // update PWM pins based on sequencer
+      if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16
+        newRcChannelsReceivedForLogger = false; // reset the flag allowing a log of RC channels
+        logger.logAllRcChannels();  // log all rc channels
+      }       
   }
+  //alarmTimerUs(MAIN_LOOP, 1000);    //  print a warning if enlapsed time exceed xx usec
+
   watchdog_update();
   //if (tud_cdc_connected()) {
   //printf("before handleUSBCmd\n");sleep_ms(100); 
@@ -610,7 +620,9 @@ void setup1(){
     setupSensors();    
 }
 // main loop on core 1 in order to read the sensors and send the data to core0
+#define MAIN_LOOP1 1
 void loop1(){
+    //startTimerUs(MAIN_LOOP1);
     uint8_t qCmd;
     getSensors(); // get sensor
     if ( ! queue_is_empty(&qSendCmdToCore1)){
@@ -619,6 +631,7 @@ void loop1(){
             mpu.calibrationExecute();
         }
     }
+    //alarmTimerUs(MAIN_LOOP1, 500);
 }
 
 void core1_main(){

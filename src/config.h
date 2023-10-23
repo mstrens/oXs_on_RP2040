@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.8.0"
+#define VERSION "2.9.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -76,6 +76,10 @@
 #define P_SBUS_HOLD_COUNTER   100
 #define P_SBUS_FAILSAFE_COUNTER 100
 #define P_GPS_CUMUL_DIST      200  
+#define P_ACC_X                80
+#define P_ACC_Y                80
+#define P_ACC_Z                80
+
 
 // -------------- for ELRS protocol  ------------------------------
 #define VOLTAGE_FRAME_INTERVAL 500 // This version transmit only one voltage; it could be change in the future
@@ -142,10 +146,10 @@
 
 
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
-#define FROM_SBUS_MIN 172
-#define TO_PWM_MIN 988
-#define FROM_SBUS_MAX 1811
-#define TO_PWM_MAX 2012
+#define FROM_SBUS_MIN 172  // This is equivalent to -100 on openTx
+#define TO_PWM_MIN 988     // this is the PWM usec for -100
+#define FROM_SBUS_MAX 1811  // This is equivalent to +100 on openTx
+#define TO_PWM_MAX 2012     // this is the PWM usec for +100
 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100
@@ -190,8 +194,15 @@
 #define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
 //#define USE_ADP810_INSTEAD_OF_SDPxx  // uncoment this line if you use a ADP810 instead of a SDPxx
 
+// --------- Parameter for MPU6050 ---------------------------------------
+#define ACC_MAX_SCALE_G 2 // maximum acceleration in G (can only be 2,4,8, 16)
+
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
+
+// ---------- ESC --------------------------------------------------------
+#define ESC_MAX_CURRENT 250.0
+#define ESC_MIN_THROTTLE 256    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
 
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
@@ -210,6 +221,71 @@
 //Note:  when a channel is used to adjust a ratio (for pitch or roll), the ratio can varies from -200 (channel = -100%) up to +200 (channel = %100%)
 //       the sign of the ratio define the direction of the compensation.
 //       Setting the channel on 0% dissables the compensation. This can e.g. be done using a switch on the TX
+
+// --------- Default parameters -------------
+// Many parameters can be edited using a serial monitor without having to compile/reflash the RP2040  
+// If you want to make an uf2 flie with specific parameters (and so, avoid having to use the serial monitor commands),
+//     you can change the default parameters in this section
+// Note: those parameters are used only for a RP2040 that did not yet had been configured (or when it has been completely erased)
+
+ #define _pinChannels_1  0XFF
+ #define _pinChannels_2  0XFF
+ #define _pinChannels_3  0XFF
+ #define _pinChannels_4  0XFF
+ #define _pinChannels_5  0XFF
+ #define _pinChannels_6  0XFF
+ #define _pinChannels_7  0XFF
+ #define _pinChannels_8  0XFF
+ #define _pinChannels_9  0XFF
+ #define _pinChannels_10  0XFF
+ #define _pinChannels_11  0XFF
+ #define _pinChannels_12  0XFF
+ #define _pinChannels_13  0XFF
+ #define _pinChannels_14  0XFF
+ #define _pinChannels_15  0XFF
+ #define _pinChannels_16  0XFF
+ #define _pinGpsTx  0XFF
+ #define _pinGpsRx  0XFF
+ #define _pinPrimIn  0XFF
+ #define _pinSecIn  0XFF 
+ #define _pinSbusOut  0XFF
+ #define _pinTlm  0XFF
+ #define _pinVolt_1  0XFF
+ #define _pinVolt_2  0XFF
+ #define _pinVolt_3  0XFF
+ #define _pinVolt_4  0XFF
+ #define _pinSda  0XFF
+ #define _pinScl  0XFF
+ #define _pinRpm  0XFF
+ #define _pinLed  16
+ #define _protocol  'S' // S = Sport, C = crossfire, J = Jeti
+ #define _crsfBaudrate  420000
+ #define _scaleVolt1  1.0
+ #define _scaleVolt2  1.0
+ #define _scaleVolt3  1.0
+ #define _scaleVolt4  1.0
+ #define _offset1  0.0
+ #define _offset2  0.0
+ #define _offset3  0.0
+ #define _offset4  0.0
+ #define _gpsType  'U' 
+ #define _rpmMultiplicator 1.0
+ #define _failsafeType  'H'
+//    crsf_channels_s failsafeChannels ;
+// #define _accOffsetX;
+// #define _accOffsetY;
+// #define _accOffsetZ;
+// #define _gyroOffsetX;
+// #define _gyroOffsetY;
+// #define _gyroOffsetZ;
+#define _temperature 0XFF
+#define _VspeedCompChannel 0XFF
+#define _ledInverted 'N'
+#define _pinLogger 0xFF
+#define _loggerBaudrate 115200
+#define _pinEsc 0xFF
+#define _escType 0xFF
+#define _pwmHz 50  // 50 hz per default
 // --------- Reserve for developer. ---------
 
 typedef struct {
