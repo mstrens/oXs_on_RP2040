@@ -4,6 +4,14 @@
 #include "crsf_frames.h"
 
 #define CONFIG_VERSION 6
+
+struct _pid_param {
+  int16_t kp[3]; // [0, 1000] 11b signed
+  int16_t ki[3];
+  int16_t kd[3];
+  int8_t output_shift;
+};
+
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
     uint8_t pinChannels[16] ;
@@ -49,7 +57,16 @@ struct CONFIG{
     uint32_t loggerBaudrate ;
     uint8_t pinEsc;
     uint8_t escType;
-    uint16_t pwmHz ; 
+    uint16_t pwmHz ;
+    //                for gyro
+    uint8_t gyroChanControl ; // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
+    uint8_t gyroChan[3] ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
+    
+    struct _pid_param pid_param_rate; // each structure store the Kp, Ki, Kd parameters for each of the 3 axis; here for normal mode (= rate)
+    struct _pid_param pid_param_hold; // idem for hold mode
+    
+    int8_t vr_gain[3];          // store the gain per axis (to combine with global gain provided by gyroChanControl)
+ 
 };
 
 void handleUSBCmd(void);
