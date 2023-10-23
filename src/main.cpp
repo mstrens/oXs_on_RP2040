@@ -338,8 +338,6 @@ void setup() {
   //bool clockChanged; 
   //clockChanged = set_sys_clock_khz(133000, false);
   set_sys_clock_khz(133000, false);
-  //setupLed();               This has to be done after checking the config
-  //setRgbColorOn(10,0,10); // start with 2 color
   #ifdef DEBUG
   uint16_t counter = 10;                      // after an upload, watchdog_cause_reboot is true.
   //if ( watchdog_caused_reboot() ) counter = 0; // avoid the UDC wait time when reboot is caused by the watchdog   
@@ -352,38 +350,6 @@ void setup() {
   uint8_t a1[2] = {1, 2};
   int debug = 2;
   debugAX("aa", a1 , 2);
-  //int debug = 2;
-  //dp("test\n");
-  // test
-  //int32_t testValue = -10;
-  //printf("rounding -10 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = -60;
-  //printf("rounding -60 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = -200;
-  //printf("rounding -200 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = +10;
-  //printf("rounding +10 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //testValue = +60;
-  //printf("rounding +60 = %d\n" , ( int_round(testValue , 100) ) +500);
-  //uint8_t readBuffer[2] = {0XFF, 0XFE}; 
-  //printf("test %f\n",(float) ((int16_t) (readBuffer[0] << 8 | readBuffer[1] & 0X00FF)));
-  //int16_t test = 0X7B03;
-  //int32_t testi32 = (int32_t) test;
-  //uint8_t testFirst = * (&test);
-  //printf("test %X %X %X\n",  test , testi32 , testFirst) ; 
-  //if (hardware_alarm_is_claimed(0)) printf("alarm 0 is used\n");
-  //if (hardware_alarm_is_claimed(1)) printf("alarm 1 is used\n");
-  //if (hardware_alarm_is_claimed(2)) printf("alarm 2 is used\n");
-  //if (hardware_alarm_is_claimed(3)) printf("alarm 3 is used\n");
-  //hardware_alarm_set_callback(2 , test_callback);
-  //hardware_alarm_set_target(2 , time_us_64()+200);
-  //hardware_alarm_set_target(2 , time_us_64()+700);
-  //sleep_us(100);
-  //printf("testU8= %d\n", (int) testU8);
-  //sleep_us(200);
-  //printf("testU8= %d\n", (int) testU8);
-  //sleep_us(700);
-  //printf("testU8= %d\n", (int) testU8);
   #endif
   
   if (watchdog_caused_reboot()) {

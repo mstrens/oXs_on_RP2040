@@ -48,7 +48,7 @@ void setRgbColorOn(uint8_t red , uint8_t green , uint8_t blue){
 }
 
 void setRgbOn(){
-    if ((config.pinLed >= 0 ) && (config.pinLed <= 29 ) ){
+    if (config.pinLed <= 29 ) {
         rgbOn = true;
         if (config.ledInverted == 'I') {
             pio_sm_put_blocking(rgbPio, rgbSm ,  (((uint32_t) rgbGreen) <<16) |
@@ -63,7 +63,7 @@ void setRgbOn(){
 }
 
 void setRgbOff(){
-    if ((config.pinLed >= 0 ) && (config.pinLed <= 29 ) ){
+    if (config.pinLed <= 29 ){
         rgbOn = false;
         pio_sm_put_blocking(rgbPio, rgbSm , 0);
     }    
