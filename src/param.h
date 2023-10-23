@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include "pico/stdlib.h"
 #include "crsf_frames.h"
+#include "gyro.h"
 
 #define CONFIG_VERSION 6
 
@@ -66,7 +67,10 @@ struct CONFIG{
     struct _pid_param pid_param_hold; // idem for hold mode
     
     int8_t vr_gain[3];          // store the gain per axis (to combine with global gain provided by gyroChanControl)
- 
+    enum STICK_GAIN_THROW stick_gain_throw;
+    enum MAX_ROTATE max_rotate;
+    enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
+  
 };
 
 void handleUSBCmd(void);

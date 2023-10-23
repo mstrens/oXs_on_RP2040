@@ -7,6 +7,11 @@
 
 #define GYRO_VERSION 0
 
+enum STICK_GAIN_THROW {STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_GAIN_THROW_QUARTER=3}; // values are important
+enum MAX_ROTATE {MAX_ROTATE_VLOW=1, MAX_ROTATE_LOW=2, MAX_ROTATE_MED=3, MAX_ROTATE_HIGH=4}; // values are important
+enum RATE_MODE_STICK_ROTATE {RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE};
+
+
 struct gyroMixer_t{
     uint8_t version = GYRO_VERSION;
     bool used ; //true means that this Rc channel is impacted by gyro compensation
