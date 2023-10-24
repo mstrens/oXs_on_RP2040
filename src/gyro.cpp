@@ -3,8 +3,22 @@
 #include "param.h"
 #include "tools.h"
 #include "stdlib.h"
+#include "mpu.h"
+#include "sbus_out_pwm.h"
 
 extern CONFIG config;
+extern MPU mpu;
+extern uint16_t rcSbusOutChannels[16];  // Rc channels values provided by the receiver in Sbus units (not in PWM us).[172/1811]
+uint16_t rcPwmChannels[16];             // remap of original rcSbusOutChannels in Pwm Us values [988/2012]
+uint16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
+//to do : check that is the same as what is provided by the oxs code for imu.
+//int16_t gyro0[3] = {0, 0, 0}; // calibration sets zero-movement-measurement offsets
+//int16_t gyro[3] = {0, 0, 0}; // full scale = 16b-signed = +/-2000 deg/sec
+
+extern int16_t gyroX; // data provided by mpu, sent to core0 and with some filtering
+extern int16_t gyroY;
+extern int16_t gyroZ;
+
 
 struct gyroMixer_t gyroMixer[16] ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 
@@ -157,18 +171,13 @@ enum STAB_MODE stab_mode = STAB_RATE;
 
 
 
-extern uint16_t rcSbusOutChannels[16];  // Rc channels values provided by the receiver.
-
 int16_t ail_in2_offset, ele_in2_offset, rud_in2_offset; //, flp_in2_offset; // difference from *_in2_mid (stick position)
 const int16_t stick_gain_max = 400; // [1100-1500] or [1900-1500] => [0-STICK_GAIN_MAX]
 const int16_t master_gain_max = 400; // [1500-1100] or [1500-1900] => [0-MASTER_GAIN_MAX]
 
-//to do : check that is the same as what is provided by the oxs code for imu.
-//int16_t gyro0[3] = {0, 0, 0}; // calibration sets zero-movement-measurement offsets
-//int16_t gyro[3] = {0, 0, 0}; // full scale = 16b-signed = +/-2000 deg/sec
-extern int16_t gx, gy,gz;
-
 int16_t correction[3] = {0, 0, 0};
+int16_t correctionPosSide[3] = {0, 0, 0};
+int16_t correctionNegSide[3] = {0, 0, 0};
 
 
 int16_t min(const int16_t a, const int16_t b)
@@ -176,17 +185,18 @@ int16_t min(const int16_t a, const int16_t b)
     return (b < a) ? b : a;
 }
 
-void handleGyroCompensation(){
-    if ((config.gyroChanControl > 16) or (config.gyroChanControl > 16)) return;
+void updateGyroCorrections(){
+    if ((config.gyroChanControl == 0) or (config.gyroChanControl > 16) or (mpu.mpuInstalled == false)) return;
     
     uint32_t t = microsRp(); 
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
     // to do rename those field for clarity
     int16_t ail_in2, ailr_in2, ele_in2, rud_in2, aux_in2, aux2_in2, thr_in2, flp_in2;
-    ail_in2 = rcSbusOutChannels[config.gyroChan[0]];
-    ele_in2 = rcSbusOutChannels[config.gyroChan[1]];
-    rud_in2 = rcSbusOutChannels[config.gyroChan[2]];
+    ail_in2 = rcPwmChannels[config.gyroChan[0]]; // get original position of the 3 sticks
+    ele_in2 = rcPwmChannels[config.gyroChan[1]];
+    rud_in2 = rcPwmChannels[config.gyroChan[2]];
+    aux_in2 = rcPwmChannels[config.gyroChanControl];
 
     int16_t stick_gain[3];
     int16_t master_gain;
@@ -292,9 +302,9 @@ void handleGyroCompensation(){
     //pid_state.input[0] = constrain(gyro[0] - gyro0[0], -8192, 8191);
     //pid_state.input[1] = constrain(gyro[1] - gyro0[1], -8192, 8191);
     //pid_state.input[2] = constrain(gyro[2] - gyro0[2], -8192, 8191);        
-    pid_state.input[0] = constrain(gx, -8192, 8191);  // changed by Mstrens ; to do check if this is OK
-    pid_state.input[1] = constrain(gy, -8192, 8191);
-    pid_state.input[2] = constrain(gz, -8192, 8191);        
+    pid_state.input[0] = constrain(gyroX, -8192, 8191);  // changed by Mstrens ; to do check if this is OK
+    pid_state.input[1] = constrain(gyroY, -8192, 8191);
+    pid_state.input[2] = constrain(gyroZ, -8192, 8191);        
     
     // apply PID control
     compute_pid(&pid_state, (stab_mode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);
@@ -304,6 +314,25 @@ void handleGyroCompensation(){
         // vr_gain [-128,0,127]/128, stick_gain [0,400,0]/512, master_gain [400,0,400]/512
         //correction[i] = ((((int32_t)pid_state.output[i] * vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
         correction[i] = ((((int32_t)pid_state.output[i] * config.vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
+        uint16_t OSP = rcPwmChannels[config.gyroChan[i]];  // orginal stick position
+        uint16_t ESP = OSP + correction[i];                // expected stick position
+        if (OSP >= 1500 ){
+            if (ESP >= 1500){
+            correctionPosSide[i] = correction[i];
+            correctionNegSide[i] = 0;   
+            } else {
+                correctionPosSide[i] = (1500 - OSP) ; // corr is neg, part 1 and 2 must be neg  
+                correctionNegSide[i] = (ESP - 1500) ;   
+            }
+        } else {
+            if (ESP >= 1500){
+            correctionPosSide[i] = ESP -1500;  // corr is positive, part 1 and 2 must be pos too
+            correctionNegSide[i] = 1500 -OSP;   
+            } else {
+                correctionPosSide[i] = 0 ;
+                correctionNegSide[i] = correction[i] ;   
+            }
+        }      
     }
 
 
@@ -328,4 +357,39 @@ void handleGyroCompensation(){
     // End of PID process
     // to do : check how to manage the fact that Rc channels can be provided by the Rx at a different rate than the PID frequency
     // here we still have to apply the correction to all the rc channels having the flag "used" = true and to stored the values in other variables
+}
+
+void applyGyroCorrection(){
+    //This should be called only when new Rc values have been received
+    // This function is called only when gyro is used (checked before calling this function)
+    // map the channels from Sbus units to pwm Us and copy them.
+    for (uint8_t i=0; i<16;i++){
+        rcPwmChannelsComp[i] = rcPwmChannels[i] = fmap( rcSbusOutChannels[i]) ;
+    }
+    
+    
+    //updateGyroCompensation(); // update gyro compensation (only every xx msec) should be called in main loop at his own 
+    // from here, we know the compensations to apply on the pos and neg sided
+    // apply compensation
+    for (uint8_t i=0 ; i<16 ; i++){  // for each Rc channel
+        if ( gyroMixer[i].used ) { // when this channel uses gyro compensation.
+            // adapt the corrections Pos and Neg for each axis based on the ranges stored in gyroMixer.
+            // to do : check that those are the correct matching between Pos/neg and Left/right
+            if (gyroMixer[config.gyroChan[0]-1].rateRollLeftUs > 15) 
+                rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[0] * (int32_t) gyroMixer[config.gyroChan[i]].rateRollLeftUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (gyroMixer[config.gyroChan[0]-1].rateRollRightUs > 15)
+                rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[0] * (int32_t) gyroMixer[config.gyroChan[i]].rateRollRightUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (gyroMixer[config.gyroChan[1]-1].ratePitchUpUs > 15) 
+                rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[1] * (int32_t) gyroMixer[config.gyroChan[i]].ratePitchUpUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (gyroMixer[config.gyroChan[1]-1].ratePitchDownUs > 15) 
+                rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[1] * (int32_t) gyroMixer[config.gyroChan[i]].ratePitchDownUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (gyroMixer[config.gyroChan[2]-1].rateYawLeftUs > 15)
+                rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[2] * (int32_t) gyroMixer[config.gyroChan[i]].rateYawLeftUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (gyroMixer[config.gyroChan[2]-1].rateYawRightUs > 15)
+                rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[2] * (int32_t) gyroMixer[config.gyroChan[i]].rateYawRightUs)  >> 9 ; // division by 512 because full range is about 500.
+            if (rcPwmChannelsComp[i] < gyroMixer[config.gyroChan[i]].minUs) rcPwmChannelsComp[i] = gyroMixer[config.gyroChan[i]].minUs;
+            if (rcPwmChannelsComp[i] > gyroMixer[config.gyroChan[i]].maxUs) rcPwmChannelsComp[i] = gyroMixer[config.gyroChan[i]].maxUs;    
+        }
+    }
+    // here all PWM have been recalculated and can be used for PWM output
 }

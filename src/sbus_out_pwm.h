@@ -27,3 +27,5 @@ uint16_t fmapMinMax(int x);
 //void updatePioPwm();
 
 void applyPwmValue( uint8_t pin , uint16_t pwmValue); // apply PWM value on a pin
+
+void applyGyroCorrection() ; // apply gyro corrections on all PWM values; fill rcPwmChannelsComp[16]

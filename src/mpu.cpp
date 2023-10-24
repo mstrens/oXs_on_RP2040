@@ -333,6 +333,11 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     gx = ((int16_t) (buffer[8] << 8 | buffer[9])) - config.gyroOffsetX ;
     gy = ((int16_t) (buffer[10] << 8 | buffer[11])) - config.gyroOffsetY ;
     gz = ((int16_t) (buffer[12] << 8 | buffer[13])) - config.gyroOffsetZ ;
+    if ((config.gyroChanControl >= 0) and (config.gyroChanControl <= 16) ) { // when gyro is used
+        sent2Core0( GYRO_X_ID , (int32_t) gx) ;
+        sent2Core0( GYRO_Y_ID , (int32_t) gx) ;
+        sent2Core0( GYRO_Z_ID , (int32_t) gx) ;
+    }
     now = microsRp();
     deltat = ((float)(now - last))* 1.0e-6; //seconds since last update
     last = now;

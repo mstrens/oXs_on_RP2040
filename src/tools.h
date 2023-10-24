@@ -80,6 +80,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
 #define SAVE_CONFIG_ID 0XFF
 #define CAMERA_PITCH_ID 0XFE
 #define CAMERA_ROLL_ID 0XFD
+#define GYRO_X_ID      0XFC
+#define GYRO_Y_ID      0XFB
+#define GYRO_Z_ID      0XFA
 
 
 int32_t int_round(int32_t n, uint32_t d);

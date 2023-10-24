@@ -35,6 +35,8 @@ extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to
 extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
 extern bool newRcChannelsReceivedForLogger;  // used to update the PWM data
 
+extern int16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
+
 
 extern bool sbusPriMissingFlag;
 extern bool sbusSecMissingFlag;
@@ -260,7 +262,8 @@ void updatePWM(){
         if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, apply failsafe value if defined
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         }
-        rcSbusOutChannels[0] = (uint16_t) sbusFrame.rcChannelsData.ch0 ;
+        // copy the sbus into uint16; value are in Sbus units [172/1811] not in PWM us [988/2012] = [-100/+100]
+        rcSbusOutChannels[0] = (uint16_t) sbusFrame.rcChannelsData.ch0 ;  
         rcSbusOutChannels[1] = (uint16_t) sbusFrame.rcChannelsData.ch1 ;
         rcSbusOutChannels[2] = (uint16_t) sbusFrame.rcChannelsData.ch2 ;
         rcSbusOutChannels[3] = (uint16_t) sbusFrame.rcChannelsData.ch3 ;
@@ -277,6 +280,9 @@ void updatePWM(){
         rcSbusOutChannels[14] = (uint16_t) sbusFrame.rcChannelsData.ch14 ;
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
         newRcChannelsReceivedForLogger = true;  // used to update the logger data
+        if ((config.gyroChanControl >= 0) and (config.gyroChanControl <= 16) and (mpu.mpuInstalled == true)) {
+            applyGyroCorrection();   // calculate rcPwmChannelsComp[] adding gyro correction
+        }
         if ( pwmIsUsed == true) {
             for( uint8_t i = 0 ; i < 16 ; i++){    
                 if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 
@@ -321,7 +327,11 @@ void updatePWM(){
                         pwmValue = _pwmValue;
                     } 
                 #endif
-                pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
+                if ((config.gyroChanControl >= 0) and (config.gyroChanControl <= 16) and (mpu.mpuInstalled == true)) {
+                    pwm_set_gpio_level (config.pinChannels[i], rcPwmChannelsComp[i]) ;
+                } else {        
+                    pwm_set_gpio_level (config.pinChannels[i], pwmValue) ;
+                }
             }
         } // end PWM is used
     }

@@ -28,3 +28,9 @@ struct gyroMixer_t{
     int16_t rateYawRightUs  ; //difference of PWM value betwwen neutral and 100% rud stick on right side
 };
 
+void initGyroMixer(); // to do = to adapt when gyroMixer will be saved in flash
+void initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
+void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param);
+void updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
+
+

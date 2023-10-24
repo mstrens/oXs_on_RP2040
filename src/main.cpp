@@ -55,7 +55,7 @@
 //         test logger param in config parameters
 //         test tlm data in log interface
 //         it seems that in ELRS protocol, PWM are not generated since some version.
-
+//         use Rc channels with gyro correction to the signal Sbus out. 
 
 // Look at file in folder "doc" for more details
 //
@@ -152,6 +152,9 @@ uint8_t forcedFields = 0; // use to debug a protocol; force the values when = 'P
 
 int32_t cameraPitch;
 int32_t cameraRoll;
+int16_t gyroX;
+int16_t gyroY;
+int16_t gyroZ;
 
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
@@ -361,6 +364,10 @@ void setup() {
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
+  
+  initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
+  initGyroMixer(); // to do : to modify when gyroMixer[] will be saved in flash
+  
   setupLed();
   //setRgbColorOn(10,0,10); // start with 2 color
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
@@ -473,6 +480,12 @@ void getSensorsFromCore1(){
                     cameraPitch = entry.data;
                 } else if (entry.type == CAMERA_ROLL_ID) {
                     cameraRoll = entry.data;
+                } else if (entry.type == GYRO_X_ID) {  
+                    gyroX = (15*gyroX + entry.data) >> 4;  // here some filtering
+                } else if (entry.type == GYRO_Y_ID) { 
+                    gyroY = (15*gyroY + entry.data) >>4 ; 
+                } else if (entry.type == GYRO_Z_ID) { 
+                    gyroZ = (15*gyroZ + entry.data) >> 4; 
                 } else {
                     printf("error : invalid type of sensor = %d\n", entry.type);
                 }    
@@ -565,7 +578,8 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      updatePWM(); // update PWM pins only based on channel value (not sequencer)
+      updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
+      updatePWM(); // update PWM pins only based on channel value (not sequencer); this will call applyGyroCorrections if gyro is used
             //updatePioPwm();
       sequencerLoop();  // update PWM pins based on sequencer
       if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16
