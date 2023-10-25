@@ -56,6 +56,8 @@
 //         test tlm data in log interface
 //         it seems that in ELRS protocol, PWM are not generated since some version.
 //         use Rc channels with gyro correction to the signal Sbus out. 
+//         check if the gyro rate of mpu is the same as the one used id flightstab
+//         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
 
 // Look at file in folder "doc" for more details
 //

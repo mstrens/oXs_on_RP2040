@@ -11,9 +11,6 @@ extern MPU mpu;
 extern uint16_t rcSbusOutChannels[16];  // Rc channels values provided by the receiver in Sbus units (not in PWM us).[172/1811]
 uint16_t rcPwmChannels[16];             // remap of original rcSbusOutChannels in Pwm Us values [988/2012]
 uint16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
-//to do : check that is the same as what is provided by the oxs code for imu.
-//int16_t gyro0[3] = {0, 0, 0}; // calibration sets zero-movement-measurement offsets
-//int16_t gyro[3] = {0, 0, 0}; // full scale = 16b-signed = +/-2000 deg/sec
 
 extern int16_t gyroX; // data provided by mpu, sent to core0 and with some filtering
 extern int16_t gyroY;
@@ -355,8 +352,6 @@ void updateGyroCorrections(){
 #endif
     last_pid_time = t;
     // End of PID process
-    // to do : check how to manage the fact that Rc channels can be provided by the Rx at a different rate than the PID frequency
-    // here we still have to apply the correction to all the rc channels having the flag "used" = true and to stored the values in other variables
 }
 
 void applyGyroCorrection(){
