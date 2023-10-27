@@ -35,7 +35,7 @@ void initGyroMixer(){
         gyroMixer.neutralUs[i] = 1500 ;
         gyroMixer.minUs[i] = 1000 ;
         gyroMixer.maxUs[i] = 2000 ;
-        gyroMixer.rateRollLeftUs[i] = 0 ; // 0 means that when strick is at the end pos, this output RC channel is not impacted 
+        gyroMixer.rateRollLeftUs[i] = 0 ; // 0 means that when stick is at the end pos, this output RC channel is not impacted 
         gyroMixer.rateRollRightUs[i] = 0 ; 
         gyroMixer.ratePitchUpUs[i] = 0 ;  
         gyroMixer.ratePitchDownUs[i] = 0 ;
@@ -50,26 +50,36 @@ void initGyroMixer(){
     gyroMixer.neutralUs[i] = 1600;
     gyroMixer.minUs[i] = 1100 ;
     gyroMixer.maxUs[i] = 1900 ;
-    gyroMixer.rateRollLeftUs[i] = 300 ; // 300 means that when stick is at the end pos, this output RC channel is changed by 300 
-    gyroMixer.rateRollRightUs[i] = -400 ; 
+    gyroMixer.rateRollLeftUs[i] = 300 ; // 300 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 300 usec 
+    gyroMixer.rateRollRightUs[i] = -400 ; // here for stick Ail Right
+    // in this set up only AIL_CHANNEL get gyro corrections and only on roll axis
+    
     // add here other setup for other output Rc channels    
+    // e.g. for a second Ail
     //i = AIL2_CHANNEL;    
     //gyroMixer[i].used = true ;
-    //...
+    //gyroMixer.used[i] = true ;
+    //gyroMixer.neutralUs[i] = 1700;
+    //gyroMixer.minUs[i] = 1000 ;
+    //gyroMixer.maxUs[i] = 2000 ;
+    //gyroMixer.rateRollLeftUs[i] = 500 ; // 500 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 500 usec 
+    //gyroMixer.rateRollRightUs[i] = -500 ; // here for stick Ail Right
+    
+    // for e.g. a V stab you have to define values for 2 servos ELV1 and ELV2 and for each 4 rates.
     
 }
 
 // temporary solution waiting to allow changes in usb commands
 void initGyroConfig(){
-    #define GYRO_CHANNEL_CONTROL 9  // 0 = channel 1  
+    #define GYRO_CHANNEL_CONTROL 9  // 0 means channel 1  
+    #define GYRO_CHAN_AIL 10 // 0 means channel 1
+    #define GYRO_CHAN_ELV 11 // 0 means channel 1
+    #define GYRO_CHAN_RUD 12 // 0 means channel 1
+     
+    
     #define IDX_AIL 0
     #define IDX_ELV 1
     #define IDX_RUD 2
-    #define GYRO_CHAN_AIL 10 // 0 = channel 1
-    #define GYRO_CHAN_ELV 11 // 0 = channel 1
-    #define GYRO_CHAN_RUD 12 // 0 = channel 1
-     
-    
     // this is a temporaty function to define the gyro parameters waiting to be able to fill them with usb command
     config.gyroChanControl = GYRO_CHANNEL_CONTROL; // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
     config.gyroChan[IDX_AIL] = GYRO_CHAN_AIL ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
@@ -84,9 +94,9 @@ void initGyroConfig(){
         config.pid_param_hold.kd[i] = 500; // default PID param
     }
     
-    config.vr_gain[IDX_AIL] = 0;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
-    config.vr_gain[IDX_ELV] = 0;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
-    config.vr_gain[IDX_RUD] = 0;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
+    config.vr_gain[IDX_AIL] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
+    config.vr_gain[IDX_ELV] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
+    config.vr_gain[IDX_RUD] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
     config.stick_gain_throw = STICK_GAIN_THROW_FULL ;  //STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_GAIN_THROW_QUARTER=3 
 } 
 
