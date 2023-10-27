@@ -28,6 +28,8 @@
 #include "sbus_out_pwm.h"  // needed to print the PWM values
 #include "sequencer.h"
 #include <errno.h>   // used by strtol() to check for errors 
+#include "gyro.h"
+
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
 // GPS_TX = 0/29
@@ -100,6 +102,8 @@ extern float dteCompensationFactor;
 extern sbusFrame_s sbusFrame;
 
 extern uint16_t pwmTop; // just used for debugging
+
+extern gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 
 void handleUSBCmd(void){
     int c;
@@ -1225,6 +1229,7 @@ void printConfigAndSequencers(){
     watchdog_update(); //sleep_ms(500);
     printSequencers(); 
     checkConfigAndSequencers();
+    printGyro();
     //getTimerUs(0);        // print the time enlapsed is the function print.
 
     isPrinting = false;
@@ -2042,6 +2047,42 @@ bool parseOneStep(){
     return true; 
 }  // end of handling one step; 
 
+void printGyro(){
+    if(config.gyroChanControl>16) {
+        printf("\nGyro is not configured\n");
+        return;
+    }
+    printf("Gyro configuration is:\n");
+    printf("Channels for :  gyro control=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
+        config.gyroChanControl + 1 , config.gyroChan[0] + 1 , config.gyroChan[1] + 1 , config.gyroChan[2] + 1);
+    printf("PID              Kp      Ki    Kd\n");
+    printf("  Normal Roll    %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0] );
+    printf("  Normal Pitch   %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1] );
+    printf("  Normal Yaw     %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[2], config.pid_param_rate.ki[2],config.pid_param_rate.kd[2] );
+    printf("  Hold   Roll    %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[0], config.pid_param_hold.ki[0],config.pid_param_hold.kd[0] );
+    printf("  Hold   Pitch   %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1] );
+    printf("  Hold   Yaw     %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
+    printf("Gain per axis (-128/127):  Roll=%i     Pitch=%i    Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
+    printf("Gyro corections on %i (1=on whole stick, 2=on half, 3=on a quater)\n", config.stick_gain_throw);
+    
+    if (gyroMixer.isCalibrated == false){
+        printf("Gyro mixers must be calibrated\n");
+        return;
+    }
+    // when calibrated
+    printf("\nGyro mixers are calibrated:\n");
+    printf("Gyro corrections (%%) on:\n");
+    for (uint8_t i = 0; i<16;i++) {
+        if ( gyroMixer.used[i]) {
+            printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\
+            i+1 , pc(gyroMixer.neutralUs[i]-1500) , pc(gyroMixer.rateRollRightUs[i]), pc(gyroMixer.rateRollLeftUs[i]), \
+            pc(gyroMixer.ratePitchUpUs[i]) , pc(gyroMixer.ratePitchDownUs[i]),\
+            pc(gyroMixer.rateYawRightUs[i]), pc(gyroMixer.rateYawLeftUs[i]),\
+            pc(gyroMixer.minUs[i]-1500) , pc(gyroMixer.maxUs[i]-1500) ) ;
+        }
+    }
+
+}
 
 /*
 bool parseOneSequencer(){  // try to read a string  with n integer space separated set between { }

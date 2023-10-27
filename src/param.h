@@ -7,12 +7,6 @@
 
 #define CONFIG_VERSION 6
 
-struct _pid_param {
-  int16_t kp[3]; // [0, 1000] 11b signed
-  int16_t ki[3];
-  int16_t kd[3];
-  int8_t output_shift;
-};
 
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
@@ -68,7 +62,7 @@ struct CONFIG{
     struct _pid_param pid_param_hold; // idem for hold mode
     
     int8_t vr_gain[3];          // store the gain per axis (to combine with global gain provided by gyroChanControl)
-    enum STICK_GAIN_THROW stick_gain_throw;
+    enum STICK_GAIN_THROW stick_gain_throw;  // this parameter allows to limit the compensation on a part of the stick travel (gain decreases more or less rapidly with stick offset)
     enum MAX_ROTATE max_rotate;
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
   
@@ -92,7 +86,7 @@ void requestMpuCalibration();
 void printConfigOffsets();
 void printFieldValues();
 void printPwmValues();
-
+void printGyro();
 
 // for sequencer
 #define SEQUENCER_VERSION 4

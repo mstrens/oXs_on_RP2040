@@ -43,6 +43,7 @@
 #include "hardware/timer.h"
 #include "logger.h"
 #include "esc.h"
+#include "gyro.h"
 
 // to do : add rpm, temp telemetry fields to jeti protocol
 //         try to detect MS5611 and other I2C testing the different I2C addresses
@@ -144,7 +145,8 @@ uint8_t prevLedState = STATE_NO_SIGNAL;
 uint32_t lastBlinkMillis;
 
 extern SEQUENCER seq;
-
+extern struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
+extern bool gyroIsInstalled ;
 queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
 volatile bool core1SetupDone = false;
@@ -442,6 +444,9 @@ void setup() {
       if ( config.pinLogger != 255) {
         logger.begin();           // set up the logger
       }
+      if ((config.gyroChanControl < 16) and (mpu.mpuInstalled)) {
+        gyroIsInstalled=true;
+      }
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
   printConfigAndSequencers(); 
@@ -580,7 +585,12 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
+      if ( (gyroIsInstalled) and (gyroMixer.isCalibrated)) {
+        updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
+      }
+      if (gyroIsInstalled) {
+        calibrateGyroMixers();   // check if gyro must be calibrated 
+      }
       updatePWM(); // update PWM pins only based on channel value (not sequencer); this will call applyGyroCorrections if gyro is used
             //updatePioPwm();
       sequencerLoop();  // update PWM pins based on sequencer

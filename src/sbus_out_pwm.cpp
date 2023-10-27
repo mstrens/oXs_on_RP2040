@@ -281,7 +281,7 @@ void updatePWM(){
         rcSbusOutChannels[15] = (uint16_t) sbusFrame.rcChannelsData.ch15 ;
         newRcChannelsReceivedForLogger = true;  // used to update the logger data
         if ((config.gyroChanControl >= 0) and (config.gyroChanControl <= 16) and (mpu.mpuInstalled == true)) {
-            applyGyroCorrection();   // calculate rcPwmChannelsComp[] adding gyro correction
+            applyGyroCorrection();   // calculate gyroMixer[].min and .max + rcPwmChannelsComp[] adding gyro correction to rxPwlChannels[]
         }
         if ( pwmIsUsed == true) {
             for( uint8_t i = 0 ; i < 16 ; i++){    
