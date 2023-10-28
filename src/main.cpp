@@ -298,6 +298,15 @@ void setColorState(){    // set the colors based on the RF link
         case STATE_FAILSAFE:
             setRgbColorOn(0, 0, 10); //blue
             break;
+        case STATE_GYRO_CAL_MIXER_NOT_DONE:
+            setRgbColorOn(10, 0, 0); //red
+            break;
+        case STATE_GYRO_CAL_MIXER_DONE:
+            setRgbColorOn(0, 0, 0); //blue
+            break;
+        case STATE_GYRO_CAL_LIMIT:
+            setRgbColorOn(0, 10, 0); //green
+            break;
         default:
             setRgbColorOn(10, 0, 0); //red
             break;     

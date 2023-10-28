@@ -17,6 +17,7 @@ extern int16_t gyroY;
 extern int16_t gyroZ;
 
 extern bool configIsValid;
+extern uint8_t ledState;
 
 struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 
@@ -447,10 +448,10 @@ void calibrateGyroMixers(){
     static int16_t centerCh[16];  // rc channels when 3 sticks are centered
     //static bool dirFlag ;
     static int16_t dirCh[3];  // stick positions when all 3 are in the corner = AIL and RUD Rigth and ELV UP
-    static bool lowCornerFlags[3] ;   // register if we already know the 16 Rc channels for only one of the 3 sticks in low corner 
-    static int16_t lowCornerUs[3][16];  // register the 16 Rc channels values 
-    static bool highCornerFlags[3] ;    // idem for 3 sticks in opposite corner
-    static int16_t highCornerUs[3][16];
+    static bool rightUpFlags[3] ;   // register if we already know the 16 Rc channels for only one of the 3 sticks in low corner 
+    static int16_t rightUpUs[3][16];  // register the 16 Rc channels values 
+    static bool leftDownFlags[3] ;    // idem for 3 sticks in opposite corner
+    static int16_t leftDownUs[3][16];
     static enum STAB_MODE prevStabMode ;  // used to detect when gyro switch change
     static uint32_t startMs ;             // used to check that we stay in step 1 for at least 5 sec  
     static uint16_t minLimitsUs[16]; // min limits of the 16 servos during the learning process
@@ -468,13 +469,14 @@ void calibrateGyroMixers(){
         dirCh[0] = rcPwmChannels[config.gyroChan[0]]; // save the stick values for Ail Right  
         dirCh[1] = rcPwmChannels[config.gyroChan[1]]; // save the values for ELV Up
         dirCh[2] = rcPwmChannels[config.gyroChan[2]]; // save the values for Rud Right  
-        centerFlag = lowCornerFlags[0] = lowCornerFlags[1] = lowCornerFlags[2] = highCornerFlags[0] = highCornerFlags[1] = highCornerFlags[2] = false;
+        centerFlag = rightUpFlags[0] = rightUpFlags[1] = rightUpFlags[2] = leftDownFlags[0] = leftDownFlags[1] = leftDownFlags[2] = false;
         for (uint8_t i=0; i<16; i++) {  // reset the min and max RC channel limits
             minLimitsUs[i] = 2012; // lower Rc channel values will be discoverd during the learning process
             maxLimitsUs[i] = 988;  // idem for upper values
         }
-        //centerCh[16]; dirCh[16]; lowCornerUs[3][16]; highCornerUs[3][16]; will be filled with the flags
+        //centerCh[16]; dirCh[16]; rightUpUs[3][16]; leftDownUs[3][16]; will be filled with the flags
         startMs = millisRp();         // used to check that there is 5 msec before switching to second step
+        ledState = STATE_GYRO_CAL_MIXER_NOT_DONE;
         learningState = LEARNING_MIXERS;   
     }
     // once learning process has started, we save always the min and max servo positions
@@ -517,34 +519,53 @@ void calibrateGyroMixers(){
             memcpy(centerCh,rcPwmChannels, sizeof(rcPwmChannels) );
         } else if (inCorner[0] && inCenter[1] && inCenter[2]){ // Ail at end
             i=0;  // Aileron
-            if (stickPosUs[i] < 1500) { //ail at min
-                lowCornerFlags[i] = true;    // save when new pos is lower than previous
-                if ( stickPosUs[i] < lowCornerUs[i][config.gyroChan[i]]) memcpy(lowCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
-            } else {
-                highCornerFlags[i] = true;    // save when new pos is higher than previous
-                if ( stickPosUs[i] > highCornerUs[i][config.gyroChan[i]]) memcpy(highCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+            if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
+                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) ){\
+                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
+            } else {  // stick is in the left or down corner
+                leftDownFlags[i] = true;    // save when new pos is higher than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) ){\
+                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
             }    
         } else if (inCorner[1] && inCenter[0] && inCenter[2]){ // ELV at end
             i=1;  // Elv
-            if (stickPosUs[i] < 1500) { //Elv at min
-                lowCornerFlags[i] = true;    // save when new pos is lower than previous
-                if ( stickPosUs[i] < lowCornerUs[i][config.gyroChan[i]]) memcpy(lowCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
-            } else {
-                highCornerFlags[i] = true;    // save when new pos is higher than previous
-                if ( stickPosUs[i] > highCornerUs[i][config.gyroChan[i]]) memcpy(highCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+            if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
+                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) ){\
+                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
+            } else {  // stick is in the left or down corner
+                leftDownFlags[i] = true;    // save when new pos is higher than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) ){\
+                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
             }    
         } else if (inCorner[2] && inCenter[0] && inCenter[1]){ // Rud at end
             i=2; // 
-            if (stickPosUs[i] < 1500) { //Elv at min
-                lowCornerFlags[i] = true;    // save when new pos is lower than previous
-                if ( stickPosUs[i] < lowCornerUs[i][config.gyroChan[i]]) memcpy(lowCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
-            } else {
-                highCornerFlags[i] = true;    // save when new pos is higher than previous
-                if ( stickPosUs[i] > highCornerUs[i][config.gyroChan[i]]) memcpy(highCornerUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+            if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
+                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) ){\
+                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
+            } else {  // stick is in the left or down corner
+                leftDownFlags[i] = true;    // save when new pos is higher than previous
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) ){\
+                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                }
             }    
         }
         // detect when all cases have been performed at least once (all flags are true)
-        if ((centerFlag==true) && (lowCornerFlags[0]==true) && (highCornerFlags[0]) && (lowCornerFlags[1]==true) && (highCornerFlags[1]) && (lowCornerFlags[2]==true) && (highCornerFlags[20])){
+        if ((centerFlag==true) && (rightUpFlags[0]==true) && (leftDownFlags[0]) && (rightUpFlags[1]==true) && (leftDownFlags[1]) && (rightUpFlags[2]==true) && (leftDownFlags[20])){
+            ledState = STATE_GYRO_CAL_MIXER_DONE;
             learningState = LEARNING_MIXERS_DONE; // this will change the led color 
         } 
         // check for a switch change
@@ -555,12 +576,14 @@ void calibrateGyroMixers(){
             if (( millisRp() - startMs) > 5000) { // when change, occurs after 5 sec of starting the learning process
                 if (learningState == LEARNING_MIXERS) {  // error
                     if ( centerFlag == false) {printf("Error in Gyro setup: missing all 3 sticks centered\n");}
-                    if ( ( lowCornerFlags[0] == false) or ( highCornerFlags[0] == false) ) {printf("Error in Gyro setup: missing one corner position for aileron alone\n");}  
-                    if ( ( lowCornerFlags[1] == false) or ( highCornerFlags[1] == false) ) {printf("Error in Gyro setup: missing one corner position for elevator alone\n");}  
-                    if ( ( lowCornerFlags[2] == false) or ( highCornerFlags[2] == false) ) {printf("Error in Gyro setup: missing one corner position for rudder alone\n");}  
+                    if ( ( rightUpFlags[0] == false) or ( leftDownFlags[0] == false) ) {printf("Error in Gyro setup: missing one corner position for aileron alone\n");}  
+                    if ( ( rightUpFlags[1] == false) or ( leftDownFlags[1] == false) ) {printf("Error in Gyro setup: missing one corner position for elevator alone\n");}  
+                    if ( ( rightUpFlags[2] == false) or ( leftDownFlags[2] == false) ) {printf("Error in Gyro setup: missing one corner position for rudder alone\n");}  
+                    ledState = STATE_NO_SIGNAL;
                     learningState = LEARNING_OFF;    
                     configIsValid = false;
                 } else {
+                    ledState = STATE_GYRO_CAL_LIMIT;
                     learningState = LEARNING_LIMITS;
                 }    
             }    
@@ -575,45 +598,33 @@ void calibrateGyroMixers(){
             for (i=0;i<16;i++) {
                 #define MM 5    // MM = MIXER MARGIN
                 // look at the channels that have to be controled by the gyro.
+                // channel is used if there are differences and channel is not a stick
                 temp.used[i] = false;
                 if ( ((i != config.gyroChan[0] ) and (i != config.gyroChan[1] ) and (i != config.gyroChan[2] )) and (\
-                    (abs(lowCornerUs[0][i]-highCornerUs[0][i])>MM) or (abs(lowCornerUs[0][i]-centerCh[i])>MM) or (abs(highCornerUs[0][i]-centerCh[i])>MM)\
-                    or(abs(lowCornerUs[1][i]-highCornerUs[1][i])>MM) or (abs(lowCornerUs[1][i]-centerCh[i])>MM) or (abs(highCornerUs[1][i]-centerCh[i])>MM)\
-                    or(abs(lowCornerUs[2][i]-highCornerUs[2][i])>MM) or (abs(lowCornerUs[2][i]-centerCh[i])>MM) or (abs(highCornerUs[2][i]-centerCh[i])>MM))) {
-                    temp.used[i] = true; // channel is used if there are differences and channel is not a stick
+                    (abs(rightUpUs[0][i]-leftDownUs[0][i])>MM) or (abs(rightUpUs[0][i]-centerCh[i])>MM) or (abs(leftDownUs[0][i]-centerCh[i])>MM)\
+                    or(abs(rightUpUs[1][i]-leftDownUs[1][i])>MM) or (abs(rightUpUs[1][i]-centerCh[i])>MM) or (abs(leftDownUs[1][i]-centerCh[i])>MM)\
+                    or(abs(rightUpUs[2][i]-leftDownUs[2][i])>MM) or (abs(rightUpUs[2][i]-centerCh[i])>MM) or (abs(leftDownUs[2][i]-centerCh[i])>MM))) {
+                    temp.used[i] = true; 
                 }
                 temp.neutralUs[i] = centerCh[i];  // servo pos when 3 stricks are centered
-                // to do check if sign are OK
-                if (dirCh[0] > 1500) {   // when dir is HIGH, it means that highCornerUs[] is the RIGHT or UP,  
-                    temp.rateRollRightUs[i] = highCornerUs[0][i] - centerCh[i] ;//   then right rate = max - center
-                    temp.rateRollLeftUs[i] =  centerCh[i] - lowCornerUs[0][i] ;//   then LEFT rate = min - center or opposite??
-                } else {
-                    temp.rateRollRightUs[i] = centerCh[i] - lowCornerUs[0][i] ;//   then right rate = min - center
-                    temp.rateRollLeftUs[i] =  highCornerUs[0][i] - centerCh[i] ;//   then LEFT rate = max - center
-                }
-                if (dirCh[1] > 1500) {   // when dir is HIGH, it means that highCornerUs[] is the RIGHT or UP,  
-                    temp.ratePitchUpUs[i] = highCornerUs[1][i] - centerCh[i] ;//   then right rate = max - center
-                    temp.ratePitchDownUs[i] =  centerCh[i] - lowCornerUs[1][i] ;//   then LEFT rate = min - center
-                } else {
-                    temp.ratePitchUpUs[i] = centerCh[i] - lowCornerUs[1][i] ;//   then right rate = min - center
-                    temp.ratePitchDownUs[i] =  highCornerUs[1][i] - centerCh[i]  ;//   then LEFT rate = max - center
-                }
-                if (dirCh[2] > 1500) {   // when dir is HIGH, it means that highCornerUs[] is the RIGHT or UP,  
-                    temp.rateYawRightUs[i] = highCornerUs[2][i] - centerCh[i];//   then right rate = max - center
-                    temp.rateYawLeftUs[i] =  centerCh[i] - lowCornerUs[2][i] ;//   then LEFT rate = min - center
-                } else {
-                    temp.rateYawRightUs[i] = centerCh[i] - lowCornerUs[2][i] ;//   then right rate = min - center
-                    temp.rateYawLeftUs[i] =  highCornerUs[2][i] - centerCh[i];//   then LEFT rate = max - center
-                }
+                
+                temp.rateRollRightUs[i] =  rightUpUs[0][i] - centerCh[i] ;//   then right rate
+                temp.rateRollLeftUs[i] =  leftDownUs[0][i] - centerCh[i] ;//   then LEFT rate 
+                temp.ratePitchUpUs[i] =    rightUpUs[1][i] - centerCh[i] ;//   then right rate
+                temp.ratePitchDownUs[i] = leftDownUs[1][i] - centerCh[i] ;//   then LEFT rate 
+                temp.rateYawRightUs[i] =   rightUpUs[2][i] - centerCh[i] ;//   then right rate
+                temp.rateYawLeftUs[i]  =  leftDownUs[2][i] - centerCh[i] ;//   then LEFT rate 
+                
                 temp.minUs[i] = minLimitsUs[i];
                 temp.maxUs[i] = maxLimitsUs[i]; 
             }  // end for (all axis processed)
+            ledState = STATE_NO_SIGNAL;
             learningState = LEARNING_OFF;
             printf("\nGyro calibration:\n");
             printf("Stick Ail_Right on channel %i at %-5i\n", config.gyroChan[0]+1, pc(dirCh[0] - 1500));
             printf("Stick Elv Up    on channel %i at %-5i\n", config.gyroChan[1]+1, pc(dirCh[1] - 1500));
             printf("Stick Rud_Right on channel %i at %-5i\n", config.gyroChan[2]+1, pc(dirCh[2] - 1500));
-            printf("Gyro corrections (%%) on:\n");
+            printf("Gyro corrections (from center pos in %%) on:      \n");
             for (uint8_t i = 0; i<16;i++) {
                 if ( temp.used[i]) {
                     printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\

@@ -2071,7 +2071,7 @@ void printGyro(){
     }
     // when calibrated
     printf("\nGyro mixers are calibrated:\n");
-    printf("Gyro corrections (%%) on:\n");
+    printf("Gyro corrections (from center pos in %%) on:      \n");
     for (uint8_t i = 0; i<16;i++) {
         if ( gyroMixer.used[i]) {
             printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\
