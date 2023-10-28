@@ -466,8 +466,14 @@ void setup() {
   } else {
     printf("clock is not changed\n");
   }
-  */ 
+   
     //checkLedColors(); // this program does not end and so main loop is not called.
+  if(gyroIsInstalled){
+    printf("gyro is installed\n");
+  }  else{ 
+    printf("gyro is not installed\n");
+  }
+  */
 }
 
 void getSensorsFromCore1(){

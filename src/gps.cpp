@@ -163,13 +163,15 @@ GPS::GPS( void) {}
 
 void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if ( ( config.gpsType == 'U') || ( config.gpsType == 'E') ) {
+    if  ( config.gpsType == 'U') {  // do not sent command for cadis or when when ublox gps is configured externally 
+    //if ( ( config.gpsType == 'U') || ( config.gpsType == 'E') ) {
         gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
         uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
     } else {
         gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
     }
 }
+
 void GPS::readGps(){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
     if ( ( config.gpsType == 'U')  || ( config.gpsType == 'E') ) handleGpsUblox();
@@ -231,7 +233,7 @@ void GPS::handleGpsUblox(){
             break;
         case GPS_WAIT_END_OF_RESET:
             if ( config.gpsType == 'E') {
-                gpsInitRx();                        // setup the reception of GPS char.
+                // gpsInitRx();                        // setup the reception of GPS char.
                 gpsState = GPS_CONFIGURED;
             } else {
                 if (lastActionUs == 0) {
