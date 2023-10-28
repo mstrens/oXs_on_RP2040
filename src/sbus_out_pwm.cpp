@@ -111,6 +111,9 @@ void setLedState(){
         if ( (now - lastPriChannelsMillis) >  FAILSAFE_DELAY ) priFailsafe = true; // if we stop receiving sbus, we force a failsafe
         if ( (now - lastSecChannelsMillis) >  FAILSAFE_DELAY ) secFailsafe = true; // if we stop receiving sbus, we force a failsafe
     }
+    if ( ledState == STATE_GYRO_CAL_MIXER_NOT_DONE or ledState == STATE_GYRO_CAL_MIXER_DONE or ledState == STATE_GYRO_CAL_LIMIT){
+        return;
+    }
     if ( config.pinPrimIn == 255) {
         if (config.pinSecIn == 255) {
             ledState = STATE_NO_SIGNAL;

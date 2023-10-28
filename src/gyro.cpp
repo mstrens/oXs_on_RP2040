@@ -432,6 +432,7 @@ bool checkForLearning(){ // return true when learning process can start
     static uint8_t idx = 0;
     static uint32_t sumIntervals = 50000;
     
+    
     if (stabMode == prevStabMode)  {
         return false;
     }
@@ -444,8 +445,10 @@ bool checkForLearning(){ // return true when learning process can start
         uint32_t interval = t - lastChangeMs;
         lastChangeMs = t;
         sumIntervals -= intervals[idx];
+        sumIntervals += interval;
         intervals[idx] = interval;
         idx++;
+        if (idx >= 5) idx =0; 
         if (sumIntervals < 5000) {
             return true; 
         }
@@ -466,7 +469,7 @@ void calibrateGyroMixers(){
     static uint32_t startMs ;             // used to check that we stay in step 1 for at least 5 sec  
     static uint16_t minLimitsUs[16]; // min limits of the 16 servos during the learning process
     static uint16_t maxLimitsUs[16]; // idem for max limits
-    
+    static uint16_t prevStickPosUs[3]; // use to control that the stick are in a stable position.
 
     if (learningState == LEARNING_OFF){
         if (checkForLearning() == false){  // function return true when conditions to start the learning process are OK  
@@ -515,26 +518,29 @@ void calibrateGyroMixers(){
     bool inCenter[3] = {false, false,false};     // true when stick is centered (with some tolerance)
     bool inCorner[3] = {false, false,false};        // true when stick is in a corner (with some tolerance)
     uint8_t i;
+    bool sticksMaintained = true;
     stickPosUs[0] = (int16_t) rcPwmChannels[config.gyroChan[0]]; 
     stickPosUs[1] = (int16_t) rcPwmChannels[config.gyroChan[1]]; 
     stickPosUs[2] = (int16_t) rcPwmChannels[config.gyroChan[2]];
     for (i=0;i<3;i++){                // detect when sticks are centered or in a corner
         if ((stickPosUs[i] >= CENTER_LOW) and (stickPosUs[i] <= CENTER_HIGH)) inCenter[i] = true;
         if ((stickPosUs[i] <= END_LOW) or (stickPosUs[i] >= END_HIGH)) inCorner[i] = true;
+        if (stickPosUs[i] != prevStickPosUs[i]) sticksMaintained = false;
+        prevStickPosUs[i] = stickPosUs[i];
     }
-    // then process depend on the state
+    // then process depend on the state 
     if ((learningState == LEARNING_MIXERS) or (learningState == LEARNING_MIXERS_DONE)){
         // if all 3 sticks are centered, set flag and save 16 channels in centerCh
-        if (inCenter[0] && inCenter[1] && inCenter[2] ){
+        if ((inCenter[0] && inCenter[1] && inCenter[2] ) and sticksMaintained){
             if (centerFlag == false){
                 printf("centered\n");
             }
             centerFlag = true;
             memcpy(centerCh,rcPwmChannels, sizeof(rcPwmChannels) );
             
-        } else if (inCorner[0] && inCenter[1] && inCenter[2]){ // Ail at end
+        } else if (inCorner[0] && inCenter[1] && inCenter[2] && sticksMaintained){ // Ail at end
             i=0;  // Aileron
-            if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
+            if ((abs(stickPosUs[i] - dirCh[i]) < 100) ) { //stick is in the right or up corner
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
                     (rightUpFlags[i] == false)){\
@@ -555,7 +561,7 @@ void calibrateGyroMixers(){
                 }
                 leftDownFlags[i] = true;    // save when new pos is lower than previous
             }    
-        } else if (inCorner[1] && inCenter[0] && inCenter[2]){ // ELV at end
+        } else if (inCorner[1] && inCenter[0] && inCenter[2] && sticksMaintained){ // ELV at end
             i=1;  // Elv
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
@@ -578,7 +584,7 @@ void calibrateGyroMixers(){
                 }
                 leftDownFlags[i] = true;    // save when new pos is lower than previous
             }    
-        } else if (inCorner[2] && inCenter[0] && inCenter[1]){ // Rud at end
+        } else if (inCorner[2] && inCenter[0] && inCenter[1] && sticksMaintained) { // Rud at end
             i=2; // 
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
@@ -604,7 +610,7 @@ void calibrateGyroMixers(){
         }
         // detect when all cases have been performed at least once (all flags are true)
         if ((centerFlag==true) && (rightUpFlags[0]==true) && (leftDownFlags[0]==true)\
-             && (rightUpFlags[1]==true) && (leftDownFlags[1]==true) && (rightUpFlags[2]==true) && (leftDownFlags[20]==true)){
+             && (rightUpFlags[1]==true) && (leftDownFlags[1]==true) && (rightUpFlags[2]==true) && (leftDownFlags[2]==true)){
             ledState = STATE_GYRO_CAL_MIXER_DONE;
             learningState = LEARNING_MIXERS_DONE; // this will change the led color 
             static uint32_t prevPrintMs = 0;

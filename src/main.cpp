@@ -302,10 +302,10 @@ void setColorState(){    // set the colors based on the RF link
             setRgbColorOn(10, 0, 0); //red
             break;
         case STATE_GYRO_CAL_MIXER_DONE:
-            setRgbColorOn(0, 0, 0); //blue
+            setRgbColorOn(10, 5, 0); //yellow
             break;
         case STATE_GYRO_CAL_LIMIT:
-            setRgbColorOn(0, 10, 0); //green
+            setRgbColorOn(0, 0, 10); //blue
             break;
         default:
             setRgbColorOn(10, 0, 0); //red
@@ -604,7 +604,7 @@ void loop() {
         updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
       }
       if (gyroIsInstalled) {
-        calibrateGyroMixers();   // check if gyro must be calibrated 
+        calibrateGyroMixers();   // check if user ask for gyro calibration 
       }
       updatePWM(); // update PWM pins only based on channel value (not sequencer); this will call applyGyroCorrections if gyro is used
             //updatePioPwm();
