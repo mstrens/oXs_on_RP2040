@@ -173,42 +173,42 @@ void processCmd(){
         printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
                 
-        printf("Type of ESC :              ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) or KON (Kontronik)\n");
-        printf("Logger baudrate :          LOGBAUD = 115200\n");
-        printf("Refresh rate of servos     PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
-        printf("Voltage scale x(1,2,3,4)   SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
-        printf("                           SCALEx = 0          Avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
-        printf("Voltage offset x(1,2,3,4)  OFFSETx = nnn.ddd   e.g. OFFSET1=0.6789\n")  ;
-        printf("Temperature (from V3, V4)  TEMP = Y            Y=1 if one TMP36 on V3, Y=2 if a second one is on V4");
-        printf("GPS type                   GPS = Y             U=Ublox configured by oXs, E=Ublox configured Externally, C = CADIS\n");
-        printf("RPM multiplicator          RPM_MULT = Y.Y      e.g. 0.5 to divide RPM by 2\n");
-        printf("Led inversion              LED = N             N=normal , I=inverted\n");
-        printf("Failsafe mode              FAILSAFE = H        Set failsafe to Hold mode\n")  ;
-        printf("         values            SETFAILSAFE         Values are set on the current positions\n")  ;
+        printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) or KON (Kontronik)\n");
+        printf("Logger baudrate :           LOGBAUD = 115200\n");
+        printf("Refresh rate of servos      PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
+        printf("Voltage scale x(1,2,3,4)    SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+        printf("                            SCALEx = 0          Avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
+        printf("Voltage offset x(1,2,3,4)   OFFSETx = nnn.ddd   e.g. OFFSET1=0.6789\n")  ;
+        printf("Temperature (from V3, V4)   TEMP = Y            Y=1 if one TMP36 on V3, Y=2 if a second one is on V4\n");
+        printf("GPS type                    GPS = Y             U=Ublox configured by oXs, E=Ublox configured Externally, C = CADIS\n");
+        printf("RPM multiplicator           RPM_MULT = Y.Y      e.g. 0.5 to divide RPM by 2\n");
+        printf("Led inversion               LED = N             N=normal , I=inverted\n");
+        printf("Failsafe mode               FAILSAFE = H        Set failsafe to Hold mode\n")  ;
+        printf("         values             SETFAILSAFE         Values are set on the current positions\n")  ;
         
-        printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers");
-        printf("    Airspeed               ACC = YY            To select Vspeed and compensation ratio");   
-        printf("    Gyro mode/gain         GMG = YY            To select mode/gain\n");
-        printf("    Gyro Stick Aileron     GSA = YY            Gyro only : Original aileron stick (without mix/limits/trim)\n");
-        printf("    Gyro Stick Elevator    GSE = YY               ""                 elevator \n");
-        printf("    Gyro Stick Rudder      GSR = YY               ""                 rudder   \n");
+        printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers\n");
+        printf("    Airspeed                ACC = YY            To select Vspeed and compensation ratio\n");   
+        printf("    Gyro mode/gain          GMG = YY            To select mode/gain\n");
+        printf("    Gyro Stick Aileron      GSA = YY            Gyro only : Original aileron stick (without mix/limits/trim)\n");
+        printf("    Gyro Stick Elevator     GSE = YY               ""                 elevator \n");
+        printf("    Gyro Stick Rudder       GSR = YY               ""                 rudder   \n");
 
-        printf("Gyro Gain on Roll          GGR = YYYY          Gain on roll axis (-127/127)\n");
-        printf("             Pitch         GGP = YYYY             ""    pitch\n");
-        printf("             Yaw           GGY = YYYY             ""    Yaw\n");
-        printf("     Gain on stick Throw   GGT = Y             1 (corr. on full throw) , 2 (on half) , 3 (on quater)\n");
-        printf("     Max Rotate            GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
-        printf("     stick Rotate Enable   GRE =Y              1 (disabled) , 2 (enabled)\n");
+        printf("Gyro Gain on Roll           GGR = YYYY          Gain on roll axis (-127/127)\n");
+        printf("             Pitch          GGP = YYYY             ""    pitch\n");
+        printf("             Yaw            GGY = YYYY             ""    Yaw\n");
+        printf("     Gain on stick Throw    GGT = Y             1 (corr. on full throw) , 2 (on half) , 3 (on quater)\n");
+        printf("     Max Rotate             GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
+        printf("     stick Rotate Enable    GRE =Y              1 (disabled) , 2 (enabled)\n");
 
-        printf("Sequencers                 SEQ = YYYY          See Readme section to see how to fill YYYY\n");
-        printf("                           SEQ = DEL           Erase all sequencer\n");
-        printf("Force MPU6050 calibration  MPUCAL\n");
-        printf("Testing                    FV                  Field Values (display all telemetry internal values)\n")  ;
-        printf("                           FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
-        printf("                           FVN                      idem with negatieve values\n")  ;
-        printf("                           PWM                 Display the current PWM values (in micro sec)\n");
+        printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
+        printf("                            SEQ = DEL           Erase all sequencer\n");
+        printf("Force MPU6050 calibration   MPUCAL\n");
+        printf("Testing                     FV                  Field Values (display all telemetry internal values)\n")  ;
+        printf("                            FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
+        printf("                            FVN                      idem with negatieve values\n")  ;
+        printf("                            PWM                 Display the current PWM values (in micro sec)\n");
         printf("\n");
-        printf("-To get the current config, just press Enter\n");
+        printf("To get the current config, just press Enter; to get list of commands send ""?""\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         isPrinting = false;
         return;  
@@ -1151,10 +1151,10 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), SCL and SDA must be defined (to allow I2C for mpu6050)\n");
         configIsValid=false;
     }
-    if ( ((config.gyroChanControl != 255) and ( config.gyroChan[0]==config.gyroChanControl or config.gyroChan[1]==config.gyroChanControl\
-             or config.gyroChan[2]==config.gyroChanControl)) or config.gyroChan[0]==config.gyroChan[1] or config.gyroChan[0]==config.gyroChan[2]\
-             or config.gyroChan[1]==config.gyroChan[2]) {
-        printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), all 4 channels must be different from each other\n");
+    if  ((config.gyroChanControl != 255) and ( config.gyroChan[0]==config.gyroChanControl or config.gyroChan[1]==config.gyroChanControl\
+             or config.gyroChan[2]==config.gyroChanControl or config.gyroChan[0]==config.gyroChan[1] or config.gyroChan[0]==config.gyroChan[2] \
+             or config.gyroChan[1]==config.gyroChan[2] ) ) {
+        printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), all 4 channels must be different from each other   %i\n",config.gyroChanControl);
         configIsValid=false;
     }    
 
@@ -1198,16 +1198,16 @@ void printConfigAndSequencers(){
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     printf("RGB led . . . . . . . . . = %4u  (RGB    = 0, 1, 2, ..., 29)\n", config.pinLed);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
-    printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)\n", config.pinEsc );
+    printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)", config.pinEsc );
     
     if (config.escType == HW4) {
-        printf("\nEsc type is HW4 (Hobbywing V4)\n")  ;
+        printf("    Esc type is HW4 (Hobbywing V4)\n")  ;
     } else if (config.escType == HW3) {
-        printf("\nEsc type is HW3 (Hobbywing V3)\n")  ;
+        printf("Esc type is HW3 (Hobbywing V3)\n")  ;
     } else if (config.escType == KONTRONIK) {
-        printf("\nEsc type is KON (Kontronik)\n")  ;
+        printf("Esc type is KON (Kontronik)\n")  ;
     } else {
-        printf("\nEsc type is not defined\n")  ;
+        printf("Esc type is not defined\n")  ;
     }    
 
     watchdog_update(); //sleep_ms(500);
@@ -1238,7 +1238,7 @@ void printConfigAndSequencers(){
     printf("Logger baudrate = %" PRIu32 "\n", config.loggerBaudrate)  ;
     printf("PWM is generated at = %i Hz\n", (int) config.pwmHz)  ;
     
-    printf("\nVoltage parameters:\n")  ;
+    printf("Voltage parameters:\n")  ;
     printf("    Scales : %f , %f , %f , %f \n", config.scaleVolt1 , config.scaleVolt2 ,config.scaleVolt3 ,config.scaleVolt4 )  ;
     printf("    Offsets: %f , %f , %f , %f \n", config.offset1 , config.offset2 ,config.offset3 ,config.offset4 )  ;
     if ( config.pinVolt[2] !=255 && config.temperature == 1) {
