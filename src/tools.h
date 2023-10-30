@@ -108,6 +108,8 @@ void startTimerUs(uint8_t idx);                            // start a timer to m
 void alarmTimerUs(uint8_t idx, uint32_t alarmExceedUs);    //  print a warning if enlapsed time exceed xx usec
 void getTimerUs(uint8_t idx);                              // print always the enlapsed time
 
+bool msgEverySec(uint8_t idx);                              // return true when more than 1 sec since previous call (per idx)
+
 void calculateAirspeed();
 
 void fillFields( uint8_t forcedFields);

@@ -5,7 +5,7 @@
 #include "crsf_frames.h"
 #include "gyro.h"
 
-#define CONFIG_VERSION 6
+#define CONFIG_VERSION 7
 
 
 struct CONFIG{
@@ -86,7 +86,6 @@ void requestMpuCalibration();
 void printConfigOffsets();
 void printFieldValues();
 void printPwmValues();
-void printGyro();
 
 // for sequencer
 #define SEQUENCER_VERSION 4
@@ -158,7 +157,13 @@ void setupSequencers();
 //bool getSequencers();
 //bool getStepsSequencers();
 void checkSequencers();
-void saveSequencers(); // save pin sequencers and step definitions
+void saveSequencers(); // save all sequencers definitions
+
+
+
+void setupGyroMixer();
+void saveGyroMixer();  // save the gyro mixer collected during the learning process (mixer calibration)
+void printGyro(); 
 
 #define HW4 4
 #define HW3 3

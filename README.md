@@ -348,7 +348,7 @@ This format allows to compress the data transmitted via the (quite slow) UART to
 The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
 
 ## ------------------ Gyro ------------------
-When oXs get the Rc channels from a receiver (via Sbus, Ibus, ...) and when a MPU6050 is installed, oXs can apply gyro corrections several servos.
+When oXs get the Rc channels from a receiver (via Sbus, Ibus, ...) and when a MPU6050 is installed, oXs can apply gyro corrections on several servos.
 For more details, please read carrefully the file "gyro concepts.md" in the folder "doc".
 
 

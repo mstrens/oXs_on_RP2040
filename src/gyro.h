@@ -5,7 +5,7 @@
 #include "stdio.h"
 
 
-#define GYRO_VERSION 0
+#define GYROMIXER_VERSION 0
 
 // stabilization mode
 enum STAB_MODE {STAB_RATE, STAB_HOLD};
@@ -17,7 +17,7 @@ enum RATE_MODE_STICK_ROTATE {RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_R
 
 
 struct gyroMixer_t{
-    uint8_t version = GYRO_VERSION;
+    uint8_t version = GYROMIXER_VERSION;
     bool isCalibrated = false;
     bool used[16] ; //true means that this Rc channel is impacted by gyro compensation
 
@@ -37,13 +37,17 @@ struct _pid_param {
   int16_t kp[3]; // [0, 1000] 11b signed    // 3 values because one per axis
   int16_t ki[3];
   int16_t kd[3];
-  int8_t output_shift;
+  int8_t output_shift ;
 };
 
 void initGyroMixer(); // to do = to adapt when gyroMixer will be saved in flash
 void initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
 void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param);
-void updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
+void applyGyroCorrections(); // apply gyro corrections taking care of the gyro mixers
+
+void calculateCorrectionsToApply(); // calculate gyro corrections on 3 axis but without taking care of the mixer
+
+
 
 void calibrateGyroMixers();
 int pc(int16_t val);        // convert a Rc value (-512/512) in %

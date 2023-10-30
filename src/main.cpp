@@ -73,8 +73,8 @@
 //        1   1  is used for rpm                                                                       (it uses 3 bytes , no Irq, no dma)
 //        1   2 is used for logger uart Tx                                                             (it uses 4 bytes, no irq and one dma) 
 //        1   3 is used for RGB led                                                                    (it uses 4 bytes, no irq and no dma)     
-// So UART0 is used for Secondary crsf of Sbus in ( was GPS before)
-//    UART1 is used for primary crsf in of SBUS IN (was only Sbus in before)
+// So UART0 is used for Secondary crsf in or Sbus in ( was GPS before)
+//    UART1 is used for primary crsf in or SBUS IN (was only Sbus in before)
  
 // note : GPS setup (on core 1) can end when core 1 is already in main loop; setup of logger (pio/dma) has to wait that gps set up is done 
 
@@ -228,7 +228,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       mpu.begin(); 
       //printf("mpu done\n");
     //blinkRgb(0,10,0,500,1000000); blink red, green, blue at 500 msec for 1000 0000 X
-      gps.setupGps();  //use a Pio and 2 sm
+      gps.setupGps();  //use a Pio and 1 sm (in fact reuse the same sm for RX after TX)
       //printf("gps done\n");
       ms4525.begin();
       if (! ms4525.airspeedInstalled) {
@@ -376,10 +376,11 @@ void setup() {
     }
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  
   setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
+  setupGyroMixer(); 
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
   
-  initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
-  initGyroMixer(); // to do : to modify when gyroMixer[] will be saved in flash
+  //initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
+  //initGyroMixer(); // to do : to modify when gyroMixer[] will be saved in flash
   
   setupLed();
   //setRgbColorOn(10,0,10); // start with 2 color
@@ -453,7 +454,7 @@ void setup() {
       if ( config.pinLogger != 255) {
         logger.begin();           // set up the logger
       }
-      if ((config.gyroChanControl < 16) and (mpu.mpuInstalled)) {
+      if ((config.gyroChanControl < 16) and (mpu.mpuInstalled)) { // when the channel to control the gyro is defined and a mpu.installed
         gyroIsInstalled=true;
       }
       watchdog_enable(3500, 0); // require an update once every 500 msec
@@ -504,10 +505,13 @@ void getSensorsFromCore1(){
                     cameraRoll = entry.data;
                 } else if (entry.type == GYRO_X_ID) {  
                     gyroX = (15*gyroX + entry.data) >> 4;  // here some filtering
+                    //gyroX = entry.data;
                 } else if (entry.type == GYRO_Y_ID) { 
-                    gyroY = (15*gyroY + entry.data) >>4 ; 
+                    gyroY = (15*gyroY + entry.data) >>4 ;
+                    //gyroY = entry.data; 
                 } else if (entry.type == GYRO_Z_ID) { 
-                    gyroZ = (15*gyroZ + entry.data) >> 4; 
+                    gyroZ = (15*gyroZ + entry.data) >> 4;
+                    //gyroZ = entry.data;
                 } else {
                     printf("error : invalid type of sensor = %d\n", entry.type);
                 }    
@@ -600,14 +604,11 @@ void loop() {
         fillSbusFrame();
       }
       watchdog_update();
-      if ( (gyroIsInstalled) and (gyroMixer.isCalibrated)) {
-        updateGyroCorrections(); // calculate gyro corrections but do not yet apply them
-      }
       if (gyroIsInstalled) {
         calibrateGyroMixers();   // check if user ask for gyro calibration 
       }
       updatePWM(); // update PWM pins only based on channel value (not sequencer); this will call applyGyroCorrections if gyro is used
-            //updatePioPwm();
+      
       sequencerLoop();  // update PWM pins based on sequencer
       if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16
         newRcChannelsReceivedForLogger = false; // reset the flag allowing a log of RC channels

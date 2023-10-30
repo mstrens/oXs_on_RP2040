@@ -139,7 +139,8 @@ void LOGGER::logint32withStuff(uint8_t type ,int32_t value){
     } 
 }
 
-extern uint16_t rcSbusOutChannels[16];
+//extern uint16_t rcSbusOutChannels[16];
+extern uint16_t rcChannelsUs[16]; // Rc channels from receiver in Us
 
 extern uint32_t lastRcChannels;
 
@@ -150,11 +151,14 @@ void LOGGER::logAllRcChannels(){   // log all 16 rc channels
     logByteNoStuff(0X7E);
     logTimestampMs(millisRp());
     logByteNoStuff(40);
-    uint16_t pwmUsec ;
+    //uint16_t pwmUsec ;
     for (uint8_t i=0;i<16; i++){
-        pwmUsec = fmap( rcSbusOutChannels[i]  );
-        logBytewithStuff( (uint8_t) (pwmUsec >> 8));
-        logBytewithStuff( (uint8_t) pwmUsec );
+        //pwmUsec = fmap( rcSbusOutChannels[i]  );
+        //logBytewithStuff( (uint8_t) (pwmUsec >> 8));
+        //logBytewithStuff( (uint8_t) pwmUsec );
+        logBytewithStuff( (uint8_t) (rcChannelsUs[i] >> 8));
+        logBytewithStuff( (uint8_t) rcChannelsUs[i] );
+        
     }
 }
 

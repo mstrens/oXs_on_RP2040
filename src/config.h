@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.8"
+#define VERSION "2.9.10"
 
 #define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -222,6 +222,12 @@
 //       the sign of the ratio define the direction of the compensation.
 //       Setting the channel on 0% dissables the compensation. This can e.g. be done using a switch on the TX
 
+// --------- Gyro Parameters ---------------
+// 
+
+
+
+
 // --------- Default parameters -------------
 // Many parameters can be edited using a serial monitor without having to compile/reflash the RP2040  
 // If you want to make an uf2 flie with specific parameters (and so, avoid having to use the serial monitor commands),
@@ -286,6 +292,43 @@
 #define _pinEsc 0xFF
 #define _escType 0xFF
 #define _pwmHz 50  // 50 hz per default
+// for gyro
+#define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
+#define _gyroChan_AIL    0xFF // Rc channel used to transmit original Ail (Elv, Rud) stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
+#define _gyroChan_ELV    0xFF //                                           ELV
+#define _gyroChan_RUD    0xFF //                                                RUD
+#define _pid_param_rate_KP_AIL 500  // PID rates: normal mode - Kp - ail (roll)
+#define _pid_param_rate_KP_ELV 500  // PID rates: normal mode - Kp - elv (pitch)
+#define _pid_param_rate_KP_RUD 500  // PID rates: normal mode - Kp - rud (yaw)
+#define _pid_param_hold_KP_AIL 500  // PID rates: hold   mode - Kp - ail (roll)
+#define _pid_param_hold_KP_ELV 500  // PID rates: hold   mode - Kp - elv (pitch)
+#define _pid_param_hold_KP_RUD 500  // PID rates: hold   mode - Kp - rud (yaw)
+#define _pid_param_rate_KI_AIL   0  // PID rates: normal mode - Ki - ail (roll)   // set ki to 0 for normal mode
+#define _pid_param_rate_KI_ELV   0  // PID rates: normal mode - Ki - elv (pitch)  // set ki to 0 for normal mode
+#define _pid_param_rate_KI_RUD   0  // PID rates: normal mode - Ki - rud (yaw)    // set ki to 0 for normal mode
+#define _pid_param_hold_KI_AIL 500  // PID rates: hold   mode - Ki - ail (roll)
+#define _pid_param_hold_KI_ELV 500  // PID rates: hold   mode - Ki - elv (pitch)
+#define _pid_param_hold_KI_RUD 500  // PID rates: hold   mode - Ki - rud (yaw)
+#define _pid_param_rate_KD_AIL 500  // PID rates: normal mode - Kd - ail (roll)
+#define _pid_param_rate_KD_ELV 500  // PID rates: normal mode - Kd - elv (pitch)
+#define _pid_param_rate_KD_RUD 500  // PID rates: normal mode - Kd - rud (yaw)
+#define _pid_param_hold_KD_AIL 500  // PID rates: hold   mode - Kd - ail (roll)
+#define _pid_param_hold_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
+#define _pid_param_hold_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
+#define _pid_param_rate_output_shift 8 // do not modify
+#define _pid_param_hold_output_shift 8 // do not modify
+#define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
+#define _vr_gain_ELV       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
+#define _vr_gain_RUD       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse ) 
+#define _stick_gain_throw     1     // STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_GAIN_THROW_QUARTER=3} 
+                                    // STICK_GAIN_THROW allows to limit the compensation on a part of the stick travel (gain decreases more or less rapidly with stick offset)
+#define _max_rotate           3     // MAX_ROTATE_VLOW=1, MAX_ROTATE_LOW=2, MAX_ROTATE_MED=3, MAX_ROTATE_HIGH=4
+                                    // MAX_ROTATE is used in hold mode (correction depends more or less on stick offset)
+#define _rate_mode_stick_rotate  1  // RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE=2
+                                    // MAX_ROTATE is used also in rate mode when RATE_MODE_STICK_ROTATE_ENABLE is selected
+
+
+
 // --------- Reserve for developer. ---------
 
 typedef struct {

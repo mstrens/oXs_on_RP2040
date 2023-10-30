@@ -139,6 +139,7 @@ void processCmd(){
     char *ptr;
     uint32_t ui;
     uint32_t ui2;
+    int32_t integerValue;
     double db;    
     pkey = NULL;
     pvalue = NULL;
@@ -149,79 +150,64 @@ void processCmd(){
     }
     if (cmdBuffer[0] == '?'){ // when help is requested we print the instruction
         isPrinting = true; //use to discard incoming data from Sbus... while printing a long text (to avoid having the queue saturated)
-        printf("\nCommands can be entered to change the config parameters\n");
-        printf("- To activate a function, select the GPIO and enter function code = GPIO (e.g. PRI=5)\n");
-        printf("    Function                  Code        Valid GPIO's\n");   
-        printf("    Primary channels input    PRI     = 5, 9, 21, 25\n");
-        printf("    Secondary channels input  SEC     = 1, 13, 17, 29\n");
-        printf("    Telemetry                 TLM     = 0, 1, 2, ..., 29\n");
-        printf("    GPS Rx                    GPS_RX  = 0, 1, 2, ..., 29\n");
-        printf("    GPS Tx                    GPS_TX  = 0, 1, 2, ..., 29\n");
-        printf("    Sbus OUT                  SBUS_OUT= 0, 1, 2, ..., 29\n");
-        printf("    RPM (only for Sport)      RPM     = 0, 1, 2, ..., 29\n");
-        printf("    SDA (baro sensor)         SDA     = 2, 6, 10, 14, 18, 22, 26\n");
-        printf("    SCL (baro sensor)         SCL     = 3, 7, 11, 15, 19, 23, 27\n");
-        printf("    PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
-        printf("    Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
-        printf("    RGB led                   RGB     = 0, 1, 2, ..., 29\n");
-        printf("    Logger                    LOG     = 0, 1, 2, ..., 29\n");
-        printf("    ESC                       ESC_PIN = 0, 1, 2, ..., 29\n");
+        printf("\nCommands can be entered to change the config parameters (format is XXXX  or  XXXX=YYYY e.g. PRI=5)\n");
+        
+        printf("GPIO's being used (to disable, set the value to 255)\n");
+        printf("  Function                  Command   Valid GPIO's\n");   
+        printf("  Primary channels input    PRI     = 5, 9, 21, 25\n");
+        printf("  Secondary channels input  SEC     = 1, 13, 17, 29\n");
+        printf("  Telemetry                 TLM     = 0, 1, 2, ..., 29\n");
+        printf("  GPS Rx                    GPS_RX  = 0, 1, 2, ..., 29\n");
+        printf("  GPS Tx                    GPS_TX  = 0, 1, 2, ..., 29\n");
+        printf("  Sbus OUT                  SBUS_OUT= 0, 1, 2, ..., 29\n");
+        printf("  RPM (only for Sport)      RPM     = 0, 1, 2, ..., 29\n");
+        printf("  SDA (baro sensor)         SDA     = 2, 6, 10, 14, 18, 22, 26\n");
+        printf("  SCL (baro sensor)         SCL     = 3, 7, 11, 15, 19, 23, 27\n");
+        printf("  PWM Channels 1, ..., 16   C1 / C16= 0, 1, 2, ..., 15\n");
+        printf("  Voltage 1, ..., 4         V1 / V4 = 26, 27, 28, 29\n");
+        printf("  RGB led                   RGB     = 0, 1, 2, ..., 29\n");
+        printf("  Logger                    LOG     = 0, 1, 2, ..., 29\n");
+        printf("  ESC                       ESC_PIN = 0, 1, 2, ..., 29\n");
+        
+        printf("Rf protocol                 PROTOCOL= Y        Y is S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx)\n");
+        printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
+        printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
+                
+        printf("Type of ESC :              ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) or KON (Kontronik)\n");
+        printf("Logger baudrate :          LOGBAUD = 115200\n");
+        printf("Refresh rate of servos     PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
+        printf("Voltage scale x(1,2,3,4)   SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
+        printf("                           SCALEx = 0          Avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
+        printf("Voltage offset x(1,2,3,4)  OFFSETx = nnn.ddd   e.g. OFFSET1=0.6789\n")  ;
+        printf("Temperature (from V3, V4)  TEMP = Y            Y=1 if one TMP36 on V3, Y=2 if a second one is on V4");
+        printf("GPS type                   GPS = Y             U=Ublox configured by oXs, E=Ublox configured Externally, C = CADIS\n");
+        printf("RPM multiplicator          RPM_MULT = Y.Y      e.g. 0.5 to divide RPM by 2\n");
+        printf("Led inversion              LED = N             N=normal , I=inverted\n");
+        printf("Failsafe mode              FAILSAFE = H        Set failsafe to Hold mode\n")  ;
+        printf("         values            SETFAILSAFE         Values are set on the current positions\n")  ;
+        
+        printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers");
+        printf("    Airspeed               ACC = YY            To select Vspeed and compensation ratio");   
+        printf("    Gyro mode/gain         GMG = YY            To select mode/gain\n");
+        printf("    Gyro Stick Aileron     GSA = YY            Gyro only : Original aileron stick (without mix/limits/trim)\n");
+        printf("    Gyro Stick Elevator    GSE = YY               ""                 elevator \n");
+        printf("    Gyro Stick Rudder      GSR = YY               ""                 rudder   \n");
 
-        printf("- To disable a function, set GPIO to 255\n\n");
-        printf("- To declare the type of ESC, enter ESC_TYPE=xxx where XXX = HW4(Hobbywing V4) or KON (Kontronik)\n");
-        //printf("-To debug on USB/serial the telemetry frames, enter DEBUGTLM=Y or DEBUGTLM=N (default)\n");
-        printf("-To change the protocol, enter PROTOCOL=x where x=");
-        printf(" S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx), 2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
-        printf("-To change the CRSF baudrate, enter e.g. CRSFBAUD=420000\n");
-        printf("-To change the logger baudrate, enter e.g. LOGBAUD=115200\n");
-        printf("-To change the refresh rate of servos (PWM) and sequencer, enter e.g. PWMHZ=50 (value in range 50...333)\n");
-        printf("-To change voltage scales, enter SCALEx=nnn.ddd e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
-        printf("     Enter SCALEx=0 to avoid sending voltage x to the Transmitter (for Frsky or Jeti)\n")  ;
-        printf("-If a TMP36 is used on V3, enter TEMP=1 (if a second one is on V4, enter TEMP=2)");
-        printf("-To change voltage offset, enter OFFSETx=nnn.ddd e.g. OFFSET1=0.6789\n")  ;
-        printf("-To change GPS type: for an Ublox, enter GPS=U (configured by oXs) or E (configured Externally) and for a CADIS, enter GPS=C\n");
-        printf("-To change RPM multiplicator, enter e.g. RPM_MULT=0.5 to divide RPM by 2\n");
-        printf("-To force a calibration of MP6050, enter MPUCAL\n");
-        printf("-To use a channel to setup Airspeed compensation factor and/or to select between the 2 Vspeed, enter the channel with ACC=1...16");
-    //    printf("-To select the signal generated on:\n");
-    //    printf("     GPIO0 : enter GPIO0=SBUS or GPIO0=xx where xx = 01 up to 16\n");
-    //    printf("     GPIO1 : enter GPIO1=xx where xx = 01 up to 13 (GPIO2...4 will generate channel xx+1...3)\n");
-    //    printf("     GPIO5 : enter GPIO5=xx where xx = 01 up to 13 (GPIO6...8 will generate channel xx+1...3)\n");
-    //    printf("     GPIO11: enter GPIO11=xx where xx = 01 up to 16\n");
-        printf("-To change (invert) led color, enter LED=N or LED=I\n");
-        printf("-To select the failsafe mode to HOLD, enter FAILSAFE=H\n")  ;
-        printf("-To set the failsafe values on the current position, enter SETFAILSAFE\n")  ;
-        
+        printf("Gyro Gain on Roll          GGR = YYYY          Gain on roll axis (-127/127)\n");
+        printf("             Pitch         GGP = YYYY             ""    pitch\n");
+        printf("             Yaw           GGY = YYYY             ""    Yaw\n");
+        printf("     Gain on stick Throw   GGT = Y             1 (corr. on full throw) , 2 (on half) , 3 (on quater)\n");
+        printf("     Max Rotate            GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
+        printf("     stick Rotate Enable   GRE =Y              1 (disabled) , 2 (enabled)\n");
+
+        printf("Sequencers                 SEQ = YYYY          See Readme section to see how to fill YYYY\n");
+        printf("                           SEQ = DEL           Erase all sequencer\n");
+        printf("Force MPU6050 calibration  MPUCAL\n");
+        printf("Testing                    FV                  Field Values (display all telemetry internal values)\n")  ;
+        printf("                           FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
+        printf("                           FVN                      idem with negatieve values\n")  ;
+        printf("                           PWM                 Display the current PWM values (in micro sec)\n");
         printf("\n");
-        printf("-To define one (or several) sequencers, enter SEQ= followed by one (or several) groups {s1 s2 s3 s4 s5 s6 s7} where\n");
-        printf("        s1 = GPIO to be used by this sequencer(in range 0/16)\n");
-        printf("        s2 = type of PWM (0=SERVO , 1=ANALOG)\n");
-        printf("        s3 = number of milli seconds per sequencer clock (must be >= 20msec)\n");
-        printf("        s4 = rc channel used to select the sequence to be generated (in range 1/16)\n");
-        printf("        s5 = default PWM value (when no sequence has already been selected)\n");
-        printf("        s6 = min PWM value\n");
-        printf("        s7 = max PWM value\n");
-        printf("     note: s5, s6, s7 must be in range -100/100 for SERVO and 0/100 for ANALOG\n");
-        printf("     e.g. SEQ= {2 0 30 4 -100 -100 100} {3 1 100 5 0 0 100}\n");
-        
-        printf("-To erase all sequencers, enter SEQ=DEL\n");
-        
-        printf("-To define the sequences and the steps for the sequencers, enter STEP= followed by several groups {s1 s2 s3 s4 } where\n");
-        printf("        s1 = RC channel value that activates that step (must be a multiple of 10 and in range -100...100; e.g. -100, -90,...0,10,...100)\n");
-        printf("        s2 = number of clocks before reaching the PWM value (= smooth transition)(in range 0/255)\n");
-        printf("        s3 = PWM value for this step(same range as default PWM value)\n");
-        printf("        s4 = number of clocks where PWM value is kept before applying next step or restarting the sequence (in range 0/255; 255=do not restart)\n");
-        printf("     To mark the first step of a new sequencer, insert a '+' just before the '{' of this group\n");
-        printf("     e.g. STEP= {-100 0 10 4} {-100 10 50 20} {100 0 100 255} + {-100 0 0 255} {0 10 50 255} {100 0 100 40}\n");
-        printf("     Note: steps must be declared in the same order as the sequencers\n");
-        printf("           For each sequencer, rc channel value of step n+1 must be >= value of step n\n");
-        
-        printf("\n");
-        printf("-To get the internal telemetry values currently calculated by oXs, enter FV (meaning Field Values)\n")  ;
-        printf("-To test a protocol, you can force the internal telemetry values to some dummy values\n")  ;
-        printf("        for dummy positive values, enter FVP; for dummy negative values, enter FVN\n")  ;
-        printf("\n");
-        printf("-To get the current PWM values (in micro sec, enter PWM)\n");
         printf("-To get the current config, just press Enter\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         isPrinting = false;
@@ -796,6 +782,147 @@ void processCmd(){
         }
     }
 
+    // change gyro mode/gain channel 
+    if ( strcmp("GMG", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : channel must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+            printf("Error : channel must be 1...16 or 255");
+        } else {    
+            config.gyroChanControl = ui;
+            printf("Gyro mode/gain channel = %u\n" , config.gyroChanControl);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro stick aileron channel 
+    if ( strcmp("GSA", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : channel must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+            printf("Error : channel must be 1...16 or 255");
+        } else {    
+            config.gyroChan[0] = ui;
+            printf("Gyro stick aileron = %u\n" , config.gyroChan[0]);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro stick elevator channel 
+    if ( strcmp("GSE", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : channel must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+            printf("Error : channel must be 1...16 or 255");
+        } else {    
+            config.gyroChan[1] = ui;
+            printf("Gyro stick elevator channel = %u\n" , config.gyroChan[1]);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro stick rudder channel 
+    if ( strcmp("GSR", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : channel must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 16 or ui ==255)) {
+            printf("Error : channel must be 1...16 or 255");
+        } else {    
+            config.gyroChan[2] = ui;
+            printf("Gyro stick rudder channel = %u\n" , config.gyroChan[2]);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro gain Roll 
+    if ( strcmp("GGR", pkey) == 0 ) { 
+        integerValue = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gain must be an integer\n");
+        } else if ( !(integerValue >= -127 or integerValue < 127)) {
+            printf("Error : gain must be in range -127/+127");
+        } else {    
+            config.vr_gain[0] = (int8_t) integerValue;
+            printf("Gain on roll axis= %i\n" , config.vr_gain[0]);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro gain Pitch 
+    if ( strcmp("GGP", pkey) == 0 ) { 
+        integerValue = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gain must be an integer\n");
+        } else if ( !(integerValue >= -127 or integerValue < 127)) {
+            printf("Error : gain must be in range -127/+127");
+        } else {    
+            config.vr_gain[1] = (int8_t) integerValue;
+            printf("Gain on pitch axis= %i\n" , config.vr_gain[1]);
+            updateConfig = true;
+        }
+    }
+    
+    // change gyro gain Yaw 
+    if ( strcmp("GGY", pkey) == 0 ) { 
+        integerValue = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gain must be an integer\n");
+        } else if ( !(integerValue >= -127 or integerValue < 127)) {
+            printf("Error : gain must be in range -127/+127");
+        } else {    
+            config.vr_gain[2] = (int8_t) integerValue;
+            printf("Gain on yaw axis= %i\n" , config.vr_gain[2]);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro stick gain throw 
+    if ( strcmp("GGT", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gain stick throw must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 3)) {
+            printf("Error : gain stick throw must be 1,2 or 3\n");
+        } else {    
+            config.stick_gain_throw = (enum STICK_GAIN_THROW) ui;
+            printf("Gyro gain stick throw = %u\n" , (uint32_t) config.stick_gain_throw);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro max rotate 
+    if ( strcmp("GMR", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : max rotate must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 3)) {
+            printf("Error : max rotate must be 1,2,3 or 4\n");
+        } else {    
+            config.max_rotate = (enum MAX_ROTATE) ui;
+            printf("Gyro max rotate = %u\n" , (uint32_t) config.max_rotate);
+            updateConfig = true;
+        }
+    }
+
+    // change gyro rotate enable in mode rate 
+    if ( strcmp("GRE", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : max rotate enable must be an unsigned integer\n");
+        } else if ( !(ui >= 1 or ui <= 2)) {
+            printf("Error : max rotate enable must be 1 or 2\n");
+        } else {    
+            config.rate_mode_stick_rotate = (enum RATE_MODE_STICK_ROTATE) ui;
+            printf("Max rotate enable in rate mode = %u\n" , (uint32_t) config.stick_gain_throw);
+            updateConfig = true;
+        }
+    }
+
+
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -814,7 +941,12 @@ void processCmd(){
             }
         }  
     }
-    
+
+
+
+
+
+
     /*
     // get steps for Sequencer
     if ( strcmp("STEP", pkey) == 0 ) { 
@@ -1011,8 +1143,20 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: pwmHz must be in range 50...333 (included)\n");
         configIsValid=false;
     }    
-
-
+    if ((config.gyroChanControl != 255) and ( config.gyroChan[0]==255 or config.gyroChan[1]==255 or config.gyroChan[2]==255)){
+        printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), Rc channels must also be defined for Roll, Pitch and Yaw).\n");
+        configIsValid=false;
+    }
+    if ((config.gyroChanControl != 255) and ( config.pinScl==255 or config.pinSda==255)){
+        printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), SCL and SDA must be defined (to allow I2C for mpu6050)\n");
+        configIsValid=false;
+    }
+    if ( ((config.gyroChanControl != 255) and ( config.gyroChan[0]==config.gyroChanControl or config.gyroChan[1]==config.gyroChanControl\
+             or config.gyroChan[2]==config.gyroChanControl)) or config.gyroChan[0]==config.gyroChan[1] or config.gyroChan[0]==config.gyroChan[2]\
+             or config.gyroChan[1]==config.gyroChan[2]) {
+        printf("Error in parameters: when gyro mode/gain Rc channel is defined (not 255), all 4 channels must be different from each other\n");
+        configIsValid=false;
+    }    
 
     checkSequencers();
     if ( configIsValid == false) {
@@ -1226,10 +1370,10 @@ void printConfigAndSequencers(){
                                                         , (int) fmap( config.failsafeChannels.ch14 )\
                                                         , (int) fmap( config.failsafeChannels.ch15 ) );
     }    
+    printGyro();
     watchdog_update(); //sleep_ms(500);
     printSequencers(); 
     checkConfigAndSequencers();
-    printGyro();
     //getTimerUs(0);        // print the time enlapsed is the function print.
 
     isPrinting = false;
@@ -1373,6 +1517,36 @@ void setupConfig(){   // The config is uploaded at power on
         config.pinEsc = _pinEsc ;
         config.escType = _escType; 
         config.pwmHz = _pwmHz;
+        config.gyroChanControl = _gyroChanControl ; // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
+        config.gyroChan[0] = _gyroChan_AIL;
+        config.gyroChan[1] = _gyroChan_ELV;
+        config.gyroChan[2] = _gyroChan_RUD;
+        config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
+        config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
+        config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
+        config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
+        config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
+        config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
+        config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
+        config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
+        config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
+        config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
+        config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
+        config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
+        config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
+        config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
+        config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
+        config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
+        config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
+        config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
+        config.vr_gain[0]  = _vr_gain_AIL;
+        config.vr_gain[1]  = _vr_gain_ELV;
+        config.vr_gain[2]  = _vr_gain_RUD;
+        config.stick_gain_throw = (enum STICK_GAIN_THROW)_stick_gain_throw;
+        config.max_rotate = (MAX_ROTATE)_max_rotate;
+        config.rate_mode_stick_rotate = (enum RATE_MODE_STICK_ROTATE)_rate_mode_stick_rotate;
+        config.pid_param_rate.output_shift = _pid_param_rate_output_shift;
+        config.pid_param_hold.output_shift = _pid_param_hold_output_shift;
     }   
 } 
 
@@ -1654,7 +1828,7 @@ void checkSequencers(){
                 // initilize seqDatas for new sequencer
                 seqDatas[seqIdx].stepStartAtIdx = stepIdx;
                 seqDatas[seqIdx].state = STOPPED;
-                seqDatas[seqIdx].currentChValue = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
+                seqDatas[seqIdx].currentChValueUs = 0; // use a dummy channel value in order to force a change when a channel value will be received from Rx
                 seqDatas[seqIdx].lastreceivedRange = dummy; // use a dummy channel value in order to force a change when a channel value will be received from Rx
                 seqDatas[seqIdx].currentStepIdx = 0xFFFF;  // use a dummy value at startup (to detect when range )
                 seqDatas[seqIdx].delayedStepIdx = 0xFFFF;  // use a dummy value to say that there is no delayed step.
@@ -2053,7 +2227,7 @@ void printGyro(){
         return;
     }
     printf("Gyro configuration is:\n");
-    printf("Channels for :  gyro control=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
+    printf("Channels for :  mode/gain=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
         config.gyroChanControl + 1 , config.gyroChan[0] + 1 , config.gyroChan[1] + 1 , config.gyroChan[2] + 1);
     printf("PID              Kp      Ki    Kd\n");
     printf("  Normal Roll    %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0] );
@@ -2063,7 +2237,9 @@ void printGyro(){
     printf("  Hold   Pitch   %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1] );
     printf("  Hold   Yaw     %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
     printf("Gain per axis (-128/127):  Roll=%i     Pitch=%i    Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
-    printf("Gyro corections on %i (1=on whole stick, 2=on half, 3=on a quater)\n", config.stick_gain_throw);
+    printf("Gain on throw is %i (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
+    printf("Max rotate is %i (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
+    printf("Stick rotate enabledi in rate mode is %i 1 (disabled) , 2 (enabled)\n", (int) config.rate_mode_stick_rotate);
     
     if (gyroMixer.isCalibrated == false){
         printf("Gyro mixers must be calibrated\n");
@@ -2084,303 +2260,48 @@ void printGyro(){
 
 }
 
-/*
-bool parseOneSequencer(){  // try to read a string  with n integer space separated set between { }
-    char * ptr ;                        // get the pos of first non converted integer 
-    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
-    if (( * pvalue) != '['){            // first char must be {
-        printf("Error : group of 7 values must begin with { \n");
-        return false ;
-    }
-    pvalue++;
-    for (uint8_t i = 0 ; i < 7; i++) {
-        errno = 0;
-        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
-                                                   // *ptr = 0 when no error
-        if ( ( ptr == pvalue ) || ( ptr == NULL)) {
-            printf("Error : parameter %i of one sequencer can't be converted to an integers\n",i);
-            return false;    
-        }
-        pvalue = ptr; 
-        //printf(" seq %i = %i\n", i , tempIntTable[i]);
-    }
-    pvalue =  skipWhiteSpace(pvalue);
-    if (( * pvalue) != ']') {
-        printf("Error : group of parameter of a sequencer must end with ] after %7 values \n");
-        return false ;
-    }
+#define FLASH_GYROMIXER_OFFSET FLASH_CONFIG_OFFSET + (8 * 1024) // Sequencer is 4K after config parameters
+const uint8_t *flash_gyroMixer_contents = (const uint8_t *) (XIP_BASE + FLASH_GYROMIXER_OFFSET);
 
-
-    pvalue++;
-    return true;
-}    
-
-bool parseOneStep(){  
-    // try to read a string with 
-    //    a "+" (optionnal) as first char to identify a new sequencer
-    //    a "/" (optionnal) as first char to identify a new sequence
-    //          then 5 parameters space separated (Rc value, to repeat, never interrupt, priority interrupt only, is priority)
-    //    then (mandatory) a "{" followed by
-    //           3 integers space separated
-    //           "}""
-    // return true if OK
-    char * ptr ; 
-    nextSequencerBegin = 0;
-    nextSequenceBegin = 0;
-    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
-    if (( * pvalue) == '+'){            //  A "+" before "{" marks the first step of next sequencer
-        pvalue++;                       // skip + before { (used to separate sequencer when we print the definition of steps)
-        nextSequencerBegin = 1;      // 1 indicates that the next sequencer begins now
-        //printf("new sequencer\n");
-        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces 
-    }
-    if(( * pvalue) == 'S') {     // "S" is used to mark the first step of a new sequence
-        nextSequenceBegin = 1;     //
-        //printf("new sequence\n");
-        pvalue++;                       // skip - before { (used to separate sequencer when we print the definition of steps)
-        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
-        errno = 0;
-        tempIntTable[0] =  strtol(pvalue , &ptr ,10);  // convert Rc value to integer 
-                                                    // *ptr = 0 when no error
-        if ((ptr == pvalue) || ( ptr == NULL)) {
-            printf("Error: for a sequence, parameter RC channel value can't be converted to an integer\n");
-            return false;    
-        }
-        pvalue = ptr;
-        pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
-        tempIntTable[1] = 0; // set 4 optional flags to 0
-        tempIntTable[2] = 0;
-        tempIntTable[3] = 0;
-        tempIntTable[4] = 0;
-        for (uint8_t i=0;i<4;i++){ // search for a R, U O or P
-            pvalue =  skipWhiteSpace(pvalue);   // skip next spaces
-            if (( * pvalue) == 'R' ){
-                tempIntTable[1]=1;
-            } else if (( * pvalue) == 'U' ){
-                tempIntTable[2]=1;
-            } else if (( * pvalue) == 'O' ){
-                tempIntTable[3]=1;
-            } else if (( * pvalue) == 'P' ){
-                tempIntTable[4]=1;
-            } else if (( * pvalue) == '{' ){
-                break;
-            } else {
-                printf("Error: sequence definition contains an invalid character (can only be R,U,O and/or P)\n");
-                return false;
-            }
-            pvalue++;
-            pvalue =  skipWhiteSpace(pvalue);   // skip next spaces  
-        }
-        if ( (tempIntTable[2]==1) && (tempIntTable[3]==1)){
-            printf("Error: in sequence definition options U and O may not be used toegether)\n");
-            return false;    
-        }
-    }
-    if (( * pvalue) != '{'){            // first char must be {
-        printf("Error: step parameters must begin with { (after some optionnal other parameters)\n");
-        return false ;
-    }
-    pvalue++;
-    for (uint8_t i = 5 ; i < 8; i++) {
-        errno = 0;
-        tempIntTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
-                                                   // *ptr = 0 when no error
-        if( ptr == pvalue ) {
-            printf("Error : for a step, parameter %i can't be converted to an integer\n", (int) (i+1));
-            return false;    
-        }
-        if ( ptr == NULL){
-            printf("Error : for a step, parameter %i can't be converted to an integer\n", (int) (i+1));
-            return false;
-        }
-        pvalue = ptr; 
-        //printf(" seq %i = %i\n", i , tempIntTable[i]);
-    }
-    pvalue =  skipWhiteSpace(pvalue);
-    if (( * pvalue) != '}') {
-        printf("Error : for a step, group of parameters must end with } after 3 values \n");
-        return false ;
-    }
-    pvalue++;
-    return true;
-}    
-*/
-
-
-/*
-bool getSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid (then seq structure is modified)
-                       // when true we still have to check if this is valid with config (for use of pins and with steps)
-    uint8_t seqIdx = 0;        // count the sequencer
-    SEQ_DEF seqDefsTemp[16];   // temporary structure to avoid any change to seq in case of error detected here
-    //bool isSeqValid = false;
-    while ( (*pvalue) != 0X00 ) { // while not end of value buffer
-        if (seqIdx >= 16) {
-            printf("Error : to many sequencer definitions; max is 16\n");
-            return false; 
-        }
-        if ( parseOneSequencer() == false){
-            printf("Error converting the sequencer definition numner %i\n",seqIdx+1);
-            return false; 
-        }
-        pvalue = skipWhiteSpace(pvalue);
-        if (tempIntTable[0] < 0 || tempIntTable[0] > 15){
-            printf("Error : for sequencer number %i, gpio must be in range 0 / 15\n", seqIdx+1);
-            return false;
-        }
-        if (tempIntTable[1] < 0 || tempIntTable[1] > 1){
-            printf("Error : for sequencer number %i, type must be 0 (SERVO) or 1(ANALOG)\n" , seqIdx+1);
-            return false;
-        }
-        if (tempIntTable[2] < 20 || tempIntTable[2] > 100000){
-            printf("Error : for sequencer number %i, clock must be in range 20 / 100000 (msec)\n", seqIdx+1);
-            return false;
-        }
-        if (tempIntTable[3] < 1 || tempIntTable[3] > 16){
-            printf("Error : for sequencer number %i, channel must be in range 1 / 16\n", seqIdx+1);
-            return false;
-        }
-        if (tempIntTable[1] == 0) {  // for SERVO
-            if (tempIntTable[4] < -125 || tempIntTable[4] > 125){
-                printf("Error : for sequencer number %i, when type = SERVO, default PWM value must be in range -125 / +125\n", seqIdx+1);
-                return false;
-            }
-        } else {                 // for ANALOG
-            if (tempIntTable[4] < 0 || tempIntTable[4] > 100){
-                printf("Error : for sequencer number %i, when type = ANALOG, default PWM value must be in range 0 / 100\n", seqIdx+1);
-                return false;
-            }
-        }
-        if (tempIntTable[1] == 0) {  // for SERVO
-            if (tempIntTable[5] < -125 || tempIntTable[5] > 125){
-                printf("Error : for sequencer number %i, when type = SERVO, min PWM value must be in range -125 / +125\n", seqIdx+1);
-                return false;
-            }
-        } else {                 // for ANALOG
-            if (tempIntTable[5] < 0 || tempIntTable[5] > 100){
-                printf("Error : for sequencer number %i, when type = ANALOG, min PWM value must be in range 0 / 100\n", seqIdx+1);
-                return false;
-            }
-        }if (tempIntTable[1] == 0) {  // for SERVO
-            if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
-                printf("Error : for sequencer number %i, when type = SERVO, max PWM value must be in range -125 / +125\n", seqIdx+1);
-                return false;
-            }
-        } else {                 // for ANALOG
-            if (tempIntTable[6] < 0 || tempIntTable[6] > 100){
-                printf("Error : for sequencer number %i, when type = ANALOG, max PWM value must be in range 0 / 100\n", seqIdx+1);
-                return false;
-            }
-        }
-        seqDefsTemp[seqIdx].pin = tempIntTable[0];
-        seqDefsTemp[seqIdx].type = (SEQ_OUTPUT_TYPE) tempIntTable[1];
-        seqDefsTemp[seqIdx].clockMs = tempIntTable[2];
-        seqDefsTemp[seqIdx].channel = tempIntTable[3];
-        seqDefsTemp[seqIdx].defValue = tempIntTable[4];
-        seqDefsTemp[seqIdx].minValue = tempIntTable[5];
-        seqDefsTemp[seqIdx].maxValue = tempIntTable[6];
-        seqIdx++;
-    } // end while
-    memcpy(&seq.defs , seqDefsTemp , sizeof(seqDefsTemp));
-    seq.defsMax = seqIdx;
-    seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
-    printf("Number of sequencers= %i\n",seq.defsMax);
-
-    return true;
+void saveGyroMixer() {
+    //sleep_ms(1000); // let some printf to finish
+    //uint8_t buffer[FLASH_PAGE_SIZE] = {0xff};
+    //memcpy(&buffer[0], &seq, sizeof(seq));
+    // Note that a whole number of sectors must be erased at a time.
+    // irq must be disable during flashing
+    watchdog_enable(5000 , true);
+    if ( multicoreIsRunning) multicore_lockout_start_blocking();
+    uint32_t irqStatus = save_and_disable_interrupts();
+    flash_range_erase(FLASH_GYROMIXER_OFFSET, FLASH_SECTOR_SIZE);
+    flash_range_program(FLASH_GYROMIXER_OFFSET,  (uint8_t*) &gyroMixer, sizeof(gyroMixer));
+    //flash_range_program(FLASH_SEQUENCER_OFFSET,  buffer, FLASH_PAGE_SIZE);
+    
+    restore_interrupts(irqStatus);
+    if (multicoreIsRunning) multicore_lockout_end_blocking();
+    //sleep_ms(1000);
+    //printf("New config has been saved\n");
+    //printConfig(); 
 }
 
-bool getStepsSequencers(){ // try to get all steps decoding a string pointed by pvalue
-                            // return true when steps are valid (syntax and each value); seq structure is then updated
-                            // we still have to check if this is valid compared to the number of sequencers
-    uint8_t sequencerIdx = 0;  // count the number of sequencer
-    uint16_t sequenceIdx = 0;  // count the sequence
-    uint8_t stepIdx = 0;       // count the steps
-    SEQ_STEP stepsTemp[SEQUENCER_MAX_NUMBER_OF_STEPS]; 
-    //bool isStepValid = false;
-    while ( (*pvalue) != 0X00 ) { // while not end of value buffer
-        if (stepIdx >= SEQUENCER_MAX_NUMBER_OF_STEPS) {
-            printf("Error : to many steps; max is %i\n",SEQUENCER_MAX_NUMBER_OF_STEPS);
-            return false; 
-        }
-        if ( parseOneStep() == false){
-            printf("Error converting the step numner %i\n",stepIdx+1);
-            return false; 
-        }
-        pvalue = skipWhiteSpace(pvalue);
-        //if (tempIntTable[0]!=-100 && tempIntTable[0]!=-75 && tempIntTable[0]!=-50 && tempIntTable[0]!=-25\
-        //    && tempIntTable[0]!=100 && tempIntTable[0]!=75 && tempIntTable[0]!=50 && tempIntTable[0]!=25 && tempIntTable[0]!=0){
-        //    printf("Error : for step number %i, channel range must be -100/-75/-50/-25/0/25/50/75/100\n", stepIdx+1);
-        //    return false;
-        //}
-        if ((nextSequencerBegin == 1) && (nextSequenceBegin == 0)) {
-            printf("Error: when a new sequence begins (with a +), a new sequence must exist (with a /)");
-            return false;    
-        }
-        if ( nextSequencerBegin == 1){ // for a new sequencer
-            sequencerIdx++; // count the number of sequencers
-        }
-        if ( nextSequenceBegin == 1){ // for a sequence, fields are : channel value, toRepeat, neverInterrupted , priorityInterruptOnly ,isPriority
-            sequenceIdx++;       // count the sequences
-            if (tempIntTable[0] < -100 || tempIntTable[0] > 100){
-                printf("Error: for sequence number %i, channel value must in range -100...100 (included)\n" , sequenceIdx);
-                return false;    
-            }
-            if (( tempIntTable[0] % 10) != 0){
-                printf("Error: for step number %i, channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , stepIdx+1);
-                return false;    
-            }
-            if (tempIntTable[1] < 0 || tempIntTable[1] > 1){
-                printf("Error: for sequence number %i, the first flag must be 0 (no repeat) or 1 (repeat sequence)\n" , sequenceIdx);
-                return false;    
-            }
-            if (tempIntTable[2] < 0 || tempIntTable[2] > 1){
-                printf("Error: for sequence number %i, the second flag must be 0 (may be interrupted) or 1 (never interrupted)\n" , sequenceIdx);
-                return false;    
-            }
-            if (tempIntTable[3] < 0 || tempIntTable[3] > 1){
-                printf("Error: for sequence number %i, the third flag must be 0 (interrupted by other seq.) or 1 (interrupted only by priority seq.)\n" , sequenceIdx);
-                return false;    
-            }
-            if (tempIntTable[4] < 0 || tempIntTable[4] > 1){
-                printf("Error: for sequence number %i, the fourth flag must be 0 (not a priority seq.) or 1 (is a priority seq.)\n" , sequenceIdx);
-                return false;    
-            }
+void setupGyroMixer(){   // The config is uploaded at power on
+    if (*flash_gyroMixer_contents == GYROMIXER_VERSION ) {
+        memcpy( &gyroMixer , flash_gyroMixer_contents, sizeof(gyroMixer));
+    } else {
+        gyroMixer.version = GYROMIXER_VERSION;
+        gyroMixer.isCalibrated = false ;    
+        for (uint8_t i=0; i<16 ; i++){ // set all mixer as unsued (for gyro) and with default values
+            gyroMixer.used[i] = false;
+            gyroMixer.neutralUs[i] = 1500 ;
+            gyroMixer.minUs[i] = 1000 ;
+            gyroMixer.maxUs[i] = 2000 ;
+            gyroMixer.rateRollLeftUs[i] = 0 ; // 0 means that when stick is at the end pos, this output RC channel is not impacted 
+            gyroMixer.rateRollRightUs[i] = 0 ; 
+            gyroMixer.ratePitchUpUs[i] = 0 ;  
+            gyroMixer.ratePitchDownUs[i] = 0 ;
+            gyroMixer.rateYawLeftUs[i] = 0  ;
+            gyroMixer.rateYawRightUs[i] = 0 ;   
         }
         
-        if (tempIntTable[5] < 0 || tempIntTable[5] > 255){
-            printf("Error: for step number %i, smooth must be in range 0 / 255 (included)\n" , stepIdx+1);
-            return false;
-        }
-        if (tempIntTable[6] < -125 || tempIntTable[6] > 125){
-            printf("Error: for step number %i, output value must be in range -125 / 125 (included)\n", stepIdx+1);
-            return false;
-        }
-        if (tempIntTable[7] < 0 || tempIntTable[7] > 255){
-            printf("Error: for step number %i, keep must be in range 0 / 255 (included)\n" , stepIdx+1);
-            return false;
-        }
-        stepsTemp[stepIdx].chRange = ( CH_RANGE) tempIntTable[0];
-        stepsTemp[stepIdx].toRepeat = tempIntTable[1];
-        stepsTemp[stepIdx].neverInterrupted =  tempIntTable[2];
-        stepsTemp[stepIdx].priorityInterruptOnly =  tempIntTable[3];
-        stepsTemp[stepIdx].isPriority =  tempIntTable[4];
-        stepsTemp[stepIdx].smooth = tempIntTable[5];
-        stepsTemp[stepIdx].value = tempIntTable[6];
-        stepsTemp[stepIdx].keep = tempIntTable[7];
-        stepsTemp[stepIdx].nextSequencerBegin = nextSequencerBegin;
-        stepsTemp[stepIdx].nextSequenceBegin = nextSequenceBegin; 
-        //printf("rc val= %i  R=%i  U=%i  O=%i  P=%i sm=%i pos=%i ke=%i nrb=%i nsb=%i\n", \
-        //            stepsTemp[stepIdx].chRange , stepsTemp[stepIdx].toRepeat , stepsTemp[stepIdx].neverInterrupted , \
-        //            stepsTemp[stepIdx].priorityInterruptOnly , stepsTemp[stepIdx].isPriority , stepsTemp[stepIdx].smooth,\
-        //            stepsTemp[stepIdx].value , stepsTemp[stepIdx].keep ,\
-        //            stepsTemp[stepIdx].nextSequencerBegin , stepsTemp[stepIdx].nextSequenceBegin );
-        stepIdx++;
-    } // end while
-    //isStepValid = true;
-    memcpy(&seq.steps , &stepsTemp , sizeof(stepsTemp));
-    seq.stepsMax = stepIdx;
-    seq.sequencesMax = sequenceIdx;
-    seqDatasToUpload = true;    // set a flag to force an upload of seqDatas[] during the check process.
-    printf( "In STEP, number of: sequencers= %i   sequences= %i   steps= %i\n", sequencerIdx , sequenceIdx , stepIdx);
-    return true; 
-}
-*/
+    }
+} 
+

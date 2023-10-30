@@ -46,7 +46,7 @@ uint32_t prevRxChangeUs = 0;
 
 PIO gpsPio = pio1; // we use pio 0; 
 uint gpsSmTx = 0;  // we use the state machine 0 for Tx for a short time only (sending the config to a ublox);  
-uint gpsSmRx = 0;  // we use the state machine 0 for Rx also (only when TX is unclaim); 
+uint gpsSmRx = 0;  // we use the state machine 0 for Rx also (only when TX is removed); 
 
 #define CFG_RATE_MEAS 0x30210001 // U2 0.001 s Nominal time between GNSS measurements ; 100 = 10hz; 1000 = 1Hz
 #define CFG_MSGOUT_UBX_NAV_POSLLH_UART1 0x2091002a // U1 - - Output rate of the UBX-NAV-POSLLH message on port UART1
@@ -163,12 +163,12 @@ GPS::GPS( void) {}
 
 void GPS::setupGps(void){
     if (config.pinGpsTx == 255) return; // skip if pin is not defined
-    if  ( config.gpsType == 'U') {  // do not sent command for cadis or when when ublox gps is configured externally 
+    if  ( config.gpsType == 'U') {  // send gps config only for U blox with oXs setup (not for cadis nor when when ublox gps is configured externally 
     //if ( ( config.gpsType == 'U') || ( config.gpsType == 'E') ) {
         gpsOffsetTx = pio_add_program(gpsPio, &uart_tx_program); // upload the program
         uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
     } else {
-        gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis
+        gpsInitRx(); // this part is common for both types of gps but can be done immediately for Cadis of when Ublox is configured externally
     }
 }
 
@@ -236,7 +236,7 @@ void GPS::handleGpsUblox(){
                 // gpsInitRx();                        // setup the reception of GPS char.
                 gpsState = GPS_CONFIGURED;
             } else {
-                if (lastActionUs == 0) {
+                if (lastActionUs == 0) {  // we make the init only once
                 uart_tx_program_init(gpsPio, gpsSmTx, gpsOffsetTx, config.pinGpsRx, 9600);
                 lastActionUs = microsRp();   
                 }
@@ -282,7 +282,7 @@ void GPS::handleGpsUblox(){
                 if ( initGpsIdx >= sizeof( initGpsM6Part2)) { // when all bytes have been sent
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
-                        pio_sm_unclaim(gpsPio, gpsSmTx);                           // free the SM used for GPS TX
+                        pio_sm_set_enabled(gpsPio, gpsSmTx, false);
                         pio_remove_program(gpsPio, &uart_tx_program, gpsOffsetTx); // remove the GPS TX program 
                         
                         gpsInitRx();                        // setup the reception of GPS char.

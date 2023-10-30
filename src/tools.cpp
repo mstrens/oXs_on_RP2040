@@ -115,6 +115,19 @@ void getTimerUs(uint8_t idx){
     printf("FSus %d= %d\n", idx , microsRp()-startAtUs[idx]);
 }
 
+
+bool msgEverySec(uint8_t idx){  // return true when more than 1 sec
+    static uint32_t prevMs[5] = {0};
+    if (idx >= 5) return false;
+    if ((millisRp() - prevMs[idx]) > 1000){
+        prevMs[idx]= millisRp();
+        return true;
+    }
+    return false;
+}
+
+
+
 void sent2Core0( uint8_t fieldType, int32_t value){
     queue_entry_t entry;
     entry.type = fieldType;

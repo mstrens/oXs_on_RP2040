@@ -8,9 +8,10 @@
 
 extern CONFIG config;
 extern MPU mpu;
-extern uint16_t rcSbusOutChannels[16];  // Rc channels values provided by the receiver in Sbus units (not in PWM us).[172/1811]
-uint16_t rcPwmChannels[16];             // remap of original rcSbusOutChannels in Pwm Us values [988/2012]
-uint16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
+extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
+//uint16_t rcPwmChannels[16];             // remap of original rcSbusOutChannels in Pwm Us values [988/2012]  // to do : to replace with rcChannelsUs
+//uint16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
+uint16_t rcChannelsUsCorr[16];  // Rc channels values with gyro corrections applied (in Us)
 
 extern int16_t gyroX; // data provided by mpu, sent to core0 and with some filtering
 extern int16_t gyroY;
@@ -23,12 +24,13 @@ struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learni
 
 bool gyroIsInstalled = false;  // becomes true when config.gyroChanControl is defined (not 255) and MPU6050 installed
 
+/*
 void initGyroMixer(){
     // this is a temprary solution to get gyro mixer without having yet the learning process (and the saving process)
     
-    #define AIL1_CHANNEL 0  //here the ID of the output channels where compensation apply
+    #define AIL1_CHANNEL 1  // 1 means channel 2  //here the ID of the output channels where compensation apply
     #define AIL2_CHANNEL 1
-    #define ELV1_Channel 2
+    #define ELV1_Channel 2  
     #define ELV2_Channel 3
     #define RUD_Channel 4
     for (uint8_t i=0; i<16 ; i++){ // set all mixer as unsued (for gyro)
@@ -48,12 +50,12 @@ void initGyroMixer(){
     uint8_t i;
     i = AIL1_CHANNEL;    
     gyroMixer.used[i] = true ;
-    gyroMixer.neutralUs[i] = 1600;
-    gyroMixer.minUs[i] = 1100 ;
-    gyroMixer.maxUs[i] = 1900 ;
-    gyroMixer.rateRollLeftUs[i] = 300 ; // 300 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 300 usec 
+    gyroMixer.neutralUs[i] = 1500;
+    gyroMixer.minUs[i] = 1000 ;
+    gyroMixer.maxUs[i] = 2000 ;
+    gyroMixer.rateRollLeftUs[i] = 400 ; // 300 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 300 usec 
     gyroMixer.rateRollRightUs[i] = -400 ; // here for stick Ail Right
-    // in this set up only AIL_CHANNEL get gyro corrections and only on roll axis
+    // in this set up only AIL_CHANNEL get gyro corrections and only on roll axis ; all other values are the default
     
     // add here other setup for other output Rc channels    
     // e.g. for a second Ail
@@ -87,19 +89,21 @@ void initGyroConfig(){
     config.gyroChan[IDX_ELV] = GYRO_CHAN_ELV ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
     config.gyroChan[IDX_RUD] = GYRO_CHAN_RUD ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
     for (uint8_t i = 0; i<3; i++){
-        config.pid_param_rate.kp[i] = 500; // default PID param
+        config.pid_param_rate.kp[i] = 500; // default PID param used by flightstab
         config.pid_param_rate.ki[i] = 0; // default PID param
         config.pid_param_rate.kd[i] = 500; // default PID param
         config.pid_param_hold.kp[i] = 500; // default PID param
         config.pid_param_hold.ki[i] = 500; // default PID param
         config.pid_param_hold.kd[i] = 500; // default PID param
     }
-    
+    config.pid_param_rate.output_shift = 8; // default used by flightstab
+    config.pid_param_hold.output_shift = 8;
     config.vr_gain[IDX_AIL] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
     config.vr_gain[IDX_ELV] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
     config.vr_gain[IDX_RUD] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
     config.stick_gain_throw = STICK_GAIN_THROW_FULL ;  //STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_GAIN_THROW_QUARTER=3 
 } 
+*/
 
 /***************************************************************************************************************
  * PID
@@ -197,18 +201,19 @@ int16_t min(const int16_t a, const int16_t b)
 }
 
 
-void updateGyroCorrections(){
-    if ((config.gyroChanControl == 0) or (config.gyroChanControl > 16) or (mpu.mpuInstalled == false)) return;
-    
+void calculateCorrectionsToApply(){ 
+                                // it is called from applyGyroCorrections only if gyroIsInstalled and calibrated before applying PWM on the outputs
+                              // it calculates the corrections and split them in positive and negatieve part
+                              // at this step, we do not take care of the mixers/ratio/.. defined on the handset and being part of mixer calibration 
     uint32_t t = microsRp(); 
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
     // to do rename those field for clarity
     int16_t ail_in2, ailr_in2, ele_in2, rud_in2, aux_in2, aux2_in2, thr_in2, flp_in2;
-    ail_in2 = rcPwmChannels[config.gyroChan[0]]; // get original position of the 3 sticks
-    ele_in2 = rcPwmChannels[config.gyroChan[1]];
-    rud_in2 = rcPwmChannels[config.gyroChan[2]];
-    aux_in2 = rcPwmChannels[config.gyroChanControl];
+    ail_in2 = rcChannelsUs[config.gyroChan[0]]; // get original position of the 3 sticks
+    ele_in2 = rcChannelsUs[config.gyroChan[1]];
+    rud_in2 = rcChannelsUs[config.gyroChan[2]];
+    aux_in2 = rcChannelsUs[config.gyroChanControl];
     /*  // to debug
     static uint32_t prevPrintMs = 0;
     if ((millisRp() - prevPrintMs) > 1000){
@@ -323,40 +328,43 @@ void updateGyroCorrections(){
     //pid_state.input[0] = constrain(gyro[0] - gyro0[0], -8192, 8191);
     //pid_state.input[1] = constrain(gyro[1] - gyro0[1], -8192, 8191);
     //pid_state.input[2] = constrain(gyro[2] - gyro0[2], -8192, 8191);        
-    pid_state.input[0] = constrain(gyroX, -8192, 8191);  // changed by Mstrens ; to do check if this is OK
-    pid_state.input[1] = constrain(gyroY, -8192, 8191);
+    pid_state.input[0] = constrain(gyroY, -8192, 8191);  // changed by Mstrens ; to do check if this is OK
+    pid_state.input[1] = constrain(gyroX, -8192, 8191);
     pid_state.input[2] = constrain(gyroZ, -8192, 8191);        
     
     // apply PID control
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);
-
+        
     // apply vr_gain, stick_gain and master_gain
     for (i=0; i<3; i++) {
         // vr_gain [-128,0,127]/128, stick_gain [0,400,0]/512, master_gain [400,0,400]/512
         //correction[i] = ((((int32_t)pid_state.output[i] * vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
         correction[i] = ((((int32_t)pid_state.output[i] * config.vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
-        uint16_t OSP = rcPwmChannels[config.gyroChan[i]];  // orginal stick position
+
+        uint16_t OSP = rcChannelsUs[config.gyroChan[i]];  // orginal stick position
         uint16_t ESP = OSP + correction[i];                // expected stick position
         if (OSP >= 1500 ){
             if (ESP >= 1500){
             correctionPosSide[i] = correction[i];
-            correctionNegSide[i] = 0;   
             } else {
-                correctionPosSide[i] = (1500 - OSP) ; // corr is neg, part 1 and 2 must be neg  
-                correctionNegSide[i] = (ESP - 1500) ;   
+                correctionPosSide[i] = (1500 - OSP) ; // corr is neg, so Positive part must be negative     
             }
         } else {
             if (ESP >= 1500){
-            correctionPosSide[i] = ESP -1500;  // corr is positive, part 1 and 2 must be pos too
-            correctionNegSide[i] = 1500 -OSP;   
+            correctionPosSide[i] = ESP -1500;  // corr is positive, part 1 and 2 must be pos too   
             } else {
-                correctionPosSide[i] = 0 ;
-                correctionNegSide[i] = correction[i] ;   
+                correctionPosSide[i] = 0 ;   
             }
-        }      
+        }
+        correctionNegSide[i] = correction[i] - correctionPosSide[i] ;       
     }
-
-
+    if (msgEverySec(2)) { printf("Mode=%-5i  gx=%-5i  gy=%-5i  gz=%-5i  ct=%-5i  cp=%-5i  cn=%-5i  "  ,\
+                 stabMode , pid_state.input[0] , pid_state.input[1],pid_state.input[2]\
+                            ,correction[0] , correctionPosSide[0] , correctionNegSide[0]\
+    );}
+         //                   ,config.vr_gain[0], stick_gain[0] ,  master_gain
+    //                    ,pid_state.output[0], pid_state.output[1] , pid_state.output[2]   
+    
     /*
     // to do : I need to understand what is calibration_wag 
     // calibration wag on all surfaces if needed
@@ -375,37 +383,63 @@ void updateGyroCorrections(){
     Serial.print(correction[2]); Serial.println('\t');
 #endif
     last_pid_time = t;
-    // End of PID process
+    // end of gyroCorrectionsToApply
 }
 
-void applyGyroCorrection(){
-    //This should be called only when new Rc values have been received
-    // This function is called only when gyro is used (checked before calling this function)
-    // map the channels from Sbus units to pwm Us and copy them.
+void applyGyroCorrections(){
+    //This should be called only when new Rc values have been received (called by updatePwm)
+    // This function is called only when gyro is used (checked before calling this function) and calibrated
+    // corrections are calculated and added in rcChannelsUsCorr[]
+
+    // register min and max Values in order to use them as servo limits.    
     for (uint8_t i=0; i<16;i++){
-        rcPwmChannelsComp[i] = rcPwmChannels[i] = fmap( rcSbusOutChannels[i]) ;
-        if ( rcPwmChannels[i] > gyroMixer.maxUs[i]) {
-            gyroMixer.maxUs[i] = rcPwmChannels[i] ;
-        } else if (rcPwmChannels[i] < gyroMixer.minUs[i]) {
-            gyroMixer.minUs[i] = rcPwmChannels[i] ;
+        if ( rcChannelsUs[i] > gyroMixer.maxUs[i]) {   // automatically update min and max (to adapt the limits from power on - values are not saved in flash)
+            gyroMixer.maxUs[i] = rcChannelsUs[i] ;
+        } else if (rcChannelsUs[i] < gyroMixer.minUs[i]) {
+            gyroMixer.minUs[i] = rcChannelsUs[i] ;
         }    
     }
-    //updateGyroCompensation(); // update gyro compensation (only every xx msec) should be called in main loop at his own 
-    // from here, we know the compensations to apply on the pos and neg sided
-    // apply compensation
+    calculateCorrectionsToApply(); // recalculate gyro corrections at regular interval but without taking care of the mixers;
+    // from here, we know the corrections to apply on the pos and neg sides
+    // apply corrections
     for (uint8_t i=0 ; i<16 ; i++){  // for each Rc channel
-        if ( gyroMixer.used[i] ) { // when this channel uses gyro compensation.
+        if ( gyroMixer.used[i] ) { // when this channel uses gyro correction.
             // adapt the corrections Pos and Neg for each axis based on the ranges stored in gyroMixer.
             // to do : check that those are the correct matching between Pos/neg and Left/right
-            rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[0] * (int32_t) gyroMixer.rateRollLeftUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
-            rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[0] * (int32_t) gyroMixer.rateRollRightUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
-            rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[1] * (int32_t) gyroMixer.ratePitchUpUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
-            rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[1] * (int32_t) gyroMixer.ratePitchDownUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
-            rcPwmChannelsComp[i] += ((int32_t) correctionPosSide[2] * (int32_t) gyroMixer.rateYawLeftUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
-            rcPwmChannelsComp[i] += ((int32_t) correctionNegSide[2] * (int32_t) gyroMixer.rateYawRightUs[config.gyroChan[i]])  >> 9 ; // division by 512 because full range is about 500.
+            if ((msgEverySec(3)) and (i == 1)) {
+                printf(" cp=%-5i * rr=%-5i  cn=%-5i * rl=%-5i  ", correctionPosSide[0] , gyroMixer.rateRollRightUs[i],\
+                   correctionNegSide[0] , gyroMixer.rateRollLeftUs[i]);
+            }
+            //imagine that after learning process : RollRigth is negative (mean PWM goes to min), so then RollLeft is positive (always the opposite)
+            // imagine that a correction to the right is required and that gives a positive corr applied from neutral.
+            //      so  Pos part of corr is positieve and neg part = 0
+            // when applied on the servo pwm must changed by pos part (+)* rollright (-) => result is negative (and roll goes to right => OK)
+            //
+            // imagine a correction to the left is required and so a negative corr is applied from neutral.
+            // Pos part is = 0 and neg part is negatieve
+            // when applied on the servo pwm must changed by pos part (+)* - rollleft (-) => result is positieve (and roll goes to the Left => OK)
+            //
+            // imagine that a correction to the right is required and that gives a positive corr but applied from stick at already at X% to the left.
+            //      so before correction pwm is e.g. at 1600us.
+            //      so  Pos part of corr is positieve and neg part = 0
+            // when applied on the servo pwm must changed by pos part (+)* rollright (-) => result is negative (and roll goes to right => OK)
+            //
+            // imagine a correction to the left is required and that gives a negatieve corr but applied from stick at already at X% to the left.
+            //     so before correction pwm is e.g. at 1600us.
+            //     so Pos part is = negatieve and neg part is negatieve
+            // when applied on the servo pwm must changed 
+            //             by pos part (-) *  rollright (-) => result is positieve (and roll goes to the Left => OK)
+            //             by neg part (-) * - rollleft (+) => result is positieve (and roll goes to the Left => OK)
+            // so as rateRollRightUs and rateRollLeftUs have opposite signs, whe have to reverse the sign when applying the correction.
+            rcChannelsUsCorr[i] += ((int32_t) correctionPosSide[0] * (int32_t) gyroMixer.rateRollRightUs[i])  >> 9 ; // division by 512 because full range is about 500.
+            rcChannelsUsCorr[i] -= ((int32_t) correctionNegSide[0] * (int32_t) gyroMixer.rateRollLeftUs[i])  >> 9 ; // division by 512 because full range is about 500.
+            rcChannelsUsCorr[i] += ((int32_t) correctionPosSide[1] * (int32_t) gyroMixer.ratePitchUpUs[i])  >> 9 ; // division by 512 because full range is about 500.
+            rcChannelsUsCorr[i] -= ((int32_t) correctionNegSide[1] * (int32_t) gyroMixer.ratePitchDownUs[i])  >> 9 ; // division by 512 because full range is about 500.
+            rcChannelsUsCorr[i] += ((int32_t) correctionPosSide[2] * (int32_t) gyroMixer.rateYawRightUs[i])  >> 9 ; // division by 512 because full range is about 500.
+            rcChannelsUsCorr[i] -= ((int32_t) correctionNegSide[2] * (int32_t) gyroMixer.rateYawLeftUs[i])  >> 9 ; // division by 512 because full range is about 500.
             // stay within the limits 
-            if (rcPwmChannelsComp[i] < gyroMixer.minUs[config.gyroChan[i]]) rcPwmChannelsComp[i] = gyroMixer.minUs[config.gyroChan[i]] ;
-            if (rcPwmChannelsComp[i] > gyroMixer.maxUs[config.gyroChan[i]]) rcPwmChannelsComp[i] = gyroMixer.maxUs[config.gyroChan[i]] ;    
+            if (rcChannelsUsCorr[i] < gyroMixer.minUs[i]) rcChannelsUsCorr[i] = gyroMixer.minUs[i] ;
+            if (rcChannelsUsCorr[i] > gyroMixer.maxUs[i]) rcChannelsUsCorr[i] = gyroMixer.maxUs[i] ;    
         }
     }
     // here all PWM have been recalculated and can be used for PWM output
@@ -438,9 +472,9 @@ bool checkForLearning(){ // return true when learning process can start
     }
     printf("stabMode changed to %i\n", stabMode);
     prevStabMode = stabMode;
-    if ((rcPwmChannels[config.gyroChan[0]] <= END_LOW) or (rcPwmChannels[config.gyroChan[0]] >= END_HIGH) &&\
-        (rcPwmChannels[config.gyroChan[1]] <= END_LOW) or (rcPwmChannels[config.gyroChan[1]] >= END_HIGH) &&\
-        (rcPwmChannels[config.gyroChan[2]] <= END_LOW) or (rcPwmChannels[config.gyroChan[2]] >= END_HIGH)){ 
+    if ((rcChannelsUs[config.gyroChan[0]] <= END_LOW) or (rcChannelsUs[config.gyroChan[0]] >= END_HIGH) &&\
+        (rcChannelsUs[config.gyroChan[1]] <= END_LOW) or (rcChannelsUs[config.gyroChan[1]] >= END_HIGH) &&\
+        (rcChannelsUs[config.gyroChan[2]] <= END_LOW) or (rcChannelsUs[config.gyroChan[2]] >= END_HIGH)){ 
         uint32_t t = millisRp();
         uint32_t interval = t - lastChangeMs;
         lastChangeMs = t;
@@ -479,9 +513,9 @@ void calibrateGyroMixers(){
         // save the current position of sticks
         //dirFlag = true;
         //dirFlag = false;
-        dirCh[0] = rcPwmChannels[config.gyroChan[0]]; // save the stick values for Ail Right  
-        dirCh[1] = rcPwmChannels[config.gyroChan[1]]; // save the values for ELV Up
-        dirCh[2] = rcPwmChannels[config.gyroChan[2]]; // save the values for Rud Right  
+        dirCh[0] = rcChannelsUs[config.gyroChan[0]]; // save the stick values for Ail Right  
+        dirCh[1] = rcChannelsUs[config.gyroChan[1]]; // save the values for ELV Up
+        dirCh[2] = rcChannelsUs[config.gyroChan[2]]; // save the values for Rud Right  
         centerFlag = rightUpFlags[0] = rightUpFlags[1] = rightUpFlags[2] = leftDownFlags[0] = leftDownFlags[1] = leftDownFlags[2] = false;
         for (uint8_t i=0; i<16; i++) {  // reset the min and max RC channel limits
             minLimitsUs[i] = 2012; // lower Rc channel values will be discoverd during the learning process
@@ -495,10 +529,10 @@ void calibrateGyroMixers(){
     }
     // once learning process has started, we save always the min and max servo positions
     for (uint8_t i=0; i<16;i++){
-        if ( rcPwmChannels[i] > maxLimitsUs[i]) {
-            maxLimitsUs[i] = rcPwmChannels[i];
-        } else if (rcPwmChannels[i] < minLimitsUs[i]) {
-            minLimitsUs[i] = rcPwmChannels[i] ; 
+        if ( rcChannelsUs[i] > maxLimitsUs[i]) {
+            maxLimitsUs[i] = rcChannelsUs[i];
+        } else if (rcChannelsUs[i] < minLimitsUs[i]) {
+            minLimitsUs[i] = rcChannelsUs[i] ; 
         }    
     }
     // when process starts, change led color to red (state= LEARNING_MIXERS)  
@@ -519,9 +553,9 @@ void calibrateGyroMixers(){
     bool inCorner[3] = {false, false,false};        // true when stick is in a corner (with some tolerance)
     uint8_t i;
     bool sticksMaintained = true;
-    stickPosUs[0] = (int16_t) rcPwmChannels[config.gyroChan[0]]; 
-    stickPosUs[1] = (int16_t) rcPwmChannels[config.gyroChan[1]]; 
-    stickPosUs[2] = (int16_t) rcPwmChannels[config.gyroChan[2]];
+    stickPosUs[0] = (int16_t) rcChannelsUs[config.gyroChan[0]]; 
+    stickPosUs[1] = (int16_t) rcChannelsUs[config.gyroChan[1]]; 
+    stickPosUs[2] = (int16_t) rcChannelsUs[config.gyroChan[2]];
     for (i=0;i<3;i++){                // detect when sticks are centered or in a corner
         if ((stickPosUs[i] >= CENTER_LOW) and (stickPosUs[i] <= CENTER_HIGH)) inCenter[i] = true;
         if ((stickPosUs[i] <= END_LOW) or (stickPosUs[i] >= END_HIGH)) inCorner[i] = true;
@@ -536,7 +570,7 @@ void calibrateGyroMixers(){
                 printf("centered\n");
             }
             centerFlag = true;
-            memcpy(centerCh,rcPwmChannels, sizeof(rcPwmChannels) );
+            memcpy(centerCh,rcChannelsUs, sizeof(rcChannelsUs) );
             
         } else if (inCorner[0] && inCenter[1] && inCenter[2] && sticksMaintained){ // Ail at end
             i=0;  // Aileron
@@ -544,7 +578,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
                     (rightUpFlags[i] == false)){\
-                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (rightUpFlags[i] == false) {
                     printf("Ail right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
@@ -554,7 +588,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
                     (leftDownFlags[i] == false)){\
-                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (leftDownFlags[i] == false) {
                     printf("Ail left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
@@ -567,7 +601,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
                     (rightUpFlags[i] == false)){\
-                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (rightUpFlags[i] == false) {
                     printf("Elv up Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
@@ -577,7 +611,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
                     (leftDownFlags[i] == false)){\
-                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (leftDownFlags[i] == false) {
                     printf("Elv down Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
@@ -590,7 +624,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
                     (rightUpFlags[i] == false)){\
-                    memcpy(rightUpUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (rightUpFlags[i] == false) {
                     printf("Rud right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
@@ -600,7 +634,7 @@ void calibrateGyroMixers(){
                 if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
                     ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
                     (leftDownFlags[i] == false)){\
-                    memcpy(leftDownUs[i],rcPwmChannels, sizeof(rcPwmChannels) );
+                    memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
                 if (leftDownFlags[i] == false) {
                     printf("Rud left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
@@ -648,7 +682,7 @@ void calibrateGyroMixers(){
         if ( stabMode != prevStabMode) { // when change, 
             //build the parameters and save them
             struct gyroMixer_t temp; // use a temporary structure
-            temp.version = GYRO_VERSION;
+            temp.version = GYROMIXER_VERSION;
             temp.isCalibrated = true; 
             for (i=0;i<16;i++) {
                 #define MM 50    // MM = MIXER MARGIN
@@ -691,8 +725,8 @@ void calibrateGyroMixers(){
             }
             // update gyroMixer from temp.
             memcpy(&gyroMixer , &temp, sizeof(temp));
-            printf("\nEnd of learning process\n");
-            // to do  ------ here add the saving to flash                     
+            printf("\nEnd of learning process; result will be saved in flash\n");
+            saveGyroMixer(); //   save the gyro mixer from the learning process.                     
         } // end switch change
     }    
 } 

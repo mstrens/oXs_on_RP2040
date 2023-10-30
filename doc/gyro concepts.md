@@ -1,19 +1,23 @@
-This document explain the way gyro compensation is done.
+This document explain the way gyro corrections are done in oXs.
 
----------------Purpose ------------
-- use oXs as gyro : based on the MPU6050, oXs can apply automatically corrections on 3 axis to PWM signals that drive servos (and later on on Sbus out)
-- gyro has 3 modes (off/Normal/hold); user select the active mode with a channel on the Tx (3 pos switch)
-- the same channel allows to change the general gain.
-- all other parameters (see below) can be defined in config.h and with Usb commands
-- corrections can be applied on as many servos as wanted (e.g. on 4 ail servos per wing )
-- It is not required to define the type of wing and elevator; in OFF mode, oXs just applies the incomming Rc values; when active oXs uses the mixer discovered during a setup phase (mixer calibration)
+-------------- Principles ------------
+- When oXs get the Rc channels and has a MPU6050 (accelerometer/gyro), oXs can automatically apply corrections to stabilize on 3 axis to PWM signals that drive servos (and later on also on Sbus out)
+- Gyro has 3 modes (off/Normal/Hold); user select the active mode with a channel on the Tx with a 3 positions switch
+- The same channel allows to change the general gain of the gyro for each mode separately; 
+- Corrections can be applied on as many servos as wanted (e.g. on 4 ail servos per wing )
+- The mixers and servos limits are defined only in the handset (as usually when no gyro is used). oXs detect automatically the mixers/limits applied on servos concerned by gyro correction during a special setup phase (= mixer calibration)
+- all other parameters (see below) can be defined with Usb commands (no compilation/reflash required) except some that require to edit config.h file 
 
--------------- parameters in config ----------------------
-- channel controlling the gyro (mode and general gain)
-- 3 channels providing "original" stick positions (so before any mixer apply by handset !!!)
-- gains per axis (roll/pitch/yaw)
-- per axis, PID parameters (Kp,Ki,Kd) for Normal and for Hold mode 
-- one parameter to select the stick range around center where corrections apply (full, 1/2 , 1/4) 
+-------------- parameters to set up the gyro ----------------------
+- 1 channel to select the gyro mode/gain:  value can be betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold; -100% or +100% = maximum gain 
+- 3 channels providing "original" stick positions (so before any mixer/limit apply by handset !!!)
+- 3 gains (per axis roll/pitch/yaw) ; the sign of the gain define the direction of the the gyro corrections.
+- 1 parameter to select the stick range around center where corrections apply (full throw , 1/2 , 1/4)
+- 1 parameter max rotate rate in hold mode (very low, low, medium , high)
+- 1 parameter to enable (or not) max rotate rate in normal mode too.
+- for PWM to generate, gpio's and channels have to be defined (just like when no gyro is used) 
+Note: the list of all usb commands and values can be displayed entering "?" command.
+PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold modes can be changes but it requires to edit the config.h and to compile/flash
 
 --------------- learning process = mixer calibration -----------------------
 Before using the gyro or when mixers are changed on the handset, oXs has to capture the positions of all Rc channels when sticks are in several specific positions:
