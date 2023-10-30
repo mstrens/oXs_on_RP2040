@@ -2226,9 +2226,9 @@ void printGyro(){
         printf("\nGyro is not configured\n");
         return;
     }
-    printf("Gyro configuration is:\n");
+    printf("\nGyro configuration is:\n");
     printf("Channels for :  mode/gain=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
-        config.gyroChanControl + 1 , config.gyroChan[0] + 1 , config.gyroChan[1] + 1 , config.gyroChan[2] + 1);
+        config.gyroChanControl , config.gyroChan[0]  , config.gyroChan[1]  , config.gyroChan[2] );
     printf("PID              Kp      Ki    Kd\n");
     printf("  Normal Roll    %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0] );
     printf("  Normal Pitch   %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1] );

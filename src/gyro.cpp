@@ -210,10 +210,10 @@ void calculateCorrectionsToApply(){
 
     // to do rename those field for clarity
     int16_t ail_in2, ailr_in2, ele_in2, rud_in2, aux_in2, aux2_in2, thr_in2, flp_in2;
-    ail_in2 = rcChannelsUs[config.gyroChan[0]]; // get original position of the 3 sticks
-    ele_in2 = rcChannelsUs[config.gyroChan[1]];
-    rud_in2 = rcChannelsUs[config.gyroChan[2]];
-    aux_in2 = rcChannelsUs[config.gyroChanControl];
+    ail_in2 = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
+    ele_in2 = rcChannelsUs[config.gyroChan[1]-1];
+    rud_in2 = rcChannelsUs[config.gyroChan[2]-1];
+    aux_in2 = rcChannelsUs[config.gyroChanControl]-1;
     /*  // to debug
     static uint32_t prevPrintMs = 0;
     if ((millisRp() - prevPrintMs) > 1000){
@@ -341,7 +341,7 @@ void calculateCorrectionsToApply(){
         //correction[i] = ((((int32_t)pid_state.output[i] * vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
         correction[i] = ((((int32_t)pid_state.output[i] * config.vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
 
-        uint16_t OSP = rcChannelsUs[config.gyroChan[i]];  // orginal stick position
+        uint16_t OSP = rcChannelsUs[config.gyroChan[i]-1];  // orginal stick position
         uint16_t ESP = OSP + correction[i];                // expected stick position
         if (OSP >= 1500 ){
             if (ESP >= 1500){
@@ -472,9 +472,9 @@ bool checkForLearning(){ // return true when learning process can start
     }
     printf("stabMode changed to %i\n", stabMode);
     prevStabMode = stabMode;
-    if ((rcChannelsUs[config.gyroChan[0]] <= END_LOW) or (rcChannelsUs[config.gyroChan[0]] >= END_HIGH) &&\
-        (rcChannelsUs[config.gyroChan[1]] <= END_LOW) or (rcChannelsUs[config.gyroChan[1]] >= END_HIGH) &&\
-        (rcChannelsUs[config.gyroChan[2]] <= END_LOW) or (rcChannelsUs[config.gyroChan[2]] >= END_HIGH)){ 
+    if ((rcChannelsUs[config.gyroChan[0]-1] <= END_LOW) or (rcChannelsUs[config.gyroChan[0]-1] >= END_HIGH) &&\
+        (rcChannelsUs[config.gyroChan[1]-1] <= END_LOW) or (rcChannelsUs[config.gyroChan[1]-1] >= END_HIGH) &&\
+        (rcChannelsUs[config.gyroChan[2]-1] <= END_LOW) or (rcChannelsUs[config.gyroChan[2]-1] >= END_HIGH)){ 
         uint32_t t = millisRp();
         uint32_t interval = t - lastChangeMs;
         lastChangeMs = t;
@@ -513,9 +513,9 @@ void calibrateGyroMixers(){
         // save the current position of sticks
         //dirFlag = true;
         //dirFlag = false;
-        dirCh[0] = rcChannelsUs[config.gyroChan[0]]; // save the stick values for Ail Right  
-        dirCh[1] = rcChannelsUs[config.gyroChan[1]]; // save the values for ELV Up
-        dirCh[2] = rcChannelsUs[config.gyroChan[2]]; // save the values for Rud Right  
+        dirCh[0] = rcChannelsUs[config.gyroChan[0]-1]; // save the stick values for Ail Right  
+        dirCh[1] = rcChannelsUs[config.gyroChan[1]-1]; // save the values for ELV Up
+        dirCh[2] = rcChannelsUs[config.gyroChan[2]-1]; // save the values for Rud Right  
         centerFlag = rightUpFlags[0] = rightUpFlags[1] = rightUpFlags[2] = leftDownFlags[0] = leftDownFlags[1] = leftDownFlags[2] = false;
         for (uint8_t i=0; i<16; i++) {  // reset the min and max RC channel limits
             minLimitsUs[i] = 2012; // lower Rc channel values will be discoverd during the learning process
@@ -553,9 +553,9 @@ void calibrateGyroMixers(){
     bool inCorner[3] = {false, false,false};        // true when stick is in a corner (with some tolerance)
     uint8_t i;
     bool sticksMaintained = true;
-    stickPosUs[0] = (int16_t) rcChannelsUs[config.gyroChan[0]]; 
-    stickPosUs[1] = (int16_t) rcChannelsUs[config.gyroChan[1]]; 
-    stickPosUs[2] = (int16_t) rcChannelsUs[config.gyroChan[2]];
+    stickPosUs[0] = (int16_t) rcChannelsUs[config.gyroChan[0]-1]; 
+    stickPosUs[1] = (int16_t) rcChannelsUs[config.gyroChan[1]-1]; 
+    stickPosUs[2] = (int16_t) rcChannelsUs[config.gyroChan[2]-1];
     for (i=0;i<3;i++){                // detect when sticks are centered or in a corner
         if ((stickPosUs[i] >= CENTER_LOW) and (stickPosUs[i] <= CENTER_HIGH)) inCenter[i] = true;
         if ((stickPosUs[i] <= END_LOW) or (stickPosUs[i] >= END_HIGH)) inCorner[i] = true;
@@ -575,8 +575,8 @@ void calibrateGyroMixers(){
         } else if (inCorner[0] && inCenter[1] && inCenter[2] && sticksMaintained){ // Ail at end
             i=0;  // Aileron
             if ((abs(stickPosUs[i] - dirCh[i]) < 100) ) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
                     (rightUpFlags[i] == false)){\
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -585,8 +585,8 @@ void calibrateGyroMixers(){
                 }
                 rightUpFlags[i] = true;    // save when new pos is lower than previous
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
                     (leftDownFlags[i] == false)){\
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -598,8 +598,8 @@ void calibrateGyroMixers(){
         } else if (inCorner[1] && inCenter[0] && inCenter[2] && sticksMaintained){ // ELV at end
             i=1;  // Elv
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
                     (rightUpFlags[i] == false)){\
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -608,8 +608,8 @@ void calibrateGyroMixers(){
                 }
                 rightUpFlags[i] = true;    // save when new pos is lower than previous
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
                     (leftDownFlags[i] == false)){\
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -621,8 +621,8 @@ void calibrateGyroMixers(){
         } else if (inCorner[2] && inCenter[0] && inCenter[1] && sticksMaintained) { // Rud at end
             i=2; // 
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
                     (rightUpFlags[i] == false)){\
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -631,8 +631,8 @@ void calibrateGyroMixers(){
                 }
                 rightUpFlags[i] = true;    // save when new pos is lower than previous
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]]) or\
+                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
+                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
                     (leftDownFlags[i] == false)){\
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
                 }
@@ -689,7 +689,8 @@ void calibrateGyroMixers(){
                 // look at the channels that have to be controled by the gyro.
                 // channel is used if there are differences and channel is not a stick
                 temp.used[i] = false;
-                if ( ((i != config.gyroChan[0] ) and (i != config.gyroChan[1] ) and (i != config.gyroChan[2])  and ( i!= config.gyroChanControl ))\
+                uint8_t j=i++;
+                if ( ((j != config.gyroChan[0] ) and (j != config.gyroChan[1] ) and (j != config.gyroChan[2])  and ( j!= config.gyroChanControl ))\
                  and ((abs(rightUpUs[0][i]-leftDownUs[0][i])>MM) or (abs(rightUpUs[0][i]-centerCh[i])>MM) or (abs(leftDownUs[0][i]-centerCh[i])>MM)\
                     or(abs(rightUpUs[1][i]-leftDownUs[1][i])>MM) or (abs(rightUpUs[1][i]-centerCh[i])>MM) or (abs(leftDownUs[1][i]-centerCh[i])>MM)\
                     or(abs(rightUpUs[2][i]-leftDownUs[2][i])>MM) or (abs(rightUpUs[2][i]-centerCh[i])>MM) or (abs(leftDownUs[2][i]-centerCh[i])>MM))) {
@@ -710,9 +711,9 @@ void calibrateGyroMixers(){
             ledState = STATE_NO_SIGNAL;
             learningState = LEARNING_OFF;
             printf("\nGyro calibration:\n");
-            printf("Stick Ail_Right on channel %i at %-5i\n", config.gyroChan[0]+1, pc(dirCh[0] - 1500));
-            printf("Stick Elv Up    on channel %i at %-5i\n", config.gyroChan[1]+1, pc(dirCh[1] - 1500));
-            printf("Stick Rud_Right on channel %i at %-5i\n", config.gyroChan[2]+1, pc(dirCh[2] - 1500));
+            printf("Stick Ail_Right on channel %i at %-5i\n", config.gyroChan[0], pc(dirCh[0] - 1500));
+            printf("Stick Elv Up    on channel %i at %-5i\n", config.gyroChan[1], pc(dirCh[1] - 1500));
+            printf("Stick Rud_Right on channel %i at %-5i\n", config.gyroChan[2], pc(dirCh[2] - 1500));
             printf("Gyro corrections (from center pos in %%) on:      \n");
             for (uint8_t i = 0; i<16;i++) {
                 if ( temp.used[i]) {

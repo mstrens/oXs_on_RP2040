@@ -454,7 +454,7 @@ void setup() {
       if ( config.pinLogger != 255) {
         logger.begin();           // set up the logger
       }
-      if ((config.gyroChanControl < 16) and (mpu.mpuInstalled)) { // when the channel to control the gyro is defined and a mpu.installed
+      if ((config.gyroChanControl <= 16) and (mpu.mpuInstalled)) { // when the channel to control the gyro is defined and a mpu.installed
         gyroIsInstalled=true;
       }
       watchdog_enable(3500, 0); // require an update once every 500 msec
