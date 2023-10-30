@@ -11,8 +11,6 @@
 #include "sbus2_tlm.h"
 
 
-#define SBUS_UART_ID uart1
-#define SBUS2_UART_ID uart0
 //#define SBUS_RX_PIN 9
 #define SBUS_BAUDRATE 100000
 queue_t sbusQueue ;

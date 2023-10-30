@@ -20,8 +20,6 @@
 
 extern CONFIG config;
 
-#define CRSF_UART_ID uart1 // used by primary receiver
-#define CRSF2_UART_ID uart0 // used by secondary receiver
 
 //#define DEBUGPRIM    // print a line when a frame is received from Primary ELRS receiver
 //#define DEBUGSEC     // print a line when a frame is received from secondary ELRS receiver 

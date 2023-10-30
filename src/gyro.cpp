@@ -4,13 +4,14 @@
 #include "tools.h"
 #include "stdlib.h"
 #include "mpu.h"
+#include "sbus_in.h"
 #include "sbus_out_pwm.h"
+#include "crsf_in.h"
+#include "hardware/watchdog.h"
 
 extern CONFIG config;
 extern MPU mpu;
 extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
-//uint16_t rcPwmChannels[16];             // remap of original rcSbusOutChannels in Pwm Us values [988/2012]  // to do : to replace with rcChannelsUs
-//uint16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
 uint16_t rcChannelsUsCorr[16];  // Rc channels values with gyro corrections applied (in Us)
 
 extern int16_t gyroX; // data provided by mpu, sent to core0 and with some filtering
@@ -186,13 +187,17 @@ enum STAB_MODE stabMode = STAB_RATE;
 
 
 
-int16_t ail_in2_offset, ele_in2_offset, rud_in2_offset; //, flp_in2_offset; // difference from *_in2_mid (stick position)
+int16_t stickAilUs_offset, stickElvUs_offset, stickRudUs_offset; 
 const int16_t stick_gain_max = 400; // [1100-1500] or [1900-1500] => [0-STICK_GAIN_MAX]
 const int16_t master_gain_max = 400; // [1500-1100] or [1500-1900] => [0-MASTER_GAIN_MAX]
 
 int16_t correction[3] = {0, 0, 0};
 int16_t correctionPosSide[3] = {0, 0, 0};
 int16_t correctionNegSide[3] = {0, 0, 0};
+
+uint32_t lastStabModeUs = 0;
+int8_t stabModeCount;
+
 
 
 int16_t min(const int16_t a, const int16_t b)
@@ -208,16 +213,15 @@ void calculateCorrectionsToApply(){
     uint32_t t = microsRp(); 
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
-    // to do rename those field for clarity
-    int16_t ail_in2, ailr_in2, ele_in2, rud_in2, aux_in2, aux2_in2, thr_in2, flp_in2;
-    ail_in2 = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
-    ele_in2 = rcChannelsUs[config.gyroChan[1]-1];
-    rud_in2 = rcChannelsUs[config.gyroChan[2]-1];
-    aux_in2 = rcChannelsUs[config.gyroChanControl]-1;
+    int16_t stickAilUs, stickElvUs, stickRudUs, controlUs ;
+    stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
+    stickElvUs = rcChannelsUs[config.gyroChan[1]-1];
+    stickRudUs = rcChannelsUs[config.gyroChan[2]-1];
+    controlUs = rcChannelsUs[config.gyroChanControl]-1; // get original position of the control channel
     /*  // to debug
     static uint32_t prevPrintMs = 0;
     if ((millisRp() - prevPrintMs) > 1000){
-        printf("gyroswitch=%i\n", (int(aux_in2)));
+        printf("gyroswitch=%i\n", (int(controlUs)));
         prevPrintMs = millisRp();
     }
     */
@@ -229,47 +233,41 @@ void calculateCorrectionsToApply(){
     //STAB_RATE when 988us = switch haut
     //STAB_HOLD when 2012us = switch bas
     enum STAB_MODE stabMode2 = 
-      (stabMode == STAB_HOLD && aux_in2 <= RX_WIDTH_MODE_MID - RX_MODE_HYSTERESIS) ? STAB_RATE : 
-      (stabMode == STAB_RATE && aux_in2 >= RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS) ? STAB_HOLD : stabMode; // hysteresis, all now in Hold Mode region
+      (stabMode == STAB_HOLD && controlUs <= RX_WIDTH_MODE_MID - RX_MODE_HYSTERESIS) ? STAB_RATE : 
+      (stabMode == STAB_RATE && controlUs >= RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS) ? STAB_HOLD : stabMode; // hysteresis, all now in Hold Mode region
 
     if (stabMode2 != stabMode) {
         stabMode = stabMode2;
         //printf("stabMode changed in updateGyroCorrections() to %i\n", stabMode);
-        // set_led_msg(1, (stabMode == STAB_RATE) ? 0 : 4, LED_SHORT);  To do later on (led management)
-
+        
         // reset attitude error and i_limit threshold on mode change
         for (i=0; i<3; i++) {
             pid_state.sum_err[i] = 0;
             pid_state.i_limit[i] = 0;
         }
 
-        /* to do : Undestand if this code is useful or not. I expect not if the original rc channel ail,Elc,Rud are provided without trim.
-        // check for inflight rx calibration
-        if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
-            if ((int32_t)(t - last_stabMode_time) > 500000L) {
-            stabMode_count = 0;
-            }
-            last_stabMode_time = t;
-
-            if (++stabMode_count >= 3) {
-            ail_in2_mid = ail_in2;
-            ele_in2_mid = ele_in2;
-            rud_in2_mid = rud_in2;
-            ailr_in2_mid = ailr_in2;
-            flp_in2_mid = flp_in2;
-            }
+        // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change
+        
+        //if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
+        if ((int32_t)(t - lastStabModeUs) > 500000L) {  // so 2X per sec
+        stabModeCount = 0;
         }
-        */        
+        lastStabModeUs = t;
+
+        if (++stabModeCount >= 3) {
+            if ( (stickAilUs > 1400) and (stickAilUs < 1600) and (stickElvUs > 1400) and (stickElvUs < 1600) and (stickRudUs > 1400) and (stickRudUs < 1600) ){ 
+                gyroMixer.neutralUs[0] = stickAilUs;
+                gyroMixer.neutralUs[1] = stickElvUs;
+                gyroMixer.neutralUs[2] = stickRudUs;
+            }    
+        }
+        
     }
     
     // determine how much sticks are off center (from neutral)
-    //ail_in2_offset = ((ail_in2 - ail_in2_mid) + (ailr_in2 - ailr_in2_mid)) >> 1; // changed by ms
-    //ele_in2_offset = ele_in2 - ele_in2_mid;
-    //rud_in2_offset = rud_in2 - rud_in2_mid;
-    //flp_in2_offset = flp_in2 - flp_in2_mid;
-    ail_in2_offset = ail_in2 - 1500; // here we suppose that Tx send 1500 us at mid point; otherwise we could use neutral from learning process
-    ele_in2_offset = ele_in2 - 1500;
-    rud_in2_offset = rud_in2 - 1500;
+    stickAilUs_offset = stickAilUs - 1500; // here we suppose that Tx send 1500 us at mid point; otherwise we could use neutral from learning process
+    stickElvUs_offset = stickElvUs - 1500;
+    stickRudUs_offset = stickRudUs - 1500;
     
     // vr_gain[] [-128, 128] from VRs or config ; in mstrens code, it is supposed to come only from config 
     
@@ -278,20 +276,20 @@ void calculateCorrectionsToApply(){
     int8_t shift = config.stick_gain_throw - 1;
     
     // stick_gain[] [1100, <ail*|ele|rud>_in2_mid, 1900] => [0%, 100%, 0%] = [0, STICK_GAIN_MAX, 0]
-    stick_gain[0] = stick_gain_max - min(abs(ail_in2_offset) << shift, stick_gain_max);
-    stick_gain[1] = stick_gain_max - min(abs(ele_in2_offset) << shift, stick_gain_max);
-    stick_gain[2] = stick_gain_max - min(abs(rud_in2_offset) << shift, stick_gain_max);    
+    stick_gain[0] = stick_gain_max - min(abs(stickAilUs_offset) << shift, stick_gain_max);
+    stick_gain[1] = stick_gain_max - min(abs(stickElvUs_offset) << shift, stick_gain_max);
+    stick_gain[2] = stick_gain_max - min(abs(stickRudUs_offset) << shift, stick_gain_max);    
     
     // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
-    if (aux_in2 < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
+    if (controlUs < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
     	// Handle Rate Mode Gain Offset, gain = 1 when hysteresis area is exited
     	// Previously gain was the value of RX_GAIN_HYSTERESIS at first exit
-    	master_gain = constrain(((RX_WIDTH_MID - RX_GAIN_HYSTERESIS) - aux_in2) , 0, master_gain_max);
+    	master_gain = constrain(((RX_WIDTH_MID - RX_GAIN_HYSTERESIS) - controlUs) , 0, master_gain_max);
     } else {
-    	if (aux_in2 > (RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS))  {
+    	if (controlUs > (RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS))  {
     	   // Handle Hold Mode Gain Offset, gain = 1 when both hysteresis areas are exited
     	   // Previously gain was the value of RX_MODE_HYSTERESIS at first exit
-    	   master_gain = constrain(aux_in2 - (RX_WIDTH_MID + RX_MODE_HYSTERESIS), 0, master_gain_max);		
+    	   master_gain = constrain(controlUs - (RX_WIDTH_MID + RX_MODE_HYSTERESIS), 0, master_gain_max);		
     	} 
     	  // Force Gain to 0 while in either of the Hysteresis areas    
     	  else  master_gain = 0; // Force deadband
@@ -304,9 +302,9 @@ void calculateCorrectionsToApply(){
         // cfg.max_rotate shift = [1, 5]
         // eg. max stick == 400, cfg.max_rotate == 4. then 400 << 4 = 6400 => 6400/32768*2000 = 391deg/s (32768 == 2000deg/s)
         int16_t sp[3];
-        sp[0] = ail_in2_offset << config.max_rotate;
-        sp[1] = ele_in2_offset << config.max_rotate;
-        sp[2] = rud_in2_offset << config.max_rotate;
+        sp[0] = stickAilUs_offset << config.max_rotate;
+        sp[1] = stickElvUs_offset << config.max_rotate;
+        sp[2] = stickRudUs_offset << config.max_rotate;
         for (i=0; i<3; i++)
             //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
             pid_state.setpoint[i] = config.vr_gain[i] < 0 ? sp[i] : -sp[i];      
@@ -325,10 +323,7 @@ void calculateCorrectionsToApply(){
     }
     
     // measured angular rate (from the gyro and apply calibration offset)
-    //pid_state.input[0] = constrain(gyro[0] - gyro0[0], -8192, 8191);
-    //pid_state.input[1] = constrain(gyro[1] - gyro0[1], -8192, 8191);
-    //pid_state.input[2] = constrain(gyro[2] - gyro0[2], -8192, 8191);        
-    pid_state.input[0] = constrain(gyroY, -8192, 8191);  // changed by Mstrens ; to do check if this is OK
+    pid_state.input[0] = constrain(gyroY, -8192, 8191);  
     pid_state.input[1] = constrain(gyroX, -8192, 8191);
     pid_state.input[2] = constrain(gyroZ, -8192, 8191);        
     
@@ -366,7 +361,8 @@ void calculateCorrectionsToApply(){
     //                    ,pid_state.output[0], pid_state.output[1] , pid_state.output[2]   
     
     /*
-    // to do : I need to understand what is calibration_wag 
+    // to do : I need to understand what is calibration_wag
+    // this is normally not required with the learning process of oXs (based on 2 switch changes )  
     // calibration wag on all surfaces if needed
     if (calibration_wag_count > 0) {
         if ((int32_t)(t - last_calibration_wag_time) > 200000L) {
@@ -666,9 +662,18 @@ void calibrateGyroMixers(){
                     if ( ( rightUpFlags[0] == false) or ( leftDownFlags[0] == false) ) {printf("Error in Gyro setup: missing one corner position for aileron alone\n");}  
                     if ( ( rightUpFlags[1] == false) or ( leftDownFlags[1] == false) ) {printf("Error in Gyro setup: missing one corner position for elevator alone\n");}  
                     if ( ( rightUpFlags[2] == false) or ( leftDownFlags[2] == false) ) {printf("Error in Gyro setup: missing one corner position for rudder alone\n");}  
+                    printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!");
+                    watchdog_update();
                     ledState = STATE_NO_SIGNAL;
                     learningState = LEARNING_OFF;    
                     // to do : stop all interrupts to avoid error messages because queues are full
+                    // disable interrupt to avoid having to error msg about queue being full 
+                    uart_set_irq_enables(CRSF2_UART_ID, false, false);
+                    uart_set_irq_enables(CRSF2_UART_ID, false, false);
+                    uart_set_irq_enables(SBUS_UART_ID, false, false);
+                    uart_set_irq_enables(SBUS2_UART_ID, false, false);
+    
+    
                     configIsValid = false;
                 } else {
                     ledState = STATE_GYRO_CAL_LIMIT;
