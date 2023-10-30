@@ -9,6 +9,9 @@
 #include "crsf_in.h"
 #include "hardware/watchdog.h"
 
+// to do : manage the ability to set the gyro in different positions
+// this has probably an impact on mpu too!!!!!
+
 extern CONFIG config;
 extern MPU mpu;
 extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
