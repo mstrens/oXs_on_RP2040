@@ -12,6 +12,7 @@
 // to do : manage the ability to set the gyro in different positions
 // this has probably an impact on mpu too!!!!!
 
+
 //enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
 enum LEARNING_STATE learningState = LEARNING_OFF;
 
