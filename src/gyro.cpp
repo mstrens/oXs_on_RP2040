@@ -12,6 +12,16 @@
 // to do : manage the ability to set the gyro in different positions
 // this has probably an impact on mpu too!!!!!
 
+//enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
+enum LEARNING_STATE learningState = LEARNING_OFF;
+
+    #define MARGIN 50
+    #define CENTER_LOW 1500-MARGIN
+    #define CENTER_HIGH 1500+MARGIN
+    #define END_LOW 1000  // Normal 988
+    #define END_HIGH 2000  // normal 2012
+
+
 extern CONFIG config;
 extern MPU mpu;
 extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
@@ -107,8 +117,6 @@ enum STAB_MODE stabMode = STAB_RATE;
 #define RX_WIDTH_HIGH_FULL 2000
 #define RX_WIDTH_MAX 2100
 
-
-
 int16_t stickAilUs_offset, stickElvUs_offset, stickRudUs_offset; 
 const int16_t stick_gain_max = 400; // [1100-1500] or [1900-1500] => [0-STICK_GAIN_MAX]
 const int16_t master_gain_max = 400; // [1500-1100] or [1500-1900] => [0-MASTER_GAIN_MAX]
@@ -120,14 +128,11 @@ int16_t correctionNegSide[3] = {0, 0, 0};
 uint32_t lastStabModeUs = 0;
 int8_t stabModeCount;
 
-
-
 int16_t min(const int16_t a, const int16_t b)
 {
     return (b < a) ? b : a;
 }
-
-
+// -------------------------------   calculate corretions ---------------
 void calculateCorrectionsToApply(){ 
                                 // it is called from applyGyroCorrections only if gyroIsInstalled applying PWM on the outputs
                               // when gyro is not yet calibrated, corrections are not calculated but we still detect stabMode changes
@@ -173,23 +178,25 @@ void calculateCorrectionsToApply(){
         lastStabModeUs = t;
         if (++stabModeCount >= 3) {
             if ( (stickAilUs > 1400) and (stickAilUs < 1600) and (stickElvUs > 1400) and (stickElvUs < 1600) and (stickRudUs > 1400) and (stickRudUs < 1600) ){ 
-                gyroMixer.neutralUs[config.gyroChan[0]-1] = stickAilUs;
+                gyroMixer.neutralUs[config.gyroChan[0]-1] = stickAilUs; // save the new neutral positions for the 3 original sticks
                 gyroMixer.neutralUs[config.gyroChan[1]-1] = stickElvUs;
                 gyroMixer.neutralUs[config.gyroChan[2]-1] = stickRudUs;
+                printf("New center position detected for raw sticks:   Ail=%-4i%%    Elv=%-4i%%    Rud=%-4i%%\n",\
+                pc(stickAilUs-1500) , pc(stickElvUs-1500) , pc(stickRudUs-1500) );
             }    
         }
         
     } // end of stabmode change
-    // skip the rest 
-    if (gyroMixer.isCalibrated == false) {
+    
+    if (gyroMixer.isCalibrated == false) {  // ser corrections to 0 when gyroMixer is not calibrated
         for (i=0;i<3;i++) {
             correctionNegSide[i] = correctionPosSide[i] = 0;
         }    
     };
-    // determine how much sticks are off center (from neutral)
-    stickAilUs_offset = stickAilUs - 1500; // here we suppose that Tx send 1500 us at mid point; otherwise we could use neutral from learning process
-    stickElvUs_offset = stickElvUs - 1500;
-    stickRudUs_offset = stickRudUs - 1500;
+    // determine how much sticks are off center (from neutral) taking care of gyroMixer calibration and inflight calibration 
+    stickAilUs_offset = stickAilUs - gyroMixer.neutralUs[config.gyroChan[0]-1]; 
+    stickElvUs_offset = stickElvUs - gyroMixer.neutralUs[config.gyroChan[1]-1];
+    stickRudUs_offset = stickRudUs - gyroMixer.neutralUs[config.gyroChan[2]-1];
     
     // vr_gain[] [-128, 128] from VRs or config ; in mstrens code, it is supposed to come only from config 
     
@@ -245,9 +252,9 @@ void calculateCorrectionsToApply(){
     }
     
     // measured angular rate (from the gyro and apply calibration offset)
-    pid_state.input[0] = constrain(gyroY, -8192, 8191);  
-    pid_state.input[1] = constrain(gyroX, -8192, 8191);
-    pid_state.input[2] = constrain(gyroZ, -8192, 8191);        
+    pid_state.input[0] = constrain(gyroY, -8192, 8191)>>3; // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
+    pid_state.input[1] = constrain(gyroX, -8192, 8191)>>3;
+    pid_state.input[2] = constrain(gyroZ, -8192, 8191)>>3;        
     
     // apply PID control
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);
@@ -367,14 +374,6 @@ void applyGyroCorrections(){
     // here all PWM have been recalculated and can be used for PWM output
 }
 
-//enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
-enum LEARNING_STATE learningState = LEARNING_OFF;
-
-    #define MARGIN 50
-    #define CENTER_LOW 1500-MARGIN
-    #define CENTER_HIGH 1500+MARGIN
-    #define END_LOW 1000  // Normal 988
-    #define END_HIGH 2000  // normal 2012
     
 
 bool checkForLearning(){ // return true when learning process can start
@@ -391,7 +390,7 @@ bool checkForLearning(){ // return true when learning process can start
     if (stabMode == prevStabMode)  {
         return false;
     }
-    printf("stabMode changed to %i\n", stabMode);
+    //printf("stabMode changed to %i\n", stabMode);
     prevStabMode = stabMode;
     if ((rcChannelsUs[config.gyroChan[0]-1] <= END_LOW) or (rcChannelsUs[config.gyroChan[0]-1] >= END_HIGH) &&\
         (rcChannelsUs[config.gyroChan[1]-1] <= END_LOW) or (rcChannelsUs[config.gyroChan[1]-1] >= END_HIGH) &&\
@@ -640,21 +639,12 @@ void calibrateGyroMixers(){
             ledState = STATE_NO_SIGNAL;
             learningState = LEARNING_OFF;
             printf("\nGyro calibration:\n");
-            printf("Stick Ail_Right on channel %i at %-5i\n", config.gyroChan[0], pc(dirCh[0] - 1500));
-            printf("Stick Elv Up    on channel %i at %-5i\n", config.gyroChan[1], pc(dirCh[1] - 1500));
-            printf("Stick Rud_Right on channel %i at %-5i\n", config.gyroChan[2], pc(dirCh[2] - 1500));
-            printf("Gyro corrections (from center pos in %%) on:      \n");
-            for (uint8_t i = 0; i<16;i++) {
-                if ( temp.used[i]) {
-                    printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\
-                    i+1 , pc(temp.neutralUs[i]-1500) , pc(temp.rateRollRightUs[i]), pc(temp.rateRollLeftUs[i]), \
-                    pc(temp.ratePitchUpUs[i]) , pc(temp.ratePitchDownUs[i]),\
-                    pc(temp.rateYawRightUs[i]), pc(temp.rateYawLeftUs[i]),\
-                    pc(temp.minUs[i]-1500) , pc(temp.maxUs[i]-1500) ) ;
-                }
-            }
+            printf("Stick Ail_Right on channel %i at %-5i%%\n", config.gyroChan[0], pc(dirCh[0] - 1500));
+            printf("Stick Elv Up    on channel %i at %-5i%%\n", config.gyroChan[1], pc(dirCh[1] - 1500));
+            printf("Stick Rud_Right on channel %i at %-5i%%\n", config.gyroChan[2], pc(dirCh[2] - 1500));
             // update gyroMixer from temp.
             memcpy(&gyroMixer , &temp, sizeof(temp));
+            printGyroMixer(); 
             printf("\nEnd of learning process; result will be saved in flash\n");
             saveGyroMixer(); //   save the gyro mixer from the learning process.                     
         } // end switch change

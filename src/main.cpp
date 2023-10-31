@@ -505,7 +505,7 @@ void getSensorsFromCore1(){
                 } else if (entry.type == CAMERA_ROLL_ID) {
                     cameraRoll = entry.data;
                 } else if (entry.type == GYRO_X_ID) {  
-                    gyroX = (15*gyroX + entry.data) >> 4;  // here some filtering
+                    gyroX = (15*gyroX + entry.data) >> 4;  // here some filtering because oXs use a BW=188 for mpu instead of BW=5 for flightstab in gyro setting.
                     //gyroX = entry.data;
                 } else if (entry.type == GYRO_Y_ID) { 
                     gyroY = (15*gyroY + entry.data) >>4 ;

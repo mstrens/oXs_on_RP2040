@@ -164,6 +164,7 @@ void saveSequencers(); // save all sequencers definitions
 void setupGyroMixer();
 void saveGyroMixer();  // save the gyro mixer collected during the learning process (mixer calibration)
 void printGyro(); 
+void printGyroMixer();
 
 #define HW4 4
 #define HW3 3

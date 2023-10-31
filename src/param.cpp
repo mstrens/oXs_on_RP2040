@@ -1438,6 +1438,7 @@ void setupConfig(){   // The config is uploaded at power on
     if (*flash_target_contents == CONFIG_VERSION ) {
         memcpy( &config , flash_target_contents, sizeof(config));
         if (config.pwmHz == 0XFFFF) config.pwmHz = _pwmHz; // set default value when it has not been defined manually
+
     } else {
         config.version = CONFIG_VERSION;
         config.pinChannels[0] = _pinChannels_1;
@@ -1521,24 +1522,6 @@ void setupConfig(){   // The config is uploaded at power on
         config.gyroChan[0] = _gyroChan_AIL;
         config.gyroChan[1] = _gyroChan_ELV;
         config.gyroChan[2] = _gyroChan_RUD;
-        config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
-        config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
-        config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
-        config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
-        config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
-        config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
-        config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
-        config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
-        config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
-        config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
-        config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
-        config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
-        config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
-        config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
-        config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
-        config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
-        config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
-        config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
         config.vr_gain[0]  = _vr_gain_AIL;
         config.vr_gain[1]  = _vr_gain_ELV;
         config.vr_gain[2]  = _vr_gain_RUD;
@@ -1547,7 +1530,27 @@ void setupConfig(){   // The config is uploaded at power on
         config.rate_mode_stick_rotate = (enum RATE_MODE_STICK_ROTATE)_rate_mode_stick_rotate;
         config.pid_param_rate.output_shift = _pid_param_rate_output_shift;
         config.pid_param_hold.output_shift = _pid_param_hold_output_shift;
-    }   
+    }
+    // here we update the parameters that can't be edited with usb commands; so changes in config.h are used after new compilation 
+    config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
+    config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
+    config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
+    config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
+    config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
+    config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
+    config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
+    config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
+    config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
+    config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
+    config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
+    config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
+    config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
+    config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
+    config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
+    config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
+    config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
+    config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
+           
 } 
 
 void requestMpuCalibration()  // 
@@ -2102,8 +2105,6 @@ bool parseOneSequence() { // parse one sequence and all steps from this sequence
         printf("Error: for sequence %i, Rc channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , sequenceIdx+1);
         return false;    
     }
-    
-    
     tempIntTable[1] = 0; // set 4 optional flags to 0
     tempIntTable[2] = 0;
     tempIntTable[3] = 0;
@@ -2240,24 +2241,28 @@ void printGyro(){
     printf("Gain on throw is %i (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
     printf("Max rotate is %i (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
     printf("Stick rotate enabledi in rate mode is %i (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
-    
+    printGyroMixer();
+}
+
+void printGyroMixer(){     // this function is also called at the end of the gyroMixer calibration process
     if (gyroMixer.isCalibrated == false){
         printf("Gyro mixers must be calibrated\n");
-        return;
-    }
-    // when calibrated
-    printf("\nGyro mixers are calibrated:\n");
-    printf("Gyro corrections (from center pos in %%) on:      \n");
-    for (uint8_t i = 0; i<16;i++) {
-        if ( gyroMixer.used[i]) {
-            printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\
-            i+1 , pc(gyroMixer.neutralUs[i]-1500) , pc(gyroMixer.rateRollRightUs[i]), pc(gyroMixer.rateRollLeftUs[i]), \
-            pc(gyroMixer.ratePitchUpUs[i]) , pc(gyroMixer.ratePitchDownUs[i]),\
-            pc(gyroMixer.rateYawRightUs[i]), pc(gyroMixer.rateYawLeftUs[i]),\
-            pc(gyroMixer.minUs[i]-1500) , pc(gyroMixer.maxUs[i]-1500) ) ;
+    } else {
+        // when calibrated
+        printf("\nGyro mixers are calibrated:\n");
+        printf("Sticks centered at:    Ail=%-4i%%   Elv=%-4i%%   Rud%-4i%%\n", pc(gyroMixer.neutralUs[config.gyroChan[0]-1]-1500),\
+            pc(gyroMixer.neutralUs[config.gyroChan[1]-1]-1500), pc(gyroMixer.neutralUs[config.gyroChan[2]-1]-1500));
+        printf("Gyro corrections (from center pos in %%) on:\n");
+        for (uint8_t i = 0; i<16;i++) {
+            if ( gyroMixer.used[i]) {
+                printf("Channel %-2i center=%-4i rollRight=%-4i rollLeft=%-4i pitchUp%-4i pitchDown=%-4i yawRight=%-4i yawLeft=%-4i min=%-4i max=%-4i\n",\
+                i+1 , pc(gyroMixer.neutralUs[i]-1500) , pc(gyroMixer.rateRollRightUs[i]), pc(gyroMixer.rateRollLeftUs[i]), \
+                pc(gyroMixer.ratePitchUpUs[i]) , pc(gyroMixer.ratePitchDownUs[i]),\
+                pc(gyroMixer.rateYawRightUs[i]), pc(gyroMixer.rateYawLeftUs[i]),\
+                pc(gyroMixer.minUs[i]-1500) , pc(gyroMixer.maxUs[i]-1500) ) ;
+            }
         }
     }
-
 }
 
 #define FLASH_GYROMIXER_OFFSET FLASH_CONFIG_OFFSET + (8 * 1024) // Sequencer is 4K after config parameters
@@ -2285,7 +2290,7 @@ void saveGyroMixer() {
 
 void setupGyroMixer(){   // The config is uploaded at power on
     if (*flash_gyroMixer_contents == GYROMIXER_VERSION ) {
-        memcpy( &gyroMixer , flash_gyroMixer_contents, sizeof(gyroMixer));
+        memcpy( &gyroMixer , flash_gyroMixer_contents, sizeof(gyroMixer));        
     } else {
         gyroMixer.version = GYROMIXER_VERSION;
         gyroMixer.isCalibrated = false ;    

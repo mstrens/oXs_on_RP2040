@@ -336,7 +336,7 @@ void updatePWM(){
             for( uint8_t i = 0 ; i < 16 ; i++){    
                 if ( config.pinChannels[i] == 255) continue ; // skip i when pin is not defined for this channel 
                 pwm_set_gpio_level (config.pinChannels[i], rcChannelsUsCorr[i]) ;
-                if ((msgEverySec(0)) and (i == 1)) {printf("Pwm channel 2=%i\n", rcChannelsUsCorr[i]);}
+//                if ((msgEverySec(0)) and (i == 1)) {printf("Pwm channel 2=%i\n", rcChannelsUsCorr[i]);}
             }
         } // end PWM is used
     }
