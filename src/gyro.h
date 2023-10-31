@@ -47,7 +47,5 @@ void applyGyroCorrections(); // apply gyro corrections taking care of the gyro m
 
 void calculateCorrectionsToApply(); // calculate gyro corrections on 3 axis but without taking care of the mixer
 
-
-
 void calibrateGyroMixers();
 int pc(int16_t val);        // convert a Rc value (-512/512) in %

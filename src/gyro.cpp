@@ -28,87 +28,6 @@ struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learni
 
 bool gyroIsInstalled = false;  // becomes true when config.gyroChanControl is defined (not 255) and MPU6050 installed
 
-/*
-void initGyroMixer(){
-    // this is a temprary solution to get gyro mixer without having yet the learning process (and the saving process)
-    
-    #define AIL1_CHANNEL 1  // 1 means channel 2  //here the ID of the output channels where compensation apply
-    #define AIL2_CHANNEL 1
-    #define ELV1_Channel 2  
-    #define ELV2_Channel 3
-    #define RUD_Channel 4
-    for (uint8_t i=0; i<16 ; i++){ // set all mixer as unsued (for gyro)
-        gyroMixer.used[i] = false;
-        gyroMixer.neutralUs[i] = 1500 ;
-        gyroMixer.minUs[i] = 1000 ;
-        gyroMixer.maxUs[i] = 2000 ;
-        gyroMixer.rateRollLeftUs[i] = 0 ; // 0 means that when stick is at the end pos, this output RC channel is not impacted 
-        gyroMixer.rateRollRightUs[i] = 0 ; 
-        gyroMixer.ratePitchUpUs[i] = 0 ;  
-        gyroMixer.ratePitchDownUs[i] = 0 ;
-        gyroMixer.rateYawLeftUs[i] = 0  ;
-        gyroMixer.rateYawRightUs[i] = 0 ;   
-    }
-    // then fill the parameters with your value // normally this should be uploaded from flash.
-    gyroMixer.isCalibrated = true ;
-    uint8_t i;
-    i = AIL1_CHANNEL;    
-    gyroMixer.used[i] = true ;
-    gyroMixer.neutralUs[i] = 1500;
-    gyroMixer.minUs[i] = 1000 ;
-    gyroMixer.maxUs[i] = 2000 ;
-    gyroMixer.rateRollLeftUs[i] = 400 ; // 300 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 300 usec 
-    gyroMixer.rateRollRightUs[i] = -400 ; // here for stick Ail Right
-    // in this set up only AIL_CHANNEL get gyro corrections and only on roll axis ; all other values are the default
-    
-    // add here other setup for other output Rc channels    
-    // e.g. for a second Ail
-    //i = AIL2_CHANNEL;    
-    //gyroMixer[i].used = true ;
-    //gyroMixer.used[i] = true ;
-    //gyroMixer.neutralUs[i] = 1700;
-    //gyroMixer.minUs[i] = 1000 ;
-    //gyroMixer.maxUs[i] = 2000 ;
-    //gyroMixer.rateRollLeftUs[i] = 500 ; // 500 means that when stick Ail (for Roll) is in the Left corner, RC channel (here AIL1_CHANNEL) is changed by 500 usec 
-    //gyroMixer.rateRollRightUs[i] = -500 ; // here for stick Ail Right
-    
-    // for e.g. a V stab you have to define values for 2 servos ELV1 and ELV2 and for each 4 rates.
-    
-}
-
-// temporary solution waiting to allow changes in usb commands
-void initGyroConfig(){
-    #define GYRO_CHANNEL_CONTROL 8  // 0 means channel 1,  so 8 means channel 9 
-    #define GYRO_CHAN_AIL 9 // 0 means channel 1
-    #define GYRO_CHAN_ELV 10 // 0 means channel 1
-    #define GYRO_CHAN_RUD 11 // 0 means channel 1
-     
-    
-    #define IDX_AIL 0
-    #define IDX_ELV 1
-    #define IDX_RUD 2
-    // this is a temporaty function to define the gyro parameters waiting to be able to fill them with usb command
-    config.gyroChanControl = GYRO_CHANNEL_CONTROL; // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
-    config.gyroChan[IDX_AIL] = GYRO_CHAN_AIL ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
-    config.gyroChan[IDX_ELV] = GYRO_CHAN_ELV ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
-    config.gyroChan[IDX_RUD] = GYRO_CHAN_RUD ;    // Rc channel used to transmit original Ail, Elv, Rud stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
-    for (uint8_t i = 0; i<3; i++){
-        config.pid_param_rate.kp[i] = 500; // default PID param used by flightstab
-        config.pid_param_rate.ki[i] = 0; // default PID param
-        config.pid_param_rate.kd[i] = 500; // default PID param
-        config.pid_param_hold.kp[i] = 500; // default PID param
-        config.pid_param_hold.ki[i] = 500; // default PID param
-        config.pid_param_hold.kd[i] = 500; // default PID param
-    }
-    config.pid_param_rate.output_shift = 8; // default used by flightstab
-    config.pid_param_hold.output_shift = 8;
-    config.vr_gain[IDX_AIL] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
-    config.vr_gain[IDX_ELV] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
-    config.vr_gain[IDX_RUD] = 127;          // store the gain per axis, max value is 128 (to combine with global gain provided by gyroChanControl)
-    config.stick_gain_throw = STICK_GAIN_THROW_FULL ;  //STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_GAIN_THROW_QUARTER=3 
-} 
-*/
-
 /***************************************************************************************************************
  * PID
  ***************************************************************************************************************/
@@ -210,9 +129,12 @@ int16_t min(const int16_t a, const int16_t b)
 
 
 void calculateCorrectionsToApply(){ 
-                                // it is called from applyGyroCorrections only if gyroIsInstalled and calibrated before applying PWM on the outputs
-                              // it calculates the corrections and split them in positive and negatieve part
+                                // it is called from applyGyroCorrections only if gyroIsInstalled applying PWM on the outputs
+                              // when gyro is not yet calibrated, corrections are not calculated but we still detect stabMode changes
+                              //       this is required to enter the learning calibration process and the reset of center pos
+                              // it calculates the corrections and split them in positive and negatieve part (set to 0 if not calibrated)
                               // at this step, we do not take care of the mixers/ratio/.. defined on the handset and being part of mixer calibration 
+
     uint32_t t = microsRp(); 
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
@@ -220,24 +142,18 @@ void calculateCorrectionsToApply(){
     stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
     stickElvUs = rcChannelsUs[config.gyroChan[1]-1];
     stickRudUs = rcChannelsUs[config.gyroChan[2]-1];
-    controlUs = rcChannelsUs[config.gyroChanControl]-1; // get original position of the control channel
-    /*  // to debug
-    static uint32_t prevPrintMs = 0;
-    if ((millisRp() - prevPrintMs) > 1000){
-        printf("gyroswitch=%i\n", (int(controlUs)));
-        prevPrintMs = millisRp();
-    }
-    */
-    int16_t stick_gain[3];
-    int16_t master_gain;
-    uint8_t i;
-
+    controlUs = rcChannelsUs[config.gyroChanControl-1]; // get original position of the control channel
+        
     // stabilization mode
     //STAB_RATE when 988us = switch haut
     //STAB_HOLD when 2012us = switch bas
     enum STAB_MODE stabMode2 = 
       (stabMode == STAB_HOLD && controlUs <= RX_WIDTH_MODE_MID - RX_MODE_HYSTERESIS) ? STAB_RATE : 
       (stabMode == STAB_RATE && controlUs >= RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS) ? STAB_HOLD : stabMode; // hysteresis, all now in Hold Mode region
+
+    int16_t stick_gain[3];
+    int16_t master_gain;
+    uint8_t i;
 
     if (stabMode2 != stabMode) {
         stabMode = stabMode2;
@@ -249,24 +165,27 @@ void calculateCorrectionsToApply(){
             pid_state.i_limit[i] = 0;
         }
 
-        // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change
-        
+        // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change    
         //if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
         if ((int32_t)(t - lastStabModeUs) > 500000L) {  // so 2X per sec
-        stabModeCount = 0;
+            stabModeCount = 0;
         }
         lastStabModeUs = t;
-
         if (++stabModeCount >= 3) {
             if ( (stickAilUs > 1400) and (stickAilUs < 1600) and (stickElvUs > 1400) and (stickElvUs < 1600) and (stickRudUs > 1400) and (stickRudUs < 1600) ){ 
-                gyroMixer.neutralUs[0] = stickAilUs;
-                gyroMixer.neutralUs[1] = stickElvUs;
-                gyroMixer.neutralUs[2] = stickRudUs;
+                gyroMixer.neutralUs[config.gyroChan[0]-1] = stickAilUs;
+                gyroMixer.neutralUs[config.gyroChan[1]-1] = stickElvUs;
+                gyroMixer.neutralUs[config.gyroChan[2]-1] = stickRudUs;
             }    
         }
         
-    }
-    
+    } // end of stabmode change
+    // skip the rest 
+    if (gyroMixer.isCalibrated == false) {
+        for (i=0;i<3;i++) {
+            correctionNegSide[i] = correctionPosSide[i] = 0;
+        }    
+    };
     // determine how much sticks are off center (from neutral)
     stickAilUs_offset = stickAilUs - 1500; // here we suppose that Tx send 1500 us at mid point; otherwise we could use neutral from learning process
     stickElvUs_offset = stickElvUs - 1500;
@@ -356,10 +275,13 @@ void calculateCorrectionsToApply(){
         }
         correctionNegSide[i] = correction[i] - correctionPosSide[i] ;       
     }
-    if (msgEverySec(2)) { printf("Mode=%-5i  gx=%-5i  gy=%-5i  gz=%-5i  ct=%-5i  cp=%-5i  cn=%-5i  "  ,\
+    //#define DEBUG_GYRO_CORRECTIONS
+    #ifdef DEBUG_GYRO_CORRECTIONS
+    if (msgEverySec(2) and gyroMixer.isCalibrated) { printf("Mode=%-5i  gx=%-5i  gy=%-5i  gz=%-5i  cAilT=%-5i  cAilP=%-5i  cAilN=%-5i  "  ,\
                  stabMode , pid_state.input[0] , pid_state.input[1],pid_state.input[2]\
                             ,correction[0] , correctionPosSide[0] , correctionNegSide[0]\
     );}
+    #endif
          //                   ,config.vr_gain[0], stick_gain[0] ,  master_gain
     //                    ,pid_state.output[0], pid_state.output[1] , pid_state.output[2]   
     
@@ -399,16 +321,17 @@ void applyGyroCorrections(){
         }    
     }
     calculateCorrectionsToApply(); // recalculate gyro corrections at regular interval but without taking care of the mixers;
+                                   // corrections are set to 0 when gyromixer is not calibrated
     // from here, we know the corrections to apply on the pos and neg sides
     // apply corrections
     for (uint8_t i=0 ; i<16 ; i++){  // for each Rc channel
         if ( gyroMixer.used[i] ) { // when this channel uses gyro correction.
             // adapt the corrections Pos and Neg for each axis based on the ranges stored in gyroMixer.
             // to do : check that those are the correct matching between Pos/neg and Left/right
-            if ((msgEverySec(3)) and (i == 1)) {
-                printf(" cp=%-5i * rr=%-5i  cn=%-5i * rl=%-5i  ", correctionPosSide[0] , gyroMixer.rateRollRightUs[i],\
-                   correctionNegSide[0] , gyroMixer.rateRollLeftUs[i]);
-            }
+            //if ((msgEverySec(3)) and (i == 1)) {
+            //    printf(" cp=%-5i * rr=%-5i  cn=%-5i * rl=%-5i  ", correctionPosSide[0] , gyroMixer.rateRollRightUs[i],\
+            //       correctionNegSide[0] , gyroMixer.rateRollLeftUs[i]);
+            //}
             //imagine that after learning process : RollRigth is negative (mean PWM goes to min), so then RollLeft is positive (always the opposite)
             // imagine that a correction to the right is required and that gives a positive corr applied from neutral.
             //      so  Pos part of corr is positieve and neg part = 0
@@ -445,7 +368,6 @@ void applyGyroCorrections(){
 }
 
 //enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
-
 enum LEARNING_STATE learningState = LEARNING_OFF;
 
     #define MARGIN 50
@@ -697,8 +619,7 @@ void calibrateGyroMixers(){
                 // look at the channels that have to be controled by the gyro.
                 // channel is used if there are differences and channel is not a stick
                 temp.used[i] = false;
-                uint8_t j=i++;
-                if ( ((j != config.gyroChan[0] ) and (j != config.gyroChan[1] ) and (j != config.gyroChan[2])  and ( j!= config.gyroChanControl ))\
+                if ( ((i != (config.gyroChan[0]-1) ) and (i != (config.gyroChan[1]-1) ) and (i != (config.gyroChan[2]-1))  and ( i!= (config.gyroChanControl-1) ))\
                  and ((abs(rightUpUs[0][i]-leftDownUs[0][i])>MM) or (abs(rightUpUs[0][i]-centerCh[i])>MM) or (abs(leftDownUs[0][i]-centerCh[i])>MM)\
                     or(abs(rightUpUs[1][i]-leftDownUs[1][i])>MM) or (abs(rightUpUs[1][i]-centerCh[i])>MM) or (abs(leftDownUs[1][i]-centerCh[i])>MM)\
                     or(abs(rightUpUs[2][i]-leftDownUs[2][i])>MM) or (abs(rightUpUs[2][i]-centerCh[i])>MM) or (abs(leftDownUs[2][i]-centerCh[i])>MM))) {

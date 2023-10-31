@@ -290,7 +290,7 @@ void updatePWM(){
     
         newRcChannelsReceivedForLogger = true;  // used to update the logger data
         // apply gyro corrections in rcChannelsUsCorr[] 
-        if ( (gyroIsInstalled) and (gyroMixer.isCalibrated)) {
+        if  (gyroIsInstalled)  {
             applyGyroCorrections();   // calculate gyroMixer[].min and .max + rcChannelsUsCorr[] adding gyro correction to rxPwlChannels[]
         }
         // apply corrections for camera in rcChannelsUsCorr
