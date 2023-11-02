@@ -40,8 +40,8 @@ struct _pid_param {
   int8_t output_shift ;
 };
 
-void initGyroMixer(); // to do = to adapt when gyroMixer will be saved in flash
-void initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
+//void initGyroMixer(); // to do = to adapt when gyroMixer will be saved in flash
+//void initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
 void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param);
 void applyGyroCorrections(); // apply gyro corrections taking care of the gyro mixers
 

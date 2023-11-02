@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.14"
+#define VERSION "2.9.15"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -292,7 +292,8 @@
 #define _pinEsc 0xFF
 #define _escType 0xFF
 #define _pwmHz 50  // 50 hz per default
-// for gyro
+
+// ------  for gyro   -------
 #define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
 #define _gyroChan_AIL    0xFF // Rc channel used to transmit original Ail (Elv, Rud) stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
 #define _gyroChan_ELV    0xFF //                                           ELV
@@ -326,7 +327,7 @@
                                     // MAX_ROTATE is used in hold mode (correction depends more or less on stick offset)
 #define _rate_mode_stick_rotate  1  // RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE=2
                                     // MAX_ROTATE is used also in rate mode when RATE_MODE_STICK_ROTATE_ENABLE is selected
-
+//#define HOLD_IS_USED_AS_AUTO_LEVEL     // when uncommented, oXs applies auto level instead of Hold mode (so try to keep the horizon) 
 
 
 // --------- Reserve for developer. ---------

@@ -35,6 +35,12 @@ extern int16_t gyroZ;
 extern bool configIsValid;
 extern uint8_t ledState;
 
+extern int32_t cameraPitch;
+extern int32_t cameraRoll;
+
+
+bool autolevel = false;
+
 struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 
 bool gyroIsInstalled = false;  // becomes true when config.gyroChanControl is defined (not 255) and MPU6050 installed
@@ -133,7 +139,7 @@ int16_t min(const int16_t a, const int16_t b)
 {
     return (b < a) ? b : a;
 }
-// -------------------------------   calculate corretions ---------------
+// -------------------------------   calculate corrections ---------------
 void calculateCorrectionsToApply(){ 
                                 // it is called from applyGyroCorrections only if gyroIsInstalled applying PWM on the outputs
                               // when gyro is not yet calibrated, corrections are not calculated but we still detect stabMode changes
@@ -144,6 +150,7 @@ void calculateCorrectionsToApply(){
     uint32_t t = microsRp(); 
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
+    // just to make code easier to write
     int16_t stickAilUs, stickElvUs, stickRudUs, controlUs ;
     stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
     stickElvUs = rcChannelsUs[config.gyroChan[1]-1];
@@ -189,7 +196,7 @@ void calculateCorrectionsToApply(){
         
     } // end of stabmode change
     
-    if (gyroMixer.isCalibrated == false) {  // ser corrections to 0 when gyroMixer is not calibrated
+    if (gyroMixer.isCalibrated == false) {  // set corrections to 0 when gyroMixer is not calibrated
         for (i=0;i<3;i++) {
             correctionNegSide[i] = correctionPosSide[i] = 0;
         }    
@@ -204,8 +211,7 @@ void calculateCorrectionsToApply(){
     // see enum STICK_GAIN_THROW. shift=0 => FULL, shift=1 => HALF, shift=2 => QUARTER
     //int8_t shift = cfg.stick_gain_throw - 1;
     int8_t shift = config.stick_gain_throw - 1;
-    
-    // stick_gain[] [1100, <ail*|ele|rud>_in2_mid, 1900] => [0%, 100%, 0%] = [0, STICK_GAIN_MAX, 0]
+        // stick_gain[] [1100, <ail*|ele|rud>_mid, 1900] => [0%, 100%, 0%] = [0, STICK_GAIN_MAX, 0]
     stick_gain[0] = stick_gain_max - min(abs(stickAilUs_offset) << shift, stick_gain_max);
     stick_gain[1] = stick_gain_max - min(abs(stickElvUs_offset) << shift, stick_gain_max);
     stick_gain[2] = stick_gain_max - min(abs(stickRudUs_offset) << shift, stick_gain_max);    
@@ -224,12 +230,20 @@ void calculateCorrectionsToApply(){
     	  // Force Gain to 0 while in either of the Hysteresis areas    
     	  else  master_gain = 0; // Force deadband
     }	  	
-  
-    // commanded angular rate (could be from [ail|ele|rud]_in2, note direction/sign)
-    if (stabMode == STAB_HOLD || 
+    
+    #ifdef HOLD_IS_USED_AS_AUTO_LEVEL
+        autolevel = true;    // to do : integrate this in config
+    #endif 
+    if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
+        for (i=0; i<3; i++) 
+            //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
+            pid_state.setpoint[i] = 0;
+    } 
+    // commanded angular rate (could be from [ail|ele|rud], note direction/sign)
+    else if (stabMode == STAB_HOLD || 
         (stabMode == STAB_RATE && config.rate_mode_stick_rotate == RATE_MODE_STICK_ROTATE_ENABLE)) {
         // stick controlled roll rate
-        // cfg.max_rotate shift = [1, 5]
+        // cfg.max_rotate shift = [1, 4]
         // eg. max stick == 400, cfg.max_rotate == 4. then 400 << 4 = 6400 => 6400/32768*2000 = 391deg/s (32768 == 2000deg/s)
         int16_t sp[3];
         sp[0] = stickAilUs_offset << config.max_rotate;
@@ -237,7 +251,7 @@ void calculateCorrectionsToApply(){
         sp[2] = stickRudUs_offset << config.max_rotate;
         for (i=0; i<3; i++)
             //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
-            pid_state.setpoint[i] = config.vr_gain[i] < 0 ? sp[i] : -sp[i];      
+            pid_state.setpoint[i] = config.vr_gain[i] < 0 ? sp[i] : -sp[i];    
     } else {
         // zero roll rate, stabilization only
         for (i=0; i<3; i++) 
@@ -251,12 +265,16 @@ void calculateCorrectionsToApply(){
             pid_state.i_limit[i] = ((int32_t)30 * (32768 / 2 / (PID_PERIOD / 1000)) * stick_gain[i]) >> 9; 
         }
     }
-    
+    if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
+        pid_state.input[0] = constrain((int16_t) cameraRoll, -8192, 8191); // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
+        pid_state.input[1] = constrain((int16_t) cameraPitch, -8192, 8191);
+        pid_state.input[2] = constrain(gyroZ>>3, -8192, 8191);        
+    } else {
     // measured angular rate (from the gyro and apply calibration offset)
-    pid_state.input[0] = constrain(gyroY, -8192, 8191)>>3; // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
-    pid_state.input[1] = constrain(gyroX, -8192, 8191)>>3;
-    pid_state.input[2] = constrain(gyroZ, -8192, 8191)>>3;        
-    
+        pid_state.input[0] = constrain(gyroY>>3, -8192, 8191); // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
+        pid_state.input[1] = constrain(gyroX>>3, -8192, 8191);
+        pid_state.input[2] = constrain(gyroZ>>3, -8192, 8191);        
+    }
     // apply PID control
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);
         
@@ -271,6 +289,7 @@ void calculateCorrectionsToApply(){
         if (OSP >= 1500 ){
             if (ESP >= 1500){
             correctionPosSide[i] = correction[i];
+    
             } else {
                 correctionPosSide[i] = (1500 - OSP) ; // corr is neg, so Positive part must be negative     
             }
