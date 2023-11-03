@@ -154,7 +154,7 @@ void calculateCorrectionsToApply(){
     // just to make code easier to write
     int16_t stickAilUs, stickElvUs, stickRudUs, controlUs ;    
     int16_t stick_gain[3];
-    int16_t master_gain;
+    static int16_t master_gain;
     uint8_t i;
 
     stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
