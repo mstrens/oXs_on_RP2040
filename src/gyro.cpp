@@ -148,13 +148,12 @@ void calculateCorrectionsToApply(){
                               // at this step, we do not take care of the mixers/ratio/.. defined on the handset and being part of mixer calibration 
 
     uint32_t t = microsRp(); 
-    static int16_t prevControlUs =0;
     if ((int32_t)(t - last_pid_time) < PID_PERIOD) return;
 
     // just to make code easier to write
     int16_t stickAilUs, stickElvUs, stickRudUs, controlUs ;    
     int16_t stick_gain[3];
-    static int16_t master_gain;
+    int16_t master_gain;
     uint8_t i;
 
     stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
@@ -162,28 +161,6 @@ void calculateCorrectionsToApply(){
     stickRudUs = rcChannelsUs[config.gyroChan[2]-1];
     controlUs = rcChannelsUs[config.gyroChanControl-1]; // get original position of the control channel
 
-    if (controlUs != prevControlUs){
-        prevControlUs = controlUs;
-        // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
-        if (controlUs < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
-            // Handle Rate Mode Gain Offset, gain = 1 when hysteresis area is exited
-            // Previously gain was the value of RX_GAIN_HYSTERESIS at first exit
-            master_gain = constrain(((RX_WIDTH_MID - RX_GAIN_HYSTERESIS) - controlUs) , 0, master_gain_max);
-        } else {
-            if (controlUs > (RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS))  {
-            // Handle Hold Mode Gain Offset, gain = 1 when both hysteresis areas are exited
-            // Previously gain was the value of RX_MODE_HYSTERESIS at first exit
-            master_gain = constrain(controlUs - (RX_WIDTH_MID + RX_MODE_HYSTERESIS), 0, master_gain_max);		
-            } else  {   // Force Gain to 0 while in either of the Hysteresis areas
-                master_gain = 0; // Force deadband
-                // reset attitude error when and i_limit threshold when gain is 0 (dead band)
-                for (i=0; i<3; i++) {
-                    pid_state.sum_err[i] = 0;
-                    pid_state.i_limit[i] = 0;
-                }
-            }    
-        }	  	
-    }    
     // stabilization mode
     //STAB_RATE when 988us = switch haut
     //STAB_HOLD when 2012us = switch bas
@@ -238,6 +215,25 @@ void calculateCorrectionsToApply(){
     stick_gain[1] = stick_gain_max - min(abs(stickElvUs_offset) << shift, stick_gain_max);
     stick_gain[2] = stick_gain_max - min(abs(stickRudUs_offset) << shift, stick_gain_max);    
     
+    // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
+    if (controlUs < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
+        // Handle Rate Mode Gain Offset, gain = 1 when hysteresis area is exited
+        // Previously gain was the value of RX_GAIN_HYSTERESIS at first exit
+        master_gain = constrain(((RX_WIDTH_MID - RX_GAIN_HYSTERESIS) - controlUs) , 0, master_gain_max);
+    } else {
+        if (controlUs > (RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS))  {
+        // Handle Hold Mode Gain Offset, gain = 1 when both hysteresis areas are exited
+        // Previously gain was the value of RX_MODE_HYSTERESIS at first exit
+        master_gain = constrain(controlUs - (RX_WIDTH_MID + RX_MODE_HYSTERESIS), 0, master_gain_max);		
+        } else  {   // Force Gain to 0 while in either of the Hysteresis areas
+            master_gain = 0; // Force deadband
+            // reset attitude error when and i_limit threshold when gain is 0 (dead band)
+            for (i=0; i<3; i++) {
+                pid_state.sum_err[i] = 0;
+                pid_state.i_limit[i] = 0;
+            }
+        }    
+    }	  	    
     
     #ifdef HOLD_IS_USED_AS_AUTO_LEVEL
         autolevel = true;    // to do : integrate this in config
