@@ -169,3 +169,4 @@ void printGyroMixer();
 #define HW4 4
 #define HW3 3
 #define KONTRONIK 2
+#define ZTW1 1

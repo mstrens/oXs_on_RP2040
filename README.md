@@ -11,13 +11,14 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - different sequences of PWM signals (to control Servo or to generate an analog/digital voltage) based on Rc channel values
 - data's (telemetry and/or PWM Rc channels) to be logged on a SD card
 ### For telemetry, it can provide
-   - up to 4 analog voltages measurement (with scaling and offset) (optional)
-   - one RPM measurement; a scaling (SCALE4) can be used to take care e.g. of number of blades (optional)
+   - up to 4 analog voltages measurement (with scaling and offset) (optional); one voltage is normally used to measure a current and 1 or 2 (optionnaly) for temperature
+   - one RPM measurement; a scaling (rpmMultiplicator) can be used to take care e.g. of number of blades (optional)
    - the altitude and the vertical speed when connected to a pressure sensor (optional)
    - the airspeed when connected to a differential pressure sensor (and a pitot tube) (optional)
    - compensated vertical speed when connected to a baro + a differentil pressure sensor 
-   - Pitch and Roll when conncted to a MP6050 sensor (optional); 
+   - Pitch/Roll and accelerations X/Y/Z when conncted to a MP6050 sensor (optional); 
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
+   - rpm/volt/temp/current/consumption from some ESC (Hobbywing4, ZTW mantis, Kontronix)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
 ### It can also provide up to 16 PWM RC channels to drive servos from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum). The refresh rate can be set between 50Hz(default) and 333Hz.
@@ -26,18 +27,24 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
  When connected to 2 receivers, the output signals (e.g. PWM or Sbus) will be issued from the last received Rc channels.
  So this provides a kind of redundancy/diversity.
 
-
-### To stabilize a camera, it requires
+### It can stabilize the plane (gyro). This requires
+    - to use a mp6050 device
+    - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
+    - to get from the handset the "original" (not mixed) sticks positions in 3 additional RC channels
+    - to get from the handset the gyro mode and general gain in 1 additional RC channels
+    
+### It can stabilize a camera. This requires
     - to use a mp6050 device
     - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
     - to edit the camera parameters in the config.h file and to compile the edited project.
 
-### To use some sequencers, it requires to configure oXs in order to get Rc channels.
-
-### To log data's on a SD card, you must also build another module with another RP2040: see oXs_logger project
+### It can generates some sequences on servos or e.g. led. This requires to configure oXs in order to get Rc channels.
 
 
-Each function (telemetry/PWM/SBUS/logger/sequencer) can be used alone or combined with the others.
+### It can log data's on a SD card. This require to build also another module with another RP2040: see oXs_logger project
+
+
+Each function (telemetry/PWM/SBUS/gyro/logger/sequencer) can be used alone or combined with the others.
 
 
 ## -------  Hardware -----------------
@@ -62,7 +69,7 @@ This board can be connected to:
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
       note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
    * a RPM sensor
-   * an ESC from Hobbywing (using V4 telemetry protocol) or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
+   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -129,7 +136,7 @@ When a GPS is used:
 *  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
 *  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
 
-When a Hobbywing or a Kontronik ESC is used:
+When a Hobbywing, ZWT or Kontronik ESC is used:
  * Connect the serial pin from ESC to the pin selected in parameter for RP2040 (for ESC_PIN)
  * Connect GND from ESC to RP2040 GND
  * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.

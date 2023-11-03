@@ -51,6 +51,42 @@
 
 // this code is based on the code developped here https://github.com/derFliegendeHamburger/msrc/tree/master
 
+// ----- ZTW Mantis --------------------------------------
+// ESC sent on uart (115200 8E1?) a frame every 50 msec that contains
+// 
+//Byte0: Packet Header - --- 0xDD
+//Byte1: Protocol No ---- 0x01
+//Byte2: Data length ----- 0x20
+//Byte3: Voltage-H in 0.1V
+//Byte4: Voltage-L (10-1V, data range: 0 0x3e8 100V) If the reported voltage is 58.2V, the data will be 0x02, 0x46.
+//Byte5: Current-H (in 0.1A)
+//Byte6: Current-L (10-1A, data range: 0 0x1388 = 5000 =>500A)
+//Byte7: Throttle-PCT (0x01-1%, data range: 0 – 0x64 100% input)
+//Byte8: RPM-H
+//Byte9: RPM-L (0x01-10RPM, data range: 0 – 0xffff )
+//Byte10: Mos-temp (0x01 – 1℃, data range: 0 –0x96 150℃) (so probably an offset of 96)
+//Byte11: Motor-temp (0x01 – 1℃, data range: 0 –0x96 150℃)
+//Byte12: Throttle-PWM (0x01-1% , data range: 0 0x64 100% output)
+//Byte13: State-H
+//Byte14: State-L
+//Byte15: Mah-used H high value of the used/consumed power
+//Byte16: Mah-used L low value of the used/consumed power (unit = ????)
+//Byte17: UART-TH serial throttle input
+//Byte18: CAN-TH can throttle
+//Byte19: BEC voltage (0-25V) so in 0.1V
+//Byte20- Byte29: reserved
+//Byte30 &31: byte0 byte29 Sum. accumulate & verify
+//State-L explanations for statuses
+//0x01 Short-circuit protection 0x10 Low-voltage protection
+//0x02 motor wire break 0x20 Temperature protection
+//0x04 PPM TH loss protection 0x40 Start locked-rotor
+//0x08 Power on TH is not zero 0x80 Current protection
+//State-H explanations for statuses
+//0x01 PPM throttle is not within the regulated range, the PPM throttle is in an abnormal state, and the throttle is not within 700us~2500us.
+//0x10: the battery voltage is not within the regulated range.
+//0x02 UART Throttle is not within the regulated range, UART throttle is in an abnormal state, the throttle value exceeds 1000.
+//0x04 UART throttle loss, UART TH loss
+//0x08 CAN throttle loss, CAN TH loss
 
 // Hobbywing
 #define ESC_HOBBYV3_MAX_FRAME_LEN 19
@@ -76,6 +112,12 @@
 #define ESC_KONTRONIK_MAX_FRAME_LEN 35
 // 35 byte at 115200 = nearly 3500 usec; there is one frame per 10000usec
 #define ESC_KONTRONIK_MIN_FREE_TIME_US 4000 // minimum interval without uart signal between 2 frames
+
+// ZTW Mantis
+#define ESC_ZTW1_BAUDRATE 115200
+#define ESC_ZTW1_MAX_FRAME_LEN 32
+// 32 byte at 115200 = nearly 3500 usec; there is one frame per 10000usec
+#define ESC_ZTW1_MIN_FREE_TIME_US 4000 // minimum interval without uart signal between 2 frames
 
 
 // Len here must be big enough to contain all types of ESC frame
@@ -125,6 +167,9 @@ void setupEsc(){
         escMaxFrameLen = ESC_KONTRONIK_MAX_FRAME_LEN;
         escFreeTimeUs = ESC_KONTRONIK_MIN_FREE_TIME_US;
         escShift = 23;             // for 8E1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
+    } if ( config.escType == ZTW1) { 
+        escMaxFrameLen = ESC_ZTW1_MAX_FRAME_LEN;
+        escFreeTimeUs = ESC_ZTW1_MIN_FREE_TIME_US;
     } 
 // configure the queue to get the data from ESC in the irq handle
     queue_init (&escRxQueue, sizeof(uint16_t), 50);
@@ -139,7 +184,10 @@ void setupEsc(){
         //setupListMpxFieldsToReply();
     } else if (config.escType == KONTRONIK){
         escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8E1_program);
-        esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_KONTRONIK_BAUDRATE , false); // false = not inverted       
+        esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_KONTRONIK_BAUDRATE , false); // false = not inverted
+    } else if (config.escType == ZTW1){
+        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8E1_program);
+        esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_ZTW1_BAUDRATE , false); // false = not inverted
     }     
 }
 
@@ -188,6 +236,10 @@ uint32_t lastEscConsumedMillis = 0;
 void processEscFrame(){ // process the incoming byte 
     if (config.escType == HW4) { // when frame is received for Hobbywing V4
         processHW4Frame();
+    } else if (config.escType == KONTRONIK) {
+        processKontronikFrame();
+    } else if (config.escType == ZTW1) {
+        processZTW1Frame();
     }
 }
 
@@ -273,6 +325,30 @@ void processKontronikFrame(){
         int32_t tempBec = escRxBuffer[27];
         sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
         sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
+        sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
+        if (lastEscConsumedMillis) { 
+            escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
+            sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+        }
+        lastEscConsumedMillis =  millisRp(); 
+        
+        sent2Core0( TEMP1, tempFet) ;
+        sent2Core0( TEMP2, tempBec) ;
+        printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+    }    
+}
+
+void processZTW1Frame(){
+    if (escRxBuffer[0] == 0xDD && escRxBuffer[1] == 0x01 && escRxBuffer[2] == 0x20 ) {
+        uint32_t rpm = ((uint32_t)escRxBuffer[8]) << 8 | ((uint32_t) escRxBuffer[9]);
+        uint32_t voltage = ( ((uint32_t)escRxBuffer[3] << 8) | ((uint32_t) escRxBuffer[4]) ) * 100;  // convert 0.1V to mv
+        float currentf =   ( (uint32_t)escRxBuffer[5] << 8)  | ((uint32_t) escRxBuffer[10] ) * 100;  // convert from 0.1A to ma 
+        //float current_bec = ((uint16_t)escRxBuffer[19] << 8 | escRxBuffer[18]) / 1000.0;
+        //float voltage_bec = ((uint16_t)escRxBuffer[21] << 8 | escRxBuffer[20]) / 1000.0;
+        int32_t tempFet = escRxBuffer[10] - 96;  // probably an offset of 96 to get a range -96/150
+        int32_t tempBec = escRxBuffer[21] - 96;  // probably an offset of 96 to get a range -96/150
+        sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+        sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1 - config.offset1)) ; 
         sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
         if (lastEscConsumedMillis) { 
             escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.

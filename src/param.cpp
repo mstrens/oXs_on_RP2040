@@ -173,7 +173,7 @@ void processCmd(){
         printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
                 
-        printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) or KON (Kontronik)\n");
+        printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) , ZTW1 (ZTW mantis) or KON (Kontronik)\n");
         printf("Logger baudrate :           LOGBAUD = 115200\n");
         printf("Refresh rate of servos      PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
         printf("Voltage scale x(1,2,3,4)    SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
@@ -763,8 +763,11 @@ void processCmd(){
         } else if (strcmp("KON", pvalue) == 0) {
             config.escType = KONTRONIK ;
             updateConfig = true;
+        } else if (strcmp("ZTW1", pvalue) == 0) {
+            config.escType = ZTW1 ;
+            updateConfig = true;
         } else {    
-            printf("Error : ESC_TYPE must be HW4 or KON\n");
+            printf("Error : ESC_TYPE must be HW4 , ZTW1 or KON\n");
         }
     }
 
@@ -1135,8 +1138,8 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: When gpio is defined for ESC, parameter about number of temperature (TEMP) must be 0 or 255\n");
         configIsValid=false;
     }    
-    if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && (config.escType!=KONTRONIK)) {
-        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4 or KON\n");
+    if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && (config.escType!=KONTRONIK) && (config.escType!=ZTW1)) {
+        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4, ZTW1 or KON\n");
         configIsValid=false;
     }    
     if ( (config.pwmHz < 50) || (config.pwmHz > 333)){
@@ -1206,6 +1209,8 @@ void printConfigAndSequencers(){
         printf("Esc type is HW3 (Hobbywing V3)\n")  ;
     } else if (config.escType == KONTRONIK) {
         printf("Esc type is KON (Kontronik)\n")  ;
+    } else if (config.escType == ZTW1) {
+        printf("Esc type is ZTW1 (ZTW mantis)\n")  ;
     } else {
         printf("Esc type is not defined\n")  ;
     }    
