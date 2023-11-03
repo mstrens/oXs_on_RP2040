@@ -176,7 +176,7 @@ void calculateCorrectionsToApply(){
             master_gain = constrain(controlUs - (RX_WIDTH_MID + RX_MODE_HYSTERESIS), 0, master_gain_max);		
             } else  {   // Force Gain to 0 while in either of the Hysteresis areas
                 master_gain = 0; // Force deadband
-                // reset attitude error and i_limit threshold on mode change
+                // reset attitude error when and i_limit threshold when gain is 0 (dead band)
                 for (i=0; i<3; i++) {
                     pid_state.sum_err[i] = 0;
                     pid_state.i_limit[i] = 0;
@@ -194,6 +194,11 @@ void calculateCorrectionsToApply(){
     if (stabMode2 != stabMode) {
         stabMode = stabMode2;
         //printf("stabMode changed in updateGyroCorrections() to %i\n", stabMode);
+        // reset attitude error when and i_limit threshold when mode change from Hold or rate or vice versa (also reset when gain is 0)
+        for (i=0; i<3; i++) {
+            pid_state.sum_err[i] = 0;
+            pid_state.i_limit[i] = 0;
+        }
         
         // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change    
         //if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
