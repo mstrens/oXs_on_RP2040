@@ -16,11 +16,11 @@
 //enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
 enum LEARNING_STATE learningState = LEARNING_OFF;
 
-    #define MARGIN 50
+    #define MARGIN 30
     #define CENTER_LOW 1500-MARGIN
     #define CENTER_HIGH 1500+MARGIN
-    #define END_LOW 1000  // Normal 988
-    #define END_HIGH 2000  // normal 2012
+    #define END_LOW 1010  // Normal 988
+    #define END_HIGH 1990  // normal 2012
 
 
 extern CONFIG config;
