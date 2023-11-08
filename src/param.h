@@ -65,7 +65,7 @@ struct CONFIG{
     enum STICK_GAIN_THROW stick_gain_throw;  // this parameter allows to limit the compensation on a part of the stick travel (gain decreases more or less rapidly with stick offset)
     enum MAX_ROTATE max_rotate;
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
-  
+    struct _pid_param pid_param_stab;  //each structure store the Kp, Ki, Kd parameters for each of the 3 axis; here for stabilize mode (= rate)
 };
 
 void handleUSBCmd(void);

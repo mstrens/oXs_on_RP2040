@@ -1543,19 +1543,29 @@ void setupConfig(){   // The config is uploaded at power on
     config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
     config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
     config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
+    config.pid_param_stab.kp[0] =  _pid_param_stab_KP_AIL;
+    config.pid_param_stab.kp[1] =  _pid_param_stab_KP_ELV;
+    config.pid_param_stab.kp[2] =  _pid_param_stab_KP_RUD;
+        
     config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
     config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
     config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
     config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
     config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
     config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
+    config.pid_param_stab.ki[0] =  _pid_param_stab_KI_AIL;
+    config.pid_param_stab.ki[1] =  _pid_param_stab_KI_ELV;
+    config.pid_param_stab.ki[2] =  _pid_param_stab_KI_RUD;
+    
     config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
     config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
     config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
     config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
     config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
     config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
-           
+    config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
+    config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
+    config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;        
 } 
 
 void requestMpuCalibration()  // 

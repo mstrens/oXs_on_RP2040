@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.22"
+#define VERSION "2.9.23"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -304,18 +304,30 @@
 #define _pid_param_hold_KP_AIL 500  // PID rates: hold   mode - Kp - ail (roll)
 #define _pid_param_hold_KP_ELV 500  // PID rates: hold   mode - Kp - elv (pitch)
 #define _pid_param_hold_KP_RUD 500  // PID rates: hold   mode - Kp - rud (yaw)
+#define _pid_param_stab_KP_AIL 500  // PID rates: hold   mode - Kp - ail (roll)
+#define _pid_param_stab_KP_ELV 500  // PID rates: hold   mode - Kp - elv (pitch)
+#define _pid_param_stab_KP_RUD 500  // PID rates: hold   mode - Kp - rud (yaw)
+
 #define _pid_param_rate_KI_AIL   0  // PID rates: normal mode - Ki - ail (roll)   // set ki to 0 for normal mode
 #define _pid_param_rate_KI_ELV   0  // PID rates: normal mode - Ki - elv (pitch)  // set ki to 0 for normal mode
 #define _pid_param_rate_KI_RUD   0  // PID rates: normal mode - Ki - rud (yaw)    // set ki to 0 for normal mode
 #define _pid_param_hold_KI_AIL 500  // PID rates: hold   mode - Ki - ail (roll)
 #define _pid_param_hold_KI_ELV 500  // PID rates: hold   mode - Ki - elv (pitch)
 #define _pid_param_hold_KI_RUD 500  // PID rates: hold   mode - Ki - rud (yaw)
+#define _pid_param_stab_KI_AIL 500  // PID rates: hold   mode - Ki - ail (roll)
+#define _pid_param_stab_KI_ELV 500  // PID rates: hold   mode - Ki - elv (pitch)
+#define _pid_param_stab_KI_RUD 500  // PID rates: hold   mode - Ki - rud (yaw)
+
 #define _pid_param_rate_KD_AIL 500  // PID rates: normal mode - Kd - ail (roll)
 #define _pid_param_rate_KD_ELV 500  // PID rates: normal mode - Kd - elv (pitch)
 #define _pid_param_rate_KD_RUD 500  // PID rates: normal mode - Kd - rud (yaw)
 #define _pid_param_hold_KD_AIL 500  // PID rates: hold   mode - Kd - ail (roll)
 #define _pid_param_hold_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
 #define _pid_param_hold_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
+#define _pid_param_stab_KD_AIL 500  // PID rates: hold   mode - Kd - ail (roll)
+#define _pid_param_stab_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
+#define _pid_param_stab_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
+
 #define _pid_param_rate_output_shift 8 // do not modify
 #define _pid_param_hold_output_shift 8 // do not modify
 #define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
