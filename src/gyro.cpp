@@ -519,71 +519,80 @@ void calibrateGyroMixers(){
         } else if (inCorner[0] && inCenter[1] && inCenter[2] && sticksMaintained){ // Ail at end
             i=0;  // Aileron
             if ((abs(stickPosUs[i] - dirCh[i]) < 100) ) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
-                    (rightUpFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (rightUpFlags[i] == false)){
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (rightUpFlags[i] == false) {
+                    rightUpFlags[i] = true;    // save when new pos is lower than previous
                     printf("Ail right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
                 }
-                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                //if (rightUpFlags[i] == false) {
+                //    printf("Ail right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
+                //}
+                
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
-                    (leftDownFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (leftDownFlags[i] == false)){
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (leftDownFlags[i] == false) {
+                    leftDownFlags[i] = true;    // save when new pos is lower than previous
                     printf("Ail left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
                 }
-                leftDownFlags[i] = true;    // save when new pos is lower than previous
+                //if (leftDownFlags[i] == false) {
+                //    printf("Ail left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
+                //}
             }    
         } else if (inCorner[1] && inCenter[0] && inCenter[2] && sticksMaintained){ // ELV at end
             i=1;  // Elv
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
-                    (rightUpFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (rightUpFlags[i] == false)){
+                    rightUpFlags[i] = true;    // save when new pos is lower than previous
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (rightUpFlags[i] == false) {
                     printf("Elv up Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
                 }
-                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                //if (rightUpFlags[i] == false) {
+                //    printf("Elv up Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
+                //}
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
-                    (leftDownFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (leftDownFlags[i] == false)){
+                    leftDownFlags[i] = true;    // save when new pos is lower than previous
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (leftDownFlags[i] == false) {
                     printf("Elv down Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
                 }
-                leftDownFlags[i] = true;    // save when new pos is lower than previous
+                //if (leftDownFlags[i] == false) {
+                //    printf("Elv down Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
+                //}
+                
             }    
         } else if (inCorner[2] && inCenter[0] && inCenter[1] && sticksMaintained) { // Rud at end
             i=2; // 
             if ((abs(stickPosUs[i] - dirCh[i]) < 100)) { //stick is in the right or up corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1]) or\
-                    (rightUpFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > rightUpUs[i][config.gyroChan[i]-1])) or\
+                    (rightUpFlags[i] == false)){
+                    rightUpFlags[i] = true;    // save when new pos is lower than previous
                     memcpy(rightUpUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (rightUpFlags[i] == false) {
                     printf("Rud right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
                 }
-                rightUpFlags[i] = true;    // save when new pos is lower than previous
+                //if (rightUpFlags[i] == false) {
+                //    printf("Rud right Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", rightUpUs[i][0] , rightUpUs[i][1] , rightUpUs[i][2] ,rightUpUs[i][3]); // to remove
+                //}
             } else {  // stick is in the left or down corner
-                if (( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1]) or\
-                    ( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1]) or\
-                    (leftDownFlags[i] == false)){\
+                if ((( stickPosUs[i] < 1500) and ( stickPosUs[i] < leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (( stickPosUs[i] > 1500) and ( stickPosUs[i] > leftDownUs[i][config.gyroChan[i]-1])) or\
+                    (leftDownFlags[i] == false)){
+                    leftDownFlags[i] = true;    // save when new pos is lower than previous
                     memcpy(leftDownUs[i],rcChannelsUs, sizeof(rcChannelsUs) );
-                }
-                if (leftDownFlags[i] == false) {
                     printf("Rud left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
                 }
-                leftDownFlags[i] = true;    // save when new pos is lower than previous
+                //if (leftDownFlags[i] == false) {
+                //    printf("Rud left Ch1=%i   Ch2=%i    Ch3=%i    Ch4=%i\n", leftDownUs[i][0] , leftDownUs[i][1] , leftDownUs[i][2] , leftDownUs[i][3]); // to remove
+                //}
+                
             }    
         }
         // detect when all cases have been performed at least once (all flags are true)

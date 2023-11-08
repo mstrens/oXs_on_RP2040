@@ -188,6 +188,11 @@ void gpsPioRxHandlerIrq(){    // when a byte is received on the PIO GPS, read th
 }
 
 void GPS::gpsInitRx(){
+    gpio_deinit	(config.pinGpsRx);
+    gpio_init(config.pinGpsRx);  // configure TX signal on gpio as input/output
+    gpio_set_dir(config.pinGpsRx, true); // set on output	
+    gpio_put(config.pinGpsRx, true); // set level on high
+    	                    
     // configure the queue to get the data from gps in the irq handle
     queue_init (&gpsRxQueue, sizeof(uint8_t), 500);
 
@@ -283,8 +288,7 @@ void GPS::handleGpsUblox(){
                     baudIdx++;  // use next baudrate
                     if ( baudIdx >= 1){   // if text has been sent with all baudrate, we can continue
                         pio_sm_set_enabled(gpsPio, gpsSmTx, false);
-                        pio_remove_program(gpsPio, &uart_tx_program, gpsOffsetTx); // remove the GPS TX program 
-                        
+                        pio_remove_program(gpsPio, &uart_tx_program, gpsOffsetTx); // remove the GPS TX program 		
                         gpsInitRx();                        // setup the reception of GPS char.
                         //printf("size of gps table=%d\n", sizeof(initGps1)); 
                         gpsState = GPS_CONFIGURED;
