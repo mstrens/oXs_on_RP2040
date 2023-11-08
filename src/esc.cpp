@@ -223,7 +223,7 @@ void handleEsc(){
         } else if (escRxBufferIdx >= escMaxFrameLen) {
             continue ; // discard the car if buffer is full (should not happen)    
         }
-        printf("%2X\n",data & 0X00FF); 
+        printf("%4X\n",data ); 
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
             processEscFrame(); // process the incoming byte
