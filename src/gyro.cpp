@@ -195,11 +195,6 @@ void calculateCorrectionsToApply(){
         
     } // end of stabmode change
     
-    if (gyroMixer.isCalibrated == false) {  // set corrections to 0 when gyroMixer is not calibrated
-        for (i=0;i<3;i++) {
-            correctionNegSide[i] = correctionPosSide[i] = 0;
-        }    
-    };
     // determine how much sticks are off center (from neutral) taking care of gyroMixer calibration and inflight calibration 
     stickAilUs_offset = stickAilUs - gyroMixer.neutralUs[config.gyroChan[0]-1]; 
     stickElvUs_offset = stickElvUs - gyroMixer.neutralUs[config.gyroChan[1]-1];
@@ -207,6 +202,7 @@ void calculateCorrectionsToApply(){
     
     // vr_gain[] [-128, 128] from VRs or config ; in mstrens code, it is supposed to come only from config 
     
+    // calculate stick priority
     // see enum STICK_GAIN_THROW. shift=0 => FULL, shift=1 => HALF, shift=2 => QUARTER
     //int8_t shift = cfg.stick_gain_throw - 1;
     int8_t shift = config.stick_gain_throw - 1;
@@ -215,6 +211,7 @@ void calculateCorrectionsToApply(){
     stick_gain[1] = stick_gain_max - min(abs(stickElvUs_offset) << shift, stick_gain_max);
     stick_gain[2] = stick_gain_max - min(abs(stickRudUs_offset) << shift, stick_gain_max);    
     
+    // calculate master gain.
     // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
     if (controlUs < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
         // Handle Rate Mode Gain Offset, gain = 1 when hysteresis area is exited
@@ -241,7 +238,7 @@ void calculateCorrectionsToApply(){
     if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
         for (i=0; i<3; i++) 
             //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
-            pid_state.setpoint[i] = 0;
+            pid_state.setpoint[i] = 0;  // set target = 0 
     } 
     // commanded angular rate (could be from [ail|ele|rud], note direction/sign)
     else if (stabMode == STAB_HOLD || 
@@ -270,24 +267,31 @@ void calculateCorrectionsToApply(){
         }
     }
     if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
-        pid_state.input[0] = constrain((int16_t) cameraRoll, -8192, 8191); // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
-        pid_state.input[1] = constrain((int16_t) cameraPitch, -8192, 8191);
-        pid_state.input[2] = gyroZ>>3;        
+        // camera roll is in 0.1 deg so varies -1800/1800
+        // gyroZ varies from -32000/32000 (int16) and so when divided by 8, it is -8192/8192
+        // so we multiply camera roll and pitch by 4 to get about the same range (and so use similar values for PID)
+        pid_state.input[0] = (int16_t) cameraRoll >>2;     
+        pid_state.input[1] = (int16_t) cameraPitch >>2;
+        pid_state.input[2] = gyroZ>>3;        // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec
     } else {
     // measured angular rate (from the gyro and apply calibration offset)
         pid_state.input[0] = gyroY>>3; // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
         pid_state.input[1] = gyroX>>3; // flightstab used a constrain -8192/8191 but I do not seee the reason
         pid_state.input[2] = gyroZ>>3;        
     }
-    // apply PID control
-    compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);
+    // apply PID control depending on the mode
+    compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : (autolevel) ?  &config.pid_param_stab : &config.pid_param_hold);
         
     // apply vr_gain, stick_gain and master_gain
     for (i=0; i<3; i++) {
         // vr_gain [-128,0,127]/128, stick_gain [0,400,0]/512, master_gain [400,0,400]/512
         //correction[i] = ((((int32_t)pid_state.output[i] * vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
-        correction[i] = ((((int32_t)pid_state.output[i] * config.vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
-
+        if (gyroMixer.isCalibrated == false) {  // set corrections to 0 when gyroMixer is not calibrated
+            correctionNegSide[i] = correctionPosSide[i] = 0;
+        } else {                                // when gyroMixer is calibrated, calculate correction
+            correction[i] = ((((int32_t)pid_state.output[i] * config.vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
+        }
+        // split correction in positieve and negative parts (because limits can be different)
         uint16_t OSP = rcChannelsUs[config.gyroChan[i]-1];  // orginal stick position
         uint16_t ESP = OSP + correction[i];                // expected stick position
         if (OSP >= 1500 ){

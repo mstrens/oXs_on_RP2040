@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.23"
+#define VERSION "2.9.24"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -314,9 +314,9 @@
 #define _pid_param_hold_KI_AIL 500  // PID rates: hold   mode - Ki - ail (roll)
 #define _pid_param_hold_KI_ELV 500  // PID rates: hold   mode - Ki - elv (pitch)
 #define _pid_param_hold_KI_RUD 500  // PID rates: hold   mode - Ki - rud (yaw)
-#define _pid_param_stab_KI_AIL 500  // PID rates: hold   mode - Ki - ail (roll)
-#define _pid_param_stab_KI_ELV 500  // PID rates: hold   mode - Ki - elv (pitch)
-#define _pid_param_stab_KI_RUD 500  // PID rates: hold   mode - Ki - rud (yaw)
+#define _pid_param_stab_KI_AIL   0  // PID rates: hold   mode - Ki - ail (roll)
+#define _pid_param_stab_KI_ELV   0  // PID rates: hold   mode - Ki - elv (pitch)
+#define _pid_param_stab_KI_RUD   0  // PID rates: hold   mode - Ki - rud (yaw)
 
 #define _pid_param_rate_KD_AIL 500  // PID rates: normal mode - Kd - ail (roll)
 #define _pid_param_rate_KD_ELV 500  // PID rates: normal mode - Kd - elv (pitch)

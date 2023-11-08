@@ -52,7 +52,7 @@ static inline void esc_uart_rx_8N1_program_init(PIO pio, uint sm, uint offset, u
 %}
 
 
-.program esc_uart_rx_8E1
+.program esc_uart_rx_8E1         
 
 ; Slightly more fleshed-out 8n1 UART receiver which handles framing errors and
 ; break conditions more gracefully.
