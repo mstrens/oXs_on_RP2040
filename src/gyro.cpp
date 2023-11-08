@@ -272,12 +272,12 @@ void calculateCorrectionsToApply(){
     if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
         pid_state.input[0] = constrain((int16_t) cameraRoll, -8192, 8191); // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
         pid_state.input[1] = constrain((int16_t) cameraPitch, -8192, 8191);
-        pid_state.input[2] = constrain(gyroZ>>3, -8192, 8191);        
+        pid_state.input[2] = gyroZ>>3;        
     } else {
     // measured angular rate (from the gyro and apply calibration offset)
-        pid_state.input[0] = constrain(gyroY>>3, -8192, 8191); // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
-        pid_state.input[1] = constrain(gyroX>>3, -8192, 8191);
-        pid_state.input[2] = constrain(gyroZ>>3, -8192, 8191);        
+        pid_state.input[0] = gyroY>>3; // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
+        pid_state.input[1] = gyroX>>3; // flightstab used a constrain -8192/8191 but I do not seee the reason
+        pid_state.input[2] = gyroZ>>3;        
     }
     // apply PID control
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : &config.pid_param_hold);

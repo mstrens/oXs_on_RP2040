@@ -2245,7 +2245,7 @@ void printGyro(){
     printf("Gain per axis (-128/127):  Roll=%i     Pitch=%i    Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
     printf("Gain on throw is %i (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
     printf("Max rotate is %i (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
-    printf("Stick rotate enabledi in rate mode is %i (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
+    printf("Stick rotate enabled in rate mode is %i (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
     printGyroMixer();
 }
 
