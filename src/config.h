@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.25"
+#define VERSION "2.9.26"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -342,8 +342,7 @@
 #define _rate_mode_stick_rotate  1  // RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE=2
                                     // MAX_ROTATE is used also in rate mode when RATE_MODE_STICK_ROTATE_ENABLE is selected
 #define _gyroAutolevel true         // true means that stabilize mode replace hold mode
-//#define HOLD_IS_USED_AS_AUTO_LEVEL     // when uncommented, oXs applies auto level instead of Hold mode (so try to keep the horizon) 
-
+#define _mpuOrientation 0           // codification to define
 
 // --------- Reserve for developer. ---------
 

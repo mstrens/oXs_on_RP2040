@@ -192,7 +192,7 @@ void processCmd(){
         printf("    Gyro Stick Aileron      GSA = YY            Gyro only : Original aileron stick (without mix/limits/trim)\n");
         printf("    Gyro Stick Elevator     GSE = YY               ""                 elevator \n");
         printf("    Gyro Stick Rudder       GSR = YY               ""                 rudder   \n");
-
+        
         printf("Gyro Gain on Roll           GGR = YYYY          Gain on roll axis (-127/127)\n");
         printf("             Pitch          GGP = YYYY             ""    pitch\n");
         printf("             Yaw            GGY = YYYY             ""    Yaw\n");
@@ -200,6 +200,7 @@ void processCmd(){
         printf("     Max Rotate             GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
         printf("     stick Rotate Enable    GRE =Y              1 (disabled) , 2 (enabled)\n");
         printf("     Stabilize mode         GST = YYY           YY = ON or OFF(=hold mode replace stabilize mode)\n");
+        printf("     Orientation            GOR = XXX           Codification still to define (to do)\n");
         printf("     PID parameters         PIDx = kpA kiA kdA kpE kiE kdE kpR kiR kdR       x=N(normal), H(hold), S(stab)\n");
         printf("                                                kp, ki, kd are the values of one PID; A,E,R means for Aileron, Elevator, Rudder\n");
 
@@ -219,7 +220,7 @@ void processCmd(){
     if (cmdBuffer[0] != 0x0){
         char * equalPos = strchr( (char*)cmdBuffer, '=');  // search position of '='
         
-        if (equalPos != NULL){ // there is = so search for value
+        if (equalPos != NULL){ // there is a '=' so search for value
             *equalPos = 0x0;      // replace '=' with End of string    
             equalPos++;           // point to next position  
             pvalue = skipWhiteSpace(equalPos);
@@ -928,6 +929,32 @@ void processCmd(){
         }
     }
 
+    // change gyro autolevel
+    if ( strcmp("GST", pkey) == 0 ) { 
+        if (strcmp("ON", pvalue) == 0) {
+            config.gyroAutolevel=true;
+            updateConfig = true;
+        } else if (strcmp("OFF", pvalue) == 0) {
+            config.gyroAutolevel=false;
+            updateConfig = true;
+        } else {
+            printf("For GST command the value must be ON (Stabilize) or OFF (Hold)\n");
+        }
+    }
+
+    // Change gyro orientation
+    if ( strcmp("GOR", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gyro orientation must be an unsigned integer\n");
+        } else if ( !(ui <= 12)) {
+            printf("Error : gyro orientation must be <= 12\n");
+        } else {    
+            config.mpuOrientation = (uint8_t) ui;
+            printf("Gyro orientation is %u\n" , (uint32_t) config.mpuOrientation);
+            updateConfig = true;
+        }
+    }
 
     // get PID for rate mode
     if ( strcmp("PIDN", pkey) == 0 ) { 
@@ -1310,6 +1337,7 @@ void printConfigAndSequencers(){
         printf("Acc/Gyro is detected using MP6050\n")  ;
         printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
         printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
+        printf("     Orientation                  = %i\n", config.mpuOrientation); 
     } else {
        printf("Acc/Gyro is not detected\n")  ;     
     }
@@ -2326,16 +2354,16 @@ void printGyro(){
         printf("Stabilize mode is OFF (Hold mode is enabled)\n");
     }    
     printf("PID              Roll(aileron)           Pitch(elevator)         Yaw(rudder)\n");
-    printf("   Mode         Kp      Ki    Kd         Kp      Ki    Kd        Kp      Ki    Kd\n");
-    printf("  Normal  PIDN= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+    printf("   Mode         Kp      Ki      Kd          Kp      Ki      Kd         Kp      Ki      Kd\n");
+    printf("  Normal  PIDN= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0],\
             config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1],\
             config.pid_param_rate.kp[2], config.pid_param_rate.ki[2],config.pid_param_rate.kd[2] );
-    printf("  Hold    PIDH= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+    printf("  Hold    PIDH= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_hold.kp[0], config.pid_param_hold.ki[0],config.pid_param_hold.kd[0],\
             config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1],\
             config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
-    printf("  Stab.   PIDS= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+    printf("  Stab.   PIDS= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_stab.kp[0], config.pid_param_stab.ki[0],config.pid_param_stab.kd[0],\
             config.pid_param_stab.kp[1], config.pid_param_stab.ki[1],config.pid_param_stab.kd[1],\
             config.pid_param_stab.kp[2], config.pid_param_stab.ki[2],config.pid_param_stab.kd[2] );    
@@ -2348,7 +2376,7 @@ void printGyroMixer(){     // this function is also called at the end of the gyr
     } else {
         // when calibrated
         printf("\nGyro mixers are calibrated:\n");
-        printf("Sticks centered at:    Ail=%-4i%%   Elv=%-4i%%   Rud%-4i%%\n", pc(gyroMixer.neutralUs[config.gyroChan[0]-1]-1500),\
+        printf("Sticks centered at:    Ail=%i%%   Elv=%i%%   Rud=%i%%\n", pc(gyroMixer.neutralUs[config.gyroChan[0]-1]-1500),\
             pc(gyroMixer.neutralUs[config.gyroChan[1]-1]-1500), pc(gyroMixer.neutralUs[config.gyroChan[2]-1]-1500));
         printf("Gyro corrections (from center pos in %%) on:\n");
         for (uint8_t i = 0; i<16;i++) {
@@ -2418,11 +2446,11 @@ bool getPid(uint8_t mode){  // get all pid parameters for one mode; return true 
         tempTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
                                                    // *ptr = 0 when no error
         if ( ( ptr == pvalue ) || ( ptr == NULL)) {
-            printf("Error : parameter %i of PID can't be converted to an integer\n",i );
+            printf("Error : PID must have 9 values; parameter %i is missing or can't be converted to an integer\n",i+1 );
             return false;    
         }
         if ((tempTable[i]>32000) or (tempTable[i]<-32000)){
-            printf("Error : parameters of PID must be in range -32000/32000\n",i );
+            printf("Error : parameters %i of PID is not in range -32000/32000\n",i+1 );
             return false;        
         }
         pvalue = ptr; 

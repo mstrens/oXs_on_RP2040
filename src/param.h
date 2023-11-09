@@ -66,6 +66,7 @@ struct CONFIG{
     enum MAX_ROTATE max_rotate;
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
     bool gyroAutolevel;           // true means that stabilize mode replies the Hold mode (on switch position)
+    uint8_t mpuOrientation;       // define the orientation of the mpu ; TO DO
 };
 
 void handleUSBCmd(void);
