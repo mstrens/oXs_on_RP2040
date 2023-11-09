@@ -5,8 +5,7 @@
 #include "crsf_frames.h"
 #include "gyro.h"
 
-#define CONFIG_VERSION 7
-
+#define CONFIG_VERSION 8
 
 struct CONFIG{
     uint8_t version = CONFIG_VERSION;
@@ -60,12 +59,13 @@ struct CONFIG{
     
     struct _pid_param pid_param_rate; // each structure store the Kp, Ki, Kd parameters for each of the 3 axis; here for normal mode (= rate)
     struct _pid_param pid_param_hold; // idem for hold mode
+    struct _pid_param pid_param_stab;  //each structure store the Kp, Ki, Kd parameters for each of the 3 axis; here for stabilize mode (= rate)
     
     int8_t vr_gain[3];          // store the gain per axis (to combine with global gain provided by gyroChanControl)
     enum STICK_GAIN_THROW stick_gain_throw;  // this parameter allows to limit the compensation on a part of the stick travel (gain decreases more or less rapidly with stick offset)
     enum MAX_ROTATE max_rotate;
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
-    struct _pid_param pid_param_stab;  //each structure store the Kp, Ki, Kd parameters for each of the 3 axis; here for stabilize mode (= rate)
+    bool gyroAutolevel;           // true means that stabilize mode replies the Hold mode (on switch position)
 };
 
 void handleUSBCmd(void);
@@ -160,11 +160,13 @@ void checkSequencers();
 void saveSequencers(); // save all sequencers definitions
 
 
-
 void setupGyroMixer();
 void saveGyroMixer();  // save the gyro mixer collected during the learning process (mixer calibration)
 void printGyro(); 
 void printGyroMixer();
+
+bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true if valid; config is then updated
+
 
 #define HW4 4
 #define HW3 3

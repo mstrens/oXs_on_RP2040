@@ -210,6 +210,7 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
 
 void handleEsc(){ 
     uint16_t data;
+    static bool frameStarted = false;
     if (config.pinEsc == 255) return ; // skip when esc is not foreseen
     while (! queue_is_empty(&escRxQueue)) {
         // we get the value in the queue
@@ -219,11 +220,12 @@ void handleEsc(){
         // if bit 15 = 1, it means that the value has been received after x usec from previous and so it must be a synchro 
         // so reset the buffer and process the byte
         if (data & 0X8000) {
-            escRxBufferIdx = 0; 
+            escRxBufferIdx = 0;
+            if ((data & 0X0FF) != 0 ) frameStarted = true;
         } else if (escRxBufferIdx >= escMaxFrameLen) {
             continue ; // discard the car if buffer is full (should not happen)    
         }
-        printf("%4X\n",data ); 
+        if (frameStarted) printf("%4X\n",data ); 
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
             processEscFrame(); // process the incoming byte

@@ -188,7 +188,7 @@ void processCmd(){
         
         printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers\n");
         printf("    Airspeed                ACC = YY            To select Vspeed and compensation ratio\n");   
-        printf("    Gyro mode/gain          GMG = YY            To select mode/gain\n");
+        printf("    Gyro Mode/Gain          GMG = YY            To select mode/gain\n");
         printf("    Gyro Stick Aileron      GSA = YY            Gyro only : Original aileron stick (without mix/limits/trim)\n");
         printf("    Gyro Stick Elevator     GSE = YY               ""                 elevator \n");
         printf("    Gyro Stick Rudder       GSR = YY               ""                 rudder   \n");
@@ -199,6 +199,9 @@ void processCmd(){
         printf("     Gain on stick Throw    GGT = Y             1 (corr. on full throw) , 2 (on half) , 3 (on quater)\n");
         printf("     Max Rotate             GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
         printf("     stick Rotate Enable    GRE =Y              1 (disabled) , 2 (enabled)\n");
+        printf("     Stabilize mode         GST = YYY           YY = ON or OFF(=hold mode replace stabilize mode)\n");
+        printf("     PID parameters         PIDx = kpA kiA kdA kpE kiE kdE kpR kiR kdR       x=N(normal), H(hold), S(stab)\n");
+        printf("                                                kp, ki, kd are the values of one PID; A,E,R means for Aileron, Elevator, Rudder\n");
 
         printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
         printf("                            SEQ = DEL           Erase all sequencer\n");
@@ -926,6 +929,40 @@ void processCmd(){
     }
 
 
+    // get PID for rate mode
+    if ( strcmp("PIDN", pkey) == 0 ) { 
+        if (getPid(0)){ // true when valid syntax is decoded and pid structure has been updated ;
+                                  // we will save the structure and reboot; during reboot we will check if config is valid
+            updateConfig = true;
+        } else {
+            printf("\nError in syntax or in a parameter: command PIDN= is discarded\n");
+            return;
+        }  
+    }
+
+    // get PID for rate mode
+    if ( strcmp("PIDH", pkey) == 0 ) { 
+        if (getPid(1)){ // true when valid syntax is decoded and pid structure has been updated ;
+                                  // we will save the structure and reboot; during reboot we will check if config is valid
+            updateConfig = true;
+        } else {
+            printf("\nError in syntax or in a parameter: command PIDH= is discarded\n");
+            return;
+        }  
+    }
+
+    // get PID for rate mode
+    if ( strcmp("PIDS", pkey) == 0 ) { 
+        if (getPid(2)){ // true when valid syntax is decoded and pid structure has been updated ;
+                                  // we will save the structure and reboot; during reboot we will check if config is valid
+            updateConfig = true;
+        } else {
+            printf("\nError in syntax or in a parameter: command PIDS= is discarded\n");
+            return;
+        }  
+    }
+
+
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
         if (strcmp("DEL", pvalue) == 0) {
@@ -1533,10 +1570,43 @@ void setupConfig(){   // The config is uploaded at power on
         config.stick_gain_throw = (enum STICK_GAIN_THROW)_stick_gain_throw;
         config.max_rotate = (MAX_ROTATE)_max_rotate;
         config.rate_mode_stick_rotate = (enum RATE_MODE_STICK_ROTATE)_rate_mode_stick_rotate;
+        config.gyroAutolevel = _gyroAutolevel;
         config.pid_param_rate.output_shift = _pid_param_rate_output_shift;
         config.pid_param_hold.output_shift = _pid_param_hold_output_shift;
+        config.pid_param_stab.output_shift = _pid_param_stab_output_shift;
+        config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
+        config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
+        config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
+        config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
+        config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
+        config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
+        config.pid_param_stab.kp[0] =  _pid_param_stab_KP_AIL;
+        config.pid_param_stab.kp[1] =  _pid_param_stab_KP_ELV;
+        config.pid_param_stab.kp[2] =  _pid_param_stab_KP_RUD;
+            
+        config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
+        config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
+        config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
+        config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
+        config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
+        config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
+        config.pid_param_stab.ki[0] =  _pid_param_stab_KI_AIL;
+        config.pid_param_stab.ki[1] =  _pid_param_stab_KI_ELV;
+        config.pid_param_stab.ki[2] =  _pid_param_stab_KI_RUD;
+        
+        config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
+        config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
+        config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
+        config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
+        config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
+        config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
+        config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
+        config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
+        config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;
+            
     }
     // here we update the parameters that can't be edited with usb commands; so changes in config.h are used after new compilation 
+    /*
     config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
     config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
     config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
@@ -1565,7 +1635,8 @@ void setupConfig(){   // The config is uploaded at power on
     config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
     config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
     config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
-    config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;        
+    config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;
+    */        
 } 
 
 void requestMpuCalibration()  // 
@@ -2245,17 +2316,29 @@ void printGyro(){
     printf("\nGyro configuration is:\n");
     printf("Channels for :  mode/gain=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
         config.gyroChanControl , config.gyroChan[0]  , config.gyroChan[1]  , config.gyroChan[2] );
-    printf("PID              Kp      Ki    Kd\n");
-    printf("  Normal Roll    %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0] );
-    printf("  Normal Pitch   %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1] );
-    printf("  Normal Yaw     %-5i    %-5i  %-5i\n", config.pid_param_rate.kp[2], config.pid_param_rate.ki[2],config.pid_param_rate.kd[2] );
-    printf("  Hold   Roll    %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[0], config.pid_param_hold.ki[0],config.pid_param_hold.kd[0] );
-    printf("  Hold   Pitch   %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1] );
-    printf("  Hold   Yaw     %-5i    %-5i  %-5i\n", config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
     printf("Gain per axis (-128/127):  Roll=%i     Pitch=%i    Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
     printf("Gain on throw is %i (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
     printf("Max rotate is %i (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
     printf("Stick rotate enabled in rate mode is %i (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
+    if (config.gyroAutolevel) {
+        printf("Stabilize mode is ON (Hold mode is disabled)\n");
+    } else {
+        printf("Stabilize mode is OFF (Hold mode is enabled)\n");
+    }    
+    printf("PID              Roll(aileron)           Pitch(elevator)         Yaw(rudder)\n");
+    printf("   Mode         Kp      Ki    Kd         Kp      Ki    Kd        Kp      Ki    Kd\n");
+    printf("  Normal  PIDN= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+            config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0],\
+            config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1],\
+            config.pid_param_rate.kp[2], config.pid_param_rate.ki[2],config.pid_param_rate.kd[2] );
+    printf("  Hold    PIDH= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+            config.pid_param_hold.kp[0], config.pid_param_hold.ki[0],config.pid_param_hold.kd[0],\
+            config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1],\
+            config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
+    printf("  Stab.   PIDS= %-5i    %-5i  %-5i       %-5i    %-5i  %-5i      %-5i    %-5i  %-5i\n",\
+            config.pid_param_stab.kp[0], config.pid_param_stab.ki[0],config.pid_param_stab.kd[0],\
+            config.pid_param_stab.kp[1], config.pid_param_stab.ki[1],config.pid_param_stab.kd[1],\
+            config.pid_param_stab.kp[2], config.pid_param_stab.ki[2],config.pid_param_stab.kd[2] );    
     printGyroMixer();
 }
 
@@ -2325,3 +2408,46 @@ void setupGyroMixer(){   // The config is uploaded at power on
     }
 } 
 
+bool getPid(uint8_t mode){  // get all pid parameters for one mode; return true if valid; config is then updated
+    // we expect getting 9 parameters (uint16) kp ki kd for ail, then for elv and for rud; all are space delimited
+    char * ptr ;                        // get the pos of first non converted integer 
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    int32_t tempTable[9];
+    for (uint8_t i = 0 ; i < 9; i++) {       // try to convert 9 integers
+        errno = 0;
+        tempTable[i] =  strtol(pvalue , &ptr ,10);  // convert to integer starting from pvalue; ptr point to the first non converted char; skip whitespace before
+                                                   // *ptr = 0 when no error
+        if ( ( ptr == pvalue ) || ( ptr == NULL)) {
+            printf("Error : parameter %i of PID can't be converted to an integer\n",i );
+            return false;    
+        }
+        if ((tempTable[i]>32000) or (tempTable[i]<-32000)){
+            printf("Error : parameters of PID must be in range -32000/32000\n",i );
+            return false;        
+        }
+        pvalue = ptr; 
+        //printf(" seq %i = %i\n", i , tempIntTable[i]);
+    }
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    if (( * pvalue) != 0 ){   // last char must be 0 (end of string) 
+        printf("Error : more than 9 values detected for PID parameters\n");
+        return false;
+    }
+    struct _pid_param tempPid;
+    for (uint8_t i=0; i<3; i++){ //for ail, elv, rud)
+        tempPid.kp[i] = tempTable[i*3];
+        tempPid.ki[i] = tempTable[i*3+1];
+        tempPid.kd[i] = tempTable[i*3+2];
+    }
+    if (mode == 0) { // normal
+        tempPid.output_shift = _pid_param_rate_output_shift;
+        memcpy(&config.pid_param_rate, &tempPid , sizeof(tempPid));
+    } else if (mode == 1) { // hold
+        tempPid.output_shift = _pid_param_hold_output_shift;
+        memcpy(&config.pid_param_hold, &tempPid , sizeof(tempPid));
+    } else {   // stab mode
+        tempPid.output_shift = _pid_param_stab_output_shift;
+        memcpy(&config.pid_param_stab, &tempPid , sizeof(tempPid));
+    }
+    return true;            
+} 

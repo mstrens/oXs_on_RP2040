@@ -39,7 +39,7 @@ extern int32_t cameraPitch;
 extern int32_t cameraRoll;
 
 
-bool autolevel = false;
+//bool autolevel = false;
 
 struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 
@@ -232,10 +232,10 @@ void calculateCorrectionsToApply(){
         }    
     }	  	    
     
-    #ifdef HOLD_IS_USED_AS_AUTO_LEVEL
-        autolevel = true;    // to do : integrate this in config
-    #endif 
-    if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
+    //#ifdef HOLD_IS_USED_AS_AUTO_LEVEL
+    //    autolevel = true;    // to do : integrate this in config
+    //#endif 
+    if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
         for (i=0; i<3; i++) 
             //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
             pid_state.setpoint[i] = 0;  // set target = 0 
@@ -266,9 +266,9 @@ void calculateCorrectionsToApply(){
             pid_state.i_limit[i] = ((int32_t)30 * (32768 / 2 / (PID_PERIOD / 1000)) * stick_gain[i]) >> 9; 
         }
     }
-    if (autolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
-        // camera roll is in 0.1 deg so varies -1800/1800
-        // gyroZ varies from -32000/32000 (int16) and so when divided by 8, it is -8192/8192
+    if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
+        // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
+        // gyroZ varies from -32000/32000 (int16) and so when divided by 8, it is -4096/4096
         // so we multiply camera roll and pitch by 4 to get about the same range (and so use similar values for PID)
         pid_state.input[0] = (int16_t) cameraRoll >>2;     
         pid_state.input[1] = (int16_t) cameraPitch >>2;
@@ -280,7 +280,7 @@ void calculateCorrectionsToApply(){
         pid_state.input[2] = gyroZ>>3;        
     }
     // apply PID control depending on the mode
-    compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : (autolevel) ?  &config.pid_param_stab : &config.pid_param_hold);
+    compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : (config.gyroAutolevel) ?  &config.pid_param_stab : &config.pid_param_hold);
         
     // apply vr_gain, stick_gain and master_gain
     for (i=0; i<3; i++) {

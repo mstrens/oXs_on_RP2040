@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.24"
+#define VERSION "2.9.25"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -330,6 +330,8 @@
 
 #define _pid_param_rate_output_shift 8 // do not modify
 #define _pid_param_hold_output_shift 8 // do not modify
+#define _pid_param_stab_output_shift 8 // do not modify
+
 #define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
 #define _vr_gain_ELV       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
 #define _vr_gain_RUD       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse ) 
@@ -339,6 +341,7 @@
                                     // MAX_ROTATE is used in hold mode (correction depends more or less on stick offset)
 #define _rate_mode_stick_rotate  1  // RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE=2
                                     // MAX_ROTATE is used also in rate mode when RATE_MODE_STICK_ROTATE_ENABLE is selected
+#define _gyroAutolevel true         // true means that stabilize mode replace hold mode
 //#define HOLD_IS_USED_AS_AUTO_LEVEL     // when uncommented, oXs applies auto level instead of Hold mode (so try to keep the horizon) 
 
 
