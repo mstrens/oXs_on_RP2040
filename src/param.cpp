@@ -29,6 +29,8 @@
 #include "sequencer.h"
 #include <errno.h>   // used by strtol() to check for errors 
 #include "gyro.h"
+#include "crsf_in.h"
+#include "sbus_in.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -78,6 +80,8 @@ extern bool seqDatasToUpload;    // flag to say if seqDatas[] must be updated or
 
 bool pinIsduplicated ;
 extern bool configIsValid; 
+extern bool configIsSaved; 
+
 extern bool multicoreIsRunning; 
 volatile bool isPrinting = false;
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
@@ -104,6 +108,10 @@ extern sbusFrame_s sbusFrame;
 extern uint16_t pwmTop; // just used for debugging
 
 extern gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
+
+extern int8_t orientationList[36][6];
+extern const char* mpuOrientationNames[8];
+extern bool orientationIsWrong; 
 
 void handleUSBCmd(void){
     int c;
@@ -200,19 +208,19 @@ void processCmd(){
         printf("     Max Rotate             GMR = Y             1 (Very low) , 2 (low) , 3 (medium) , 4 (high)\n");
         printf("     stick Rotate Enable    GRE =Y              1 (disabled) , 2 (enabled)\n");
         printf("     Stabilize mode         GST = YYY           YY = ON or OFF(=hold mode replace stabilize mode)\n");
-        printf("     Orientation            GOR = XXX           Codification still to define (to do)\n");
+        printf("     Orientation(Hoz./Vert.)GOH = X or GOV = X  0(front X+), 1(back X-), 2(left Y+), 3(right Y-), 4(up Z+), 5(down Z-)\n");
         printf("     PID parameters         PIDx = kpA kiA kdA kpE kiE kdE kpR kiR kdR       x=N(normal), H(hold), S(stab)\n");
         printf("                                                kp, ki, kd are the values of one PID; A,E,R means for Aileron, Elevator, Rudder\n");
 
         printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
         printf("                            SEQ = DEL           Erase all sequencer\n");
-        printf("Force MPU6050 calibration   MPUCAL\n");
+        printf("Force MPU6050 calibration   MPUCAL=Y            Y = H (Horizontal and still) or V (Vertical=nose up)\n");
         printf("Testing                     FV                  Field Values (display all telemetry internal values)\n")  ;
         printf("                            FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
         printf("                            FVN                      idem with negatieve values\n")  ;
         printf("                            PWM                 Display the current PWM values (in micro sec)\n");
         printf("\n");
-        printf("To get the current config, just press Enter; to get list of commands send ""?""\n");
+        printf("To get the current config, just press Enter; to save it in flash, send SAVE; to get list of commands send ""?""\n");
         printf("   Note: some changes require a reset to be applied (e.g. to unlock I2C bus)\n");
         isPrinting = false;
         return;  
@@ -359,18 +367,19 @@ void processCmd(){
             updateConfig = true;
         }
     }
-    if ( strcmp("MPUCAL", pkey) == 0 ) {
-        requestMpuCalibration();
-        return; // do not continue in order to avoid printing config while config print some data too.
-        /*
-        db = strtod(pvalue,&ptr);
-        if (*ptr != 0x0) {
-            printf("Error : value is not a valid float\n");
-        } else {
-            config.rpmMultiplicator = db;
-            updateConfig = true;
+    if ( strcmp("MPUCAL", pkey) == 0 ) {  
+        if (!mpu.mpuInstalled) {
+        printf("Calibration not done: no MP6050 installed\n");
+        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) )){  // only possible to request an horizontal or a vertical calibration
+            printf("Calibration not done: type must be H (Horizontal and still) or V (Vertical = nose up)\n"); 
+        } else {    
+            uint8_t data = REQUEST_VERTICAL_MPU_CALIB ;
+            if (strcmp("H", pvalue) == 0){
+              data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration
+            } 
+            queue_try_add(&qSendCmdToCore1 , &data);
+            return; // retun here to avoid other messages
         }
-        */
     }
     
     // change for channels
@@ -942,19 +951,40 @@ void processCmd(){
         }
     }
 
-    // Change gyro orientation
-    if ( strcmp("GOR", pkey) == 0 ) { 
+    // Change gyro horizontal orientation
+    if ( strcmp("GOH", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
         if ( *ptr != 0x0){
             printf("Error : gyro orientation must be an unsigned integer\n");
-        } else if ( !(ui <= 12)) {
-            printf("Error : gyro orientation must be <= 12\n");
+        } else if ( !(ui <= 5)) {
+            printf("Error : gyro orientation must be <= 5\n");
         } else {    
-            config.mpuOrientation = (uint8_t) ui;
-            printf("Gyro orientation is %u\n" , (uint32_t) config.mpuOrientation);
+            config.mpuOrientationH = ui;
+            printf("Gyro horizontal orientation is  ");
+            printf(mpuOrientationNames[config.mpuOrientationH]);
+            printf("\n");
+            setupOrientation(); // based on config.mpuOrientation fill orientationX,Y,Z and signX, Y, Z and orientationIsWrong
             updateConfig = true;
         }
     }
+
+    // Change gyro vertical orientation
+    if ( strcmp("GOV", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : gyro orientation must be an unsigned integer\n");
+        } else if ( !(ui <= 5)) {
+            printf("Error : gyro orientation must be <= 5\n");
+        } else {    
+            config.mpuOrientationV = ui;
+            printf("Gyro vertical orientation is ");
+            printf(mpuOrientationNames[config.mpuOrientationV]);
+            printf("\n");
+            setupOrientation(); // based on config.mpuOrientation fill orientationX,Y,Z and signX, Y, Z and orientationIsWrong
+            updateConfig = true;
+        }
+    }
+
 
     // get PID for rate mode
     if ( strcmp("PIDN", pkey) == 0 ) { 
@@ -963,7 +993,6 @@ void processCmd(){
             updateConfig = true;
         } else {
             printf("\nError in syntax or in a parameter: command PIDN= is discarded\n");
-            return;
         }  
     }
 
@@ -974,7 +1003,6 @@ void processCmd(){
             updateConfig = true;
         } else {
             printf("\nError in syntax or in a parameter: command PIDH= is discarded\n");
-            return;
         }  
     }
 
@@ -985,7 +1013,6 @@ void processCmd(){
             updateConfig = true;
         } else {
             printf("\nError in syntax or in a parameter: command PIDS= is discarded\n");
-            return;
         }  
     }
 
@@ -1004,15 +1031,9 @@ void processCmd(){
                 updateConfig = true;
             } else {
                 printf("\nError in syntax or in a parameter: command SEQ= is discarded\n");
-                return;
             }
         }  
     }
-
-
-
-
-
 
     /*
     // get steps for Sequencer
@@ -1031,8 +1052,9 @@ void processCmd(){
         }
     }
     */
-
-    if (updateConfig) {
+    
+    // save the config
+    if ( strcmp("SAVE", pkey) == 0 ) { 
         saveConfig();
         saveSequencers();
         printf("config has been saved\n");  
@@ -1042,6 +1064,21 @@ void processCmd(){
         watchdog_reboot(0, 0, 100); // this force a reboot!!!!!!!!!!
         sleep_ms(5000);
         printf("OXS did not rebooted after 5000 ms\n");
+    }   
+
+    if (updateConfig) {
+        printf("config has not yet been saved; use SAVE command to save it!!\n");  
+        
+        configIsSaved = false;    //set a flag to say that config must still be saved
+        // disable interrupt to avoid having error msg about queue being full because part of main loop is not executed
+        uart_set_irq_enables(CRSF_UART_ID, false, false);
+        uart_set_irq_enables(CRSF2_UART_ID, false, false);
+        uart_set_irq_enables(SBUS_UART_ID, false, false);
+        uart_set_irq_enables(SBUS2_UART_ID, false, false);
+        // there are 3 irq used from pio/sm: pio0+sm1, pio0+sm3 ,  pio1+sm0
+        pio_set_irq0_source_enabled(pio0 ,  pis_sm1_rx_fifo_not_empty , false ); // pio/sm for Exbus, Hott, ibus,Mpx,sport, srxl2
+        pio_set_irq1_source_enabled(pio0 ,  pis_sm3_rx_fifo_not_empty , false ); // pio/sm for ESC
+        pio_set_irq0_source_enabled(pio1 ,  pis_sm0_rx_fifo_not_empty , false ); // pio/sm for GPS
     }
         
     if ( strcmp("N", pkey) == 0 ) {
@@ -1051,7 +1088,7 @@ void processCmd(){
     if ( strcmp("A", pkey) == 0 ) printAttitudeFrame(); // print Attitude frame with vario data
     if ( strcmp("G", pkey) == 0 ) printGpsFrame();      // print GPS frame
     if ( strcmp("B", pkey) == 0 ) printBatteryFrame();   // print battery frame 
-    printConfigAndSequencers();                                       // print the current config
+    //printConfigAndSequencers();                                       // print the current config
     printf("\n >> \n");
 }
 
@@ -1225,12 +1262,34 @@ void checkConfigAndSequencers(){     // set configIsValid
         configIsValid=false;
     }    
 
+    if (config.mpuOrientationH>5){
+        printf("Error in parameters: gyro horizontal orientation (%i) is not valid\n",config.mpuOrientationH);
+        orientationIsWrong= true;
+        // do not set configIsValid on false because we have to be able to process the gyro calibration
+    }
+    if (config.mpuOrientationV>5){
+        printf("Error in parameters: gyro vertical orientation (%i) is not valid\n",config.mpuOrientationH);
+        orientationIsWrong= true;
+        // do not set configIsValid on false because we have to be able to process the gyro calibration
+    }
+    if ((config.mpuOrientationH<=5) && (config.mpuOrientationV<=5)){
+        if (orientationList[config.mpuOrientationH *6 + config.mpuOrientationV][3]==0) {
+            // when the combination H and V is not valid, sign is 0 instead of 1 or -1
+            printf("Error in parameters: gyro horizontal (%i) and vertical (%i) orientations are not compatible\n",config.mpuOrientationH,config.mpuOrientationV);
+            orientationIsWrong= true;
+        }
+    }
+
     checkSequencers();
     if ( configIsValid == false) {
         printf("\nAttention: error in config parameters\n");
     } else {
         printf("\nConfig parameters are OK\n");
     }
+    if ( configIsSaved == false) {
+        printf("\nAttention: some config parameters are not saved; use SAVE command\n");
+    }
+    
 //    if ( sequencerIsValid == false) {
 //        printf("\nAttention: error in sequencer parameters\n");
 //    } else {
@@ -1243,7 +1302,7 @@ void checkConfigAndSequencers(){     // set configIsValid
 
 
 
-void printConfigAndSequencers(){
+void printConfigAndSequencers(){   // print all and perform checks
     //startTimerUs(0) ;  // to debug only - to know how long it takes to print the config
     isPrinting = true;
     uint8_t version[] =   VERSION ;
@@ -1332,14 +1391,6 @@ void printConfigAndSequencers(){
         printf("    Hysteresis = %i \n", VARIOHYSTERESIS);        
     } else {
         printf("Baro sensor is not detected\n")  ;
-    }
-    if(mpu.mpuInstalled){
-        printf("Acc/Gyro is detected using MP6050\n")  ;
-        printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
-        printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
-        printf("     Orientation                  = %i\n", config.mpuOrientation); 
-    } else {
-       printf("Acc/Gyro is not detected\n")  ;     
     }
     if (ms4525.airspeedInstalled) {
         printf("Aispeed sensor is detected using MS4525\n")  ;        
@@ -1440,6 +1491,23 @@ void printConfigAndSequencers(){
                                                         , (int) fmap( config.failsafeChannels.ch14 )\
                                                         , (int) fmap( config.failsafeChannels.ch15 ) );
     }    
+    if(mpu.mpuInstalled){
+        printf("Acc/Gyro is detected using MP6050\n")  ;
+        printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
+        printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
+        printf("     Orientation          Horizontal is ");
+        uint8_t nameIdx;
+        nameIdx = config.mpuOrientationH;
+        if (nameIdx > 6) nameIdx=6; 
+        printf(mpuOrientationNames[nameIdx]) ;
+        printf("     Vertical is ");
+        nameIdx = config.mpuOrientationV;
+        if (nameIdx > 6) nameIdx=6; 
+        printf(mpuOrientationNames[nameIdx] );
+        printf("\n"); 
+    } else {
+       printf("Acc/Gyro is not detected\n")  ;     
+    }
     printGyro();
     watchdog_update(); //sleep_ms(500);
     printSequencers(); 
@@ -1599,6 +1667,8 @@ void setupConfig(){   // The config is uploaded at power on
         config.max_rotate = (MAX_ROTATE)_max_rotate;
         config.rate_mode_stick_rotate = (enum RATE_MODE_STICK_ROTATE)_rate_mode_stick_rotate;
         config.gyroAutolevel = _gyroAutolevel;
+        config.mpuOrientationH = _mpuOrientationH;
+        config.mpuOrientationV = _mpuOrientationV;
         config.pid_param_rate.output_shift = _pid_param_rate_output_shift;
         config.pid_param_hold.output_shift = _pid_param_hold_output_shift;
         config.pid_param_stab.output_shift = _pid_param_stab_output_shift;
@@ -1631,55 +1701,10 @@ void setupConfig(){   // The config is uploaded at power on
         config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
         config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
         config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;
+
+    }
             
-    }
-    // here we update the parameters that can't be edited with usb commands; so changes in config.h are used after new compilation 
-    /*
-    config.pid_param_rate.kp[0] =  _pid_param_rate_KP_AIL;
-    config.pid_param_rate.kp[1] =  _pid_param_rate_KP_ELV;
-    config.pid_param_rate.kp[2] =  _pid_param_rate_KP_RUD;
-    config.pid_param_hold.kp[0] =  _pid_param_hold_KP_AIL;
-    config.pid_param_hold.kp[1] =  _pid_param_hold_KP_ELV;
-    config.pid_param_hold.kp[2] =  _pid_param_hold_KP_RUD;
-    config.pid_param_stab.kp[0] =  _pid_param_stab_KP_AIL;
-    config.pid_param_stab.kp[1] =  _pid_param_stab_KP_ELV;
-    config.pid_param_stab.kp[2] =  _pid_param_stab_KP_RUD;
-        
-    config.pid_param_rate.ki[0] =  _pid_param_rate_KI_AIL;
-    config.pid_param_rate.ki[1] =  _pid_param_rate_KI_ELV;
-    config.pid_param_rate.ki[2] =  _pid_param_rate_KI_RUD;
-    config.pid_param_hold.ki[0] =  _pid_param_hold_KI_AIL;
-    config.pid_param_hold.ki[1] =  _pid_param_hold_KI_ELV;
-    config.pid_param_hold.ki[2] =  _pid_param_hold_KI_RUD;
-    config.pid_param_stab.ki[0] =  _pid_param_stab_KI_AIL;
-    config.pid_param_stab.ki[1] =  _pid_param_stab_KI_ELV;
-    config.pid_param_stab.ki[2] =  _pid_param_stab_KI_RUD;
-    
-    config.pid_param_rate.kd[0] =  _pid_param_rate_KD_AIL;
-    config.pid_param_rate.kd[1] =  _pid_param_rate_KD_ELV;
-    config.pid_param_rate.kd[2] =  _pid_param_rate_KD_RUD;
-    config.pid_param_hold.kd[0] =  _pid_param_hold_KD_AIL;
-    config.pid_param_hold.kd[1] =  _pid_param_hold_KD_ELV;
-    config.pid_param_hold.kd[2] =  _pid_param_hold_KD_RUD;
-    config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
-    config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
-    config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;
-    */        
 } 
-
-void requestMpuCalibration()  // 
-{
-    if (!mpu.mpuInstalled) {
-        printf("Calibration not done: no MP6050 installed\n");
-        return ;
-    }
-    uint8_t data = 0X01; // 0X01 = execute calibration
-    printf("Before calibration:");
-    printConfigOffsets();
-    sleep_ms(1000); // wait that message is printed
-    queue_try_add(&qSendCmdToCore1 , &data);
-
-}    
 
 void printConfigOffsets(){
     printf("\nOffset Values in config:\n");
@@ -2342,28 +2367,28 @@ void printGyro(){
         return;
     }
     printf("\nGyro configuration is:\n");
-    printf("Channels for :  mode/gain=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
+    printf("   Channels for :                     mode/gain=%i  ,  Ail stick=%i  ,  Elv stick=%i  ,  Rud stick=%i\n", \
         config.gyroChanControl , config.gyroChan[0]  , config.gyroChan[1]  , config.gyroChan[2] );
-    printf("Gain per axis (-128/127):  Roll=%i     Pitch=%i    Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
-    printf("Gain on throw is %i (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
-    printf("Max rotate is %i (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
-    printf("Stick rotate enabled in rate mode is %i (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
+    printf("   Gain per axis (-128/127):                           Roll=%i          Pitch=%i         Yaw=%i\n", config.vr_gain[0] , config.vr_gain[1] , config.vr_gain[2]);
+    printf("   Gain on throw :                    %i    (1=on full throw, 2=on half, 3=on quater)\n", (int)config.stick_gain_throw);
+    printf("   Max rotate    :                    %i    (1=Very low , 2=low , 3=medium , 4=high)\n", (int) config.max_rotate);
+    printf("   Stick rotate enabled in rate mode: %i    (1=disabled , 2=enabled)\n", (int) config.rate_mode_stick_rotate);
     if (config.gyroAutolevel) {
-        printf("Stabilize mode is ON (Hold mode is disabled)\n");
+        printf("   Stabilize mode :               ON    (Hold mode is disabled)\n");
     } else {
-        printf("Stabilize mode is OFF (Hold mode is enabled)\n");
+        printf("   Stabilize mode :               OFF   (Hold mode is enabled)\n");
     }    
-    printf("PID              Roll(aileron)           Pitch(elevator)         Yaw(rudder)\n");
-    printf("   Mode         Kp      Ki      Kd          Kp      Ki      Kd         Kp      Ki      Kd\n");
-    printf("  Normal  PIDN= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
+    printf("    PID         ---Roll(aileron)---         --Pitch(elevator)--        ----Yaw(rudder)----\n");
+    printf("   Mode          Kp      Ki      Kd          Kp      Ki      Kd         Kp      Ki      Kd\n");
+    printf("   Normal  PIDN= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_rate.kp[0], config.pid_param_rate.ki[0],config.pid_param_rate.kd[0],\
             config.pid_param_rate.kp[1], config.pid_param_rate.ki[1],config.pid_param_rate.kd[1],\
             config.pid_param_rate.kp[2], config.pid_param_rate.ki[2],config.pid_param_rate.kd[2] );
-    printf("  Hold    PIDH= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
+    printf("   Hold    PIDH= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_hold.kp[0], config.pid_param_hold.ki[0],config.pid_param_hold.kd[0],\
             config.pid_param_hold.kp[1], config.pid_param_hold.ki[1],config.pid_param_hold.kd[1],\
             config.pid_param_hold.kp[2], config.pid_param_hold.ki[2],config.pid_param_hold.kd[2] );
-    printf("  Stab.   PIDS= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
+    printf("   Stab.   PIDS= %-5i   %-5i   %-5i       %-5i   %-5i   %-5i      %-5i   %-5i   %-5i\n",\
             config.pid_param_stab.kp[0], config.pid_param_stab.ki[0],config.pid_param_stab.kd[0],\
             config.pid_param_stab.kp[1], config.pid_param_stab.ki[1],config.pid_param_stab.kd[1],\
             config.pid_param_stab.kp[2], config.pid_param_stab.ki[2],config.pid_param_stab.kd[2] );    

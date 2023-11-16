@@ -32,6 +32,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
     - to configure oXs in order to get Rc channels and to generate PWM signals for the servos controling the camera
     - to get from the handset the "original" (not mixed) sticks positions in 3 additional RC channels
     - to get from the handset the gyro mode and general gain in 1 additional RC channels
+   
     
 ### It can stabilize a camera. This requires
     - to use a mp6050 device
@@ -46,6 +47,8 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 
 Each function (telemetry/PWM/SBUS/gyro/logger/sequencer) can be used alone or combined with the others.
 
+
+Note: when a mpu6050 is used (to improve vario reactivity, stabilize the plane and/or a camera), it is important to calibrate the mp6050 horizontally and vertically (see section below)
 
 ## -------  Hardware -----------------
 
@@ -177,10 +180,13 @@ If you just want to use it, there is (in most cases) no need to install/use any 
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
 * you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-* when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration and the commands to change it.
+* when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration.
+* to list all the commands, send ?.
 * if you want to change some parameters, fill in the command (code=value) and press the enter.
-* the RP2040 should then display the new (saved) config.  
-   
+* you can enter severals commands without repowering the device
+* Important note : when you enter usb commands to change parameters, they are not automatically applied. Most of the time, oXs will stop most functionalities. You have to save the changes using the SAVE command and then make a power off/on.
+
+
 Developers can change the firmware, compile and flash it with VScode and Rapsberry SDK tools.  
 An easy way to install those tools is to follow the tutorials provided by Rapsberry.  
 In particular for Windows there is currently an installer. See : https://github.com/raspberrypi/pico-setup-windows/blob/master/docs/tutorial.md
@@ -254,6 +260,37 @@ Then, depending on the value sent by the Tx on the selected channel, oXs manages
 * if the value is largely negative, oXs sent the "normal" Vspeed in the field foreseen for compensated Vspeed. So even if vario tone is based on compensated Vspeed telemetry field, you can switch while flying between the 2 Vspeed (with a switch on the TX).
 
 Note: you can use the FV command to know the current coefficient. This allow you to check that your Tx sent a Rc channel value that match the expected goal and indeed required, adjust your Tx settings.
+
+## ---------------- calibration of MP6050  ---------------
+
+When an MP6050 is used, it is important to calibrate it and to let oXs knows his orientation in the plane. 
+The mpu must be installed in the model in such a way that one axis of MPU6050 is vertical and that another one is aligned with main axis of the model (nose-queue). There are 24 possible orientations to match this. Most commercial gyro's require that the user declare the orientation of the MP6050 in the model.
+oXs does it automatically with a 2 steps calibration process (named here Horizontal and Vertical).
+
+* Horizontal calibration calculates the acceleration and gyro offsets in the 3 directions. It identifies also partly the orientation of the MP6050.
+It requires that the plane is set horizontally (like when it flies and roll/pitch are both 0) and do NOT move at all.
+Then a usb command MPUCAL=H is sent.
+The horizontal calibration takes a few seconds (less than 5). The result is displayed.
+
+* Vertical calibration completes the determination of MPU6050 orientation.
+It requires that the plane is set vertically with the nose up. It is not required to keep it totally still in this position.
+Then a command MPUCAL=V is sent. The horizontal calibration is done in less than 1 second.
+
+Please note that, like other usb commands that change the configuration, you have to send afterwards a SAVE command to store the results in memory and so keep them after a power off or a reset.
+
+The current configuration is displayed (like other parameters) with the ENTER command.
+
+Once the MP6050 calibration process has been done and saved, it is normally not required to do it again.
+Still if you change the orientation of oXs in a model, you have or to perform the 2 steps calibration again or you can just change the orientation using 2 usb commands GOV (horizontal orientation) and GOV (vertical orientation). Those 2 commands can change the orientation but not the offset.
+
+
+Note: at each power on, oXs performs automatically a new calibration of the gyro offsets (so nor acceleration offsets nor orientation).
+To get correct offset parameters, the model must stay still during the first 2 seconds. His attitude does not matter. It is possible to disable this automatic calibration with a parameter in file config.h. 
+
+Please note that when the MP6050 is used to stabilize the plane, you have also to perform a gyro mixer calibration. See gyro section.  
+   
+
+
 ## ---------------- Sequencers ---------------
 With oXs, one single channel on the handset can control one or several SERVOS in sequences defined by the user (e.g. for landing gears with doors and wheels).
 

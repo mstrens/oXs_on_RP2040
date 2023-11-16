@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.9.26"
+#define VERSION "2.10.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -196,7 +196,8 @@
 
 // --------- Parameter for MPU6050 ---------------------------------------
 #define ACC_MAX_SCALE_G 2 // maximum acceleration in G (can only be 2,4,8, 16)
-
+#define GYRO_MAX_SCALE_DEGREE 2000  // max gyro rate : degree per sec
+#define CALIBRATE_GYRO_ON_RESET     // uncomment to avoid gyro calibration on reset
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
 
@@ -342,8 +343,9 @@
 #define _rate_mode_stick_rotate  1  // RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE=2
                                     // MAX_ROTATE is used also in rate mode when RATE_MODE_STICK_ROTATE_ENABLE is selected
 #define _gyroAutolevel true         // true means that stabilize mode replace hold mode
-#define _mpuOrientation 0           // codification to define
-
+#define _mpuOrientationH 4           // upper face when plane is horizontal, last 4 bits= axis being up when nose is up; default is 4 (Z axis point up)
+#define _mpuOrientationV 0           // upper face when plane is vertical (nose up) ; default is 0 (X axis point to the nose)
+                                        // for both  0=X+, 1=X- , 2=Y+ , 3=Y- , 4=Z+, 5=Z- , 6=error ;
 // --------- Reserve for developer. ---------
 
 typedef struct {

@@ -57,8 +57,11 @@
 //         test tlm data in log interface
 //         it seems that in ELRS protocol, PWM are not generated since some version.
 //         use Rc channels with gyro correction to the signal Sbus out. 
-//         check if the gyro rate of mpu is the same as the one used id flightstab
+//         check if the gyro rate of mpu is the same as the one used in flightstab
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
+//         avoid gyro calibration at reset after a watchdog reset (to reduce start up time); not sure it is critical.
+//         add some check during the calibration that the model is not moving
+
 
 // Look at file in folder "doc" for more details
 //
@@ -136,6 +139,7 @@ extern bool newRcChannelsReceivedForLogger;  // used to know when we have to upd
 
 extern CONFIG config;
 bool configIsValid = true;
+bool configIsSaved = true ;
 bool configIsValidPrev = true;
 bool multicoreIsRunning = false;
 bool blinking = true ;
@@ -378,15 +382,10 @@ void setup() {
   setupSequencers(); // retrieve the sequencer parameters (defsMax, stepsMax, defs and steps)
   setupGyroMixer(); 
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
-  
-  //initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
-  //initGyroMixer(); // to do : to modify when gyroMixer[] will be saved in flash
-  
   setupLed();
-  //setRgbColorOn(10,0,10); // start with 2 color
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   
-  if (configIsValid){ // continue with setup only if config is valid
+  if (configIsValid) { // continue with setup only if config is valid 
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
         fields[i].available= false;
@@ -538,7 +537,7 @@ void getSensorsFromCore1(){
     }
     if ((forcedFields == 1) || (forcedFields == 2)) fillFields(forcedFields); // force dummy values for debuging a protocol
 }
-
+/*
 void printTest(int testVal){
     static uint32_t prevTime = 0;
     if ((millisRp() - prevTime) > 10) { // once per 5 sec
@@ -547,13 +546,14 @@ void printTest(int testVal){
         if (configIsValid) {printf("config is valid\n");} else {printf("config is not valid\n");} 
     }
 }
+*/
 
 #define MAIN_LOOP 0
 void loop() {
   //debugBootButton();
     //startTimerUs(MAIN_LOOP);                            // start a timer to measure enlapsed time
 
-  if (configIsValid){
+  if ((configIsValid) and (configIsSaved)) {
       getSensorsFromCore1(); // this also generate the LOG signal on pio UART
       mergeSeveralSensors();
       watchdog_update();
@@ -629,7 +629,7 @@ void loop() {
   //printf("after tud-task\n");sleep_ms(100); 
   if ( configIsValidPrev != configIsValid) {
     configIsValidPrev = configIsValid;
-    if (configIsValid) {
+    if ((configIsValid) and (configIsSaved)){
         blinking = true; // setRgbColorOn(0,10,0); // red , green , blue
     } else {
         blinking = false; // setRgbColorOn(10,0,0);
@@ -670,8 +670,10 @@ void loop1(){
     getSensors(); // get sensor
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);
-        if ( qCmd == 0X01) { // 0X01 is the code to request a calibration
-            mpu.calibrationExecute();
+        if ( qCmd == REQUEST_HORIZONTAL_MPU_CALIB) { // 0X01 is the code to request an horizontal calibration
+            mpu.calibrationHorizontalExecute();
+        } else if ( qCmd == REQUEST_VERTICAL_MPU_CALIB) { // 0X02 is the code to request a vertical calibration
+            mpu.calibrationVerticalExecute();
         }
     }
     //alarmTimerUs(MAIN_LOOP1, 500);

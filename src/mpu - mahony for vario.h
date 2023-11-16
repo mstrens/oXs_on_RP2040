@@ -1,3 +1,4 @@
+#ifdef MAHONY_USED_INITIALLY_FOR_VARIO
 #pragma once
 
 
@@ -13,14 +14,10 @@ public:
     MPU6050 mpu6050 ; 
     void begin();
     bool getAccZWorld();
-    void calibrationHorizontalExecute();
-    void calibrationVerticalExecute();
-    
+    void calibrationExecute();
     void testDevicesOffsetX();
     void printOffsets();
     bool calibrateAccelGyro(void);
-
-
 
 
     /*
@@ -57,17 +54,6 @@ private:
 };
 
 
-void setupOrientation();
-void findGravity(int32_t ax, int32_t ay, int32_t az, uint8_t &idx );
-
-
-
-//void quaternionToAngle(float q[4], int8_t i, int8_t j , int8_t k, float &a1, float &a2,  float &a3);
-//void rollPitch(int16_t ax, int16_t ay ,int16_t az, int16_t gx , int16_t gy , int16_t gz) ;
-//void ardupilot(int16_t ax, int16_t ay ,int16_t az, int16_t gx , int16_t gy , int16_t gz) ;
-//void mylogic(int16_t ax, int16_t ay ,int16_t az, int16_t gx , int16_t gy , int16_t gz) ;
-//void Madgwick6DOF(int16_t ax, int16_t ay ,int16_t az, int16_t gx , int16_t gy , int16_t gz);
-
-
 // -- END OF FILE --
 
+#endif

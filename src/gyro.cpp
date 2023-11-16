@@ -8,10 +8,15 @@
 #include "sbus_out_pwm.h"
 #include "crsf_in.h"
 #include "hardware/watchdog.h"
+#include "hardware/pio.h"  
 
-// to do : manage the ability to set the gyro in different positions
-// this has probably an impact on mpu too!!!!!
 
+// gyroX already take care of the gyro orientation and is the axis that point to the nose; so it is the roll axis;
+//    positive values means left wing goes up, right wing goes down; Roll changes in the same way
+// gyroY = axis to the left wing; it is the pitch axis
+//    positive values means that nose goes down; pitch changes in the opposite way
+// gyroZ = vertical axis = yaw axis
+//    positive values means that plane turns to the left (conter clockwise); yaw changes in the opposite way
 
 //enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
 enum LEARNING_STATE learningState = LEARNING_OFF;
@@ -45,6 +50,9 @@ struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learni
 
 bool gyroIsInstalled = false;  // becomes true when config.gyroChanControl is defined (not 255) and MPU6050 installed
 
+
+extern const char* mpuOrientationNames[8] ;
+
 /***************************************************************************************************************
  * PID
  ***************************************************************************************************************/
@@ -73,6 +81,10 @@ int32_t constrain(int32_t x , int32_t min, int32_t max ){
     return x;
 }
 
+int16_t min(const int16_t a, const int16_t b)
+{
+    return (b < a) ? b : a;
+}
 
 void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param) 
 {
@@ -135,10 +147,6 @@ int16_t correctionNegSide[3] = {0, 0, 0};
 uint32_t lastStabModeUs = 0;
 int8_t stabModeCount;
 
-int16_t min(const int16_t a, const int16_t b)
-{
-    return (b < a) ? b : a;
-}
 // -------------------------------   calculate corrections ---------------
 void calculateCorrectionsToApply(){ 
                                 // it is called from applyGyroCorrections only if gyroIsInstalled applying PWM on the outputs
@@ -156,10 +164,16 @@ void calculateCorrectionsToApply(){
     int16_t master_gain;
     uint8_t i;
 
+    // ------ get stick positions and switch
     stickAilUs = rcChannelsUs[config.gyroChan[0]-1]; // get original position of the 3 sticks
     stickElvUs = rcChannelsUs[config.gyroChan[1]-1];
     stickRudUs = rcChannelsUs[config.gyroChan[2]-1];
     controlUs = rcChannelsUs[config.gyroChanControl-1]; // get original position of the control channel
+    // -----  determine how much sticks are off center (from neutral) taking care of gyroMixer calibration 
+    stickAilUs_offset = stickAilUs - gyroMixer.neutralUs[config.gyroChan[0]-1]; 
+    stickElvUs_offset = stickElvUs - gyroMixer.neutralUs[config.gyroChan[1]-1];
+    stickRudUs_offset = stickRudUs - gyroMixer.neutralUs[config.gyroChan[2]-1];
+    
 
     // stabilization mode
     //STAB_RATE when 988us = switch haut
@@ -168,15 +182,14 @@ void calculateCorrectionsToApply(){
       (stabMode == STAB_HOLD && controlUs <= RX_WIDTH_MODE_MID - RX_MODE_HYSTERESIS) ? STAB_RATE : 
       (stabMode == STAB_RATE && controlUs >= RX_WIDTH_MODE_MID + RX_MODE_HYSTERESIS) ? STAB_HOLD : stabMode; // hysteresis, all now in Hold Mode region
 
+    //----------detect switch changes from up to down and the opposite (not the center position)
     if (stabMode2 != stabMode) {
         stabMode = stabMode2;
         //printf("stabMode changed in updateGyroCorrections() to %i\n", stabMode);
         // reset attitude error when and i_limit threshold when mode change from Hold or rate or vice versa (also reset when gain is 0)
-        for (i=0; i<3; i++) {
-            pid_state.sum_err[i] = 0;
-            pid_state.i_limit[i] = 0;
-        }
-        
+        pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;
+        pid_state.i_limit[0] = 0; pid_state.i_limit[1] = 0; pid_state.i_limit[2] = 0;
+                
         // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change    
         //if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
         if ((int32_t)(t - lastStabModeUs) > 500000L) {  // so 2X per sec
@@ -195,23 +208,24 @@ void calculateCorrectionsToApply(){
         
     } // end of stabmode change
     
-    // determine how much sticks are off center (from neutral) taking care of gyroMixer calibration and inflight calibration 
-    stickAilUs_offset = stickAilUs - gyroMixer.neutralUs[config.gyroChan[0]-1]; 
-    stickElvUs_offset = stickElvUs - gyroMixer.neutralUs[config.gyroChan[1]-1];
-    stickRudUs_offset = stickRudUs - gyroMixer.neutralUs[config.gyroChan[2]-1];
-    
-    // vr_gain[] [-128, 128] from VRs or config ; in mstrens code, it is supposed to come only from config 
-    
-    // calculate stick priority
+    // ------------   calculate stick priority (based on stick offset and stick_gain_throw)
     // see enum STICK_GAIN_THROW. shift=0 => FULL, shift=1 => HALF, shift=2 => QUARTER
-    //int8_t shift = cfg.stick_gain_throw - 1;
     int8_t shift = config.stick_gain_throw - 1;
         // stick_gain[] [1100, <ail*|ele|rud>_mid, 1900] => [0%, 100%, 0%] = [0, STICK_GAIN_MAX, 0]
     stick_gain[0] = stick_gain_max - min(abs(stickAilUs_offset) << shift, stick_gain_max);
     stick_gain[1] = stick_gain_max - min(abs(stickElvUs_offset) << shift, stick_gain_max);
     stick_gain[2] = stick_gain_max - min(abs(stickRudUs_offset) << shift, stick_gain_max);    
+    // adapt pid I limit (in hold mode)
+    if (stabMode == STAB_HOLD) {
+        // max attitude error (bounding box)    
+        for (i=0; i<3; i++) {
+            // 2000 deg/s == 32768 units, so 1 deg/(PID_PERIOD=10ms) == 32768/20 units
+            #define STAB_HOLD_RATIO (30 * 32768 / 2 / PID_PERIOD / 1000)
+            pid_state.i_limit[i] = ( (int32_t) stick_gain[i] * STAB_HOLD_RATIO ) >> 9;  // >>9 is div by 512
+        }
+    }
     
-    // calculate master gain.
+    // -------  calculate master gain.
     // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
     if (controlUs < (RX_WIDTH_MID - RX_GAIN_HYSTERESIS))  {
         // Handle Rate Mode Gain Offset, gain = 1 when hysteresis area is exited
@@ -232,13 +246,9 @@ void calculateCorrectionsToApply(){
         }    
     }	  	    
     
-    //#ifdef HOLD_IS_USED_AS_AUTO_LEVEL
-    //    autolevel = true;    // to do : integrate this in config
-    //#endif 
+    // ---------- set setpoint of PID depending on the mode
     if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
-        for (i=0; i<3; i++) 
-            //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
-            pid_state.setpoint[i] = 0;  // set target = 0 
+            pid_state.setpoint[0] = 0; pid_state.setpoint[1] = 0; pid_state.setpoint[2] = 0; // set target = 0 
     } 
     // commanded angular rate (could be from [ail|ele|rud], note direction/sign)
     else if (stabMode == STAB_HOLD || 
@@ -253,36 +263,53 @@ void calculateCorrectionsToApply(){
         for (i=0; i<3; i++)
             //pid_state.setpoint[i] = vr_gain[i] < 0 ? sp[i] : -sp[i];
             pid_state.setpoint[i] = config.vr_gain[i] < 0 ? sp[i] : -sp[i];    
-    } else {
-        // zero roll rate, stabilization only
-        for (i=0; i<3; i++) 
-            pid_state.setpoint[i] = 0;
+    } else { // Stab mode = RATE
+        pid_state.setpoint[0] = 0; pid_state.setpoint[1] = 0; pid_state.setpoint[2] = 0;
     }
-        
-    if (stabMode == STAB_HOLD) {
-        // max attitude error (bounding box)    
-        for (i=0; i<3; i++) {
-            // 2000 deg/s == 32768 units, so 1 deg/(PID_PERIOD=10ms) == 32768/20 units
-            pid_state.i_limit[i] = ((int32_t)30 * (32768 / 2 / (PID_PERIOD / 1000)) * stick_gain[i]) >> 9; 
-        }
-    }
+            
+    //-----------set input ---------------------------------
+    // gyroX and roll change in the same way
+    // gyroY and pitch change in opposite way
+    // gyroZ and yaw change in opposite way
     if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
         // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
-        // gyroZ varies from -32000/32000 (int16) and so when divided by 8, it is -4096/4096
-        // so we multiply camera roll and pitch by 4 to get about the same range (and so use similar values for PID)
-        pid_state.input[0] = (int16_t) cameraRoll >>2;     
-        pid_state.input[1] = (int16_t) cameraPitch >>2;
-        pid_state.input[2] = gyroZ>>3;        // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec
+        // gyroZ varies from -32768/32768 (int16) 
+        // so we multiply camera roll and pitch by 32 to get about the same range (and so use similar values for PID)
+        pid_state.input[0] = ((int32_t) -cameraRoll) << 5;     
+        pid_state.input[1] = ((int32_t) cameraPitch) << 5;
+        pid_state.input[2] = gyroZ;        
     } else {
-    // measured angular rate (from the gyro and apply calibration offset)
-        pid_state.input[0] = gyroY>>3; // divided by 8 by mstrens because oXs uses 250*/sec while flightstab uses 2000°/sec  
-        pid_state.input[1] = gyroX>>3; // flightstab used a constrain -8192/8191 but I do not seee the reason
-        pid_state.input[2] = gyroZ>>3;        
+    // measured angular rate (from the gyro and apply calibration offset but no scaling)
+        pid_state.input[0] = gyroX;  // gyroX,Y,Z max value is +/-32768 = +/-2000°/sec 
+        pid_state.input[1] = gyroY; // flightstab used a constrain -8192/8191 but I do not seee the reason
+        pid_state.input[2] = gyroZ;        
     }
-    // apply PID control depending on the mode
+    // ----------  apply PID control depending on the mode
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : (config.gyroAutolevel) ?  &config.pid_param_stab : &config.pid_param_hold);
-        
-    // apply vr_gain, stick_gain and master_gain
+    
+    //  Only to debug
+    #define DEBUG_PID_CORRECTIONS
+    #ifdef  DEBUG_PID_CORRECTIONS
+    static int16_t maxOutput[3] = { 0,0,0};
+    static int16_t setpoint[3];
+    static int16_t input[3];
+    for (i=0; i<3; i++) {
+            if ( (abs(pid_state.output[i])) > maxOutput[i] ) {
+                maxOutput[i] = pid_state.output[i];
+                setpoint[i] = pid_state.setpoint[i];
+                input[i]    = pid_state.input[i];
+            }
+        }
+    if(msgEverySec(1)){
+         printf("Ail in=%i  set=%i   out=%i\n", input[0] , setpoint[0] , maxOutput[0]);
+         printf("Elv in=%i  set=%i   out=%i\n", input[1] , setpoint[1] , maxOutput[1]);   
+         printf("Rud in=%i  set=%i   out=%i\n\n", input[2] , setpoint[2] , maxOutput[2]); 
+         maxOutput[0] = 0 ; maxOutput[1] = 0 ; maxOutput[2] = 0;    // reset max
+    }
+    #endif
+
+
+    // ------- apply vr_gain, stick_gain and master_gain and split correction in positive and negative parts
     for (i=0; i<3; i++) {
         // vr_gain [-128,0,127]/128, stick_gain [0,400,0]/512, master_gain [400,0,400]/512
         //correction[i] = ((((int32_t)pid_state.output[i] * vr_gain[i] >> 7) * stick_gain[i]) >> 9) * master_gain >> 9;
@@ -310,6 +337,8 @@ void calculateCorrectionsToApply(){
         }
         correctionNegSide[i] = correction[i] - correctionPosSide[i] ;       
     }
+    
+    // -------------- just to debug ---------------------
     //#define DEBUG_GYRO_CORRECTIONS
     #ifdef DEBUG_GYRO_CORRECTIONS
     if (msgEverySec(2) and gyroMixer.isCalibrated) { printf("Mode=%-5i  gx=%-5i  gy=%-5i  gz=%-5i  cAilT=%-5i  cAilP=%-5i  cAilN=%-5i  "  ,\
@@ -317,29 +346,8 @@ void calculateCorrectionsToApply(){
                             ,correction[0] , correctionPosSide[0] , correctionNegSide[0]\
     );}
     #endif
-         //                   ,config.vr_gain[0], stick_gain[0] ,  master_gain
-    //                    ,pid_state.output[0], pid_state.output[1] , pid_state.output[2]   
-    
-    /*
-    // to do : I need to understand what is calibration_wag
-    // this is normally not required with the learning process of oXs (based on 2 switch changes )  
-    // calibration wag on all surfaces if needed
-    if (calibration_wag_count > 0) {
-        if ((int32_t)(t - last_calibration_wag_time) > 200000L) {
-            calibration_wag_count--;
-            last_calibration_wag_time = t;
-        }
-        for (i=0; i<3; i++)
-            correction[i] += (calibration_wag_count & 1) ? 150 : -150;    
-    }    
-    */
-#if defined(SERIAL_DEBUG) && 0
-    Serial.print(correction[0]); Serial.print('\t');
-    Serial.print(correction[1]); Serial.print('\t');
-    Serial.print(correction[2]); Serial.println('\t');
-#endif
     last_pid_time = t;
-    // end of gyroCorrectionsToApply
+    // end of calculateCorrectionsToApply()
 }
 
 void applyGyroCorrections(){
@@ -628,12 +636,15 @@ void calibrateGyroMixers(){
                     ledState = STATE_NO_SIGNAL;
                     learningState = LEARNING_OFF;    
                     // to do : stop all interrupts to avoid error messages because queues are full
-                    // disable interrupt to avoid having to error msg about queue being full 
-                    uart_set_irq_enables(CRSF2_UART_ID, false, false);
+                    // disable interrupt to avoid having error msg about queue being full because part of main loop is not executed
+                    uart_set_irq_enables(CRSF_UART_ID, false, false);
                     uart_set_irq_enables(CRSF2_UART_ID, false, false);
                     uart_set_irq_enables(SBUS_UART_ID, false, false);
                     uart_set_irq_enables(SBUS2_UART_ID, false, false);
-    
+                    pio_set_irq0_source_enabled(pio0 ,  pis_sm1_rx_fifo_not_empty , false ); // pio/sm for Exbus, Hott, ibus,Mpx,sport, srxl2
+                    pio_set_irq1_source_enabled(pio0 ,  pis_sm3_rx_fifo_not_empty , false ); // pio/sm for ESC
+                    pio_set_irq0_source_enabled(pio1 ,  pis_sm0_rx_fifo_not_empty , false ); // pio/sm for GPS
+                    
     
                     configIsValid = false;
                 } else {

@@ -14,6 +14,23 @@ enum STICK_GAIN_THROW {STICK_GAIN_THROW_FULL=1, STICK_GAIN_THROW_HALF=2, STICK_G
 enum MAX_ROTATE {MAX_ROTATE_VLOW=1, MAX_ROTATE_LOW=2, MAX_ROTATE_MED=3, MAX_ROTATE_HIGH=4}; // values are important
 enum RATE_MODE_STICK_ROTATE {RATE_MODE_STICK_ROTATE_DISABLE=1, RATE_MODE_STICK_ROTATE_ENABLE};
 
+// codification of the orientation
+// first word gives the direction of the base of the mpu (normally down), front means that the base point to the nose of the plane, left to the left wing....
+// second word gives the direction of the Y axis (normally front)
+// there are 6X4 possible orientations
+enum MPU_ORIENTATION {DOWN_FRONT = 0, DOWN_RIGHT, DOWN_BACK, DOWN_LEFT ,\
+                      UP_FRONT, UP_RIGHT, UP_BACK, UP_LEFT ,\
+                      LEFT_FRONT, LEFT_UP, LEFT_BACK, LEFT_DOWN ,\
+                      RIGHT_FRONT, RIGHT_UP, RIGHT_BACK, RIGHT_DOWN ,\
+                      FRONT_UP, FRONT_RIGHT , FRONT_DOWN , FRONT_LEFT,\
+                      BACK_UP, BACK_RIGHT , BACK_DOWN , BACK_LEFT   };
+// roll increases when right wing goes down, 
+// pitch increases when nose does up
+// yaw increases when the plane turn to the right
+// Normally acc Y point to the nose of the plan, acc X point to the right and Z to up (so acc Z is normally -1g)
+// Then if gyro Y is positive==> Roll increase, gyro X positive=> pitch increase, gyroZ positive=>yaw increase
+
+
 
 
 struct gyroMixer_t{
@@ -40,12 +57,10 @@ struct _pid_param {
   int8_t output_shift ;
 };
 
-//void initGyroMixer(); // to do = to adapt when gyroMixer will be saved in flash
-//void initGyroConfig(); // to do : to remove when the parameters in config can be edited with usb command
 void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param);
 void applyGyroCorrections(); // apply gyro corrections taking care of the gyro mixers
 
-void calculateCorrectionsToApply(); // calculate gyro corrections on 3 axis but without taking care of the mixer
+void calculateCorrectionsToApply(); // calculate gyro corrections on 3 axis but without taking care of the mixer (so do not apply them)
 
 void calibrateGyroMixers();
 int pc(int16_t val);        // convert a Rc value (-512/512) in %

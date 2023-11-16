@@ -140,42 +140,42 @@ JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order 
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  GPS_PDOP ,    // GPS no unit
     { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  GPS_HOME_BEARING, // GPS degree
 
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  GPS_HOME_DISTANCE, // 10 GPS  in m
-    { 10     , "Volt 1"     , "V"         , EXBUS_TYPE_14 ,        2 , 3},  // MVOLT,        // volt1   in mVolt
-    { 13     , "Current"    , "A"         , EXBUS_TYPE_22 ,        2 , 4},  // CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
-    { 11     , "Volt 3"     , "V"         , EXBUS_TYPE_14 ,        2 , 3},  //RESERVE1, // volt3 must be in seq for voltage.cpp in mV
-    { 12     , "Volt 4"     , "V"         , EXBUS_TYPE_14 ,        2 , 3},  //RESERVE2, // volt4 must be in seq for voltage.cpp in mV
-    { 14     , "Consumption", "mAh"       , EXBUS_TYPE_22 ,        0 , 4},  //CAPACITY,    // based on current (volt2) in mAh
-    { 15     , "Temp 1"     , "\xB0\x43"  , EXBUS_TYPE_14 ,        0 , 3},  //TEMP1,       // = Volt3 but saved as temp in degree
-    { 16     , "Temp 2"     , "\xB0\x43"  , EXBUS_TYPE_14 ,        0 , 3},  //TEMP2,       // = Volt4 but saved as temp in degree
-    { 17     , "Vspeed"     , "m/s"       , EXBUS_TYPE_14 ,        2 , 3},  //VSPEED,      // baro       in cm/s
-    { 18     , "Alt"        , "m"         , EXBUS_TYPE_22 ,        1 , 4},  //RELATIVEALT , // baro      in cm
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  GPS_HOME_DISTANCE, // 10 GPS  in m
+    { 10     , "Volt 1"      , "V"         , EXBUS_TYPE_14 ,        2 , 3},  // MVOLT,        // volt1   in mVolt
+    { 13     , "Current"     , "A"         , EXBUS_TYPE_22 ,        2 , 4},  // CURRENT,  // volt2 must be in seq for voltage.cpp in mA (mV)
+    { 11     , "Volt 3"      , "V"         , EXBUS_TYPE_14 ,        2 , 3},  //RESERVE1, // volt3 must be in seq for voltage.cpp in mV
+    { 12     , "Volt 4"      , "V"         , EXBUS_TYPE_14 ,        2 , 3},  //RESERVE2, // volt4 must be in seq for voltage.cpp in mV
+    { 14     , "Consumption" , "mAh"       , EXBUS_TYPE_22 ,        0 , 4},  //CAPACITY,    // based on current (volt2) in mAh
+    { 15     , "Temp 1"      , "\xB0\x43"  , EXBUS_TYPE_14 ,        0 , 3},  //TEMP1,       // = Volt3 but saved as temp in degree
+    { 16     , "Temp 2"      , "\xB0\x43"  , EXBUS_TYPE_14 ,        0 , 3},  //TEMP2,       // = Volt4 but saved as temp in degree
+    { 17     , "Vspeed"      , "m/s"       , EXBUS_TYPE_14 ,        2 , 3},  //VSPEED,      // baro       in cm/s
+    { 18     , "Alt"         , "m"         , EXBUS_TYPE_22 ,        1 , 4},  //RELATIVEALT , // baro      in cm
       
-    { 19     , "Pitch"      , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //PITCH,       // 20 imu        in 0.1 degree 
-    { 20     , "Roll"       , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //ROLL,       // 20 imu        in 0.1 degree 
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //{ 21         , "Yaw"        , "\xB0"      , EXBUS_TYPE_14 ,        0 },  //YAW,       // 20 imu        in degree 
-    { 22     , "Rpm"        , "t/min"     , EXBUS_TYPE_22 ,        0 , 4},  //RPM ,        // RPM sensor    in Herzt
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+    { 19     , "Pitch"       , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //PITCH,       // 20 imu        in 0.1 degree 
+    { 20     , "Roll"        , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //ROLL,       // 20 imu        in 0.1 degree 
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //{ 21         , "Yaw"        , "\xB0"      , EXBUS_TYPE_14 ,        0 },  //YAW,       // 20 imu        in degree 
+    { 22     , "Rpm"         , "t/min"     , EXBUS_TYPE_22 ,        0 , 4},  //RPM ,        // RPM sensor    in Herzt
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
  
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
       
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
-    { 23     , "Airspeed"  , "Km/h"      , EXBUS_TYPE_14 ,         0 , 3},  //AIRSPEED,
-    { 24     , "Comp Vspeed" , "m/s"     , EXBUS_TYPE_14 ,         2 , 3},  //AIRSPEED_COMPENSATED_VSPEED,
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_HOLD_COUNTER,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_3,      // Voltage provided by ads1115 nr 2 on pin 3    30
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
+    { 23     , "Airspeed"    , "Km/h"      , EXBUS_TYPE_14 ,        0 , 3},  //AIRSPEED,
+    { 24     , "Comp Vspeed" , "m/s"       , EXBUS_TYPE_14 ,        2 , 3},  //AIRSPEED_COMPENSATED_VSPEED,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_HOLD_COUNTER,
 
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
-    { 25    , "Gps cum. dist." , "km"        , EXBUS_TYPE_14,      1 , 3},  //  GPS cumulative distance,
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_X,
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Y,
-    { 0xFF   , " "           , " "        , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Z,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  SBUS_FAILSAFE_COUNTER,
+    { 25    , "Gps cum. dist." , "km"      , EXBUS_TYPE_14,         1 , 3},  //  GPS cumulative distance,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_X,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Y,
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Z,
     
-    { 0      , "oXs"         , " "        , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
+    { 0      , "oXs"         , " "         , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 
 void setupExbusList(bool activateAllFields){
@@ -211,13 +211,13 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = GPS_CUMUL_DIST ;
         #endif     
     }
-    if (( config.pinVolt[0] != 255)  ||  activateAllFields){
+    if (( config.pinVolt[0] != 255)  ||  activateAllFields || config.escType!= 255){
         #if defined(P_MVOLT) && (P_MVOLT > 0)
             exbusMaxPooling[MVOLT] = P_MVOLT;
             exbusFieldList[exbusMaxFields++] = MVOLT ;
         #endif    
     }
-    if (( config.pinVolt[1] != 255)  ||  activateAllFields){
+    if (( config.pinVolt[1] != 255)  ||  activateAllFields || config.escType!= 255){
         #if defined(P_CURRENT) && (P_CURRENT > 0)
             exbusMaxPooling[CURRENT] = P_CURRENT;
             exbusFieldList[exbusMaxFields++] = CURRENT ;
@@ -239,13 +239,13 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = RESERVE2 ;
         #endif
     }
-    if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields) {
+    if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields || config.escType!= 255) {
         #if defined(P_TEMP1) && (P_TEMP1 > 0)
             exbusMaxPooling[TEMP1] = P_TEMP1;
             exbusFieldList[exbusMaxFields++] = TEMP1 ;
         #endif
     }
-    if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields) {
+    if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields || config.escType!= 255) {
         #if defined(P_TEMP2) && (P_TEMP2 > 0)
             exbusMaxPooling[TEMP2] = P_TEMP2;
             exbusFieldList[exbusMaxFields++] = TEMP2 ;
@@ -271,7 +271,7 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = ROLL ;
         #endif
     }
-    if (( config.pinRpm != 255 )  ||  activateAllFields) {
+    if (( config.pinRpm != 255 )  ||  activateAllFields || config.escType!= 255) {
         #if defined(P_RPM) && (P_RPM > 0)
             exbusMaxPooling[RPM] = P_RPM;
             exbusFieldList[exbusMaxFields++] = RPM ; 

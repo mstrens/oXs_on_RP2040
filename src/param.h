@@ -66,7 +66,8 @@ struct CONFIG{
     enum MAX_ROTATE max_rotate;
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
     bool gyroAutolevel;           // true means that stabilize mode replies the Hold mode (on switch position)
-    uint8_t mpuOrientation;       // define the orientation of the mpu ; TO DO
+    uint8_t mpuOrientationH;       // define the orientation of the mpu when plane is horizontal;
+    uint8_t mpuOrientationV;       // define the orientation of the mpu when plane is vertical (nose up);
 };
 
 void handleUSBCmd(void);
@@ -173,3 +174,6 @@ bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true 
 #define HW3 3
 #define KONTRONIK 2
 #define ZTW1 1
+
+#define REQUEST_HORIZONTAL_MPU_CALIB 0X01
+#define REQUEST_VERTICAL_MPU_CALIB 0X02
