@@ -92,7 +92,7 @@ extern CONFIG config;
 uint8_t ibusTypes[NUMBER_MAX_IDX] = {  // list of ibus type in the same sequence as fieldId 
       IBUS_SENSOR_TYPE_GPS_LAT,    // GPS LATITUDE ,  //   GPS special format
       IBUS_SENSOR_TYPE_GPS_LON,    //  GPS LONGITUDE,    //   special format
-      IBUS_SENSOR_TYPE_GROUND_SPEED, //GROUNDSPEED , //   GPS cm/s
+      IBUS_SENSOR_TYPE_GROUND_SPEED, //GROUNDSPEED , //   GPS km/h (previously cm/s)
       IBUS_SENSOR_TYPE_COG,          //HEADING,      //    GPS 0.01 degree
       IBUS_SENSOR_TYPE_GPS_ALT,      //ALTITUDE ,    //   GPS cm
 
@@ -223,17 +223,17 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
       ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
     
     */
-    if ( config.pinVolt[0] != 255) {
+    if ( config.pinVolt[0] != 255 || config.escType !=255 )  {
         addToIbus(MVOLT) ;
     }
-    if ( config.pinVolt[1] != 255) {
+    if ( config.pinVolt[1] != 255 || config.escType !=255 ) {
         addToIbus(CURRENT) ;
         addToIbus(CAPACITY) ;
     } 
-    if (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2) ) {
+    if ( (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2)) || config.escType !=255 ) {
         addToIbus(TEMP1) ;
     } 
-    if (( config.pinVolt[3] != 255)  && (config.temperature == 2) ) {
+    if ( (( config.pinVolt[3] != 255)  && (config.temperature == 2) )  || config.escType !=255 ) {
         addToIbus(TEMP2) ;
     } 
     // here we could add other voltage parameter (current, ...)
@@ -241,7 +241,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(RELATIVEALT) ; 
         addToIbus(VSPEED) ;
     }
-    if ( config.pinRpm != 255) {
+    if ( config.pinRpm != 255  || config.escType !=255 ) {
         addToIbus(RPM) ;
     } 
     if ( config.pinGpsTx != 255 ) {
@@ -434,9 +434,9 @@ bool formatIbusValue( uint8_t ibusAdr){
         //case VSPEED:
         //    value= fields[fieldId].value ; // from cm/sec to 0.1m/sec
         //    break;
-        //case GROUNDSPEED:
-        //    value= fields[fieldId].value ; // from cm/sec to cm/sec
-        //    break;            
+        case GROUNDSPEED:
+            ibusValue= fields[fieldId].value * 36 /1000; // from cm/sec to km/sec
+            break;            
         //case RPM:
         //    value= fields[fieldId].value *60 / 100 ; // from Hz to 100 tr/min???? not sure it is ok
         //    break;            

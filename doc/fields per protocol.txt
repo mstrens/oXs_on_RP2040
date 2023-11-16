@@ -256,7 +256,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    CLIMB_
                              if a MP6050 is installed, Vpeed use it too
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   degree 7decimals
 GPS lat                      Same as above                                 GPS_LAT                   degree 7decimals
-GPS speed  cm/sec            Same as above                                 GROUND_SPEED              cm/s
+GPS speed  cm/sec            Same as above                                 GROUND_SPEED              km/h
 GPS course 0.01 degree       Same as above                                 CMP_HEAD                  degree
 GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   cm
                              Note : some handsets calculate a relative alt

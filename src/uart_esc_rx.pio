@@ -30,9 +30,9 @@ static inline void esc_uart_rx_8N1_program_init(PIO pio, uint sm, uint offset, u
     pio_gpio_init(pio, pin_rx);
     if (invert) {
         gpio_set_inover(pin_rx,  GPIO_OVERRIDE_INVERT) ; // added by ms to manage inverted UART from Sport
-        gpio_pull_down(pin_rx); // changed by MS
+        ;//gpio_pull_down(pin_rx); // changed by MS ; it seems that HW4 require a high impedance at power on
     } else {
-        gpio_pull_up(pin_rx); // changed by MS
+        ;//gpio_pull_up(pin_rx); // changed by MS ; it seems that HW4 require a high impedance at power on
     }    
     pio_sm_config c = esc_uart_rx_8N1_program_get_default_config(offset);
     sm_config_set_in_pins(&c, pin_rx); // for WAIT, IN
