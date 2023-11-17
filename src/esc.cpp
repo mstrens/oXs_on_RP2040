@@ -211,7 +211,16 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
 void handleEsc(){ 
     uint16_t data;
     static bool frameStarted = false;
+    static bool pullupHW = false;
     if (config.pinEsc == 255) return ; // skip when esc is not foreseen
+    // for hobbywing ESC, we have to activate the pullup only after 2 sec otherwise ESC do not start
+    if (config.escType = HW4) {
+        if ((pullupHW == false) and (millisRp() > 3000)) {
+            gpio_pull_up(config.pinEsc);
+            pullupHW = true;
+        }
+    }
+    
     while (! queue_is_empty(&escRxQueue)) {
         // we get the value in the queue
         queue_try_remove (&escRxQueue,&data);
