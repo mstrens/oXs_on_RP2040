@@ -116,7 +116,7 @@
 // ZTW Mantis
 #define ESC_ZTW1_BAUDRATE 115200
 #define ESC_ZTW1_MAX_FRAME_LEN 32
-// 32 byte at 115200 = nearly 3500 usec; there is one frame per 10000usec
+// 32 byte at 115200 = nearly 3500 usec; there is one frame per 10000usec (or 50000)
 #define ESC_ZTW1_MIN_FREE_TIME_US 4000 // minimum interval without uart signal between 2 frames
 
 
@@ -170,6 +170,7 @@ void setupEsc(){
     } if ( config.escType == ZTW1) { 
         escMaxFrameLen = ESC_ZTW1_MAX_FRAME_LEN;
         escFreeTimeUs = ESC_ZTW1_MIN_FREE_TIME_US;
+        escShift = 23;             // for 8E1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
     } 
 // configure the queue to get the data from ESC in the irq handle
     queue_init (&escRxQueue, sizeof(uint16_t), 50);
@@ -188,7 +189,13 @@ void setupEsc(){
     } else if (config.escType == ZTW1){
         escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8E1_program);
         esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_ZTW1_BAUDRATE , false); // false = not inverted
-    }     
+    }
+    //#define DEBUG_ESC
+    #ifdef  DEBUG_ESC
+    uart_init(uart0, 115200); // Initialise UART 0 !!!!!!!!!! do not use pin 0 for another purpose
+    gpio_set_function(0, GPIO_FUNC_UART); // Set the GPIO pin mux to the UART - 0 is TX, 1 is RX
+    uart_set_format	(uart0, 8, 1 , UART_PARITY_EVEN) ;
+    #endif     
 }
 
 void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read the pio esc fifo and push the data to a queue (to be processed in the main loop)
@@ -197,12 +204,13 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
     uint32_t nowMicros = microsRp();
     while (  ! pio_sm_is_rx_fifo_empty (escPioRx ,escSmRx)){ // when some data have been received
         uint16_t c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0xFF;         // read the data, shift by 24 or 23 and keep 8 bits
-        // here we discard the parity bit from Kontronik
+        // here we discard the parity bit from Kontronik and ZWT1
          //when previous byte was received more than X usec after the previous, then add 1 in bit 15 
         if ( ( nowMicros - lastEscReceivedUs) > escFreeTimeUs ) c |= 0X8000 ; // add a flag when there is a gap between char
-        queue_try_add (&escRxQueue, &c);          // push to the queue
+        if (queue_try_add (&escRxQueue, &c) == false) printf("Esc queue is full\n");          // push to the queue
         lastEscReceivedUs = microsRp();    
     }
+    
 }
 
 
@@ -214,7 +222,7 @@ void handleEsc(){
     static bool pullupHW = false;
     if (config.pinEsc == 255) return ; // skip when esc is not foreseen
     // for hobbywing ESC, we have to activate the pullup only after 2 sec otherwise ESC do not start
-    if (config.escType = HW4) {
+    if (config.escType == HW4) {
         if ((pullupHW == false) and (millisRp() > 3000)) {
             gpio_pull_up(config.pinEsc);
             pullupHW = true;
@@ -224,8 +232,6 @@ void handleEsc(){
     while (! queue_is_empty(&escRxQueue)) {
         // we get the value in the queue
         queue_try_remove (&escRxQueue,&data);
-        //printf("%x\n", (uint8_t) data);
-        
         // if bit 15 = 1, it means that the value has been received after x usec from previous and so it must be a synchro 
         // so reset the buffer and process the byte
         if (data & 0X8000) {
@@ -240,6 +246,15 @@ void handleEsc(){
             processEscFrame(); // process the incoming byte
         }     
     } // end while
+    #ifdef DEBUG_ESC // generate a frame once per 10 msec
+    static uint32_t lastZWT1Ms;
+    if ((millisRp() - lastZWT1Ms) > 5000) {
+        lastZWT1Ms = millisRp();
+        for (uint8_t i = 1; i<=32 ; i++) {
+            uart_putc_raw(uart0, (char) i);
+        }    
+    }
+    #endif 
 }           
 
 float escConsumedMah = 0;

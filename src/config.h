@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.10.2"
+#define VERSION "2.10.3"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -202,7 +202,7 @@
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
 
 // ---------- ESC --------------------------------------------------------
-#define ESC_MAX_CURRENT 250.0
+#define ESC_MAX_CURRENT 250000.0
 #define ESC_MIN_THROTTLE 256    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
 
 // -------------- Camera stabilizer ----------------------------------------

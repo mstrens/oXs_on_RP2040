@@ -778,6 +778,7 @@ void processCmd(){
             updateConfig = true;
         } else if (strcmp("ZTW1", pvalue) == 0) {
             config.escType = ZTW1 ;
+            printf("escType is now ZTW1\n");
             updateConfig = true;
         } else {    
             printf("Error : ESC_TYPE must be HW4 , ZTW1 or KON\n");

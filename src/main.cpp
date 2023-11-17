@@ -668,6 +668,7 @@ void loop1(){
     //startTimerUs(MAIN_LOOP1);
     uint8_t qCmd;
     getSensors(); // get sensor
+    // get some request from core0
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);
         if ( qCmd == REQUEST_HORIZONTAL_MPU_CALIB) { // 0X01 is the code to request an horizontal calibration
