@@ -52,7 +52,7 @@
 // this code is based on the code developped here https://github.com/derFliegendeHamburger/msrc/tree/master
 
 // ----- ZTW Mantis --------------------------------------
-// ESC sent on uart (115200 8E1?) a frame every 50 msec that contains
+// ESC sent on uart (115200 8N1) a frame every 50 msec that contains
 // 
 //Byte0: Packet Header - --- 0xDD
 //Byte1: Protocol No ---- 0x01
@@ -117,7 +117,7 @@
 #define ESC_ZTW1_BAUDRATE 115200
 #define ESC_ZTW1_MAX_FRAME_LEN 32
 // 32 byte at 115200 = nearly 3500 usec; there is one frame per 10000usec (or 50000)
-#define ESC_ZTW1_MIN_FREE_TIME_US 4000 // minimum interval without uart signal between 2 frames
+#define ESC_ZTW1_MIN_FREE_TIME_US 2000 // minimum interval without uart signal between 2 frames
 
 
 // Len here must be big enough to contain all types of ESC frame
@@ -170,7 +170,6 @@ void setupEsc(){
     } if ( config.escType == ZTW1) { 
         escMaxFrameLen = ESC_ZTW1_MAX_FRAME_LEN;
         escFreeTimeUs = ESC_ZTW1_MIN_FREE_TIME_US;
-        escShift = 23;             // for 8E1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
     } 
 // configure the queue to get the data from ESC in the irq handle
     queue_init (&escRxQueue, sizeof(uint16_t), 50);
@@ -187,8 +186,8 @@ void setupEsc(){
         escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8E1_program);
         esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_KONTRONIK_BAUDRATE , false); // false = not inverted
     } else if (config.escType == ZTW1){
-        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8E1_program);
-        esc_uart_rx_8E1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_ZTW1_BAUDRATE , false); // false = not inverted
+        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8N1_program);
+        esc_uart_rx_8N1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_ZTW1_BAUDRATE , false); // false = not inverted
     }
     //#define DEBUG_ESC
     #ifdef  DEBUG_ESC
@@ -228,7 +227,6 @@ void handleEsc(){
             pullupHW = true;
         }
     }
-    
     while (! queue_is_empty(&escRxQueue)) {
         // we get the value in the queue
         queue_try_remove (&escRxQueue,&data);
@@ -236,11 +234,12 @@ void handleEsc(){
         // so reset the buffer and process the byte
         if (data & 0X8000) {
             escRxBufferIdx = 0;
-            if ((data & 0X0FF) != 0 ) frameStarted = true;
         } else if (escRxBufferIdx >= escMaxFrameLen) {
             continue ; // discard the car if buffer is full (should not happen)    
         }
-        if (frameStarted) printf("%4X\n",data ); 
+        // to debug the char being received
+        printf("%4X\n",data ); 
+        
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
             processEscFrame(); // process the incoming byte
