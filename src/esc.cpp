@@ -248,7 +248,7 @@ void handleEsc(){
     } // end while
     #ifdef DEBUG_ESC // generate a frame once per 10 msec
     static uint32_t lastZWT1Ms;
-    if ((millisRp() - lastZWT1Ms) > 5000) {
+    if ((millisRp() - lastZWT1Ms) > 50) {
         lastZWT1Ms = millisRp();
         for (uint8_t i = 1; i<=32 ; i++) {
             uart_putc_raw(uart0, (char) i);

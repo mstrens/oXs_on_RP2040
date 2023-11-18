@@ -1847,7 +1847,7 @@ void printFieldValues(){
     if (config.VspeedCompChannel != 255){
         printf("Vspeed compensation = %.2f\n", dteCompensationFactor);
     }
-    printf("pwmTop= %i",pwmTop);
+    printf("pwmTop= %i\n",pwmTop);
 }
 
 void printPwmValues(){

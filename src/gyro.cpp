@@ -17,6 +17,69 @@
 //    positive values means that nose goes down; pitch changes in the opposite way
 // gyroZ = vertical axis = yaw axis
 //    positive values means that plane turns to the left (conter clockwise); yaw changes in the opposite way
+// on openTx, when Ail or Rudd stick goes to the right, pwm increases goes to 2000us (+512)
+//            when Elv stick gives nose up, pwm goes to 1000us (-512)  
+// imagine that when stick ail goes to right, one channel for one Ail servo increases (e.g. goes from 1500 to 1800 us)
+//         that when stick Elv goes nose up, the channel  for Elv servo decreases     (e.g goes from 1500 to 1200 us)
+//         that when stick Rud goes to right, the channel for Rud servo decreases     (e.g goes from 1500 to 1000 us)
+// so after calibration the value in the mixer will be 
+//          for the roll right = +300 (1800-1500)     and roll left = -400 (opposite side)
+//                  pitch up    = -300 (1200-1500)        pitch down = +300   
+//                  rud right = -500 (1000-1500)         Rud left = +500  
+
+// In Rate mode: oXs uses directectly the values from the gyro to calculate the compensation.                                              
+// imagine that due to wind, the left wing goes up (= plane goes to right). So gyroY becomes positive.
+// so PID set point remain 0 and pid input is > 0; pid error > 0 (input-setpoint) ; pid output > 0 (error * k)
+// so correction > 0. If stick is centered (OSP= 0) ESP will be positive (ESP=OSP+correction)
+// then correction on positive side will be positieve (= correction) and correction on negative side will be 0
+// finally, the PWM will be the original value + (correction positive side * rateRollright). As rateRollRight= 300, PWN will increase
+// this means that this is equivalent to setting the stick to the rigth.
+// this is wrong because the servo should move in the other direction.
+// so PID correction has to be INVERTED to keep PID/master/stick gains positive
+// this is done inverting pid input!!!!!!
+//
+// imagine that due to wind, the nose goes up. So gyroY becomes negative (gyro and pitch goes in opposite way).
+// so PID set point remain 0 and pid input is <0; pid error < 0 (input-setpoint) ; pid output < 0 (error * k)
+// so correction < 0. If stick is centered (OSP= 0) ESP will be negative (ESP=OSP+correction)
+// then correction on positive side = 0 and correction on negative side will be negative (= correction)
+// finally, the PWM will be the original value - (correction negative side * ratePitchDown). As ratepitchDown= +300, PWN will increase
+// this means that this is equivalent to setting the stick nose down.
+// this is OK.
+// so PID correction on pitch has NOT to be inverted to keep PID/master/stick gains positive
+//
+// imagine that due to wind, the plane turn to right on yaw axis. So gyroZ becomes negative.
+// so PID set point remain 0 and pid input is < 0; pid error < 0 (input-setpoint) ; pid output < 0 (error * k)
+// so correction < 0. If stick is centered (OSP= 0) ESP will be negative (ESP=OSP+correction)
+// then correction on positive side = 0 and correction on negative side < 0 (= correction)
+// finally, the PWM will be the original value - (correction negative side * rateRudderRLeft). As rateRudleft= 500, PWN will increase
+// this means that this is equivalent to setting the stick to the left.
+// this is OK
+// so PID correction has NOT to be inverted to keep PID/master/stick gains positive
+//
+// in stabilized mode : oXs uses roll and pitch that heve been calculated by the IMU (mahony algo)
+// imagine that the left wing is up (= plane goes to right). So roll is positive.
+// so PID set point remain 0 and pid input is > 0; pid error > 0 (input-setpoint) ; pid output > 0 (error * k)
+// so correction > 0. If stick is centered (OSP= 0) ESP will be positive (ESP=OSP+correction)
+// then correction on positive side will be positieve (= correction) and correction on negative side will be 0
+// finally, the PWM will be the original value + (correction positive side * rateRollright). As rateRollRight= 300, PWN will increase
+// this means that this is equivalent to setting the stick to the rigth.
+// this is wrong because the servo should move in the other direction.
+// so PID correction has to be INVERTED to keep PID/master/stick gains positive
+// this is done inverting pid input!!!!!!
+//
+// imagine that the nose is down. So pitch is negative .
+// so PID set point remain 0 and pid input is <0; pid error < 0 (input-setpoint) ; pid output < 0 (error * k)
+// so correction < 0. If stick is centered (OSP= 0) ESP will be negative (ESP=OSP+correction)
+// then correction on positive side = 0 and correction on negative side will be negative (= correction)
+// finally, the PWM will be the original value - (correction negative side * ratePitchDown). As ratepitchDown= +300, PWN us will increase
+// this means that this is equivalent to setting the stick nose down.
+// this is NOT OK.
+// so PID correction on pitch has NOT to be inverted to keep PID/master/stick gains positive
+// this is done inverting pid input!!!!!!
+//
+
+
+
 
 //enum LEARNING_STATE {LEARNING_OFF, LEARNING_INIT,LEARNING_WAIT, LEARNING_MIXERS, LEARNING_LIMITS, LEARNING_ERROR, LEARNING_OK};
 enum LEARNING_STATE learningState = LEARNING_OFF;
@@ -275,12 +338,12 @@ void calculateCorrectionsToApply(){
         // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
         // gyroZ varies from -32768/32768 (int16) 
         // so we multiply camera roll and pitch by 32 to get about the same range (and so use similar values for PID)
-        pid_state.input[0] = ((int32_t) -cameraRoll) << 5;     
-        pid_state.input[1] = ((int32_t) cameraPitch) << 5;
+        pid_state.input[0] = ((int32_t) -cameraRoll) << 5;     // see text on top of this file to justify the - sign 
+        pid_state.input[1] = ((int32_t) -cameraPitch) << 5;
         pid_state.input[2] = gyroZ;        
     } else {
     // measured angular rate (from the gyro and apply calibration offset but no scaling)
-        pid_state.input[0] = gyroX;  // gyroX,Y,Z max value is +/-32768 = +/-2000°/sec 
+        pid_state.input[0] = - gyroX;  // gyroX,Y,Z max value is +/-32768 = +/-2000°/sec // see top of the file to explain the "-" for gyroX/roll axis 
         pid_state.input[1] = gyroY; // flightstab used a constrain -8192/8191 but I do not seee the reason
         pid_state.input[2] = gyroZ;        
     }
@@ -288,7 +351,7 @@ void calculateCorrectionsToApply(){
     compute_pid(&pid_state, (stabMode == STAB_RATE) ? &config.pid_param_rate : (config.gyroAutolevel) ?  &config.pid_param_stab : &config.pid_param_hold);
     
     //  Only to debug
-    #define DEBUG_PID_CORRECTIONS
+    //#define DEBUG_PID_CORRECTIONS
     #ifdef  DEBUG_PID_CORRECTIONS
     static int16_t maxOutput[3] = { 0,0,0};
     static int16_t setpoint[3];

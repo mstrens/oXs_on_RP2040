@@ -550,7 +550,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     roll  = RAD_TO_DEGREE * atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
     pitch = -RAD_TO_DEGREE * asin(2.0 * ( qh[0] * qh[2] - qh[1] * qh[3]));
     //if (msgEverySec(0)){printf("GOH=%i GOV=%i ax=%i  ay=%i   az=%i  roll=%.0f     pitch=%.0f\n",\
-    // config.mpuOrientationH, config.mpuOrientationV, oax, oay ,oaz , roll , pitch);}
+    //            config.mpuOrientationH, config.mpuOrientationV, oax, oay ,oaz , roll , pitch);}
     
     //float a1 , a2, a3;
     //#define F 0.7071068
