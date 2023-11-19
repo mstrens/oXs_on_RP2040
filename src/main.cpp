@@ -65,8 +65,8 @@
 
 // Look at file in folder "doc" for more details
 //
-// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2  (it uses max 6 bytes for Hott and a dma)
-//        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2  (it uses 9 bytes, 1 irq and no dma)
+// So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2 or Ibus (it uses max 6 bytes for Hott and a dma)
+//        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2 or Ibus (it uses 9 bytes, 1 irq and no dma)
 //        0   2            sbus out                                                            (it uses 4 bytes and one dma)       
 //        0   3            esc  Rx                                                             (it uses 9 bytes, 1 irq and no dma)
 

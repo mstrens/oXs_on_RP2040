@@ -238,7 +238,7 @@ void handleEsc(){
             continue ; // discard the car if buffer is full (should not happen)    
         }
         // to debug the char being received
-        printf("%4X\n",data ); 
+        if (config.escType == ZTW1) ("%4X\n",data ); 
         
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
@@ -313,7 +313,8 @@ void processHW4Frame(){
             //    currentf = 0;
             //}     
             
-            printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+            //printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+            
             //throttle += ALPHA*(update_throttle(raw_throttle)-throttle);
             //rpm += ALPHA*(update_rpm(raw_rpm)-rpm);
             //pwm += ALPHA*(update_pwm(raw_pwm)-pwm);
