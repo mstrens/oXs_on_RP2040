@@ -302,10 +302,8 @@ void calculateCorrectionsToApply(){
         } else  {   // Force Gain to 0 while in either of the Hysteresis areas
             master_gain = 0; // Force deadband
             // reset attitude error when and i_limit threshold when gain is 0 (dead band)
-            for (i=0; i<3; i++) {
-                pid_state.sum_err[i] = 0;
-                pid_state.i_limit[i] = 0;
-            }
+            pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;
+            pid_state.i_limit[0] = 0; pid_state.i_limit[1] = 0; pid_state.i_limit[2] = 0;
         }    
     }	  	    
     
@@ -338,8 +336,8 @@ void calculateCorrectionsToApply(){
         // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
         // gyroZ varies from -32768/32768 (int16) 
         // so we multiply camera roll and pitch by 32 to get about the same range (and so use similar values for PID)
-        pid_state.input[0] = ((int32_t) -cameraRoll) << 5;     // see text on top of this file to justify the - sign 
-        pid_state.input[1] = ((int32_t) -cameraPitch) << 5;
+        pid_state.input[0] = ((int32_t) cameraRoll) << 5;     // see text on top of this file to justify the - sign 
+        pid_state.input[1] = ((int32_t) cameraPitch) << 5;
         pid_state.input[2] = gyroZ;        
     } else {
     // measured angular rate (from the gyro and apply calibration offset but no scaling)
