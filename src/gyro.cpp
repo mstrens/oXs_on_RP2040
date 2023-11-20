@@ -74,7 +74,7 @@
 // finally, the PWM will be the original value - (correction negative side * ratePitchDown). As ratepitchDown= +300, PWN us will increase
 // this means that this is equivalent to setting the stick nose down.
 // this is NOT OK.
-// so PID correction on pitch has NOT to be inverted to keep PID/master/stick gains positive
+// so PID correction on pitch has to be inverted to keep PID/master/stick gains positive
 // this is done inverting pid input!!!!!!
 //
 
@@ -335,9 +335,9 @@ void calculateCorrectionsToApply(){
     if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
         // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
         // gyroZ varies from -32768/32768 (int16) 
-        // so we multiply camera roll and pitch by 32 to get about the same range (and so use similar values for PID)
-        pid_state.input[0] = ((int32_t) cameraRoll) << 5;     // see text on top of this file to justify the - sign 
-        pid_state.input[1] = ((int32_t) cameraPitch) << 5;
+        // See Xls sheet to justify the << 2 (=*2)
+        pid_state.input[0] = ((int32_t) -cameraRoll) << 1;     // see text on top of this file to justify the - sign 
+        pid_state.input[1] = ((int32_t) -cameraPitch) << 1;
         pid_state.input[2] = gyroZ;        
     } else {
     // measured angular rate (from the gyro and apply calibration offset but no scaling)

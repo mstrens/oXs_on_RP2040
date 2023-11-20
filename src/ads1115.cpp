@@ -1,5 +1,4 @@
 #include "ads1115.h"
-
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "stdio.h"
