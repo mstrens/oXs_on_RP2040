@@ -164,6 +164,8 @@ int16_t gyroX;
 int16_t gyroY;
 int16_t gyroZ;
 
+extern bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it after a watchdog reset)
+
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
     // send 10 SCL clock to force sensor to release sda
@@ -374,8 +376,10 @@ void setup() {
   
   if (watchdog_caused_reboot()) {
         printf("Rebooted by Watchdog!\n");
+        calibrateImuGyro = false;
     } else {
         printf("Clean boot\n");
+        calibrateImuGyro = true;
         //sleep_ms(1000); // wait that GPS is initialized
     }
   setupConfig(); // retrieve the config parameters (crsf baudrate, voltage scale & offset, type of gps, failsafe settings)  

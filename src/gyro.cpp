@@ -333,12 +333,19 @@ void calculateCorrectionsToApply(){
     // gyroY and pitch change in opposite way
     // gyroZ and yaw change in opposite way
     if (config.gyroAutolevel and stabMode == STAB_HOLD){  // reuse Hold position for autolevel
-        // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
-        // gyroZ varies from -32768/32768 (int16) 
-        // See Xls sheet to justify the << 2 (=*2)
-        pid_state.input[0] = ((int32_t) -cameraRoll) << 1;     // see text on top of this file to justify the - sign 
-        pid_state.input[1] = ((int32_t) -cameraPitch) << 1;
-        pid_state.input[2] = gyroZ;        
+        if ( (abs(cameraRoll)>600) or (abs(cameraPitch)>600) ) {  // roll and pitch are not reliable when values are hight; so discard gyro
+            pid_state.input[0] = 0;     // see text on top of this file to justify the - sign 
+            pid_state.input[1] = 0;
+            pid_state.input[2] = 0;
+            pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;    
+        } else {
+            // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
+            // gyroZ varies from -32768/32768 (int16) 
+            // See Xls sheet to justify the << 2 (=*2)
+            pid_state.input[0] = ((int32_t) -cameraRoll) << 1;     // see text on top of this file to justify the - sign 
+            pid_state.input[1] = ((int32_t) -cameraPitch) << 1;
+            pid_state.input[2] = gyroZ;
+        }            
     } else {
     // measured angular rate (from the gyro and apply calibration offset but no scaling)
         pid_state.input[0] = - gyroX;  // gyroX,Y,Z max value is +/-32768 = +/-2000°/sec // see top of the file to explain the "-" for gyroX/roll axis 

@@ -21,6 +21,8 @@ extern VARIO vario1;
 
 extern queue_t qSendCmdToCore1;
 
+bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it after a watchdog reset)
+
 float zTrack ;
 float vTrack ;
 float prevVTrack; // use to check hysteresis.
@@ -194,10 +196,12 @@ void MPU::calibrationHorizontalExecute()  //
 	
     int16_t ax,ay,az ;
     int16_t gx,gy,gz ;
-	int32_t axAccum, ayAccum, azAccum;
+	int32_t axAccum, ayAccum, azAccum , axMin , axMax , ayMin , ayMax , azMin , azMax;
 	axAccum = ayAccum = azAccum = 0;
-    int32_t gxAccum, gyAccum, gzAccum;
+    int32_t gxAccum, gyAccum, gzAccum , gxMin , gxMax , gyMin , gyMax , gzMin , gzMax;
 	gxAccum = gyAccum = gzAccum = 0;
+    axMin = ayMin = azMin = gxMin = gyMin = gzMin = 60000;
+    axMax = ayMax = azMax = gxMax = gyMax = gzMax = -60000;  
 	// use a lower dlpf
     //uint8_t buffer[2] = {MPU6050_RA_CONFIG , MPU6050_DLPF_BW_20};
     //if( i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &buffer[0], 2, false,3000)<0){ // true to keep master control of bus
@@ -232,8 +236,30 @@ void MPU::calibrationHorizontalExecute()  //
         gxAccum += (int32_t) gx;
         gyAccum += (int32_t) gy;
         gzAccum += (int32_t) gz;
+        if (ax < axMin) axMin = ax;
+        if (ay < ayMin) ayMin = ay;
+        if (az < azMin) azMin = az;
+        if (ax > axMax) axMax = ax;
+        if (ay > ayMax) ayMax = ay;
+        if (az > azMax) azMax = az;
+        if (gx < gxMin) gxMin = gx;
+        if (gy < gyMin) gyMin = gy;
+        if (gz < gzMin) gzMin = gz;
+        if (gx > gxMax) gxMax = gx;
+        if (gy > gyMax) gyMax = gy;
+        if (gz > gzMax) gzMax = gz;
     }
     // here we know the offsets but still have to identify the gravity, set mpuOrientationH and take gravity out of offset 
+    #define MAX_ACC_DIFF 100
+    if (((axMax - axMin) > MAX_ACC_DIFF) or ((ayMax - ayMin) > MAX_ACC_DIFF) or ((azMax - azMin) > MAX_ACC_DIFF)) {
+        printf ("Error in IMU calibration: to much variations in the acceleration values\n");
+        return;
+    }
+    #define MAX_GYRO_DIFF 100
+    if (((gxMax - gxMin) > MAX_GYRO_DIFF) or ((gyMax - gyMin) > MAX_GYRO_DIFF) or ((gzMax - gzMin) > MAX_GYRO_DIFF)) {
+        printf ("Error in IMU calibration: to much variations in the gyro rates values\n");
+        return;
+    }
     axAccum /= (ACCEL_NUM_AVG_SAMPLES);
     ayAccum /= (ACCEL_NUM_AVG_SAMPLES);
     azAccum /= (ACCEL_NUM_AVG_SAMPLES);
@@ -499,16 +525,31 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     #define NUMBER_ITER_CALIB 1000
     static uint32_t count = 0;
     static int32_t gSum[3] = {0, 0, 0};
-    if (count < NUMBER_ITER_CALIB){
-        count++;
-        gSum[0] += gRaw[0]; gSum[1] += gRaw[1]; gSum[2] += gRaw[2]; 
-        return false ; // skip rest of calcul
-    } else if (count == NUMBER_ITER_CALIB){
-        config.gyroOffsetX= (int16_t)(gSum[0] / 2000);  config.gyroOffsetY= (int16_t)(gSum[1]/2000); config.gyroOffsetZ= (int16_t)(gSum[2]/2000);
-        count++;
-        //printf(" offset gx=%i  gy=%i   gz=%i\n",  (int)config.gyroOffsetX ,(int)config.gyroOffsetY,(int)config.gyroOffsetZ);
-        return false ; // skip rest of calcul
-    }
+    static int32_t gMin[3] = {60000 , 60000, 60000};
+    static int32_t gMax[3] = {-60000 , -60000, -60000};
+    
+    if (calibrateImuGyro) {
+        if (count < NUMBER_ITER_CALIB){
+            count++;
+            gSum[0] += gRaw[0]; gSum[1] += gRaw[1]; gSum[2] += gRaw[2];
+            if (gRaw[0] < gMin[0]) gMin[0] = gRaw[0];
+            if (gRaw[1] < gMin[1]) gMin[1] = gRaw[1];
+            if (gRaw[2] < gMin[2]) gMin[2] = gRaw[2]; 
+            if (gRaw[0] > gMax[0]) gMax[0] = gRaw[0];
+            if (gRaw[1] > gMax[1]) gMax[1] = gRaw[1];
+            if (gRaw[2] > gMax[2]) gMax[2] = gRaw[2]; 
+            return false ; // skip rest of calcul
+        } else if (count == NUMBER_ITER_CALIB){
+            calibrateImuGyro = false; // avoid calibration (it is done)
+            if ( ((gMax[0]-gMin[0]) > MAX_GYRO_DIFF) or ((gMax[1]-gMin[1]) > MAX_GYRO_DIFF) or((gMax[2]-gMin[2]) > MAX_GYRO_DIFF) ){
+                printf("Automatic gyro calibration failed; oXs uses gyro offsets saved during horizontal calibration\n");
+            } else {
+                config.gyroOffsetX= (int16_t)(gSum[0] / 2000);  config.gyroOffsetY= (int16_t)(gSum[1]/2000); config.gyroOffsetZ= (int16_t)(gSum[2]/2000);
+            //printf(" offset gx=%i  gy=%i   gz=%i\n",  (int)config.gyroOffsetX ,(int)config.gyroOffsetY,(int)config.gyroOffsetZ);
+            }
+            return false ; // skip rest of calcul
+        }
+    }    
     #endif
 
     if (orientationIsWrong){
