@@ -4,7 +4,7 @@
 // srxl2 run on a pio uart at a baud rate of 115200 8N1 not inverted
 // Rx sent a handshake at power on to different device ID
 // when the handshake has the same device ID as oXs, oXs replies with a handshake
-// After having received all handshake msg from all device, Rx sent one more handshake with destination = FF (broadcast)
+// After having received all handshake msg from all devices, Rx sent one more handshake with destination = FF (broadcast)
 // oXs handle this handshake to adapt the masterDeviceID and the baudrate (in theory)
 // after this Rx send control data frame once every 11 or 22msec 
 // This frame contains a byte that says what is the content of the payload (Rc channels, failsafe, VTX)
@@ -14,7 +14,7 @@
 // Note : to identify that an incoming frame is complete, oXs has to detect that no byte are received during at least the time to get 2 char. 
 // Normally the Rx does not initiate the handshake. If no one device on the bus initiates the handshake there would be no activity on the bus
 // So if oXS does not see activity on the bus, it has to initiate the handshake.
-// If oXs takes a quite long time to statup, there could already be some activity on the bus.
+// If oXs takes a quite long time to startup, there could already be some activity on the bus.
 // In this case oXs has to detect the baudrate (115200 or 400000), wait for a control data frame with replyId =0 and then send a telemetry frame with the destination Id = 0
 //    This will request the master to start again a handshake process.
 
@@ -354,7 +354,7 @@ bool srxl2FrameIsvalid(){
     uint16_t crc16Received = ((uint16_t) srxl2ProcessIn[srxl2ProcessInIdx-2])  << 8;
     crc16Received |= srxl2ProcessIn[srxl2ProcessInIdx-1];
     if (crc16Expected != crc16Received) {
-        if (srxl2IsConnected) printf("CRC is not correctn");
+        if (srxl2IsConnected) printf("CRC is not correct\n");
         return false ; 
     }    
     return true;  // frame is valid; it has still to be processed         
@@ -696,7 +696,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             }    
             break;
         case 3: // TELE_DEVICE_ESC
-            if ((fields[RPM].available) || (fields[TEMP1].available) || (fields[TEMP2].available)) {
+            if ((fields[RPM].available) || (fields[MVOLT].available) || (fields[TEMP1].available) || (fields[TEMP2].available) || (fields[CURRENT].available) ) {
                 srxl2Frames.esc.identifier = TELE_DEVICE_ESC; //0X20
                 srxl2Frames.esc.sID = 0; // Secondary ID
                 if (fields[RPM].available) {

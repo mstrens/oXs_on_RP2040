@@ -57,21 +57,18 @@
 //         test tlm data in log interface
 //         it seems that in ELRS protocol, PWM are not generated since some version.
 //         use Rc channels with gyro correction to the signal Sbus out. 
-//         check if the gyro rate of mpu is the same as the one used in flightstab
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
-//         avoid gyro calibration at reset after a watchdog reset (to reduce start up time); not sure it is critical.
-//         add some check during the calibration that the model is not moving
 
 
 // Look at file in folder "doc" for more details
 //
 // So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2 or Ibus (it uses max 6 bytes for Hott and a dma)
-//        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2 or Ibus (it uses 9 bytes, 1 irq and no dma)
+//        0   1                         for Sport Rx            or HOTT RX or MPX RX or SRXL2 or Ibus (it uses 9 bytes, 1 irq0 and no dma)
 //        0   2            sbus out                                                            (it uses 4 bytes and one dma)       
 //        0   3            esc  Rx                                                             (it uses 9 bytes, 1 irq and no dma)
 
 //        1   0 is used for gps Tx  ; is unclaim when GPS config is done and reused             (it uses 4 bytes no dma)      
-//        1   0 is also used for gps Rx                                                         (it uses 9 bytes, 1 irq and no dma)
+//        1   0 is also used for gps Rx                                                         (it uses 9 bytes, 1 irq1 and no dma)
 
 //        1   1  is used for rpm                                                                       (it uses 3 bytes , no Irq, no dma)
 //        1   2 is used for logger uart Tx                                                             (it uses 4 bytes, no irq and one dma) 

@@ -7,8 +7,8 @@
 //#include "config_macros.h"
 
 #define MAX_NBR_VOLTAGES 4 // number of pins available for ADC
-#define VOLTAGEINTERVAL 1000 // minimum interval between 2 reads (usec)
-#define SUM_COUNT_MAX_VOLTAGE 30 // number of ADC conversions to calculate averages
+#define VOLTAGEINTERVAL 1000 // minimum interval between 2 reads (usec) (as there are 4 adc pin, the interval for one pin is 4X more)
+#define SUM_COUNT_MAX_VOLTAGE 50 // number of ADC conversions to calculate averages (there is 2 conversions per loop, so this is in fact 100 measurements)
 #define FIRST_ANALOG_PIN 26
 class VOLTAGE
 {
