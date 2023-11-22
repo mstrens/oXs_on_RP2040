@@ -670,6 +670,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 }
                 if (fields[NUMSAT].available) {
                     srxl2Frames.gps.numSats = (uint8_t) fields[NUMSAT].value; // count
+                    fields[NUMSAT].available = false;
                 } else {
                     srxl2Frames.gps.numSats = 0XFF;
                 }
@@ -692,6 +693,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.airspeed.reserve3 =  0;
                 srxl2Frames.airspeed.reserve4 =  0;
                 srxl2Frames.airspeed.reserve5 =  0;
+                fields[AIRSPEED].available = false;
                 return true;
             }    
             break;
@@ -702,30 +704,35 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 if (fields[RPM].available) {
                     tempU16 = (uint16_t) fields[RPM].value * 6  ; //from Hz to 10 tour/min
                     srxl2Frames.esc.RPM = swapBinary(tempU16);
+                    fields[RPM].available = false; 
                 } else {
                     srxl2Frames.esc.RPM = 0XFFFF;
                 }
                 if (fields[MVOLT].available) {
                     tempU16 = (uint16_t) (int_round( fields[MVOLT].value ,  10));  // Volts, 0.01V increments
                     srxl2Frames.esc.voltsInput = swapBinary(tempU16);
+                    fields[MVOLT].available = false;
                 } else {
                     srxl2Frames.esc.voltsInput =  0XFFFF;
                 }    
                 if ((fields[TEMP1].available) && (fields[TEMP1].value > 0)) {
                     tempU16 =  (uint16_t) fields[TEMP1].value * 10; // from degree to 0.1 degree
                     srxl2Frames.esc.tempFET = swapBinary(tempU16);
+                    fields[TEMP1].available = false ;
                 } else {
                     srxl2Frames.esc.tempFET =  0XFFFF;
                 }
                if (fields[CURRENT].available) {
                     tempU16 = (uint16_t) (int_round( fields[CURRENT].value ,  10));  //// Instantaneous current, 0.01A (0-655.34A)		7FFF-> no data  
                     srxl2Frames.esc.currentMotor  = swapBinary(tempU16);
+                    fields[CURRENT].available = false ;
                 } else {
                     srxl2Frames.esc.currentMotor = 0xFFFF ; 
                 }
                 if ((fields[TEMP2].available) && (fields[TEMP2].value > 0)) {
                     tempU16 =    fields[TEMP2].value * 10; // from degree to 0.1 degree
                     srxl2Frames.esc.tempBEC = swapBinary(tempU16);
+                    fields[TEMP2].available = false;
                 } else {
                     srxl2Frames.esc.tempBEC =  0XFFFF;
                 }

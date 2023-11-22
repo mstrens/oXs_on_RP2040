@@ -294,7 +294,7 @@ void processHW4Frame(){
             if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
                 // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
                 //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000) with DIFFAMP_GAIN = e.g. 10
-                currentf = (current) * config.scaleVolt2 - config.offset2;
+                currentf = ((float)current) * config.scaleVolt2 - config.offset2;
             }
             if (currentf<0) currentf = 0;
             if (currentf < ESC_MAX_CURRENT) { // discard when current is to high
@@ -313,7 +313,7 @@ void processHW4Frame(){
             //    currentf = 0;
             //}     
             
-            //printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+            printf("Esc throttle=%i   pwm=%i   Volt=%i  current=%i  consumed=%i  temp1=%i  temp2=%i\n", throttle , pwm , voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
             
             //throttle += ALPHA*(update_throttle(raw_throttle)-throttle);
             //rpm += ALPHA*(update_rpm(raw_rpm)-rpm);
