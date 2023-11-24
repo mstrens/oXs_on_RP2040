@@ -930,7 +930,7 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 4: // TELE_DEVICE_GPS_LOC
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsLoc.identifier, 16);
-            printf("srxl2 buffer filled ");
+            printf("srxl2 buffer LOC filled ");
             for (uint8_t i=0; i<22 ;i++ ){
                 printf(" %2X ", srxl2TxBuffer[i]);
             }
@@ -938,6 +938,12 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 5: // TELE_DEVICE_GPS_STATS
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsStats.identifier, 16);
+            printf("srxl2 buffer STATS filled ");
+            for (uint8_t i=0; i<22 ;i++ ){
+                printf(" %2X ", srxl2TxBuffer[i]);
+            }
+            printf("\n");
+            
             break;
         case 6: //TELE_DEVICE_RX_MAH                   // normally not used
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);
