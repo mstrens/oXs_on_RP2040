@@ -820,7 +820,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 hdop = (hdop > 99) ? 99 : hdop;
                 srxl2Frames.gpsLoc.HDOP = dec2bcd(hdop);
                 flags |= GPS_INFO_FLAGS_GPS_FIX_VALID |GPS_INFO_FLAGS_GPS_DATA_RECEIVED | GPS_INFO_FLAGS_3D_FIX;
-                srxl2Frames.gpsLoc.GPSflags;
+                srxl2Frames.gpsLoc.GPSflags = flags;
                 printf("GPS LOC alt=%X lat=%X  long=%X  course=%X   Hdop=%X\n", srxl2Frames.gpsLoc.altitudeLow ,\
                     srxl2Frames.gpsLoc.latitude , srxl2Frames.gpsLoc.longitude , srxl2Frames.gpsLoc.course , srxl2Frames.gpsLoc.HDOP);
                 return true;
