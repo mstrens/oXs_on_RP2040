@@ -290,24 +290,24 @@ void processHW4Frame(){
             //                  =            * 3300 /4096 * V_DIV with V_DIV = e.g. 12
             sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
 
-            #ifdef ESC_DISCARD_CURRENT
-            float currentf = 0;
-            if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
-                // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
-                //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000) with DIFFAMP_GAIN = e.g. 10
-                currentf = ((float)current) * config.scaleVolt2 - config.offset2;
-            }
-            if (currentf<0) currentf = 0;
-            if (currentf < ESC_MAX_CURRENT) { // discard when current is to high
-                sent2Core0( CURRENT, (int32_t)  currentf) ; 
-            }
-            // calculate consumption
-            if (lastEscConsumedMillis) { 
-                escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
-                sent2Core0( CAPACITY, (int32_t) escConsumedMah);
-            }
-            lastEscConsumedMillis =  millisRp(); 
-            #endif
+            if (config.pinVolt[1] == 255) { 
+                float currentf = 0;
+                if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
+                    // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
+                    //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000) with DIFFAMP_GAIN = e.g. 10
+                    currentf = ((float)current) * config.scaleVolt2 - config.offset2;
+                }
+                if (currentf<0) currentf = 0;
+                if (currentf < ESC_MAX_CURRENT) { // discard when current is to high
+                    sent2Core0( CURRENT, (int32_t)  currentf) ; 
+                }
+                // calculate consumption
+                if (lastEscConsumedMillis) { 
+                    escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
+                    sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+                }
+                lastEscConsumedMillis =  millisRp(); 
+                }
 
             sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
             sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
@@ -354,13 +354,14 @@ void processKontronikFrame(){
         int32_t tempBec = escRxBuffer[27];
         sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
         sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
-        sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
-        if (lastEscConsumedMillis) { 
-            escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
-            sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+        if (config.pinVolt[1] == 255) {
+            sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
+            if (lastEscConsumedMillis) { 
+                escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
+                sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+            }
+            lastEscConsumedMillis =  millisRp(); 
         }
-        lastEscConsumedMillis =  millisRp(); 
-        
         sent2Core0( TEMP1, tempFet) ;
         sent2Core0( TEMP2, tempBec) ;
         printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
@@ -378,13 +379,14 @@ void processZTW1Frame(){
         int32_t tempBec = escRxBuffer[21] - 96;  // probably an offset of 96 to get a range -96/150
         sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
         sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1 - config.offset1)) ; 
-        sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
-        if (lastEscConsumedMillis) { 
-            escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
-            sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+        if (config.pinVolt[1] == 255) {
+            sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
+            if (lastEscConsumedMillis) { 
+                escConsumedMah += (currentf * (millisRp() - lastEscConsumedMillis)) / 3600000.0 ;  // in mah.
+                sent2Core0( CAPACITY, (int32_t) escConsumedMah);
+            }
+            lastEscConsumedMillis =  millisRp(); 
         }
-        lastEscConsumedMillis =  millisRp(); 
-        
         sent2Core0( TEMP1, tempFet) ;
         sent2Core0( TEMP2, tempBec) ;
         printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
