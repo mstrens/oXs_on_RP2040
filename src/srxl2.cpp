@@ -578,8 +578,8 @@ bool srxl2FillTelemetryFrame(){
     bool dataAvailableForFrame[numberOfFrames] = {false}; 
     // first we search the first field 
     for (uint8_t i = 0 ; i< numberOfFrames ; i++ ){
-        if (srxl2IsFrameDataAvailable(i)) {  // test if some data are available and if so, fill the frame in the structure
-            if (currentPollingNr >= (srxl2LastPoolingNr[i] + srxl2MaxPooling[i])){
+        if (currentPollingNr >= (srxl2LastPoolingNr[i] + srxl2MaxPooling[i])){
+            if (srxl2IsFrameDataAvailable(i)) {  // test if some data are available and if so, fill the frame in the structure
                 srxl2FillTXBuffer(i);    // copy the payload into the TX buffer and fill header and crc
                 srxl2LastPoolingNr[i] = currentPollingNr; // store pooling that has been used 
                 return true;
@@ -588,8 +588,8 @@ bool srxl2FillTelemetryFrame(){
     } // end for
     // repeat base on min (knowing that the payload are already filled by srxl2IsFrameDataAvailable())
     for (uint8_t i = 0 ; i< numberOfFrames ; i++ ){
-        if (dataAvailableForFrame[i]) {  // if data is available
-            if (currentPollingNr >= (srxl2LastPoolingNr[i] + srxl2MinPooling[i])){
+        if (currentPollingNr >= (srxl2LastPoolingNr[i] + srxl2MinPooling[i])){
+            if (dataAvailableForFrame[i]) {  // if data is available
                 srxl2FillTXBuffer(i);
                 srxl2LastPoolingNr[i] = currentPollingNr; // store pooling that has been used 
                 return true;
@@ -821,8 +821,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gpsLoc.HDOP = dec2bcd(hdop);
                 flags |= GPS_INFO_FLAGS_GPS_FIX_VALID |GPS_INFO_FLAGS_GPS_DATA_RECEIVED | GPS_INFO_FLAGS_3D_FIX;
                 srxl2Frames.gpsLoc.GPSflags = flags;
-                printf("GPS LOC alt=%X lat=%X  long=%X  course=%X   Hdop=%X\n", srxl2Frames.gpsLoc.altitudeLow ,\
-                    srxl2Frames.gpsLoc.latitude , srxl2Frames.gpsLoc.longitude , srxl2Frames.gpsLoc.course , srxl2Frames.gpsLoc.HDOP);
+                //printf("GPS LOC alt=%X lat=%X  long=%X  course=%X   Hdop=%X\n", srxl2Frames.gpsLoc.altitudeLow ,\
+                //    srxl2Frames.gpsLoc.latitude , srxl2Frames.gpsLoc.longitude , srxl2Frames.gpsLoc.course , srxl2Frames.gpsLoc.HDOP);
                 return true;
             }    
             break;
@@ -930,20 +930,19 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 4: // TELE_DEVICE_GPS_LOC
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsLoc.identifier, 16);
-            printf("srxl2 buffer LOC filled ");
-            for (uint8_t i=0; i<22 ;i++ ){
-                printf(" %2X ", srxl2TxBuffer[i]);
-            }
-            printf("\n");
+            //printf("srxl2 buffer LOC filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         case 5: // TELE_DEVICE_GPS_STATS
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsStats.identifier, 16);
-            printf("srxl2 buffer STATS filled ");
-            for (uint8_t i=0; i<22 ;i++ ){
-                printf(" %2X ", srxl2TxBuffer[i]);
-            }
-            printf("\n");
-            
+            //printf("srxl2 buffer STATS filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         case 6: //TELE_DEVICE_RX_MAH                   // normally not used
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);

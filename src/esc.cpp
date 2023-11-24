@@ -290,6 +290,7 @@ void processHW4Frame(){
             //                  =            * 3300 /4096 * V_DIV with V_DIV = e.g. 12
             sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
 
+            #ifdef ESC_DISCARD_CURRENT
             float currentf = 0;
             if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
                 // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
@@ -306,7 +307,8 @@ void processHW4Frame(){
                 sent2Core0( CAPACITY, (int32_t) escConsumedMah);
             }
             lastEscConsumedMillis =  millisRp(); 
-            
+            #endif
+
             sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
             sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
             //if (current > HWV4_CURRENT_MAX) { // reset if value is to high

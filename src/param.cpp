@@ -1228,10 +1228,12 @@ void checkConfigAndSequencers(){     // set configIsValid
         printf("Error in parameters: When gpio is defined for ESC, gpio for Volt1 (V1) must be undefined (=255)\n");
         configIsValid=false;
     }    
+    #ifndef ESC_DISCARD_CURRENT
     if ( (config.pinEsc != 255) && (config.pinVolt[1]!=255)) {
         printf("Error in parameters: When gpio is defined for ESC, gpio for current = Volt2 (V2) must be undefined (=255)\n");
         configIsValid=false;
-    }    
+    }
+    #endif    
     if ( (config.pinEsc != 255) && (config.pinRpm!=255)) {
         printf("Error in parameters: When gpio is defined for ESC, gpio for RPM must be undefined (=255)\n");
         configIsValid=false;
