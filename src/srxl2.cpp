@@ -436,7 +436,7 @@ void srxl2ProcessIncomingFrame(){
         } 
         // we do not have to reply to other handshake frame
     } else {  // we got a control data frame
-// 0XA6 + 0XCD + lenght + command (0=channels, 1=failsafe) + ReplyId + payload + CRC (2 bytes)
+// 0XA6 + 0XCD + length + command (0=channels, 1=failsafe) + ReplyId + payload + CRC (2 bytes)
 //         payload for channels= RSSI(I8) + frameLosses(U16) + channel mask(U32) + n*channel(U16) (n depends on mask)
 //         payload for Failsafe= RSSI(I8) + hold(U16) + channel mask(U32) + n*channel(U16) (n depends on mask) 
         // when we get a control data for oXs, we reply with a telemetry frame (if data are available)
@@ -821,6 +821,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gpsLoc.HDOP = dec2bcd(hdop);
                 flags |= GPS_INFO_FLAGS_GPS_FIX_VALID |GPS_INFO_FLAGS_GPS_DATA_RECEIVED | GPS_INFO_FLAGS_3D_FIX;
                 srxl2Frames.gpsLoc.GPSflags;
+                printf("GPS LOC alt=%X lat=%X  long=%X  course=%X   Hdop=%X\n", srxl2Frames.gpsLoc.altitudeLow ,\
+                    srxl2Frames.gpsLoc.latitude , srxl2Frames.gpsLoc.longitude , srxl2Frames.gpsLoc.course , srxl2Frames.gpsLoc.HDOP);
                 return true;
             }    
             break;
@@ -932,7 +934,6 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
         case 5: // TELE_DEVICE_GPS_STATS
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsStats.identifier, 16);
             break;
-        
         case 6: //TELE_DEVICE_RX_MAH                   // normally not used
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);
             break;
