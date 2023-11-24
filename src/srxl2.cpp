@@ -837,8 +837,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
 */
         case 5: //TELE_DEVICE_GPS_STATS		(0x17)										// GPS Status (Eagle Tree)
             if ((fields[NUMSAT].available) and (fields[NUMSAT].value > 100)) { // only when there is a 3d fix
-                srxl2Frames.gps.identifier = TELE_DEVICE_GPS_STATS; //0X17
-                srxl2Frames.gps.sID = 0; // Secondary ID
+                srxl2Frames.gpsStats.identifier = TELE_DEVICE_GPS_STATS; //0X17
+                srxl2Frames.gpsStats.sID = 0; // Secondary ID
 
                 // Number of sats and altitude (high bits)
                 uint8_t numSat = fields[NUMSAT].value;

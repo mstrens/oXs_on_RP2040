@@ -828,8 +828,8 @@ typedef struct
 {
 	uint8_t		identifier;														// Source device = 0x17
 	uint8_t		sID;															// Secondary ID
-	uint16_t		speed;															// BCD, knots, format 3.1
-	uint32_t		UTC;															// BCD, format HH:MM:SS.S, format 6.1
+	uint16_t	speed;															// BCD, knots, format 3.1
+	uint32_t	UTC;															// BCD, format HH:MM:SS.S, format 6.1
 	uint8_t		numSats;														// BCD, 0-99
 	uint8_t		altitudeHigh;													// BCD, meters, format 2.0 (High order of altitude)
 } __attribute__((packed)) STRU_TELE_GPS_STAT;
