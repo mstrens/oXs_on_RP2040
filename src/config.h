@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.10.11"
+#define VERSION "2.10.12"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -145,6 +145,9 @@
 //#define MPX_ALARM_CM_MAX 12000  // alarm when relative altitude (in cm) is higher than this value
 
 
+// -------- Parameters for SRXL2 protocol ---------------------------
+#define USE_GPS_BCD_INSTEAD_OF_BINARY  // default is GPS binary format used; uncomment this line if you want to use BCD format instead of binary 
+                                       // this has been added because old handset does not support binary format.
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
 #define FROM_SBUS_MIN 172  // This is equivalent to -100 on openTx
 #define TO_PWM_MIN 988     // this is the PWM usec for -100
