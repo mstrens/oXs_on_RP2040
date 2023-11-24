@@ -788,9 +788,9 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                     if (fields[ALTITUDE].value < 0) {
                         flags |= GPS_INFO_FLAGS_NEGATIVE_ALT;
                         // convert from cm to dm, then keep 4 last digits and then convert to bcd
-                        srxl2Frames.gpsLoc.altitudeLow = dec2bcd((uint16_t) ((-fields[ALTITUDE].value/10)%10000));    
+                        srxl2Frames.gpsLoc.altitudeLow = swapBinary(dec2bcd((uint16_t) ((-fields[ALTITUDE].value/10)%10000)));    
                     } else {
-                    srxl2Frames.gpsLoc.altitudeLow = dec2bcd((uint16_t) ((fields[ALTITUDE].value/10)%10000));
+                    srxl2Frames.gpsLoc.altitudeLow = swapBinary(dec2bcd((uint16_t) ((fields[ALTITUDE].value/10)%10000)));
                     }
                 } else {
                     srxl2Frames.gpsLoc.altitudeLow = 0;
@@ -798,19 +798,19 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 
                 // latitude
                 GPStoDDDMM_MMMM(fields[LATITUDE].value, &coordinate);  // fill coordinate with bcd 
-                srxl2Frames.gpsLoc.latitude  = (dec2bcd(coordinate.dddmm) << 16) | dec2bcd(coordinate.mmmm);
+                srxl2Frames.gpsLoc.latitude  = swapBinary((dec2bcd(coordinate.dddmm) << 16) | dec2bcd(coordinate.mmmm));
                 if ( fields[LATITUDE].value > 0) flags |= GPS_INFO_FLAGS_IS_NORTH;   
 
                 // longitude
                 GPStoDDDMM_MMMM(fields[LONGITUDE].value, &coordinate);
-                srxl2Frames.gpsLoc.longitude = (dec2bcd(coordinate.dddmm) << 16) | dec2bcd(coordinate.mmmm);
+                srxl2Frames.gpsLoc.longitude = swapBinary((dec2bcd(coordinate.dddmm) << 16) | dec2bcd(coordinate.mmmm));
                 if ( fields[LONGITUDE].value > 0) flags |= GPS_INFO_FLAGS_IS_EAST;   
                 if (fields[LONGITUDE].value / GPS_DEGREES_DIVIDER > 99) flags |= GPS_INFO_FLAGS_LONGITUDE_GREATER_99;
 
                  // Ground course
                 if (fields[HEADING].available) {
                     tempU16 = (uint16_t) (int_round(fields[HEADING].value , 10)); // from 0.01 deg to 0.1 deg
-                    srxl2Frames.gpsLoc.course = dec2bcd(tempU16);
+                    srxl2Frames.gpsLoc.course = swapBinary(dec2bcd(tempU16));
                 } else {
                     srxl2Frames.gpsLoc.course = 0;
                 }
@@ -848,7 +848,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gpsStats.altitudeHigh = dec2bcd(fields[ALTITUDE].value / 100000);
                  // Speed (knots)
                 uint16_t speedTmp = fields[GROUNDSPEED].value * 1944 / 1000;
-                srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? dec2bcd(9999) : dec2bcd(speedTmp);
+                srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? swapBinary(dec2bcd(9999)) : swapBinary(dec2bcd(speedTmp));
                 //Time
                 #define SPEKTRUM_TIME_UNKNOWN 0xFFFFFFFF
                 srxl2Frames.gpsStats.UTC = SPEKTRUM_TIME_UNKNOWN ; 
