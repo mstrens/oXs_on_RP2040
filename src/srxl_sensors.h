@@ -816,10 +816,10 @@ typedef struct
 {
 	uint8_t		identifier;														// Source device = 0x16
 	uint8_t		sID;															// Secondary ID
-	uint16_t		altitudeLow;													// BCD, meters, format 3.1 (Low order of altitude)
-	uint32_t		latitude;														// BCD, format 4.4, Degrees * 100 + minutes, less than 100 degrees
-	uint32_t		longitude;														// BCD, format 4.4 , Degrees * 100 + minutes, flag indicates > 99 degrees
-	uint16_t		course;															// BCD, 3.1
+	uint16_t	altitudeLow;													// BCD, meters, format 3.1 (Low order of altitude)
+	uint32_t	latitude;														// BCD, format 4.4, Degrees * 100 + minutes, less than 100 degrees
+	uint32_t	longitude;														// BCD, format 4.4 , Degrees * 100 + minutes, flag indicates > 99 degrees
+	uint16_t	course;															// BCD, 3.1
 	uint8_t		HDOP;															// BCD, format 1.1
 	uint8_t		GPSflags;														// see definitions below
 } __attribute__((packed)) STRU_TELE_GPS_LOC;
