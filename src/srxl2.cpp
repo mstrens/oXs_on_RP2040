@@ -850,8 +850,21 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 uint16_t speedTmp = fields[GROUNDSPEED].value * 1944 / 1000;
                 srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? (dec2bcd(9999)) : (dec2bcd(speedTmp));
                 //Time
-                #define SPEKTRUM_TIME_UNKNOWN 0x01234560
-                srxl2Frames.gpsStats.UTC = SPEKTRUM_TIME_UNKNOWN ;
+                //#define SPEKTRUM_TIME_UNKNOWN 0x12345600
+                /*
+                if (fields[GPS_TIME].available){
+                    uint32_t hhmmss00;
+                    hhmmss00 = fields[GPS_TIME].value;
+                    uint32_t hh; uint32_t mm ; uint32_t ss ;
+                    hh = (uint32_t) dec2bcd( (hhmmss00 >> 24) &0XFF);
+                    mm = (uint32_t) dec2bcd( (hhmmss00 >> 16) &0XFF);
+                    ss = (uint32_t) dec2bcd( (hhmmss00 >> 8) &0XFF);
+                    srxl2Frames.gpsStats.UTC = (hh<<20) | (mm<<12) | (ss<<4);    
+                } else {
+                    srxl2Frames.gpsStats.UTC = 0; 
+                }
+                */
+                srxl2Frames.gpsStats.UTC = 0X12345600  ; // should be 12h 23min 56sec
                 srxl2Frames.gpsStats.notUsed1 = 0XFFFF ;
                 srxl2Frames.gpsStats.notUsed2 = 0XFFFF ;
                 srxl2Frames.gpsStats.notUsed3 = 0XFFFF ; 
