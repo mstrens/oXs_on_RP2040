@@ -832,6 +832,9 @@ typedef struct
 	uint32_t	UTC;															// BCD, format HH:MM:SS.S, format 6.1
 	uint8_t		numSats;														// BCD, 0-99
 	uint8_t		altitudeHigh;													// BCD, meters, format 2.0 (High order of altitude)
+    uint16_t    notUsed1;   // added by mstrens to get a payload of 16 like other frames
+    uint16_t    notUsed2;   // added by mstrens to get a payload of 16 like other frames
+    uint16_t    notUsed3;   // added by mstrens to get a payload of 16 like other frames
 } __attribute__((packed)) STRU_TELE_GPS_STAT;
 
 // GPS flags definitions:

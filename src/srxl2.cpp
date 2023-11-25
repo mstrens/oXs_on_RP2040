@@ -851,7 +851,10 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? swapBinary(dec2bcd(9999)) : swapBinary(dec2bcd(speedTmp));
                 //Time
                 #define SPEKTRUM_TIME_UNKNOWN 0xFFFFFFFF
-                srxl2Frames.gpsStats.UTC = SPEKTRUM_TIME_UNKNOWN ; 
+                srxl2Frames.gpsStats.UTC = SPEKTRUM_TIME_UNKNOWN ;
+                srxl2Frames.gpsStats.notUsed1 = 0XFFFF ;
+                srxl2Frames.gpsStats.notUsed2 = 0XFFFF ;
+                srxl2Frames.gpsStats.notUsed3 = 0XFFFF ; 
                 fields[NUMSAT].available = false;
                 return true;
             }    
