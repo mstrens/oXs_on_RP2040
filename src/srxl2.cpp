@@ -850,7 +850,6 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 uint16_t speedTmp = fields[GROUNDSPEED].value * 1944 / 1000;
                 srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? (dec2bcd(9999)) : (dec2bcd(speedTmp));
                 //Time
-                /*
                 if (fields[GPS_TIME].available){
                     uint32_t hhmmss00;
                     hhmmss00 = fields[GPS_TIME].value; // hhmmss00 with hh, mm, ss in binary
@@ -862,8 +861,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 } else {
                     srxl2Frames.gpsStats.UTC = 0; 
                 }
-                */
-                srxl2Frames.gpsStats.UTC = 0X12345600;
+                
+                //srxl2Frames.gpsStats.UTC = 0X12345600;
                 srxl2Frames.gpsStats.notUsed1 = 0XFFFF ;
                 srxl2Frames.gpsStats.notUsed2 = 0XFFFF ;
                 srxl2Frames.gpsStats.notUsed3 = 0XFFFF ; 
@@ -945,19 +944,19 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 4: // TELE_DEVICE_GPS_LOC
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsLoc.identifier, 16);
-            printf("srxl2 buffer LOC filled ");
-            for (uint8_t i=0; i<22 ;i++ ){
-                printf(" %2X ", srxl2TxBuffer[i]);
-            }
-            printf("\n");
+            //printf("srxl2 buffer LOC filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         case 5: // TELE_DEVICE_GPS_STATS
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsStats.identifier, 16);
-            printf("srxl2 buffer STATS filled ");
-            for (uint8_t i=0; i<22 ;i++ ){
-                printf(" %2X ", srxl2TxBuffer[i]);
-            }
-            printf("\n");
+            //printf("srxl2 buffer STATS filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         case 6: //TELE_DEVICE_RX_MAH                   // normally not used
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);
