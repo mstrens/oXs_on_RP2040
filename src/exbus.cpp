@@ -211,13 +211,13 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = GPS_CUMUL_DIST ;
         #endif     
     }
-    if (( config.pinVolt[0] != 255)  ||  activateAllFields || config.escType!= 255){
+    if (( config.pinVolt[0] != 255)  ||  activateAllFields || config.pinEsc != 255){
         #if defined(P_MVOLT) && (P_MVOLT > 0)
             exbusMaxPooling[MVOLT] = P_MVOLT;
             exbusFieldList[exbusMaxFields++] = MVOLT ;
         #endif    
     }
-    if (( config.pinVolt[1] != 255)  ||  activateAllFields || config.escType!= 255){
+    if (( config.pinVolt[1] != 255)  ||  activateAllFields || config.pinEsc!= 255){
         #if defined(P_CURRENT) && (P_CURRENT > 0)
             exbusMaxPooling[CURRENT] = P_CURRENT;
             exbusFieldList[exbusMaxFields++] = CURRENT ;
@@ -239,13 +239,13 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = RESERVE2 ;
         #endif
     }
-    if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields || config.escType!= 255) {
+    if ((( config.pinVolt[2] != 255)  && (config.temperature == 1 || config.temperature == 2) ) ||  activateAllFields || config.pinEsc!= 255) {
         #if defined(P_TEMP1) && (P_TEMP1 > 0)
             exbusMaxPooling[TEMP1] = P_TEMP1;
             exbusFieldList[exbusMaxFields++] = TEMP1 ;
         #endif
     }
-    if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields || config.escType!= 255) {
+    if ((( config.pinVolt[3] != 255)  && (config.temperature == 2) ) ||  activateAllFields || config.pinEsc!= 255) {
         #if defined(P_TEMP2) && (P_TEMP2 > 0)
             exbusMaxPooling[TEMP2] = P_TEMP2;
             exbusFieldList[exbusMaxFields++] = TEMP2 ;
@@ -271,7 +271,7 @@ void setupExbusList(bool activateAllFields){
             exbusFieldList[exbusMaxFields++] = ROLL ;
         #endif
     }
-    if (( config.pinRpm != 255 )  ||  activateAllFields || config.escType!= 255) {
+    if (( config.pinRpm != 255 )  ||  activateAllFields || config.pinEsc!= 255) {
         #if defined(P_RPM) && (P_RPM > 0)
             exbusMaxPooling[RPM] = P_RPM;
             exbusFieldList[exbusMaxFields++] = RPM ; 

@@ -223,17 +223,17 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
       ADS_2_4,      // Voltage provided by ads1115 nr 2 on pin 4
     
     */
-    if ( config.pinVolt[0] != 255 || config.escType !=255 )  {
+    if ( config.pinVolt[0] != 255 || config.pinEsc !=255 )  {
         addToIbus(MVOLT) ;
     }
-    if ( config.pinVolt[1] != 255 || config.escType !=255 ) {
+    if ( config.pinVolt[1] != 255 || config.pinEsc !=255 ) {
         addToIbus(CURRENT) ;
         addToIbus(CAPACITY) ;
     } 
-    if ( (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2)) || config.escType !=255 ) {
+    if ( (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2)) || config.pinEsc !=255 ) {
         addToIbus(TEMP1) ;
     } 
-    if ( (( config.pinVolt[3] != 255)  && (config.temperature == 2) )  || config.escType !=255 ) {
+    if ( (( config.pinVolt[3] != 255)  && (config.temperature == 2) )  || config.pinEsc !=255 ) {
         addToIbus(TEMP2) ;
     } 
     // here we could add other voltage parameter (current, ...)
@@ -241,7 +241,7 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(RELATIVEALT) ; 
         addToIbus(VSPEED) ;
     }
-    if ( config.pinRpm != 255  || config.escType !=255 ) {
+    if ( config.pinRpm != 255  || config.pinEsc !=255 ) {
         addToIbus(RPM) ;
     } 
     if ( config.pinGpsTx != 255 ) {

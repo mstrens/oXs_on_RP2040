@@ -136,10 +136,10 @@ void setupJeti() {
 void initListOfJetiFields(bool activateAllFields) {  // fill an array with the list of fields (field ID) that are defined -   Note : this list is not yet complete (e.g; GPS, ...)
     listOfJetiFields[0] = OXS_ID ;
     listOfJetiFieldsIdx = 1 ; // 0 is not used for a value, because - for text- it contains the name of the sensor (e.g. openXsensor)
-    if (( config.pinVolt[0] != 255) ||  activateAllFields || config.escType!= 255)  {
+    if (( config.pinVolt[0] != 255) ||  activateAllFields || config.pinEsc!= 255)  {
         listOfJetiFields[listOfJetiFieldsIdx++] = MVOLT ;
     }
-    if (( config.pinVolt[1] != 255)  ||  activateAllFields || config.escType!= 255) {
+    if (( config.pinVolt[1] != 255)  ||  activateAllFields || config.pinEsc!= 255) {
         listOfJetiFields[listOfJetiFieldsIdx++] = CURRENT ;
         listOfJetiFields[listOfJetiFieldsIdx++] = CAPACITY ;
     }
@@ -159,13 +159,13 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
     if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = AIRSPEED ; 
     }
-    if (( config.pinRpm != 255 )  ||  activateAllFields || config.escType!= 255) {
+    if (( config.pinRpm != 255 )  ||  activateAllFields || config.pinEsc!= 255) {
         listOfJetiFields[listOfJetiFieldsIdx++] = RPM ; 
     }
-    if ((config.temperature == 1 || config.temperature == 2)  ||  activateAllFields || config.escType!= 255) {
+    if ((config.temperature == 1 || config.temperature == 2)  ||  activateAllFields || config.pinEsc!= 255) {
         listOfJetiFields[listOfJetiFieldsIdx++] = TEMP1 ;
     }
-    if ((config.temperature == 2) ||  activateAllFields || config.escType!= 255) {
+    if ((config.temperature == 2) ||  activateAllFields || config.pinEsc!= 255) {
         listOfJetiFields[listOfJetiFieldsIdx++] = TEMP2 ;
     }
     numberOfJetiFields = listOfJetiFieldsIdx - 1 ;
