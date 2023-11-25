@@ -782,8 +782,8 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             flags = 0;
             gpsCoordinateDDDMMmmmm_t coordinate; // structure ot convert long and lat
             if ((fields[NUMSAT].available) and (fields[NUMSAT].value > 100)) { // only when there is a 3d fix
-                srxl2Frames.gps.identifier = TELE_DEVICE_GPS_LOC; //0X16
-                srxl2Frames.gps.sID = 0; // Secondary ID
+                srxl2Frames.gpsLoc.identifier = TELE_DEVICE_GPS_LOC; //0X16
+                srxl2Frames.gpsLoc.sID = 0; // Secondary ID
                 if (fields[ALTITUDE].available) {
                     if (fields[ALTITUDE].value < 0) {
                         flags |= GPS_INFO_FLAGS_NEGATIVE_ALT;
