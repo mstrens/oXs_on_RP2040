@@ -850,7 +850,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 uint16_t speedTmp = fields[GROUNDSPEED].value * 1944 / 1000;
                 srxl2Frames.gpsStats.speed = (speedTmp > 9999) ? (dec2bcd(9999)) : (dec2bcd(speedTmp));
                 //Time
-                #define SPEKTRUM_TIME_UNKNOWN 0xFFFFFFFF
+                #define SPEKTRUM_TIME_UNKNOWN 0x01234560
                 srxl2Frames.gpsStats.UTC = SPEKTRUM_TIME_UNKNOWN ;
                 srxl2Frames.gpsStats.notUsed1 = 0XFFFF ;
                 srxl2Frames.gpsStats.notUsed2 = 0XFFFF ;
