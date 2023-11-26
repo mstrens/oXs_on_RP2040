@@ -17,7 +17,7 @@ Vspeed      cm/sec           a baro is installed (and SCL/SDA defined)    Vspeed
                              if a MP6050 is installed, Vpeed use it too
 GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) long (0x0800)          special format
 GPS lat                      Same as above                                 lat (0x0800)           special format
-GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.01 kts/h
+GPS speed  cm/sec            Same as above                                 GPS ground speed(0X0830)  0.001 kts
 GPS course 0.01 degree       Same as above                                 GPS heading (0X840)       0.01 degree
 GPS Alt    cm                Same as above; = alt above see level          GPAS Alt (0X820)          cm
                              Note : some handsets calculate a relative alt
@@ -355,5 +355,20 @@ Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not t
 Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 
+Note: for srxl2, there are 2 types of frame for GPS (binary and BCD_LOC+BCD_STATS)
+Table above is for binary
+Table below is for BCD
+GPS longitude                GPS is installed (and GPS_TX, GPS_RX defined) GPS_LON                   BCD ;DDDMMmmmm (mm=decimals of min)
+GPS lat                      Same as above                                 GPS_LAT                   BCD ;DDDMMmmmm (mm=decimals of min)
+GPS speed  cm/sec            Same as above                                 GROUND_SPEED              BCD knots
+GPS course 0.01 degree       Same as above                                 Heading                   BCD 0.1 degree
+GPS Alt    cm                Same as above; = alt above see level          GPS_ALT                   BCD dm (split on 2 frames + 1 flag > 1000m) 
+GPS number of satelites      Same as above (+100 when 3D fix)              GPS_STATUS                BCD (not more than 99)
+GPS date   YYMMDD0xFF        Same as above                                 not transmitted 
+GPS time   HHMMSS0x00        Same as above                                 GPS_TIME                  BCD ; HHMMSS00
+GPS PDOP   0.01 ????         Same as above                                 PDOP                      BCD ; 0.1
+GPS bearing from home        Same as above                                 not transmitted
+GPS distance from home       Same as above                                 not transmitted
+GPS cumulative distance m    Same as above                                 not transmitted 
 
 

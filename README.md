@@ -50,6 +50,9 @@ Each function (telemetry/PWM/SBUS/gyro/logger/sequencer) can be used alone or co
 
 Note: when a mpu6050 is used (to improve vario reactivity, stabilize the plane and/or a camera), it is important to calibrate the mp6050 horizontally and vertically (see section below)
 
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=4T3KNNJ58J3B4)
+
+
 ## -------  Hardware -----------------
 
 This project requires a board with a RP2040 processor (like the rapsberry pi pico).
@@ -395,6 +398,8 @@ The logger will remove the stuff bytes, uncompress the data, combine the new dat
 When oXs get the Rc channels from a receiver (via Sbus, Ibus, ...) and when a MPU6050 is installed, oXs can apply gyro corrections on several servos.
 For more details, please read carrefully the file "gyro concepts.md" in the folder "doc".
 
+
+Important note: at this stage, this is still experimental. It has not been intensively tested. So used it at you own risk.
 
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).

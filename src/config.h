@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.10.28"
+#define VERSION "2.11.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -146,7 +146,7 @@
 
 
 // -------- Parameters for SRXL2 protocol ---------------------------
-#define USE_GPS_BCD_INSTEAD_OF_BINARY  // default is GPS binary format used; uncomment this line if you want to use BCD format instead of binary 
+//#define USE_GPS_BCD_INSTEAD_OF_BINARY  // default is GPS binary format used; uncomment this line if you want to use BCD format instead of binary 
                                        // this has been added because old handset does not support binary format.
 // --------- Parameters to remap the SBUS Rc channel values to PWM values ---------
 #define FROM_SBUS_MIN 172  // This is equivalent to -100 on openTx
@@ -201,6 +201,7 @@
 #define ACC_MAX_SCALE_G 2 // maximum acceleration in G (can only be 2,4,8, 16)
 #define GYRO_MAX_SCALE_DEGREE 2000  // max gyro rate : degree per sec
 #define CALIBRATE_GYRO_ON_RESET     // uncomment to avoid gyro calibration on reset
+
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
 

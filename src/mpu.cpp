@@ -250,7 +250,7 @@ void MPU::calibrationHorizontalExecute()  //
         if (gz > gzMax) gzMax = gz;
     }
     // here we know the offsets but still have to identify the gravity, set mpuOrientationH and take gravity out of offset 
-    #define MAX_ACC_DIFF 100
+    #define MAX_ACC_DIFF 300
     if (((axMax - axMin) > MAX_ACC_DIFF) or ((ayMax - ayMin) > MAX_ACC_DIFF) or ((azMax - azMin) > MAX_ACC_DIFF)) {
         printf ("Error in IMU calibration: to much variations in the acceleration values\n");
         return;
