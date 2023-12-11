@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.5"
+#define VERSION "2.11.6"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -215,12 +215,12 @@
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
-#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
+//#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
 #define PITCH_RATIO_CHANNEL 15   // Channel used to set up the ratio between pitch and servo movement (optional)
 #define PITCH_RATIO  100  // Ratio to use when PITCH_RATIO_CHANNEL is undefined (or 255); increase/decrease the value in case of under/over stabilisation  
 #define PITCH_MAX 100     // adapt upper limit of servo travel (should normally be the same value as on TX) 
 #define PITCH_MIN -100    // adapt lower limit of servo travel (should normally be the same value as on TX)
-#define ROLL_CONTROL_CHANNEL 14// Channel used to control the servo for the camera (roll); uncomment to activate the roll stabilization
+//#define ROLL_CONTROL_CHANNEL 14// Channel used to control the servo for the camera (roll); uncomment to activate the roll stabilization
 #define ROLL_RATIO_CHANNEL 13    // Channel used to set up the ratio between roll and servo movement
 #define ROLL_RATIO  100  // Ratio to use when ROLL_RATIO_CHANNEL is undefined (or 255); increase/decrease the value in case of under/over stabilisation
 #define ROLL_MAX 100     // adapt upper limit of servo travel 

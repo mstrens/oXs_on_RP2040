@@ -51,12 +51,12 @@ void VOLTAGE::getVoltages(void){
             adc_read(); // convert and sum
             //printf("V=%i\n",(int) adc_read());
             adcValue = adc_read();
-            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
-            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+//            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+//            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
             sumVoltage[adcSeq] += adcValue; // convert and sum
             adcValue = adc_read();
-            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
-            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+//            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+//            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
             sumVoltage[adcSeq] += adcValue; // convert and sum
         }     
         adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
@@ -73,7 +73,6 @@ void VOLTAGE::getVoltages(void){
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
-                        adcAvg[cntInit]= sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE ;
                         value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0) * mVoltPerStep[cntInit]) - offset[cntInit];
                         // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
                         // volt 2 is used for current and consumed capacity is then calculated too
@@ -90,13 +89,14 @@ void VOLTAGE::getVoltages(void){
                             lastConsumedMillis =  millisRp(); 
                             sent2Core0( CAPACITY, (int32_t) consumedMah );
                         }
-                        //fields[cntInit + MVOLT].available = true ;
+                        //adcAvg[cntInit]= sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE ;
+                        
                     }
                     sumVoltage[cntInit] = 0 ;
-                    adcMin[cntInit] = 0XFFFF;
-                    adcMax[cntInit] = 0;
+                    //adcMin[cntInit] = 0XFFFF;
+                    //adcMax[cntInit] = 0;
                     //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);
-                    printf("adc %i  min=%i   max=%i   avg=%i\n", cntInit , adcMin[cntInit] ,adcMax[cntInit] , adcAvg[cntInit] );
+                    //printf("adc %i  min=%i   max=%i   avg=%i\n", cntInit , adcMin[cntInit] ,adcMax[cntInit] , adcAvg[cntInit] );
                     
                 }    
             }    
