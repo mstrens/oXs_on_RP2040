@@ -42,6 +42,7 @@ void VOLTAGE::getVoltages(void){
     uint32_t enlapsedMicros =0;
     static uint32_t lastConsumedMillis = millisRp();
     float value;
+    uint16_t adcValue;
     static uint8_t adcSeq = 0; // sequence 0...3 of pin to be read 
     if ( config.pinVolt[0] == 255 and config.pinVolt[1] == 255 and config.pinVolt[2] == 255 and config.pinVolt[3] == 255 ) return ;
     if ( (microsRp() - lastVoltageMicros) > VOLTAGEINTERVAL ) {  // performs one conversion every X usec
@@ -49,8 +50,14 @@ void VOLTAGE::getVoltages(void){
         if ( config.pinVolt[adcSeq] != 255) {
             adc_read(); // convert and sum
             //printf("V=%i\n",(int) adc_read());
-            sumVoltage[adcSeq] += adc_read(); // convert and sum
-            sumVoltage[adcSeq] += adc_read(); // convert and sum
+            adcValue = adc_read();
+            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+            sumVoltage[adcSeq] += adcValue; // convert and sum
+            adcValue = adc_read();
+            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+            sumVoltage[adcSeq] += adcValue; // convert and sum
         }     
         adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
         if ( config.pinVolt[adcSeq] != 255) {
@@ -66,6 +73,7 @@ void VOLTAGE::getVoltages(void){
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
+                        adcAvg[cntInit]= sumVoltage[cntInit] / SUM_COUNT_MAX_VOLTAGE ;
                         value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0) * mVoltPerStep[cntInit]) - offset[cntInit];
                         // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
                         // volt 2 is used for current and consumed capacity is then calculated too
@@ -85,10 +93,14 @@ void VOLTAGE::getVoltages(void){
                         //fields[cntInit + MVOLT].available = true ;
                     }
                     sumVoltage[cntInit] = 0 ;
+                    adcMin[cntInit] = 0XFFFF;
+                    adcMax[cntInit] = 0;
                     //printf("voltage has been measured: %d value= %d \n", cntInit , (int) mVolt[cntInit].value);
+                    printf("adc %i  min=%i   max=%i   avg=%i\n", cntInit , adcMin[cntInit] ,adcMax[cntInit] , adcAvg[cntInit] );
                     
                 }    
             }    
         }
+        
     }        
 }

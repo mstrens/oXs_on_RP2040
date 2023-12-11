@@ -215,7 +215,7 @@ void MPU::calibrationHorizontalExecute()  //
         uint8_t val = 0x3B;
         uint8_t buffer[14]; 
         if (i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true,1000)<0) { // true to keep master control of bus
-            printf("Write error for MPU6050 calibration at 0X3B\n");
+            printf("Write error for MPU6050 calibration at 0X3B command\n");
             return;
         }
         if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 3500) <0){
