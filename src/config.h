@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.1"
+#define VERSION "2.11.2"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -154,6 +154,10 @@
 #define FROM_SBUS_MAX 1811  // This is equivalent to +100 on openTx
 #define TO_PWM_MAX 2012     // this is the PWM usec for +100
 
+//#define EXTENDED_RANGE_FROM_CHANNEL 0  // uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
+//#define EXTENDED_RANGE_UP_TO_CHANNEL 6 // uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
+#define EXTENDED_TO_PWM_MIN 500
+#define EXTENDED_TO_PWM_MAX 2500
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100
 #define SENSITIVITY_MAX 300
@@ -211,12 +215,12 @@
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
-//#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
+#define PITCH_CONTROL_CHANNEL 16 // Channel used to control the servo for the camera (pitch); uncomment to activate the pitch stabilization
 #define PITCH_RATIO_CHANNEL 15   // Channel used to set up the ratio between pitch and servo movement (optional)
 #define PITCH_RATIO  100  // Ratio to use when PITCH_RATIO_CHANNEL is undefined (or 255); increase/decrease the value in case of under/over stabilisation  
 #define PITCH_MAX 100     // adapt upper limit of servo travel (should normally be the same value as on TX) 
 #define PITCH_MIN -100    // adapt lower limit of servo travel (should normally be the same value as on TX)
-//#define ROLL_CONTROL_CHANNEL 14// Channel used to control the servo for the camera (roll); uncomment to activate the roll stabilization
+#define ROLL_CONTROL_CHANNEL 14// Channel used to control the servo for the camera (roll); uncomment to activate the roll stabilization
 #define ROLL_RATIO_CHANNEL 13    // Channel used to set up the ratio between roll and servo movement
 #define ROLL_RATIO  100  // Ratio to use when ROLL_RATIO_CHANNEL is undefined (or 255); increase/decrease the value in case of under/over stabilisation
 #define ROLL_MAX 100     // adapt upper limit of servo travel 

@@ -285,11 +285,14 @@ void processHW4Frame(){
         }
         else 
         {
-            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator)) ; //Multiplicator should be 2/number of poles
+            if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
+                sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator)) ; //Multiplicator should be 2/number of poles
+            }
             // original formule = raw_voltage*(V_REF/ADC_RES)*V_DIV
             //                  =            * 3300 /4096 * V_DIV with V_DIV = e.g. 12
-            sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
-
+            if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc
+                sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
+            }
             if (config.pinVolt[1] == 255) { 
                 float currentf = 0;
                 if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
@@ -308,9 +311,12 @@ void processHW4Frame(){
                 }
                 lastEscConsumedMillis =  millisRp(); 
                 }
-
-            sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
-            sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
+            if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc
+                sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
+            }
+            if ((config.pinVolt[3] == 255) or (config.temperature != 2)){ //  we discard temp from esc
+                sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
+            }
             //if (current > HWV4_CURRENT_MAX) { // reset if value is to high
             //    currentf = 0;
             //}     
@@ -352,8 +358,13 @@ void processKontronikFrame(){
         //float voltage_bec = ((uint16_t)escRxBuffer[21] << 8 | escRxBuffer[20]) / 1000.0;
         int32_t tempFet = escRxBuffer[26];
         int32_t tempBec = escRxBuffer[27];
-        sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
-        sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
+        
+        if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+        }
+        if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc    
+            sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
+        }
         if (config.pinVolt[1] == 255) {
             sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
             if (lastEscConsumedMillis) { 
@@ -362,8 +373,12 @@ void processKontronikFrame(){
             }
             lastEscConsumedMillis =  millisRp(); 
         }
-        sent2Core0( TEMP1, tempFet) ;
-        sent2Core0( TEMP2, tempBec) ;
+        if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc    
+            sent2Core0( TEMP1, tempFet) ;
+        }
+        if ((config.pinVolt[3] == 255) or (config.temperature != 2)){ //  we discard temp from esc
+            sent2Core0( TEMP2, tempBec) ;
+        }
         printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
     }    
 }
@@ -377,8 +392,12 @@ void processZTW1Frame(){
         //float voltage_bec = ((uint16_t)escRxBuffer[21] << 8 | escRxBuffer[20]) / 1000.0;
         int32_t tempFet = escRxBuffer[10] - 96;  // probably an offset of 96 to get a range -96/150
         int32_t tempBec = escRxBuffer[21] - 96;  // probably an offset of 96 to get a range -96/150
-        sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
-        sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1 - config.offset1)) ; 
+        if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+        }
+        if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc    
+            sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1 - config.offset1)) ; 
+        }
         if (config.pinVolt[1] == 255) {
             sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
             if (lastEscConsumedMillis) { 
@@ -387,8 +406,12 @@ void processZTW1Frame(){
             }
             lastEscConsumedMillis =  millisRp(); 
         }
-        sent2Core0( TEMP1, tempFet) ;
-        sent2Core0( TEMP2, tempBec) ;
+        if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc    
+            sent2Core0( TEMP1, tempFet) ;
+        }
+        if ((config.pinVolt[3] == 255) or (config.temperature != 2)){ //  we discard temp from esc
+            sent2Core0( TEMP2, tempBec) ;
+        }
         printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
     }    
 }

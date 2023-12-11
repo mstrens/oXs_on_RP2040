@@ -20,8 +20,10 @@ void setupPwm();
 void updatePWM();
 void handleSbusRx();
 
-uint16_t  fmap(uint16_t x);
+uint16_t  fmap(uint16_t x); // Convert sbus to pwm usec
 uint16_t fmapMinMax(int x);
+uint16_t  fmapExtended(uint16_t x); // convert Sbus value to Pwm value using extended range
+
 
 // functions used by the PIO for 2 additionnal PWM 
 // this part is not used anymore (pio pwm)
