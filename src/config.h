@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.2"
+#define VERSION "2.11.3"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -154,8 +154,8 @@
 #define FROM_SBUS_MAX 1811  // This is equivalent to +100 on openTx
 #define TO_PWM_MAX 2012     // this is the PWM usec for +100
 
-//#define EXTENDED_RANGE_FROM_CHANNEL 0  // uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
-//#define EXTENDED_RANGE_UP_TO_CHANNEL 6 // uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
+//#define EXTENDED_RANGE_FROM_CHANNEL 2  // (range 1/16) ; uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
+//#define EXTENDED_RANGE_UP_TO_CHANNEL 6 // (range 1/16) ;uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
 #define EXTENDED_TO_PWM_MIN 500
 #define EXTENDED_TO_PWM_MAX 2500
 // -------- Parameters for the vario -----

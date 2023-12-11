@@ -271,97 +271,97 @@ void updatePWM(){
         }
         // copy the sbus into uint16; value are in Sbus units [172/1811] not in PWM us [988/2012] = [-100/+100]
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (0 >= EXTENDED_RANGE_FROM_CHANNEL ) and (0 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (1 >= EXTENDED_RANGE_FROM_CHANNEL ) and (1 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[0] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch0) ;  
         #else
         rcChannelsUs[0] = fmap((uint16_t) sbusFrame.rcChannelsData.ch0) ;  
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (1 >= EXTENDED_RANGE_FROM_CHANNEL ) and (1 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (2 >= EXTENDED_RANGE_FROM_CHANNEL ) and (2 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[1] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch1) ;  
         #else
         rcChannelsUs[1] = fmap((uint16_t) sbusFrame.rcChannelsData.ch1) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (2 >= EXTENDED_RANGE_FROM_CHANNEL ) and (2 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (3 >= EXTENDED_RANGE_FROM_CHANNEL ) and (3 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[2] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch2) ;  
         #else
         rcChannelsUs[2] = fmap((uint16_t) sbusFrame.rcChannelsData.ch2) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (3 >= EXTENDED_RANGE_FROM_CHANNEL ) and (3 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (4 >= EXTENDED_RANGE_FROM_CHANNEL ) and (4 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[3] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch3) ;  
         #else
         rcChannelsUs[3] = fmap((uint16_t) sbusFrame.rcChannelsData.ch3) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (4 >= EXTENDED_RANGE_FROM_CHANNEL ) and (4 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (5 >= EXTENDED_RANGE_FROM_CHANNEL ) and (5 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[4] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch4) ;  
         #else
         rcChannelsUs[4] = fmap((uint16_t) sbusFrame.rcChannelsData.ch4) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (5 >= EXTENDED_RANGE_FROM_CHANNEL ) and (5 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (6 >= EXTENDED_RANGE_FROM_CHANNEL ) and (6 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[5] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch5) ;  
         #else
         rcChannelsUs[5] = fmap((uint16_t) sbusFrame.rcChannelsData.ch5) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (6 >= EXTENDED_RANGE_FROM_CHANNEL ) and (6 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (7 >= EXTENDED_RANGE_FROM_CHANNEL ) and (7 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[6] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch6) ;  
         #else
         rcChannelsUs[6] = fmap((uint16_t) sbusFrame.rcChannelsData.ch6) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (7 >= EXTENDED_RANGE_FROM_CHANNEL ) and (7 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (8 >= EXTENDED_RANGE_FROM_CHANNEL ) and (8 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[7] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch7) ;  
         #else
         rcChannelsUs[7] = fmap((uint16_t) sbusFrame.rcChannelsData.ch7) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (8 >= EXTENDED_RANGE_FROM_CHANNEL ) and (8 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (9 >= EXTENDED_RANGE_FROM_CHANNEL ) and (9 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[8] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch8) ;  
         #else
         rcChannelsUs[8] = fmap((uint16_t) sbusFrame.rcChannelsData.ch8) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (9 >= EXTENDED_RANGE_FROM_CHANNEL ) and (9 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (10 >= EXTENDED_RANGE_FROM_CHANNEL ) and (10 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[9] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch9) ;  
         #else
         rcChannelsUs[9] = fmap((uint16_t) sbusFrame.rcChannelsData.ch9) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (10 >= EXTENDED_RANGE_FROM_CHANNEL ) and (10 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (11 >= EXTENDED_RANGE_FROM_CHANNEL ) and (11 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[10] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch10) ;  
         #else
         rcChannelsUs[10] = fmap((uint16_t) sbusFrame.rcChannelsData.ch10) ;  
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (11 >= EXTENDED_RANGE_FROM_CHANNEL ) and (11 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (12 >= EXTENDED_RANGE_FROM_CHANNEL ) and (12 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[11] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch11) ;  
         #else
         rcChannelsUs[11] = fmap((uint16_t) sbusFrame.rcChannelsData.ch11) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (12 >= EXTENDED_RANGE_FROM_CHANNEL ) and (12 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (13 >= EXTENDED_RANGE_FROM_CHANNEL ) and (13 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[12] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch12) ;  
         #else
         rcChannelsUs[12] = fmap((uint16_t) sbusFrame.rcChannelsData.ch12) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (13 >= EXTENDED_RANGE_FROM_CHANNEL ) and (13 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (14 >= EXTENDED_RANGE_FROM_CHANNEL ) and (14 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[13] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch13) ;  
         #else
         rcChannelsUs[13] = fmap((uint16_t) sbusFrame.rcChannelsData.ch13) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (14 >= EXTENDED_RANGE_FROM_CHANNEL ) and (14 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (15 >= EXTENDED_RANGE_FROM_CHANNEL ) and (15 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[14] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch14) ;  
         #else
         rcChannelsUs[14] = fmap((uint16_t) sbusFrame.rcChannelsData.ch14) ;
         #endif
         #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
-             (15 >= EXTENDED_RANGE_FROM_CHANNEL ) and (15 <= EXTENDED_RANGE_UP_TO_CHANNEL)
+             (16 >= EXTENDED_RANGE_FROM_CHANNEL ) and (16 <= EXTENDED_RANGE_UP_TO_CHANNEL)
         rcChannelsUs[15] = fmapExtended((uint16_t) sbusFrame.rcChannelsData.ch15) ;  
         #else
         rcChannelsUs[15] = fmap((uint16_t) sbusFrame.rcChannelsData.ch15) ;
