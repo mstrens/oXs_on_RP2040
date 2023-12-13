@@ -26,6 +26,7 @@ private:
     //uint16_t adcMin[MAX_NBR_VOLTAGES] = { 0XFFFF , 0XFFFF , 0XFFFF , 0XFFFF } ; // use to debug.
     //uint16_t adcMax[MAX_NBR_VOLTAGES] = { 0, 0, 0, 0 };
     //uint16_t adcAvg[MAX_NBR_VOLTAGES] = { 0, 0, 0, 0 };
+    void convertNtcVoltToTemp (float &adcValue );
 };
 /*
 struct VOLTAGEDATA {

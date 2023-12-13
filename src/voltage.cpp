@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include <inttypes.h>
 #include "param.h"
+#include "math.h"
 
 extern CONFIG config;
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
@@ -73,12 +74,21 @@ void VOLTAGE::getVoltages(void){
                 if ( config.pinVolt[cntInit] != 255) {  // calculate average only if pin is defined  
                     //fields[cntInit + MVOLT].value = ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE) * mVoltPerStep[cntInit]) - offset[cntInit];
                     if (mVoltPerStep[cntInit] !=0) {
-                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0) * mVoltPerStep[cntInit]) - offset[cntInit];
+                        value =  ( ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0) * mVoltPerStep[cntInit])\
+                                 - offset[cntInit];
                         // Volt3 and Volt 4 can be used as temperature or voltage depending on value of config.temperature
                         // volt 2 is used for current and consumed capacity is then calculated too
                         if ( (cntInit == 2) && (config.temperature == 1 || config.temperature == 2) ) {
+                            #ifdef RESISTOR_FOR_TEMPERATURE
+                            value = ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0);
+                            convertNtcVoltToTemp(value);
+                            #endif
                             sent2Core0( TEMP1 , (int32_t) value );
                         } else if ( (cntInit == 3) && (config.temperature == 2) ) {
+                            #ifdef RESISTOR_FOR_TEMPERATURE
+                            value = ((float) sumVoltage[cntInit]) / (( float) SUM_COUNT_MAX_VOLTAGE * 2.0);
+                            convertNtcVoltToTemp(value);
+                            #endif
                             sent2Core0( TEMP2 , (int32_t) value );
                         } else {
                             sent2Core0( cntInit + MVOLT, (int32_t) value ); // save as MVOLT, CURRENT, RESERVE1 or RESERVE2
@@ -104,3 +114,17 @@ void VOLTAGE::getVoltages(void){
         
     }        
 }
+
+#ifdef RESISTOR_FOR_TEMPERATURE
+void  VOLTAGE::convertNtcVoltToTemp (float &adcValue ) {     //Calculate temperature using the Beta Factor equation
+        // Convert the thermal stress value to resistance
+        // we reuse here the mVolt calculated by oXs. The config must be adapted in a such a way that this mVolt is equal to the raw value returned by the ADC * 1000 (for better accuracy)
+        // The calculated temperature is filled back in the voltage field
+        float media =  RESISTOR_FOR_TEMPERATURE /  ( (4095.0 / adcValue ) - 1 ) ;
+        // T = 1/(A + B* ln(R) + C * ln(R) *ln(R) *ln(R)) 
+        float steinhart = log(media) ;
+        steinhart = 1 / ( STEINHART_A + STEINHART_B * steinhart + STEINHART_C * steinhart * steinhart * steinhart) ;
+        steinhart -= 273.15 ;
+        adcValue = steinhart ;    
+    }  // end convertNtcVoltToTemp 
+#endif

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.6"
+#define VERSION "2.11.7"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -164,6 +164,14 @@
 #define SENSITIVITY_MIN_AT 100
 #define SENSITIVITY_MAX_AT 1000
 #define VARIOHYSTERESIS 5
+
+// --------- Parameters for Temperature(s) when measured by a thermistor ---------------
+// uncomment the next line when a thermistor is used instead of a TP36 ic and then specify the pull up resitor and the NTC param
+//#define RESISTOR_FOR_TEMPERATURE 4700      // resistance connected to 3.3V Vcc (in Ohm); other pin is connected to thermistor and analog pin
+#define STEINHART_A 7.00111E-4   // these parameters are specific to the NTC being used.(here e.g. for a 100k thermistor for 3D printer)
+#define STEINHART_B 2.1644E-4
+#define STEINHART_C 1.0619E-07
+
 
 // --------- Parameters for GPS ---------------
 #define GPS_REFRESH_RATE 10 // For Ublox GPS, it is possible to select a refresh rate of 1Hz, 5Hz (defeult) or 10Hz 
