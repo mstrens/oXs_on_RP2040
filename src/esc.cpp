@@ -459,15 +459,23 @@ void processZTW1Frame(){
 
 void processBlhFrame(){
     uint8_t crc = get_crc8(escRxBuffer, 9);
+    static uint32_t frameCount = 0;
+    static uint32_t errorFrameCount = 0;
+    frameCount++; 
     if (crc != escRxBuffer[9]) {
-        printf("Error in CRC from Blheli frame");
+        errorFrameCount++;
+        printf("Error in CRC from Blheli frame: %i / %i", errorFrameCount , frameCount);
+        for (uint8_t i = 0; i<8 ; i++) {
+            printf(" %x", escRxBuffer[i]);
+        }
+        printf("\n");
         return;    
     }
-    int32_t temp = escRxBuffer[0] - 96;  // probably an offset of 96 to get a range -96/150
-    uint32_t voltage = ( ((uint32_t)escRxBuffer[1] << 8) | ((uint32_t) escRxBuffer[2]) ) * 10;  // convert 0.01V to mv
-    float currentf =   (float) (( (uint32_t)escRxBuffer[3] << 8)  | ((uint32_t) escRxBuffer[4] ) * 10);  // convert from 0.01A to ma 
-    uint32_t consumption =   ( (uint32_t)escRxBuffer[5] << 8)  | ((uint32_t) escRxBuffer[6] ) ;  // in mah 
-    uint32_t rpm = ((uint32_t)escRxBuffer[7]) << 8 | ((uint32_t) escRxBuffer[8]) ;   // in 100rpm 
+    int32_t temp = escRxBuffer[0] ;  
+    uint32_t voltage = ( ( ((uint32_t)escRxBuffer[1]) << 8) | ((uint32_t) escRxBuffer[2]) ) * 10;  // convert 0.01V to mv
+    float currentf =   (float) ( ( ( ((uint32_t)escRxBuffer[3]) << 8)  | ( (uint32_t) escRxBuffer[4] ) ) * 10);  // convert from 0.01A to ma 
+    uint32_t consumption =   ( ((uint32_t)escRxBuffer[5]) << 8)  | ((uint32_t) escRxBuffer[6] ) ;  // in mah 
+    uint32_t rpm = (( ((uint32_t)escRxBuffer[7])) << 8)  | ((uint32_t) escRxBuffer[8]) ;   // in 100rpm 
     if (config.pinVolt[2] == 255) { //  we discard temp from esc    
         sent2Core0( TEMP1, temp) ;
     }
@@ -479,7 +487,7 @@ void processBlhFrame(){
         sent2Core0( CAPACITY, consumption);
     }
     if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
-            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 0.6 )) ; // 0.60 because we convert from 100t/min in HZ     
+            sent2Core0( RPM,  (int32_t) ( ((float) rpm)  * config.rpmMultiplicator * 100.0 / 60.0 )) ; // 0.60 because we convert from 100t/min in HZ     
     }
     //printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i   rpm=%i\n", voltage , (int) currentf, consumption , temp  , rpm);
 
