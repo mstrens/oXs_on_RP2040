@@ -181,7 +181,7 @@ void processCmd(){
         printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
                 
-        printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4 (Hobbywing V4) , ZTW1 (ZTW mantis) or KON (Kontronik)\n");
+        printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4(Hobbywing V4), ZTW1(ZTW mantis),KON (Kontronik) or BLH(BlHeli)\n");
         printf("Logger baudrate :           LOGBAUD = 115200\n");
         printf("Refresh rate of servos      PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
         printf("Voltage scale x(1,2,3,4)    SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
@@ -769,19 +769,25 @@ void processCmd(){
     if ( strcmp("ESC_TYPE", pkey) == 0 ) { 
         if (strcmp("HW4", pvalue) == 0) {
             config.escType = HW4 ;
+            printf("escType is now HW4 (Hobbywing)\n");
             updateConfig = true; 
         //} else if  (strcmp("HW3", pvalue) == 0) {
         //    config.escType = HW3 ;
         //    updateConfig = true;
         } else if (strcmp("KON", pvalue) == 0) {
             config.escType = KONTRONIK ;
+            printf("escType is now KON (Kontronik)\n");
             updateConfig = true;
         } else if (strcmp("ZTW1", pvalue) == 0) {
             config.escType = ZTW1 ;
             printf("escType is now ZTW1\n");
             updateConfig = true;
+        } else if (strcmp("BLH", pvalue) == 0) {
+            config.escType = BLH ;
+            printf("escType is now BLH (BlHeli)\n");
+            updateConfig = true;
         } else {    
-            printf("Error : ESC_TYPE must be HW4 , ZTW1 or KON\n");
+            printf("Error : ESC_TYPE must be HW4, ZTW1, KON or BLH\n");
         }
     }
 
@@ -1242,8 +1248,9 @@ void checkConfigAndSequencers(){     // set configIsValid
     //    printf("Error in parameters: When gpio is defined for ESC, parameter about number of temperature (TEMP) must be 0 or 255\n");
     //    configIsValid=false;
     //}    
-    if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && (config.escType!=KONTRONIK) && (config.escType!=ZTW1)) {
-        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4, ZTW1 or KON\n");
+    if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && \
+            (config.escType!=KONTRONIK) && (config.escType!=ZTW1) && (config.escType!=BLH)) {
+        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4, ZTW1, KON or BLH\n");
         configIsValid=false;
     }    
     if ( (config.pwmHz < 50) || (config.pwmHz > 333)){
@@ -1337,6 +1344,8 @@ void printConfigAndSequencers(){   // print all and perform checks
         printf("Esc type is KON (Kontronik)\n")  ;
     } else if (config.escType == ZTW1) {
         printf("Esc type is ZTW1 (ZTW mantis)\n")  ;
+    } else if (config.escType == BLH) {
+        printf("Esc type is BLH (BlHeli)\n")  ;
     } else {
         printf("Esc type is not defined\n")  ;
     }    

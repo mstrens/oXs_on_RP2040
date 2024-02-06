@@ -18,7 +18,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
    - compensated vertical speed when connected to a baro + a differentil pressure sensor 
    - Pitch/Roll and accelerations X/Y/Z when conncted to a MP6050 sensor (optional); 
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
-   - rpm/volt/temp/current/consumption from some ESC (Hobbywing4, ZTW mantis, Kontronix)
+   - rpm/volt/temp/current/consumption from some ESC (Hobbywing4, ZTW mantis, Kontronix, BlHeli)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
 ### It can also provide up to 16 PWM RC channels to drive servos from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum). The refresh rate can be set between 50Hz(default) and 333Hz.
@@ -75,7 +75,7 @@ This board can be connected to:
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
       note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
    * a RPM sensor
-   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis or from Kontronik. Those ESC provide one voltage, one current (+ current consumption) + RPM + 2 temperatures.    
+   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis, from Kontronik or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.    
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -142,7 +142,7 @@ When a GPS is used:
 *  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
 *  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
 
-When a Hobbywing, ZWT or Kontronik ESC is used:
+When a Hobbywing, ZWT, Kontronik or BlHeli ESC is used:
  * Connect the serial pin from ESC to the pin selected in parameter for RP2040 (for ESC_PIN)
  * Connect GND from ESC to RP2040 GND
  * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.
@@ -181,7 +181,7 @@ If you just want to use it, there is (in most cases) no need to install/use any 
 * copy and paste (or drag and drop) the oXs.uf2 file to this new drive
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
-* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1
+* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1. Set it up in order to let it send automatically CR/LF when you press ENTER.
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
 * when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration.
 * to list all the commands, send ?.

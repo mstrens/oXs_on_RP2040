@@ -174,6 +174,7 @@ bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true 
 #define HW3 3
 #define KONTRONIK 2
 #define ZTW1 1
+#define BLH 5
 
 #define REQUEST_HORIZONTAL_MPU_CALIB 0X01
 #define REQUEST_VERTICAL_MPU_CALIB 0X02

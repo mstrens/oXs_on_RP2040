@@ -120,7 +120,8 @@ void  VOLTAGE::convertNtcVoltToTemp (float &adcValue ) {     //Calculate tempera
         // Convert the thermal stress value to resistance
         // we reuse here the mVolt calculated by oXs. The config must be adapted in a such a way that this mVolt is equal to the raw value returned by the ADC * 1000 (for better accuracy)
         // The calculated temperature is filled back in the voltage field
-        float media =  RESISTOR_FOR_TEMPERATURE /  ( (4095.0 / adcValue ) - 1 ) ;
+        float media =  RESISTOR_FOR_TEMPERATURE /  ( (4095.0 / adcValue ) - 1 ) ;// formula is valid when thermistor is connected to ground
+        //  float media = RESISTOR_FOR_TEMPERATURE * (1 -  4095.0 / adcValue ); // formula is valid when thermistor is connected to 3.3V instead of to ground
         // T = 1/(A + B* ln(R) + C * ln(R) *ln(R) *ln(R)) 
         float steinhart = log(media) ;
         steinhart = 1 / ( STEINHART_A + STEINHART_B * steinhart + STEINHART_C * steinhart * steinhart * steinhart) ;

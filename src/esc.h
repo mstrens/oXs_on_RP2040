@@ -11,7 +11,15 @@ void processHW4Frame();
 void processHW3Frame();
 void processKontronikFrame();
 void processZTW1Frame();
+void processBlhFrame();
 int32_t calcTemp(float tempRaw);
+
+
+uint8_t update_crc8(uint8_t crc, uint8_t crc_seed);
+uint8_t get_crc8(uint8_t *Buf, uint8_t BufLen);
+
+
+
 
 /*  Hobbywing V4
 1.Frame with 19bytes
