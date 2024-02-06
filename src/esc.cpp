@@ -465,11 +465,18 @@ void processBlhFrame(){
     if (crc != escRxBuffer[9]) {
         errorFrameCount++;
         printf("Error in CRC from Blheli frame: %i / %i", errorFrameCount , frameCount);
-        for (uint8_t i = 0; i<8 ; i++) {
+        for (uint8_t i = 0; i<10 ; i++) {
             printf(" %x", escRxBuffer[i]);
         }
         printf("\n");
         return;    
+    }
+    if (( frameCount % 100) == 0) {
+        printf("valid Blheli frame:  %i", frameCount);
+        for (uint8_t i = 0; i<10 ; i++) {
+            printf(" %x", escRxBuffer[i]);
+        }
+        printf("\n");
     }
     int32_t temp = escRxBuffer[0] ;  
     uint32_t voltage = ( ( ((uint32_t)escRxBuffer[1]) << 8) | ((uint32_t) escRxBuffer[2]) ) * 10;  // convert 0.01V to mv
