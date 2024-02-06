@@ -4,6 +4,7 @@
 #include "MS5611.h"
 #include "ms4525.h"
 #include "sdp3x.h"
+#include "XGZP6897D.h"
 #include "stdio.h"
 #include <inttypes.h>
 #include "tools.h"
@@ -21,6 +22,7 @@ extern field fields[];  // list of all telemetry fields and parameters used by S
 extern MPU mpu;
 extern MS4525 ms4525;
 extern SDP3X sdp3x;
+extern XGZP  xgzp;
 extern float actualPressurePa; // used to calculate airspeed
 
 extern float difPressureCompVspeedSumPa  ; // calculate a moving average on x values
@@ -124,7 +126,7 @@ void VARIO::calculateVspeedDte () {  // is calculated about every 2O ms each tim
         // compensation (m) = airspeed * airspeed / 2 / 9.81 =
         //                  = 2 * 287.05 * difPressurePa * (temperature Celsius + 273.15) / pressure pa /2 /9.81 (m/sec) = 29.26 * difPressureAdc * Temp(kelv) / Press (Pa)
         // compensation (cm) =  2926.0 * difPressureAdc * Temp(kelv) / Press (Pa)
-    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false) return; // skip when no MS4525/sdp3x is installed
+    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false && xgzp.airspeedInstalled == false) return; // skip when no MS4525/sdp3x is installed
     if (newClimbRateAvailableForCompensation == false) return; // skip when no new Vspeed is available
     newClimbRateAvailableForCompensation = false; // reset the flag
     // calculate average diff of pressure because MS4525 is read more ofen than Vspeed

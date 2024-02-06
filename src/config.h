@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.8"
+#define VERSION "2.11.9"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -208,6 +208,11 @@
 //#define SDPXX_ADDRESS 0X21 // 0x21 is the default I2C adress of a SDP3X sensor
 #define SDPXX_ADDRESS   0x25 // 0x25 is the I2C adress of a SDP810 sensor
 //#define USE_ADP810_INSTEAD_OF_SDPxx  // uncoment this line if you use a ADP810 instead of a SDPxx
+
+// --------- Parameters for XGZP6897D -------------
+
+#define XGZP_K_FACTOR 8192.0 ;  // See datasheet : K depends on the sensor model (related to the max pos pressure being measured)
+                              // 8192.0 is the value when max sensor pressure is 1000Pa (1kPa) like XGZP6897D001KPDPN
 
 // --------- Parameter for MPU6050 ---------------------------------------
 #define ACC_MAX_SCALE_G 2 // maximum acceleration in G (can only be 2,4,8, 16)

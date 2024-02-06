@@ -8,6 +8,7 @@
 #include "BMP280.h"
 #include "ads1115.h"
 #include "ms4525.h"
+#include "xgzp6897D.h"
 #include "sdp3x.h"
 #include <string.h>
 #include <ctype.h>
@@ -92,6 +93,7 @@ extern BMP280 baro3 ;
 
 extern MS4525 ms4525;
 extern SDP3X  sdp3x;
+extern XGZP   xgzp;
 
 extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
@@ -1408,6 +1410,8 @@ void printConfigAndSequencers(){   // print all and perform checks
         printf("Aispeed sensor is detected using MS4525\n")  ;        
     } else if (sdp3x.airspeedInstalled) {
         printf("Airspeed sensor is detected using SDP3X\n")  ;
+    } else if (xgzp.airspeedInstalled) {
+        printf("Airspeed sensor is detected using XGZP....\n")  ;
     } else {
         printf("Airspeed sensor is not detected\n")  ;
     } 

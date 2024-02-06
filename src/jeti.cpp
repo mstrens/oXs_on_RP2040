@@ -9,6 +9,7 @@
 #include "SPL06.h"
 #include "ms4525.h"
 #include "sdp3x.h"
+#include "XGZP6897D.h"
 #include "jeti.h"
 #include "tools.h"
 #include "gps.h"
@@ -47,7 +48,8 @@ extern MS5611 baro1;
 extern SPL06 baro2;
 extern BMP280 baro3;
 extern MS4525 ms4525;
-extern SDP3X sdp3x; 
+extern SDP3X sdp3x;
+extern XGZP  xgzp;
 
 extern GPS gps;
 extern CONFIG config;
@@ -156,7 +158,7 @@ void initListOfJetiFields(bool activateAllFields) {  // fill an array with the l
         listOfJetiFields[listOfJetiFieldsIdx++] = LONGITUDE ;
         listOfJetiFields[listOfJetiFieldsIdx++] = LATITUDE ;  
     }
-    if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled)  ||  activateAllFields) {
+    if (( ms4525.airspeedInstalled || sdp3x.airspeedInstalled || xgzp.airspeedInstalled )  ||  activateAllFields) {
         listOfJetiFields[listOfJetiFieldsIdx++] = AIRSPEED ; 
     }
     if (( config.pinRpm != 255 )  ||  activateAllFields || config.pinEsc!= 255) {

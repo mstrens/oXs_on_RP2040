@@ -8,6 +8,7 @@
 #include "sport.h"
 #include "ms4525.h"
 #include "sdp3x.h"
+#include "XGZP6897D.h"
 
 extern queue_t qSensorData; 
 extern field fields[];
@@ -149,11 +150,12 @@ uint32_t prevAirspeedAvailableMs;
 float smoothAirspeedCmS = 0;
 extern MS4525 ms4525;
 extern SDP3X sdp3x;
+extern XGZP  xgzp;
 extern float actualPressurePa;
 
 
 void calculateAirspeed(){
-    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false ) return; // skip if no sensor installed
+    if (ms4525.airspeedInstalled == false && sdp3x.airspeedInstalled == false  && xgzp.airspeedInstalled == false) return; // skip if no sensor installed
     uint32_t nowUs = microsRp(); 
     if ( ( nowUs - prevAirspeedCalculatedUs) < 20000 ) return; // skip if there is less than 20 msec
     prevAirspeedCalculatedUs = nowUs;

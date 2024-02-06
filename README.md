@@ -61,7 +61,7 @@ A better alternative is the RP2040-Zero or the RP2040-TINY (both have the same p
 
 This board can be connected to:
    * a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
-   * a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx differential pressure sensor to get airspeed (and compensated vertical speed)
+   * a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx  or XGZP6897D differential pressure sensor to get airspeed (and compensated vertical speed)
    * a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
    * 1 or 2 ADS1115 if you want to measure more than 4 analog voltages
    * a GPS from UBlox (like the beitian bn220) or one that support CASIC messages   
@@ -219,7 +219,7 @@ You have to compile your self the firmware if you want to change some values in 
 * assign another sequence number and/of generate alarms for some telemetry fields in Multiplex protocol
 * change the I2C address of some I2C sensors
 * use other default paramaters in order to avoid using commands via the USB/serial monitor. 
-
+* change the sensitivity of the XGZP sensor (if defferent from XGZP6897D001KPDPN)
 
 ## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.

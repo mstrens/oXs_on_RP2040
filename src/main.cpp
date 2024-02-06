@@ -7,6 +7,7 @@
 #include "BMP280.h"
 #include "ms4525.h"
 #include "sdp3x.h"
+#include "XGZP6897D.h"
 #include "vario.h"
 #include "voltage.h"
 #include "gps.h"
@@ -107,6 +108,7 @@ ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin
 
 MS4525 ms4525 ( (uint8_t) MS4525_ADDRESS ) ; // 0x28 is the default I2C adress of a 4525DO sensor)
 SDP3X sdp3x( (uint8_t) SDPXX_ADDRESS) ;      // 0X21 is the default I2C address of asdp31,... sensor (diffrent for sdp8xx)
+XGZP  xgzp( (uint8_t) XGZP_ADDRESS );        // 0x6D is the only one I2C adress
 
 VARIO vario1;
 
@@ -236,6 +238,9 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       ms4525.begin();
       if (! ms4525.airspeedInstalled) {
         sdp3x.begin();
+        if (! sdp3x.airspeedInstalled) {
+            xgzp.begin();
+        }
       }
       #ifdef USEDS18B20
       ds18b20Setup(); 
@@ -278,7 +283,14 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
     sdp3x.getDifPressure();
     calculateAirspeed( );
     vario1.calculateVspeedDte();
-  } 
+  }
+  if (xgzp.airspeedInstalled){
+    xgzp.getDifPressure();
+    calculateAirspeed( );
+    vario1.calculateVspeedDte();
+  }
+  
+
   readRpm();
   handleEsc();
   #ifdef USE_DS18B20
