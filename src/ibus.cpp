@@ -233,7 +233,8 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
     if ( (( config.pinVolt[2] != 255)  && (config.temperature == 1 or  config.temperature == 2)) || config.pinEsc !=255 ) {
         addToIbus(TEMP1) ;
     } 
-    if ( (( config.pinVolt[3] != 255)  && (config.temperature == 2) )  || config.pinEsc !=255 ) {
+    if ( (( config.pinVolt[3] != 255)  && (config.temperature == 2) )  || \
+               ( (config.pinEsc !=255 ) && (config.escType != BLH) )  ) {
         addToIbus(TEMP2) ;
     } 
     // here we could add other voltage parameter (current, ...)

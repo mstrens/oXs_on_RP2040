@@ -457,6 +457,7 @@ void processZTW1Frame(){
 //Byte 8: Rpm low byte
 //Byte 9: 8-bit CRC
 
+//#define DEBUG_BLHELI
 void processBlhFrame(){
     uint8_t crc = get_crc8(escRxBuffer, 9);
     static uint32_t frameCount = 0;
@@ -465,12 +466,15 @@ void processBlhFrame(){
     if (crc != escRxBuffer[9]) {
         errorFrameCount++;
         printf("Error in CRC from Blheli frame: %i / %i", errorFrameCount , frameCount);
+        #ifdef DEBUB_BLHELI
         for (uint8_t i = 0; i<10 ; i++) {
             printf(" %x", escRxBuffer[i]);
         }
+        #endif
         printf("\n");
         return;    
     }
+    #ifdef DEBUB_BLHELI
     if (( frameCount % 100) == 0) {
         printf("valid Blheli frame:  %i", frameCount);
         for (uint8_t i = 0; i<10 ; i++) {
@@ -478,6 +482,7 @@ void processBlhFrame(){
         }
         printf("\n");
     }
+    #endif
     int32_t temp = escRxBuffer[0] ;  
     uint32_t voltage = ( ( ((uint32_t)escRxBuffer[1]) << 8) | ((uint32_t) escRxBuffer[2]) ) * 10;  // convert 0.01V to mv
     float currentf =   (float) ( ( ( ((uint32_t)escRxBuffer[3]) << 8)  | ( (uint32_t) escRxBuffer[4] ) ) * 10);  // convert from 0.01A to ma 
