@@ -134,8 +134,10 @@ void sequencerLoop(){
         uint32_t value = 0; // reset the value to be transmitted
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
-                value |= ((uint32_t) seqDatas[i].lastreceivedRange) << (i*8); // find the current sequence for the sequencer at idx i
-                printf("Sequencer idx=%i  active sequence=%i\n", i, (uint8_t) seqDatas[i].lastreceivedRange);
+                uint16_t idx = seqDatas[i].currentStepIdx;
+                uint32_t range  = seq.steps[idx].chRange; 
+                value |= range << (i*8); // find the current sequence for the sequencer at idx i
+                printf("Sequencer idx=%i  active_step =%i  active_range %i\n", i, idx, range);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }

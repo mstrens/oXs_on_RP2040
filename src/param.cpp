@@ -2121,7 +2121,8 @@ void saveSequencers() {
     //printConfig(); 
 }
 
-bool getAllSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid (then seq structure is modified)
+bool getAllSequencers(){  // try to get sequencer definition from a string pointed by pvalue; return true if valid
+                          //  (then seq structure is modified)
                        // when true we still have to check if this is valid with config (for use of pins and with steps)
     seqIdx = 0;        // count the sequencer
     sequenceIdx = 0;  // count the sequence
