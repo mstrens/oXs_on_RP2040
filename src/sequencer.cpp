@@ -74,6 +74,8 @@ void sequencerLoop(){
     //     else (if channel value is the same or does not match) : continue what means
     //          if next action is reached, apply next action (depend on state, ...)          
     //          else do nothing
+    static uint32_t lastSeqTransmitMs = 0;
+    
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
     if (lastRcChannels == 0) lastRcChannels = 1; // force a dummy value to let sequencerLoop to run
     //static uint32_t lastSimuSeqMs = 0;
@@ -128,7 +130,6 @@ void sequencerLoop(){
     #define USE_RESERVE3_FOR_4_SEQUENCES
     #ifdef USE_RESERVE3_FOR_4_SEQUENCES
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 1000 // in ms
-    static uint32_t lastSeqTransmitMs = 0;
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
         uint32_t value = 0; // reset the value to be transmitted
