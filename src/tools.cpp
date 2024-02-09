@@ -298,7 +298,7 @@ int32_t negFieldValues[] = {
     0,           // cumulative GPS dist m
     -2468,         // ACC_X in 0.001G
     -3579,         // ACC_Y
-    -1478          // Acc_Z
+    -1478,          // Acc_Z
 
     -45678,
     -56789,
