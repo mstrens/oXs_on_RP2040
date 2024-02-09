@@ -127,19 +127,19 @@ void sequencerLoop(){
     }
     #define USE_RESERVE3_FOR_4_SEQUENCES
     #ifdef USE_RESERVE3_FOR_4_SEQUENCES
-    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 200 // in ms
+    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 1000 // in ms
     static uint32_t lastSeqTransmitMs = 0;
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
         uint32_t value = 0; // reset the value to be transmitted
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
-                uint16_t idx = seqDatas[i].currentStepIdx;
-                int8_t range  = seq.steps[idx].chRange;
-                uint8_t rangeUint8 = (uint8_t) range; 
+                uint16_t idx1 = seqDatas[i].currentStepIdx;
+                int8_t range1  = seq.steps[idx1].chRange;
+                uint8_t rangeUint8 = (uint8_t) range1; 
                 uint32_t rangeUint32 = (uint32_t) rangeUint8;
                 value |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
-                printf("Sequencer idx=%i  activeStepIdx=%i  range=%i  rangeU32=%i\n", i, idx, range , rangeUint32);
+                printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }
