@@ -145,9 +145,9 @@ void sequencerLoop(){
                 value |= ((uint32_t) 127) << (i*8);
             }
         }
-        fields[RESERVE3].value = value;
-        fields[RESERVE3].available = true ;
-        fields[RESERVE3].onceAvailable == true;
+    //    fields[RESERVE3].value = value;
+    //    fields[RESERVE3].available = true ;
+    //    fields[RESERVE3].onceAvailable == true;
     }
     #endif
 }
