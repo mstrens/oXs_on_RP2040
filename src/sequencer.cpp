@@ -135,6 +135,7 @@ void sequencerLoop(){
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
                 value |= ((uint32_t) seqDatas[i].lastreceivedRange) << (i*8); // find the current sequence for the sequencer at idx i
+                printf("Sequencer idx=%i  active sequence=%i\n", i, (uint8_t) seqDatas[i].lastreceivedRange);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }
