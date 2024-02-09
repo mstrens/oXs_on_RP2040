@@ -5,6 +5,7 @@
 #include "tools.h"
 #include "sbus_out_pwm.h"
 #include "param.h"
+#include "sport.h"
 
 #define NO_SEQ 0xFFFF  
 
@@ -41,7 +42,7 @@ extern uint16_t rcChannelsUs[16];
 extern uint32_t lastRcChannels;
 
 extern field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters that can be measured (not only used by Sport)
-
+extern CONFIG config; 
 
 extern SEQUENCER seq;
 extern uint16_t pwmTop;
@@ -152,9 +153,12 @@ void sequencerLoop(){
                 value |= ((uint32_t) 127) << (i*8);
             }
         }
-        //fields[RESERVE3].value = value;
-        //fields[RESERVE3].available = true ;
-        //fields[RESERVE3].onceAvailable == true;
+        fields[RESERVE3].value = value;
+        fields[RESERVE3].available = true ;
+        if (fields[RESERVE3].onceAvailable == false) {
+            fields[RESERVE3].onceAvailable = true;
+            if ( (config.protocol == 'S') || (config.protocol == 'F') )  calculateSportMaxBandwidth();
+        }
     }
     #endif
 }
