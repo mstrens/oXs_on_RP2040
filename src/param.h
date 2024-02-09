@@ -97,7 +97,7 @@ enum SEQ_OUTPUT_TYPE : uint8_t {
 };
 
 
-struct SEQ_DEF {
+struct SEQ_DEF {             // one set of parameters per sequencer
     uint8_t pin {}; // pin
     SEQ_OUTPUT_TYPE type {}; // type 0= SERVO or 1 = ANALOG
     uint32_t clockMs {};  // unit in msec
@@ -118,7 +118,7 @@ enum CH_RANGE : int8_t {
 };
 
 
-struct SEQ_STEP {
+struct SEQ_STEP {           // one set of parameters per sequence and per step
     CH_RANGE chRange {}; // channel value (converted in range) to activate this seq
     uint8_t smooth {};
     int8_t value {} ;
@@ -137,7 +137,7 @@ struct SEQ_STEP {
 
 
 #define SEQUENCER_MAX_NUMBER_OF_STEPS 256 // to be modified
-struct SEQUENCER{
+struct SEQUENCER{            // one set of parameters for all sequencers (strored in "seq")
     uint8_t version = SEQUENCER_VERSION;
     uint8_t defsMax = 0;
     SEQ_DEF defs[16] ;

@@ -114,7 +114,13 @@ uint8_t oXsToMpxUnits[NUMBER_MAX_IDX] = { // same sequence as fieldIdx in tool.h
     MU_DIST,  //  GPS_CUMUL_DIST,  from ???? to   0.1 km    0 à +16000
     0XFF,     // ACC X     
     0XFF,     // ACC Y     
-    0XFF,     // ACC Z     
+    0XFF,     // ACC Z
+
+    0XFF,     // RESERVE3
+    0XFF,     // RESERVE4
+    0XFF,     // RESERVE5
+    0XFF,     // RESERVE6
+    0XFF,     // RESERVE 7    
 };
 
 /*

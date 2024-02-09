@@ -48,7 +48,7 @@ enum SEQ_STATE {
     WAITING
 };
 
-struct SEQ_DATA {
+struct SEQ_DATA {             // one set of fields per sequencer= per gpio (so 16)
     uint16_t stepStartAtIdx ; // this is filled during setup
     uint16_t stepEndAtIdx ; // this is filled during setup
     SEQ_STATE state;        // Stopped, SMoothing, Waiting

@@ -177,6 +177,12 @@ JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order 
     { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Y,
     { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ACC_Z,
     
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  RESERVE3
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  RESERVE4
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  RESERVE5
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  RESERVE6
+    { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  RESERVE7
+    
     { 0      , "oXs"         , " "         , EXBUS_TYPE_DEVICE,     0 , 0},  // identify the name of the device      
 };
 

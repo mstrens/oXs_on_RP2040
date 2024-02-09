@@ -40,6 +40,8 @@ extern uint16_t rcChannelsUs[16];
 
 extern uint32_t lastRcChannels;
 
+extern field fields[NUMBER_MAX_IDX];  // list of all telemetry fields and parameters that can be measured (not only used by Sport)
+
 
 extern SEQUENCER seq;
 extern uint16_t pwmTop;
@@ -85,6 +87,7 @@ void sequencerLoop(){
     #endif    
     //if ( sequencerIsValid == false) return; // do nothing when there is no valid sequencer
     if ( ! lastRcChannels) return ;   // skip if we do not have last channels
+    if ( seq.defsMax == 0) return ;   // skip if no sequencer is defined
     currentSeqMillis =  millisRp(); 
     for (uint8_t seqIdx = 0; seqIdx < seq.defsMax ; seqIdx++){ //same process for each sequencer
         if (seqDatas[seqIdx].nextActionAtMs == 0){ // this is when we are just starting; so we have to apply default value            
@@ -122,6 +125,25 @@ void sequencerLoop(){
             }
         }    
     }
+    #define USE_RESERVE3_FOR_4_SEQUENCES
+    #ifdef USE_RESERVE3_FOR_4_SEQUENCES
+    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 200 // in ms
+    static uint32_t lastSeqTransmitMs = 0;
+    if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
+        lastSeqTransmitMs = currentSeqMillis;
+        uint32_t value = 0; // reset the value to be transmitted
+        for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
+            if (i < seq.defsMax) {
+                value |= ((uint32_t) seqDatas[i].lastreceivedRange) << (i*8); // find the current sequence for the sequencer at idx i
+            } else {
+                value |= ((uint32_t) 127) << (i*8);
+            }
+        }
+        fields[RESERVE3].value = value;
+        fields[RESERVE3].available = true ;
+        fields[RESERVE3].onceAvailable == true;
+    }
+    #endif
 }
 
 
@@ -144,7 +166,7 @@ void startNewStep(uint8_t sequencer , uint16_t stepIdx){ // start a new step
         if ( seq.steps[stepIdx].value != 127 ) {  // avoid to update PWM when new value == 127 (= stop at current position)
             seqDatas[sequencer].lastOutputVal = seq.steps[stepIdx].value;
         }     
-    } else {   // when there is a smooth parameter > 0, next action is 20 after current and state = SMOOTHING
+    } else {   // when there is a smooth parameter > 0, next action is 20 ms after current and state = SMOOTHING
         seqDatas[sequencer].state = SMOOTHING;
         //  lastOutputVal is not changed
         seqDatas[sequencer].smoothStartAtMs = currentSeqMillis ; 

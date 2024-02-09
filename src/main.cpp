@@ -298,8 +298,8 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   #endif
 }
 
-void mergeSeveralSensors(void){
-}
+//void mergeSeveralSensors(void){
+//}
 
 void setColorState(){    // set the colors based on the RF link
     lastBlinkMillis = millisRp(); // reset the timestamp for blinking
@@ -568,7 +568,7 @@ void loop() {
 
   if ((configIsValid) and (configIsSaved)) {
       getSensorsFromCore1(); // this also generate the LOG signal on pio UART
-      mergeSeveralSensors();
+      //mergeSeveralSensors();
       watchdog_update();
       if ( config.protocol == 'C'){   //elrs/crsf
         fillCRSFFrame();

@@ -123,6 +123,11 @@ void setupSportList(){     // table used by sport
         SBUS_HOLD_COUNTER,  // Sbus hold counter
         SBUS_FAILSAFE_COUNTER, // Sbus failsafe counter
         GPS_CUMUL_DIST, // GPS cumulative dist                        200
+        RESERVE3,
+        RESERVE4,
+        RESERVE5,
+        RESERVE6,
+        RESERVE7,
     };
     for (uint8_t i = 0; i < NUMBER_MAX_IDX ; i++){
         sportPriority[i]= temp[i];
@@ -169,6 +174,11 @@ void setupSportList(){     // table used by sport
     sportFieldId[ACC_X] = ACCX_FIRST_ID;
     sportFieldId[ACC_Y] = ACCY_FIRST_ID;
     sportFieldId[ACC_Z] = ACCZ_FIRST_ID;
+    sportFieldId[RESERVE3] = DIY_RESERVE3;
+    sportFieldId[RESERVE4] = DIY_RESERVE4;
+    sportFieldId[RESERVE5] = DIY_RESERVE5;
+    sportFieldId[RESERVE6] = DIY_RESERVE6;
+    sportFieldId[RESERVE7] = DIY_RESERVE7;
      
 /*
     sportMaxPooling[LATITUDE] = 50;
@@ -549,6 +559,11 @@ void calculateSportMaxBandwidth(){
     sportMaxPooling[ACC_X] = P_ACC_X ;
     sportMaxPooling[ACC_Y] = P_ACC_Y ;
     sportMaxPooling[ACC_Z] = P_ACC_Z ;
+    sportMaxPooling[RESERVE3] = P_RESERVE3 ;
+    sportMaxPooling[RESERVE4] = P_RESERVE4 ;
+    sportMaxPooling[RESERVE5] = P_RESERVE5 ;
+    sportMaxPooling[RESERVE6] = P_RESERVE6 ;
+    sportMaxPooling[RESERVE7] = P_RESERVE7 ;
       
     // sum of inverted values only when field is used
     sportMaxBandwidth = 0;

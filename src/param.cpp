@@ -1855,6 +1855,21 @@ void printFieldValues(){
                 case ACC_Z :
                     printf("Acc Z = %fg\n", (float) fields[i].value * 0.001) ;
                     break;
+                case RESERVE3:
+                    printf("Reserve 3 = %d\n", (int) fields[i].value) ;
+                    break;
+                case RESERVE4:
+                    printf("Reserve 4 = %d\n", (int) fields[i].value) ;
+                    break;
+                case RESERVE5:
+                    printf("Reserve 5 = %d\n", (int) fields[i].value) ;
+                    break;
+                case RESERVE6:
+                    printf("Reserve 6 = %d\n", (int) fields[i].value) ;
+                    break;
+                case RESERVE7:
+                    printf("Reserve 7 = %d\n", (int) fields[i].value) ;
+                    break;
                             
             } // end switch
         }

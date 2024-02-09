@@ -161,3 +161,9 @@ void calculateSportMaxBandwidth();
 #define DIY_ADS_2_2             0X5136
 #define DIY_ADS_2_3             0X5137
 #define DIY_ADS_2_4             0X5138
+
+#define DIY_RESERVE3            0X5143
+#define DIY_RESERVE4            0X5144
+#define DIY_RESERVE5            0X5145
+#define DIY_RESERVE6            0X5146
+#define DIY_RESERVE7            0X5147

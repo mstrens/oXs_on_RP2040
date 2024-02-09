@@ -61,6 +61,13 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       ACC_X,
       ACC_Y,
       ACC_Z,   
+
+      RESERVE3,     // currently never filled and transmitted       //40
+      RESERVE4,     // currently never filled and transmitted 
+      RESERVE5,     // currently never filled and transmitted 
+      RESERVE6,     // currently never filled and transmitted 
+      RESERVE7,     // currently never filled and transmitted 
+
       NUMBER_MAX_IDX, // used to count the number of entries       
 };
 // note : when a new field is added to this list we have to change also:
