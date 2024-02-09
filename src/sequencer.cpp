@@ -147,7 +147,7 @@ void sequencerLoop(){
                 rangeUint32 = (uint32_t) rangeUint8;
                 value |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
                 //printf("In seq feedback\n");
-                printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
+                //printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }
