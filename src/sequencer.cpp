@@ -75,7 +75,13 @@ void sequencerLoop(){
     //          if next action is reached, apply next action (depend on state, ...)          
     //          else do nothing
     static uint32_t lastSeqTransmitMs = 0;
-    
+    uint16_t idx1 = 0;
+    int8_t range1  = 0;
+    uint8_t rangeUint8 = 0; 
+    uint32_t rangeUint32 = 0;
+    uint32_t value = 0;        
+
+
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
     if (lastRcChannels == 0) lastRcChannels = 1; // force a dummy value to let sequencerLoop to run
     //static uint32_t lastSimuSeqMs = 0;
@@ -132,15 +138,16 @@ void sequencerLoop(){
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 1000 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
-        uint32_t value = 0; // reset the value to be transmitted
+        value = 0; // reset the value to be transmitted
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
-                uint16_t idx1 = seqDatas[i].currentStepIdx;
-                int8_t range1  = seq.steps[idx1].chRange;
-                uint8_t rangeUint8 = (uint8_t) range1; 
-                uint32_t rangeUint32 = (uint32_t) rangeUint8;
+                idx1 = seqDatas[i].currentStepIdx;
+                range1  = seq.steps[idx1].chRange;
+                rangeUint8 = (uint8_t) range1; 
+                rangeUint32 = (uint32_t) rangeUint8;
                 value |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
-                printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
+                printf("In seq feedback\n");
+                //printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }
