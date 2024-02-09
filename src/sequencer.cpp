@@ -135,9 +135,11 @@ void sequencerLoop(){
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
                 uint16_t idx = seqDatas[i].currentStepIdx;
-                uint32_t range  = seq.steps[idx].chRange; 
-                value |= range << (i*8); // find the current sequence for the sequencer at idx i
-                printf("Sequencer idx=%i  active_step =%i  active_range %i\n", i, idx, range);
+                int8_t range  = seq.steps[idx].chRange;
+                uint8_t rangeUint8 = (uint8_t) range; 
+                uint32_t rangeUint32 = (uint32_t) rangeUint8;
+                value |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
+                printf("Sequencer idx=%i  activeStepIdx=%i  range=%i  rangeU32=%i\n", i, idx, range , rangeUint32);
             } else {
                 value |= ((uint32_t) 127) << (i*8);
             }
