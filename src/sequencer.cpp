@@ -137,7 +137,7 @@ void sequencerLoop(){
     }
     #define USE_RESERVE3_FOR_4_SEQUENCES
     #ifdef USE_RESERVE3_FOR_4_SEQUENCES
-    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 1000 // in ms
+    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 200 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         //printf("in sequencer feedback defsMax=%i\n", seq.defsMax);
         //watchdog_update();
@@ -162,7 +162,7 @@ void sequencerLoop(){
                 }
                 value1 |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
                 //printf("In seq feedback\n");
-                printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
+                //printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
             } else {
                 value1 |= ((uint32_t) 127) << (i*8);
             }
@@ -176,6 +176,13 @@ void sequencerLoop(){
                 //printf("Priority recalculated\n");
             }
         }
+        printf("value=%i ", (int32_t) value1);
+        printf(" %i ", (int8_t) ((value1 & 0xFF000000) >> 24));
+        printf(" %i ", (int8_t) ((value1 & 0x00FF0000) >> 16));
+        printf(" %i ", (int8_t) ((value1 & 0x0000FF00) >> 8));
+        printf(" %i ", (int8_t) ((value1 & 0x000000FF) ));
+        printf("\n");
+        
     }
     #endif
 }
