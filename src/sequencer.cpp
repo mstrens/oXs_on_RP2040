@@ -167,7 +167,7 @@ void sequencerLoop(){
                 value1 |= ((uint32_t) 127) << (i*8);
             }
         }
-        value1 = 1179671 ; 
+        value1 = 1179671140 ; 
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
         if (fields[RESERVE3].onceAvailable == false) {
