@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.26"
+#define VERSION "2.11.27"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -250,10 +250,15 @@
 
 // --------- Gyro Parameters ---------------
 // 
+// see the document about gyro in doc folder
 
-
-
-
+// --------- Sequencers parameters ---------
+//
+// Parameters are explained in readme section and are filled only with a usb/serial command
+// Still for Frsky protocols, it is also possible to ask oXs to fill a telemetry field with the sequence value for the 4 first sequencers.
+// The value is 32 bits and must be (e.g. with a Lua script) in 4 groups of 8 bits (each being an int8 for value like -100, -90,...,+100)  
+//  To get this telemetry field, uncomment next #define line 
+// #define USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
 // --------- Default parameters -------------
 // Many parameters can be edited using a serial monitor without having to compile/reflash the RP2040  
 // If you want to make an uf2 flie with specific parameters (and so, avoid having to use the serial monitor commands),

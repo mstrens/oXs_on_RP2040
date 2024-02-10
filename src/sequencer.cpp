@@ -135,9 +135,9 @@ void sequencerLoop(){
             }
         }    
     }
-    #define USE_RESERVE3_FOR_4_SEQUENCES
-    #ifdef USE_RESERVE3_FOR_4_SEQUENCES
-    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 200 // in ms
+    #define USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
+    #ifdef USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
+    #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 100 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         //printf("in sequencer feedback defsMax=%i\n", seq.defsMax);
         //watchdog_update();
@@ -167,7 +167,8 @@ void sequencerLoop(){
                 value1 |= ((uint32_t) 127) << (i*8);
             }
         }
-        fields[RESERVE3].value = value1;
+        value1 = 1179671 ; 
+        fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
         if (fields[RESERVE3].onceAvailable == false) {
             fields[RESERVE3].onceAvailable = true;
