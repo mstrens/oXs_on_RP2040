@@ -397,7 +397,6 @@ void setup() {
   checkConfigAndSequencers();     // check if config and sequencers are valid (print error message; configIsValid is set on true or false)
   setupLed();
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
-  
   if (configIsValid) { // continue with setup only if config is valid 
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
@@ -474,6 +473,10 @@ void setup() {
   } 
   printConfigAndSequencers(); 
   setRgbColorOn(10,0,0); // set color on red (= no signal)
+  // to detect end of setup
+  //printf("end of set up\n");
+  //while (1) {watchdog_update();};
+
   /*
   if (clockChanged){
     printf("clock is changed to 133mHz\n");

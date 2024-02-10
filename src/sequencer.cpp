@@ -6,6 +6,7 @@
 #include "sbus_out_pwm.h"
 #include "param.h"
 #include "sport.h"
+#include "hardware/watchdog.h"
 
 #define NO_SEQ 0xFFFF  
 
@@ -80,7 +81,7 @@ void sequencerLoop(){
     int8_t range1  = 0;
     uint8_t rangeUint8 = 0; 
     uint32_t rangeUint32 = 0;
-    uint32_t value = 0;        
+    uint32_t value1 = 0;        
 
 
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
@@ -138,26 +139,42 @@ void sequencerLoop(){
     #ifdef USE_RESERVE3_FOR_4_SEQUENCES
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 1000 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
+        //printf("in sequencer feedback defsMax=%i\n", seq.defsMax);
+        //watchdog_update();
+        //sleep_ms(100);
         lastSeqTransmitMs = currentSeqMillis;
-        value = 0; // reset the value to be transmitted
+        value1 = 0; // reset the value to be transmitted
+        
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
                 idx1 = seqDatas[i].currentStepIdx;
-                range1  = seq.steps[idx1].chRange;
-                rangeUint8 = (uint8_t) range1; 
-                rangeUint32 = (uint32_t) rangeUint8;
-                value |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
+                //printf("idx1=%i\n", idx1);
+                if (idx1 < 0XFFFF) {
+                    range1  = seq.steps[idx1].chRange;
+                    //printf("range1=%i\n", range1);
+                    rangeUint8 = (uint8_t) range1;
+                    //printf("rangeU8=%i\n", rangeUint8);
+                    rangeUint32 = (uint32_t) rangeUint8;
+                    //printf("rangeu32=%i\n", rangeUint32);
+                    //sleep_ms(100);
+                } else {
+                    rangeUint32 = 127; // dummy value to say that sequencer did not started
+                }
+                value1 |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
                 //printf("In seq feedback\n");
                 printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
             } else {
-                value |= ((uint32_t) 127) << (i*8);
+                value1 |= ((uint32_t) 127) << (i*8);
             }
         }
-        fields[RESERVE3].value = value;
+        fields[RESERVE3].value = value1;
         fields[RESERVE3].available = true ;
         if (fields[RESERVE3].onceAvailable == false) {
             fields[RESERVE3].onceAvailable = true;
-            if ( (config.protocol == 'S') || (config.protocol == 'F') )  calculateSportMaxBandwidth();
+            if ( (config.protocol == 'S') || (config.protocol == 'F') ) { 
+                calculateSportMaxBandwidth();
+                //printf("Priority recalculated\n");
+            }
         }
     }
     #endif

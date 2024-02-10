@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.23"
+#define VERSION "2.11.24"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -79,11 +79,11 @@
 #define P_ACC_X                80
 #define P_ACC_Y                80
 #define P_ACC_Z                80
-#define P_RESERVE3            250
-#define P_RESERVE4            250
-#define P_RESERVE5            250
-#define P_RESERVE6            250
-#define P_RESERVE7            250
+#define P_RESERVE3            200
+#define P_RESERVE4            200
+#define P_RESERVE5            200
+#define P_RESERVE6            200
+#define P_RESERVE7            200
 
 
 // -------------- for ELRS protocol  ------------------------------
