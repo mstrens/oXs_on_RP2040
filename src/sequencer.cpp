@@ -82,6 +82,8 @@ void sequencerLoop(){
     uint8_t rangeUint8 = 0; 
     uint32_t rangeUint32 = 0;
     uint32_t value1 = 0;        
+    uint16_t idxNum = 0; // sequence nummer of the current sequence
+    uint8_t lastCode = 0;
 
 
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
@@ -144,7 +146,7 @@ void sequencerLoop(){
         //sleep_ms(100);
         lastSeqTransmitMs = currentSeqMillis;
         value1 = 0; // reset the value to be transmitted
-        
+/*        
         for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
                 idx1 = seqDatas[i].currentStepIdx;
@@ -167,7 +169,21 @@ void sequencerLoop(){
                 value1 |= ((uint32_t) 127) << (i*8);
             }
         }
-        value1 = 1179671140 ; 
+*/        
+        for (uint8_t i = 0; i < 16; i++){ // for the first 4 sequencerIsValid
+            if (i < seq.defsMax) {
+                int8_t lastOutput = seqDatas[i].lastOutputVal;
+                lastCode = 0;
+                if (lastOutput > 0) {
+                    lastCode = 1;
+                } else if (lastOutput < 0) {
+                    lastCode = 2;
+                } 
+            } else {
+                lastCode = 3;
+            }
+            value1 |=   ((uint32_t) lastCode) << ((15-i)*2);  
+        }
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
         if (fields[RESERVE3].onceAvailable == false) {
@@ -202,7 +218,7 @@ void startNewStep(uint8_t sequencer , uint16_t stepIdx){ // start a new step
     seqDatas[sequencer].currentStepIdx = stepIdx;
     
     //printf("Start new step for sequencer %i at step %i\n",sequencer, stepIdx);
-    if (seq.steps[stepIdx].smooth == 0){ // When there is no smoothing delay, nextaction = currentSeqMillis + keep and stait = wait
+    if (seq.steps[stepIdx].smooth == 0){ // When there is no smoothing delay, nextaction = currentSeqMillis + keep and state = wait
         seqDatas[sequencer].state = WAITING;
         seqDatas[sequencer].nextActionAtMs = currentSeqMillis + (seq.defs[sequencer].clockMs * seq.steps[stepIdx].keep) ;
         if ( seq.steps[stepIdx].value != 127 ) {  // avoid to update PWM when new value == 127 (= stop at current position)
