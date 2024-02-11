@@ -194,10 +194,12 @@ void sequencerLoop(){
             }
         }
         printf("value=%i ", (int32_t) value1);
-        printf(" %i ", (int8_t) ((value1 & 0xFF000000) >> 24));
-        printf(" %i ", (int8_t) ((value1 & 0x00FF0000) >> 16));
-        printf(" %i ", (int8_t) ((value1 & 0x0000FF00) >> 8));
-        printf(" %i ", (int8_t) ((value1 & 0x000000FF) ));
+        printf(" %i ", (int8_t) (((value1 ) >> 30) & 0X03));
+        printf(" %i ", (int8_t) (((value1 ) >> 28) & 0X03));
+        printf(" %i ", (int8_t) (((value1 ) >> 26) & 0X03));
+        printf(" %i ", (int8_t) (((value1 ) >> 24) & 0X03));
+        printf(" %i ", (int8_t) (((value1 ) >> 22) & 0X03));
+        printf(" %i ", (int8_t) (((value1 ) >> 20) & 0X03));
         printf("\n");
         
     }
