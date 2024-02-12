@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.30"
+#define VERSION "2.11.31"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 

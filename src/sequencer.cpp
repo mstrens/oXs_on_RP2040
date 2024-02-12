@@ -170,6 +170,7 @@ void sequencerLoop(){
             }
         }
 */        
+/*
         for (uint8_t i = 0; i < 16; i++){ // for the first 4 sequencerIsValid
             if (i < seq.defsMax) {
                 int8_t lastOutput = seqDatas[i].lastOutputVal;
@@ -184,6 +185,19 @@ void sequencerLoop(){
             }
             value1 |=   ((uint32_t) lastCode) << ((15-i)*2);  
         }
+*/
+        for (int8_t i = 15; i >= 0; i--){ // for the first 4 sequencerIsValid
+            lastCode = 0;
+            if (i < seq.defsMax) {
+                int8_t lastOutput = seqDatas[i].lastOutputVal;
+                if (lastOutput > 0) {
+                    lastCode = 1;
+                } else if (lastOutput < 0) {
+                    lastCode = 2;
+                } 
+            value1 =  (value1 << 1) + value1 +  ((uint32_t) lastCode) ; // value1 * 3  + lastCode  
+            }
+        }
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
         if (fields[RESERVE3].onceAvailable == false) {
@@ -193,6 +207,7 @@ void sequencerLoop(){
                 //printf("Priority recalculated\n");
             }
         }
+/*        
         printf("value=%i ", (int32_t) value1);
         printf(" %i ", (int8_t) (((value1 ) >> 30) & 0X03));
         printf(" %i ", (int8_t) (((value1 ) >> 28) & 0X03));
@@ -201,7 +216,14 @@ void sequencerLoop(){
         printf(" %i ", (int8_t) (((value1 ) >> 22) & 0X03));
         printf(" %i ", (int8_t) (((value1 ) >> 20) & 0X03));
         printf("\n");
-        
+*/
+        printf("value=%i ", (int32_t) value1);
+        for( uint8_t i = 0 ; i<16; i++) {
+            printf("value=%i ", (int32_t) value1);
+            printf(" %i ", (int8_t) ((value1 % 3)));
+             value1 = value1 /3;
+        }
+        printf("\n");       
     }
     #endif
 }
