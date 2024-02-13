@@ -12,7 +12,7 @@
 
 #define SBUS_AT_M100 172
 #define SBUS_AT_P100 1811
-#define SEQ_NUMBER_OF_INTERVALS 20
+#define SEQ_NUMBER_OF_INTERVALS 40
 //#define SEQ_SBUS_INTERVAL ( (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS )
 
 //float seqSbusInterval = (float) (SBUS_AT_P100 - SBUS_AT_M100) /SEQ_NUMBER_OF_INTERVALS ; // interval in Sbus value between 2 intervals
@@ -137,55 +137,11 @@ void sequencerLoop(){
             }
         }    
     }
-    #define USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
     #ifdef USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 100 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
-        //printf("in sequencer feedback defsMax=%i\n", seq.defsMax);
-        //watchdog_update();
-        //sleep_ms(100);
         lastSeqTransmitMs = currentSeqMillis;
         value1 = 0; // reset the value to be transmitted
-/*        
-        for (uint8_t i = 0; i < 4; i++){ // for the first 4 sequencerIsValid
-            if (i < seq.defsMax) {
-                idx1 = seqDatas[i].currentStepIdx;
-                //printf("idx1=%i\n", idx1);
-                if (idx1 < 0XFFFF) {
-                    range1  = seq.steps[idx1].chRange;
-                    //printf("range1=%i\n", range1);
-                    rangeUint8 = (uint8_t) range1;
-                    //printf("rangeU8=%i\n", rangeUint8);
-                    rangeUint32 = (uint32_t) rangeUint8;
-                    //printf("rangeu32=%i\n", rangeUint32);
-                    //sleep_ms(100);
-                } else {
-                    rangeUint32 = 127; // dummy value to say that sequencer did not started
-                }
-                value1 |= rangeUint32 << (i*8); // find the current sequence for the sequencer at idx i
-                //printf("In seq feedback\n");
-                //printf("idx=%i  stepIdx=%i  range=%i  rangeU32=%i\n", i, idx1, range1 , rangeUint32);
-            } else {
-                value1 |= ((uint32_t) 127) << (i*8);
-            }
-        }
-*/        
-/*
-        for (uint8_t i = 0; i < 16; i++){ // for the first 4 sequencerIsValid
-            if (i < seq.defsMax) {
-                int8_t lastOutput = seqDatas[i].lastOutputVal;
-                lastCode = 0;
-                if (lastOutput > 0) {
-                    lastCode = 1;
-                } else if (lastOutput < 0) {
-                    lastCode = 2;
-                } 
-            } else {
-                lastCode = 3;
-            }
-            value1 |=   ((uint32_t) lastCode) << ((15-i)*2);  
-        }
-*/
         for (int8_t i = 15; i >= 0; i--){ // for the first 4 sequencerIsValid
             lastCode = 0;
             if (i < seq.defsMax) {
@@ -207,23 +163,13 @@ void sequencerLoop(){
                 //printf("Priority recalculated\n");
             }
         }
-/*        
-        printf("value=%i ", (int32_t) value1);
-        printf(" %i ", (int8_t) (((value1 ) >> 30) & 0X03));
-        printf(" %i ", (int8_t) (((value1 ) >> 28) & 0X03));
-        printf(" %i ", (int8_t) (((value1 ) >> 26) & 0X03));
-        printf(" %i ", (int8_t) (((value1 ) >> 24) & 0X03));
-        printf(" %i ", (int8_t) (((value1 ) >> 22) & 0X03));
-        printf(" %i ", (int8_t) (((value1 ) >> 20) & 0X03));
-        printf("\n");
-*/
-        printf("value=%i ", (int32_t) value1);
-        for( uint8_t i = 0 ; i<16; i++) {
-            printf("value=%i ", (int32_t) value1);
-            printf(" %i ", (int8_t) ((value1 % 3)));
-             value1 = value1 /3;
-        }
-        printf("\n");       
+//  just to debug
+//        printf("value=%i ", (int32_t) value1);
+//        for( uint8_t i = 0 ; i<16; i++) {
+//            printf(" %i ", (int8_t) ((value1 % 3))); // rest of the divion by 3
+//            value1 = value1 /3;
+//        }
+//        printf("\n");       
     }
     #endif
 }

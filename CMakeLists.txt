@@ -46,6 +46,7 @@ target_link_libraries(oXs PRIVATE
         hardware_irq
         hardware_adc
         hardware_pwm
+        hardware_spi
         )
 
 #enable printf on usb

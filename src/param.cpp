@@ -2272,8 +2272,8 @@ bool parseOneSequence() { // parse one sequence and all steps from this sequence
         printf("Error: for sequence %i, Rc channel value must in range -100...100 (included)\n" , sequenceIdx+1);
         return false;    
     }
-    if (( tempIntTable[0] % 10) != 0){
-        printf("Error: for sequence %i, Rc channel value must be a multiple of 10 (10, 20, ...100, -10, -20,...-100\n" , sequenceIdx+1);
+    if ((( tempIntTable[0] % 10) != 0) && (( tempIntTable[0] % 10) != 5)) {
+        printf("Error: for sequence %i, Rc channel value must be a multiple of 5 (5,10,15,20,...100, -5,-10,-15,...-100\n" , sequenceIdx+1);
         return false;    
     }
     tempIntTable[1] = 0; // set 4 optional flags to 0

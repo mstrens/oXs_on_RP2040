@@ -45,6 +45,7 @@
 #include "logger.h"
 #include "esc.h"
 #include "gyro.h"
+#include "lora.h"
 
 // to do : add rpm, temp telemetry fields to jeti protocol
 //         try to detect MS5611 and other I2C testing the different I2C addresses
@@ -60,6 +61,10 @@
 //         use Rc channels with gyro correction to the signal Sbus out. 
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
 
+//         add parameters (mosi,...) for locator in config.h, param.cpp
+//         add checks on the parameters (e.g. pin is not used for 2 purposes, all parameter fill or not)
+//         detect if lora module is present when Mosi... is defined
+//         add a section in readme (and remove from config)
 
 // Look at file in folder "doc" for more details
 //
@@ -670,7 +675,11 @@ void loop() {
   //} 
   //enlapsedTime(0);
   //printf("end of loop\n");sleep_ms(100); 
-  
+#if defined( A_LOCATOR_IS_CONNECTED )  and ( A_LOCATOR_IS_CONNECTED == YES) 
+  loraHandle() ;
+#endif  
+
+
 }
 
 // initialisation of core 1 that capture the sensor data
