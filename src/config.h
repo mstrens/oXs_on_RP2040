@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.32"
+#define VERSION "2.11.33"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -454,4 +454,5 @@ typedef struct {
 // I activate this when I buid a device for Sport with voltage measured on VOLT2 instead of VOLT1 (because it is easier to solder the resistor to Grnd)
 //#define SKIP_VOLT1_3_4
 
-
+#define YES 1
+#define NO 0
