@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.34"
+#define VERSION "2.11.35"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -263,7 +263,7 @@
 // This is normally enough when there is only 2 or 3 sequences per sequencer (e.g. one ON and one OFF) 
 // The value (binary 32 bits) and must (e.g. with a Lua script) be decoded using up to 16X the rest of a division by 3 (=modulo 3).  
 //  To get this telemetry field, uncomment next #define line 
-#define USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
+#define USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_SEQUENCES
 // --------- Default parameters -------------
 // Many parameters can be edited using a serial monitor without having to compile/reflash the RP2040  
 // If you want to make an uf2 flie with specific parameters (and so, avoid having to use the serial monitor commands),

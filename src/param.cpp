@@ -1411,11 +1411,11 @@ void printConfigAndSequencers(){   // print all and perform checks
     printf("Voltage 1, 2, 3, 4        = %4u %4u %4u %4u (V1 / V4 = 26, 27, 28, 29)\n", config.pinVolt[0] , config.pinVolt[1], config.pinVolt[2] , config.pinVolt[3]);
     printf("RGB led . . . . . . . . . = %4u  (RGB    = 0, 1, 2, ..., 29)\n", config.pinLed);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
-    printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)", config.pinEsc );
-    printf("Locator CS  . . . . . . . = %4u  (SPI_CS = 0, 1, 2, ..., 29)", config.pinSpiCs );
-    printf("        SCK . . . . . . . = %4u  (SPI_SCK= 10, 14, 26)", config.pinSpiSck );
-    printf("        MOSI  . . . . . . = %4u  (SPI_MOSI=11, 15, 27)", config.pinSpiMosi );
-    printf("        MISO  . . . . . . = %4u  (SPI_MISO=8, 12, 24, 28)", config.pinSpiMiso );
+    printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)\n", config.pinEsc );
+    printf("Locator CS  . . . . . . . = %4u  (SPI_CS = 0, 1, 2, ..., 29)\n", config.pinSpiCs );
+    printf("        SCK . . . . . . . = %4u  (SPI_SCK= 10, 14, 26)\n", config.pinSpiSck );
+    printf("        MOSI  . . . . . . = %4u  (SPI_MOSI=11, 15, 27)\n", config.pinSpiMosi );
+    printf("        MISO  . . . . . . = %4u  (SPI_MISO=8, 12, 24, 28)\n", config.pinSpiMiso );
     
     if (config.escType == HW4) {
         printf("    Esc type is HW4 (Hobbywing V4)\n")  ;
@@ -2363,8 +2363,11 @@ bool parseOneSequence() { // parse one sequence and all steps from this sequence
         printf("Error: for sequence %i, Rc channel value must in range -100...100 (included)\n" , sequenceIdx+1);
         return false;    
     }
-    if ((( tempIntTable[0] % 10) != 0) && (( tempIntTable[0] % 10) != 5)) {
-        printf("Error: for sequence %i, Rc channel value must be a multiple of 5 (5,10,15,20,...100, -5,-10,-15,...-100\n" , sequenceIdx+1);
+    int  modulo10 = tempIntTable[0] % 10;
+    if (( modulo10 != 0) && ( modulo10 != 5) && ( modulo10 != -5) ) {
+        printf("Error: for sequence %i, Rc channel value must be a multiple of 5 (5,10,15,20,...100, -5,-10,-15,...-100) instead of %i\n"
+         , sequenceIdx+1 , tempIntTable[0]);
+        //printf("wrong value is %i, modulo is %i\n", tempIntTable[0], tempIntTable[0] % 10);
         return false;    
     }
     tempIntTable[1] = 0; // set 4 optional flags to 0

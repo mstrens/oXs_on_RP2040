@@ -137,7 +137,7 @@ void sequencerLoop(){
             }
         }    
     }
-    #ifdef USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_4_SEQUENCES
+    #ifdef USE_RESERVE3_FOR_SPORT_FEEDBACK_FOR_SEQUENCES
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 100 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
