@@ -3,10 +3,10 @@
 #include "tools.h"
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "config.h"
+#include "param.h"
 
-//#if defined( A_LOCATOR_IS_CONNECTED)  && ( A_LOCATOR_IS_CONNECTED == YES)
 
-//LORA use pin 10, 11,12 and 13 (= PB2 to PB5)
 // At oXs side, the principle is to set Lora device in continuous receive mode
 // In a loop, we look if a packet has been received (if so, it is one byte long with the Tx power for next transmit)
 // When oXs get this byte, it transmits immediately RSSI, SNR, and GPS data (0 if no GPS) and GPS precision and then go back to receive mode 
@@ -20,9 +20,6 @@
                                                           // bit6=0 = do not access FSK registers
                                                           // bit3= LowfrequencyModeOn; 0=access to HF test reg; 1=access to LF test register
                                                           // bits2-0=Mode; 000=sleep, 001=standby, 011=Transmit, 101=Receive continous, 110=Receive single
-#define LORA_REG_FRF_MSB                            0x06  //frequency (in steps of 61.035 Hz)
-#define LORA_REG_FRF_MID                            0x07  //frequency
-#define LORA_REG_FRF_LSB                            0x08  //frequency
 #define LORA_REG_PA_CONFIG                          0x09  //power amplifier source and value eg. 0x8F for 17dbm on PA_boost
                                                           // bit 7 = 1 means PA_BOOST is used; min +2,max 17dBm (or 20 with 1%); 0= FRO pin = min -4,max 14 dBm
                                                           // bits 6-4 = MaxPowerPmax = 10.8 + 0.6MaxPower
@@ -136,29 +133,31 @@ uint8_t loraRxPacketType ;
 uint8_t loraRxPacketTxPower ;
 uint8_t loraState = 0 ;
 
+bool locatorInstalled = false;
+
 
 extern uint32_t GPS_last_fix_millis ; // time when last fix has been received (used by lora locator) 
 extern int32_t GPS_last_fix_lon ;     // last lon when a fix has been received
 extern int32_t GPS_last_fix_lat ;     // last lat when a fix has been received
 extern uint16_t GPS_hdop ;
 
-#define PIN_MISO 16
-#define PIN_SPI_CS   8
-#define PIN_SPI_SCK  18
-#define PIN_MOSI 19
-
-#define SPI_PORT spi0
+extern CONFIG config;
+//#define PIN_SPI_CS   9
+//#define PIN_SPI_SCK  10
+//#define PIN_MOSI 11
+//#define PIN_MISO 12
+#define SPI_PORT spi1
 
 void initSpi(){     // configure the SPI
     spi_init(SPI_PORT, 1000 * 1000);
-    gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
+    gpio_set_function(config.pinSpiMiso, GPIO_FUNC_SPI);
+    gpio_set_function(config.pinSpiSck, GPIO_FUNC_SPI);
+    gpio_set_function(config.pinSpiMosi, GPIO_FUNC_SPI);
     
     // Chip select is active-low, so we'll initialise it to a driven-high state
-    gpio_init(PIN_SPI_CS);
-    gpio_set_dir(PIN_SPI_CS, GPIO_OUT);
-    gpio_put(PIN_SPI_CS, 1);
+    gpio_init(config.pinSpiCs);
+    gpio_set_dir(config.pinSpiCs, GPIO_OUT);
+    gpio_put(config.pinSpiCs, 1);
     
 //  DDRB |= (1<<2)|(1<<3)|(1<<5);    // SCK, MOSI and SS as outputs on PORTB (PB2,PB3,PB5)
 //  DDRB &= ~(1<<4);                 // MISO as input (PB4)
@@ -168,6 +167,14 @@ void initSpi(){     // configure the SPI
 //          (1<<SPR0) |               // divided clock by 16 (so 1mhz)
 //          (1<<SPE);                 // Enable SPI, disable interrupt (bit7 on 0)
 //  SPSR = 1 ;                        // Bit0 allows to multiply frequency by 2 (in master mode)
+
+    // here we can read a register (like the version ) to check if the module is connected
+    uint8_t loraVersion = loraReadRegister(LORA_REG_VERSION); 
+    if( loraVersion != 0x12) {
+        locatorInstalled = false;
+    } else {
+        locatorInstalled = true;
+    }
 }
 
 //shifts out 8 bits of data
@@ -187,8 +194,8 @@ uint8_t spiSend(uint8_t value){
 //#define SPI_SELECT (PORTB &= ~(1<<2) ) // macro for selecting LORA device
 //#define SPI_UNSELECT (PORTB |= (1<<2) ) // macro for unselecting LORA device  
 
-#define SPI_SELECT (gpio_put(PIN_SPI_CS, 0)) // macro for selecting LORA device
-#define SPI_UNSELECT (gpio_put(PIN_SPI_CS, 1)) // macro for unselecting LORA device  
+#define SPI_SELECT (gpio_put(config.pinSpiCs, 0)) // macro for selecting LORA device
+#define SPI_UNSELECT (gpio_put(config.pinSpiCs, 1)) // macro for unselecting LORA device  
 
 uint8_t loraSingleTransfer(uint8_t reg, uint8_t value) {  // only for internal use; Write and read one LORA register
   uint8_t response;
@@ -237,7 +244,7 @@ void loraWriteRegisterBurst( uint8_t reg, uint8_t* dataOut, uint8_t numBytes) {
 #define SHORT_RECEIVE_TIME 5000  // wait 5 sec for a packet
 #define LONG_RECEIVE_TIME 60000  // stay in receive for 1 min after receiving a packet
 
-void loraHandle(){ 
+void loraHandle(){   // this function is called from main.cpp only when pinSpiCs is not equal to 255
   uint8_t loraIrqFlags ;
   static uint32_t loraStateMillis ;
   //static uint32_t receiveMillis ;

@@ -48,13 +48,9 @@ PIO gpsPio = pio1; // we use pio 0;
 uint gpsSmTx = 0;  // we use the state machine 0 for Tx for a short time only (sending the config to a ublox);  
 uint gpsSmRx = 0;  // we use the state machine 0 for Rx also (only when TX is removed); 
 
-#if defined( A_LOCATOR_IS_CONNECTED)  && ( A_LOCATOR_IS_CONNECTED == YES)
 uint32_t GPS_last_fix_millis ; // time when last fix has been received (used by lora locator) 
 int32_t GPS_last_fix_lon ;     // last lon when a fix has been received
 int32_t GPS_last_fix_lat ;     // last lat when a fix has been received
-#endif
-
-
 
 #define CFG_RATE_MEAS 0x30210001 // U2 0.001 s Nominal time between GNSS measurements ; 100 = 10hz; 1000 = 1Hz
 #define CFG_MSGOUT_UBX_NAV_POSLLH_UART1 0x2091002a // U1 - - Output rate of the UBX-NAV-POSLLH message on port UART1
@@ -462,11 +458,9 @@ bool GPS::parseGpsUblox(void) // move the data from buffer to the different fiel
             }
             sent2Core0(GPS_CUMUL_DIST, GPS_cumulativeDistCm * 0.01) ;  // store in m
             // store data used for LORA
-#if defined( A_LOCATOR_IS_CONNECTED)  && ( A_LOCATOR_IS_CONNECTED == YES)
             GPS_last_fix_millis = millisRp() ;  // used by lora locator
             GPS_last_fix_lon = _buffer.posllh.longitude ;      // used by lora locator
             GPS_last_fix_lat = _buffer.posllh.latitude ;      // used by lora locator
-#endif
         } else {
             GPS_fix = false;
         }

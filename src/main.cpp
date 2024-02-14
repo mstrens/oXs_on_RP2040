@@ -675,11 +675,9 @@ void loop() {
   //} 
   //enlapsedTime(0);
   //printf("end of loop\n");sleep_ms(100); 
-#if defined( A_LOCATOR_IS_CONNECTED )  and ( A_LOCATOR_IS_CONNECTED == YES) 
-  loraHandle() ;
-#endif  
-
-
+  if (config.pinSpiCs != 255) {
+    loraHandle() ;
+  }  
 }
 
 // initialisation of core 1 that capture the sensor data

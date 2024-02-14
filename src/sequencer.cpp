@@ -142,17 +142,20 @@ void sequencerLoop(){
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
         value1 = 0; // reset the value to be transmitted
-        for (int8_t i = 15; i >= 0; i--){ // for the first 4 sequencerIsValid
-            lastCode = 0;
-            if (i < seq.defsMax) {
-                int8_t lastOutput = seqDatas[i].lastOutputVal;
-                if (lastOutput > 0) {
-                    lastCode = 1;
-                } else if (lastOutput < 0) {
-                    lastCode = 2;
-                } 
-            value1 =  (value1 << 1) + value1 +  ((uint32_t) lastCode) ; // value1 * 3  + lastCode  
-            }
+        uint32_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        int8_t lastOutput;
+        for (int8_t i = 0; i < seq.defsMax; i++){ 
+            // for each sequencer, fill an array with a value 1 or 2 at the position of the gipo used by the sequencer
+            // when gpio is above 16, mask the upper bits because there are only 16 pwm outputs
+            lastOutput = seqDatas[i].lastOutputVal;
+            if (lastOutput > 0) {
+                sortedValues[seq.defs[i].pin & 0X0F] = 1;
+            } else if (lastOutput < 0) {
+                sortedValues[seq.defs[i].pin & 0X0F] = 2;
+            } 
+        }
+        for (int8_t i = 15; i >= 0; i--){ 
+            value1 =  (value1 << 1) + value1 +  sortedValues[i] ; // value1 * 3  + new value (=0,1,2)  
         }
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;

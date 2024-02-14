@@ -270,14 +270,6 @@ private:
     uint16_t _payload_counter;
     uint8_t _msg_id; //used to identify the message type when reading the gps, is used also when buffer is parsed 
 
-    //#if defined( A_LOCATOR_IS_CONNECTED)  && ( A_LOCATOR_IS_CONNECTED == YES)
-    //uint32_t GPS_last_fix_millis ; // time when last fix has been received (used by lora locator) 
-    //int32_t GPS_last_fix_lon ;     // last lon when a fix has been received
-    //int32_t GPS_last_fix_lat ;     // last lat when a fix has been received
-    //#endif
-
-
-
 };
 
 void uboxChecksum();

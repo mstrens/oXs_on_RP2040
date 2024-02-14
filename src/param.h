@@ -68,6 +68,11 @@ struct CONFIG{
     bool gyroAutolevel;           // true means that stabilize mode replies the Hold mode (on switch position)
     uint8_t mpuOrientationH;       // define the orientation of the mpu when plane is horizontal;
     uint8_t mpuOrientationV;       // define the orientation of the mpu when plane is vertical (nose up);
+    // for Lora locator
+    uint8_t pinSpiCs;
+    uint8_t pinSpiSck;
+    uint8_t pinSpiMosi;
+    uint8_t pinSpiMiso;
 };
 
 void handleUSBCmd(void);

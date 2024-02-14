@@ -401,6 +401,61 @@ For more details, please read carrefully the file "gyro concepts.md" in the fold
 
 Important note: at this stage, this is still experimental. It has not been intensively tested. So used it at you own risk.
 
+
+## ------------------ Model Locator ----------------------------------------
+oXs can be used to locate a lost model (if you add a LORA module).
+ 
+The model is normally connected to the handset but when the model is on the ground, the range is quite limitted. 
+So if a model is lost at more than a few hundreed meters, the handset will not get any telemetry data anymore. 
+oXs allows to use a separate connection (with LORA modules) in order to have an extended range and have a chance to find back a lost model.
+This is possible because those modules use a lower frequency, a lower transmitting speed and a special protocol for long range.
+The LORA modules are SX1276/RFM95 that are sall and easily available (e.g. Aliexpress, ebay, amazon)
+\
+\
+The principle is the following:
+* You have to build 2 devices: 
+    * an oXs device with the sensors you want (ideally a GPS and optionally e.g. vario, voltages, current, ...) and a SX1276/RFM95 module
+    * a "locator receiver" device with:
+        * an Arduino pro_mini running at 8 mHz 3.3V
+        * a second SX1276/RFM95 module
+        * a display 0.96 pouces OLED 128X64 I2C SSD1306. It is small and is available for about 2€.;
+
+* Normally:
+    * the locator receiver is not in use.
+    * oXs is installed in the model and transmits the sensor data's over the normal RC Rx/Tx link. The SX1276 module in oXs is in listening mode (it does not tranmit) 
+* When a model is lost:
+    * the locator receiver" is powered on. It starts sending requests to oXs.    
+    * When the SX1276/RFM95 module in oXs receives a request, it replies with a small message containing the GPS coordinates and some data over the quality of the request signal.
+    * the display on the locator receiver shows those data's as wel as the quality of the signal received and the time enlapsed since the last received message.
+
+
+Note: the range of communication between two SX1276 modules is normally several time bigger then the common RC 2.4G link.   
+If oXs and locator receiver are both on the ground, it can be that there are to far away to communicate with each other.
+But there are 2 ways to extend the range:
+* use a directional antena on the locator receiver. The advantage of this solution is that, if you get a communication, you can use the system as a goniometer (looking at the quality of the signal) to know the direction of the lost model. This even works if you have no GPS connected to oXs. The drawback is that a directional antenna is not as small as a simple wire.
+* put the locator receiver (which is still a small device) on another model and fly over expected lost aera. In this case, the range can be more than 10 km and the chance is very high that a communication can be achieved between the 2 modules. Even if the communication is broken when the model used for searching goes back on the ground, you will know the location of the lost model because the display will still display the last received GPS coordinates.
+
+
+
+
+An oXs device with a SX1276/RFM95 does not perturb the 2.4G link and consumes only a few milliAmp because it remains normally in listening mode and when sending it is just a few % of the time. So, in order to increase the reliability of the system, it is possible to power oXs with a separate 1S lipo battery of e.g. 200/500 mAh. This should allow the system to work for several hours.
+
+
+Cabling : The SX1276/RFM95 module must be connected to the Rp2040 in the following way
+* rp2040 SPI_CS    <=> NSS from module
+* rp2040 SPI_MOSI  <=> MOSI from module
+* rp2040 SPI_MISO  <=> MISO from module
+* rp2040 SPI_SCK   <=> SCK from module
+* rp2040 GRND      <=> GRND from module
+* external (or rp2040 ) 3.3V   <=> 3.3V from module (!!! module does not support 5 Volt).
+
+
+To be checked : perhaps you have to use an additional voltage regulator (cost less than 1€) to get the 3.3 V, because it is not sure that the rp2040 voltage regulator can provide enough current when module is transmitting (for just a small time)  
+
+
+To build the locator receiver, please check and use the project openXsensor for Arduino (on github) 
+
+
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).
 * when config is wrong, led is red and always ON.

@@ -53,7 +53,9 @@
 // When a pin is used twice, the config is not valid and a LED will blink Red 
 // to store the pins, variable will be pinChannels[16], pinGpsTx, pinGpsRx, pinPrimIn, pinSecIn, 
 //                                     pinSbusOut,pinTlm, pinVolt[4]  pinSda, pinScl,pinRpm, pinLed
-
+// Spi SCK = 10, 14, 26 (for spi1)
+// Spi Mosi= 11, 15, 27 (for spi1)
+// spi Miso = 8, 12, 24, 28 (for spi1)
 
 #define CMD_BUFFER_LENTGH 3000
 uint8_t cmdBuffer[CMD_BUFFER_LENTGH];
@@ -114,6 +116,9 @@ extern gyroMixer_t gyroMixer ; // contains the parameters provided by the learni
 extern int8_t orientationList[36][6];
 extern const char* mpuOrientationNames[8];
 extern bool orientationIsWrong; 
+
+extern bool locatorInstalled;
+
 
 void handleUSBCmd(void){
     int c;
@@ -178,7 +183,11 @@ void processCmd(){
         printf("  RGB led                   RGB     = 0, 1, 2, ..., 29\n");
         printf("  Logger                    LOG     = 0, 1, 2, ..., 29\n");
         printf("  ESC                       ESC_PIN = 0, 1, 2, ..., 29\n");
-        
+        printf("  Lora  CS                  SPI_CS  = 0, 1, 2, ..., 29\n");
+        printf("        SCK                 SPI_SCK = 10, 14, 26\n");
+        printf("        MOSI                SPI_MOSI = 11, 15, 27\n");
+        printf("        MISO                SPI_MISO = 8, 12, 24, 28\n");
+
         printf("Rf protocol                 PROTOCOL= Y        Y is S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx)\n");
         printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
         printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
@@ -1025,6 +1034,64 @@ void processCmd(){
         }  
     }
 
+    // change for LORA SPI CS pin
+    if ( strcmp("SPI_CS", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui <=29 or ui ==255)) {
+            printf("Error : pin must be in range 0/29 or 255\n");
+        } else {    
+            config.pinSpiCs = ui;
+            printf("Pin for SPI CS = %u\n" , config.pinEsc );
+            updateConfig = true;
+        }
+    }
+
+    // change for LORA SPI SCK pin (10, 14, 26)
+    if ( strcmp("SPI_SCK", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui ==10 or ui ==14 or ui ==26 or ui ==255)) {
+            printf("Error : pin SPI_SCK must be 10,14,26 or 255\n");
+        } else {    
+            config.pinSpiSck = ui;
+            printf("Pin for SPI SCK = %u\n" , config.pinEsc );
+            updateConfig = true;
+        }
+    }
+
+    // change for LORA SPI MOSI pin (11, 15, 27)
+    if ( strcmp("SPI_MOSI", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui ==11 or ui ==15 or ui ==27 or ui ==255)) {
+            printf("Error : pin SPI_MOSI must be 11, 15, 27 or 255\n");
+        } else {    
+            config.pinSpiMosi = ui;
+            printf("Pin for SPI MOSI = %u\n" , config.pinEsc );
+            updateConfig = true;
+        }
+    }
+
+
+    // change for LORA SPI MISO pin (8, 12, 24, 28)
+    if ( strcmp("SPI_MISO", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui ==8 or ui ==12 or ui ==24 or ui ==28 or ui ==255)) {
+            printf("Error : pin SPI_MISO must be 8, 12, 24, 28 or 255\n");
+        } else {    
+            config.pinSpiMosi = ui;
+            printf("Pin for SPI MISO = %u\n" , config.pinEsc );
+            updateConfig = true;
+        }
+    }
+
+
 
     // get Sequencer definition
     if ( strcmp("SEQ", pkey) == 0 ) { 
@@ -1138,6 +1205,10 @@ void checkConfigAndSequencers(){     // set configIsValid
     for (uint8_t i = 0 ; i<4 ; i++) {addPinToCount(config.pinVolt[i]);}
     addPinToCount(config.pinLogger);
     addPinToCount(config.pinEsc);
+    addPinToCount(config.pinSpiCs);
+    addPinToCount(config.pinSpiSck);
+    addPinToCount(config.pinSpiMosi);
+    addPinToCount(config.pinSpiMiso);
     for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
         if (seq.defs[i].pin > 29 ) {
             printf("Error in sequencer: one pin number is %u : it must be <30", seq.defs[i].pin);
@@ -1291,6 +1362,10 @@ void checkConfigAndSequencers(){     // set configIsValid
             orientationIsWrong= true;
         }
     }
+    if ((config.pinSpiCs != 255) && (config.pinSpiSck==255 or config.pinSpiMosi==255 or config.pinSpiMiso==255)){
+        printf("Error in parameters: when SPI_CS is not 255, then SPI_CS, SPI_MOSI and SPI_MISO must all be defined (different from 255)\n");
+        configIsValid=false;    
+    }
 
     checkSequencers();
     if ( configIsValid == false) {
@@ -1337,6 +1412,10 @@ void printConfigAndSequencers(){   // print all and perform checks
     printf("RGB led . . . . . . . . . = %4u  (RGB    = 0, 1, 2, ..., 29)\n", config.pinLed);
     printf("Logger  . . . . . . . . . = %4u  (LOG    = 0, 1, 2, ..., 29)\n", config.pinLogger );
     printf("ESC . . . . . . . . . . . = %4u  (ESC_PIN= 0, 1, 2, ..., 29)", config.pinEsc );
+    printf("Locator CS  . . . . . . . = %4u  (SPI_CS = 0, 1, 2, ..., 29)", config.pinSpiCs );
+    printf("        SCK . . . . . . . = %4u  (SPI_SCK= 10, 14, 26)", config.pinSpiSck );
+    printf("        MOSI  . . . . . . = %4u  (SPI_MOSI=11, 15, 27)", config.pinSpiMosi );
+    printf("        MISO  . . . . . . = %4u  (SPI_MISO=8, 12, 24, 28)", config.pinSpiMiso );
     
     if (config.escType == HW4) {
         printf("    Esc type is HW4 (Hobbywing V4)\n")  ;
@@ -1507,6 +1586,13 @@ void printConfigAndSequencers(){   // print all and perform checks
                                                         , (int) fmap( config.failsafeChannels.ch14 )\
                                                         , (int) fmap( config.failsafeChannels.ch15 ) );
     }    
+    if (config.pinSpiCs != 255){
+        if (locatorInstalled ){
+            printf("Lora module for locator is detected\n")  ;   
+        } else {
+            printf("Lora module for locator is not detected\n")  ;   
+        }     
+    }
     if(mpu.mpuInstalled){
         printf("Acc/Gyro is detected using MP6050\n")  ;
         printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
@@ -1717,6 +1803,11 @@ void setupConfig(){   // The config is uploaded at power on
         config.pid_param_stab.kd[0] =  _pid_param_stab_KD_AIL;
         config.pid_param_stab.kd[1] =  _pid_param_stab_KD_ELV;
         config.pid_param_stab.kd[2] =  _pid_param_stab_KD_RUD;
+
+        config.pinSpiCs = _pinSpiCs;
+        config.pinSpiSck = _pinSpiSck;
+        config.pinSpiMosi = _pinSpiMosi;
+        config.pinSpiMiso = _pinSpiMiso;
 
     }
             

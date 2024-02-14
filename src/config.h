@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.33"
+#define VERSION "2.11.34"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -328,6 +328,10 @@
 #define _pinEsc 0xFF
 #define _escType 0xFF
 #define _pwmHz 50  // 50 hz per default
+#define _pinSpiCs   255   // default locator/spi is desabled.
+#define _pinSpiSck  10   // 10, 14, 26 (for spi1)  or 2, 6, 18, 22 (for spi0)
+#define _pinSpiMosi 11      // 11, 15, 27 (for spi1)  or 3, 7, 18, 23 (for spi0)
+#define _pinSpiMiso 12      // 8, 12, 24, 28 (for spi1) or 0, 4, 16, 20 (for spio)
 
 // ------  for gyro   -------
 #define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
@@ -382,65 +386,12 @@
 #define _mpuOrientationV 0           // upper face when plane is vertical (nose up) ; default is 0 (X axis point to the nose)
                                         // for both  0=X+, 1=X- , 2=Y+ , 3=Y- , 4=Z+, 5=Z- , 6=error ;
 
-// --------- 12 - Locator ---------------                                        
-// oXs sent data to Tx using the Rx telemetry protocol over 2.4G band as defined by FrSky, Hott, Jeti or Multiplex.
-// when the model is on the ground, the range over 2.4G is quite limitted. 
-// So if a model is lost at more than a few hundreed meters, the Tx will not get any telemetry data anymore 
-// oXs allows to use his own tranmitter in order to have an extended range and have a chance to find back a lost model.
-// It is possible because it uses a lower frequency, a lower transmitting speed and a spécial protocol(LORA).
-// The transmitter is a SX1276/RFM95 LORA module that is easily available (e.g. Aliexpress, ebay, amazon)
-//
-// The principle is the following:
-// - You have to build 2 devices: 
-//     - an "openXsensor" device with an Arduino , the sensors you want (ideally a GPS and e.g. vario, voltages, current, ...) and a SX1276/RFM95 module
-//     - a "locator receiver" device with an Arduino, a SX1276/RFM95 module and a display.
-//       The display must be a 0.96 pouces OLED 128X64 I2C SSD1306. It is small and is available for about 2€.
-// - Normally, the locator receiver is not in use. The openXsensor is installed in the model and transmit the sensor data over the normal RC Rx/Tx link.      
-//   The SX1276 module in oXs is in listening mode: it sent data only when it receives a request from the "locator receiver" 
-// - When a model is lost, the locator receiver" is powered on. It starts sending requests to openXsensor.    
-//   When the SX1276/RFM95 module in openXsensor receives a request, it replies with a small message containing the GPS coordinates and some data over the quality of the request signal.
-//   The display on the locator receiver shows those data as wel as the quality of the signal received back and the time enlapsed since the last received message.
-//   
-// Note: the range of communication between two SX1276 modules is normally several time bigger then the common RC 2.4G link.   
-// Still when openXsensor and locator receiver are both on the ground, it can be that there are to far away to communicate.
-// There are 2 ways to extend the range:
-//  - use a directional antena on the locator receiver. 
-//    The advantage of this solution is that, if you get a communication, you can use the system as a goniometer (looking at the quality of the signal) to know the direction of the lost model.
-//    This even works if you have no GPS connected to openXsensor.
-//    The drawback is that a directional antenna is not as small as a simple wire.
-//  - put the locator receiver (which is still a small device) on another model and fly over expected lost aera.
-//    In this case, the range can be more than 10 km and the chance is very high that a communication can be achieved between the 2 modules.
-//    Even if the communication is broken when the model used for searching goes back on the ground, you will know the location of the lost model because the display will still display the last received GPS coordinates
-//    
-// An openXsensor device with a SX1276/RFM95 does not perturb the 2.4G link and consumes only a few milliAmp because it remains normally in listening mode (and when sending it is just a few % of the time).   
-// So, in order to increase the reliability of the system, it is possible to power openXsensor with a separate 1S lipo battery of e.g. 200 mAh.
-//
-// Cabling : The SX1276/RFM95 module must be connected to the Arduino in the following way (this is valid as wel for openXsensor device as wel for locator receiver device): 
-//  - Arduino digital pin 10 <=> NSS from module
-//  - Arduino digital pin 11 <=> MOSI from module
-//  - Arduino digital pin 12 <=> MISO from module
-//  - Arduino digital pin 13 <=> SCK from module
-//  - Arduino GRND           <=> GRND from module
-//  - external (or Arduino?) 3.3V   <=> 3.3V from module   
-//  !!!!!!!!! module has to be powered with 3.3 Volt and not 5 Volt.
-//  !!!!!!!!! The Arduino must also be a 3.3 V version (so, with a 8 MHz clock) 
-//  To be checked : perhaps you have to use an additional voltage regulator (cost less than 1€) to get the 3.3 V, because it is not sure that the arduino voltage regulator can provide enough current when module is transmitting (for just a small time)  
-//  
-// On the locator receiver side, you do not have to connect sensor but wel the display. It uses 4 wires: 
-// -  Arduino pin A4 <=> SDA display 
-// -  Arduino pin A5 <=> SCL display
-//  - Arduino GRND <=> GRND display
-//  - Arduino 3.3V <=> Vcc display
-//
-//
-// The program to upload in the Arduino (nano or pro mini) locator receiver is available on github in the directory locator_receiver.
-// 
-// In order to use a locator, you must change a line in oXs_config_basic.h
-//     #define A_LOCATOR_IS_CONNECTED      NO          // select between YES , NO
-//
-// In oXs_config_advanced.h file you can select the frequency to be used between the 2 SX1276 modules (e.g. to avoid perturbation when several devices are used simultanously)  
-// Note: if you change the frequency, take care to use the same on openXsensor and locator receiver devices.
-#define A_LOCATOR_IS_CONNECTED      NO          // select between YES , NO
+// ------------- model locator -------------
+// next lines allow to select the frequency being used by the locator.
+// It must be the same values on oXs side and on locator receiver side
+#define LORA_REG_FRF_MSB                            0x06  //frequency (in steps of 61.035 Hz)
+#define LORA_REG_FRF_MID                            0x07  //frequency
+#define LORA_REG_FRF_LSB                            0x08  //frequency
 
 
 // --------- Reserve for developer. ---------
@@ -454,5 +405,5 @@ typedef struct {
 // I activate this when I buid a device for Sport with voltage measured on VOLT2 instead of VOLT1 (because it is easier to solder the resistor to Grnd)
 //#define SKIP_VOLT1_3_4
 
-#define YES 1
-#define NO 0
+//#define YES 1
+//#define NO 0
