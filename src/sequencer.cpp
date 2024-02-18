@@ -194,8 +194,7 @@ void sequencerLoop(){
             } 
             shift = ((7 - (seq.defs[i].pin & 0X07)) * 3);
             code =  code <<  shift  ;
-            mask = ~((uint32_t) 0x00000003 << shift) ;  // set 3 bits to 0
-            
+            mask = ~((uint32_t) 0x00000007 << shift) ;  // set 3 bits to 0
             if ((seq.defs[i].pin & 0X08) == 0) {
                 value1 &= mask ;  // set 3 bits to 0
                 value1 |= code;              // set the value
