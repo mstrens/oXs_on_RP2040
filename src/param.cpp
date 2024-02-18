@@ -1628,6 +1628,7 @@ void saveConfig() {
     uint8_t buffer[FLASH_PAGE_SIZE] ;
     memset(buffer, 0xff, FLASH_PAGE_SIZE);
     memcpy(&buffer[0], &config, sizeof(config));
+    printf("size of config is %i\n", sizeof(config));
     // Note that a whole number of sectors must be erased at a time.
     // irq must be disable during flashing
     watchdog_enable(3000 , true);
@@ -2363,9 +2364,10 @@ bool parseOneSequence() { // parse one sequence and all steps from this sequence
         printf("Error: for sequence %i, Rc channel value must in range -100...100 (included)\n" , sequenceIdx+1);
         return false;    
     }
-    int  modulo10 = tempIntTable[0] % 10;
-    if (( modulo10 != 0) && ( modulo10 != 5) && ( modulo10 != -5) ) {
-        printf("Error: for sequence %i, Rc channel value must be a multiple of 5 (5,10,15,20,...100, -5,-10,-15,...-100) instead of %i\n"
+    //int  modulo10 = tempIntTable[0] % 10;
+    //if (( modulo10 != 0) && ( modulo10 != 5) && ( modulo10 != -5) ) {
+        if ( (tempIntTable[0] % 5) != 0  ) {
+        printf("Error: for sequence %i, Rc channel value is % but must be a multiple of 5 (5,10,15,20,...100, -5,-10,-15,...-100)\n"
          , sequenceIdx+1 , tempIntTable[0]);
         //printf("wrong value is %i, modulo is %i\n", tempIntTable[0], tempIntTable[0] % 10);
         return false;    

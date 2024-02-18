@@ -61,10 +61,7 @@
 //         use Rc channels with gyro correction to the signal Sbus out. 
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
 
-//         add parameters (mosi,...) for locator in config.h, param.cpp
-//         add checks on the parameters (e.g. pin is not used for 2 purposes, all parameter fill or not)
-//         detect if lora module is present when Mosi... is defined
-//         add a section in readme (and remove from config)
+//         Test Lora locator functionality that has been added.
 
 // Look at file in folder "doc" for more details
 //

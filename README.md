@@ -10,6 +10,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - PWM signals to stabilize a camera on pitch and roll
 - different sequences of PWM signals (to control Servo or to generate an analog/digital voltage) based on Rc channel values
 - data's (telemetry and/or PWM Rc channels) to be logged on a SD card
+- localisation data's on a second Rf link in order to retrieve a lost model (= locator)
 ### For telemetry, it can provide
    - up to 4 analog voltages measurement (with scaling and offset) (optional); one voltage is normally used to measure a current and 1 or 2 (optionnaly) for temperature
    - one RPM measurement; a scaling (rpmMultiplicator) can be used to take care e.g. of number of blades (optional)
@@ -45,7 +46,9 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 ### It can log data's on a SD card. This require to build also another module with another RP2040: see oXs_logger project
 
 
-Each function (telemetry/PWM/SBUS/gyro/logger/sequencer) can be used alone or combined with the others.
+### It can transmit some localisation data on a separate rf link to another module in order to retrieve a model that has been lost.
+
+Each function (telemetry/PWM/SBUS/gyro/logger/sequencer/localisation) can be used alone or combined with the others.
 
 
 Note: when a mpu6050 is used (to improve vario reactivity, stabilize the plane and/or a camera), it is important to calibrate the mp6050 horizontally and vertically (see section below)
@@ -75,7 +78,9 @@ This board can be connected to:
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
       note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
    * a RPM sensor
-   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis, from Kontronik or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.    
+   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis, from Kontronik or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.
+   * another rp2040 with an SD card to log huge volume of data's
+   * a LORA module SX1276/RFM95 to transmit the localisation on a long range rf link (see locator section)   
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -147,26 +152,31 @@ When a Hobbywing, ZWT, Kontronik or BlHeli ESC is used:
  * Connect GND from ESC to RP2040 GND
  * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.
 
-About sequencers, see below.
+About sequencers and locator, see below.
 
 The affectation of the pins has to be defined by the user.  
 Here are the command codes and the pins that can be used are:  
-Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and so should not be used.  
+Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and so should not be used with this board.  
 |Command|used for:|
 |----|----|
 |C1 = 0/15  ... C16 = 0/15|PWM output|
 |GPS_TX = 0/29            |getting GPS data |
-|GPS_RX = 0/29            |configuring GPS|
+|GPS_RX = 0/29            |sending configuration to GPS|
 |PRI = 5 ,9, 21 ,25       |primary RC channel input|  
 |SEC = 1, 13 , 17 ,29     |secondary RC channel input|  
 |SBUS_OUT = 0/29           |Sbus output|  
 |TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
-|V1= 26/29 ... V4 = 26/29 |voltage measurements|  
+|V1= 26/29 ... V4= 26/29 |voltage (or current/temperatue) measurements |  
 |SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
 |SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
 |RPM = 0/29                     | RPM|
 |LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
 |LOG = 0/29                     | data to be logged |  
+|ESC_PIN = 0/29                 | data provided by ESC (rpm, volt, current, temp)|
+|SPI_CS  = 0/29                 | Chip Select pin from RMF95 (locator)|
+|SPI_SCK = 10, 14, 26           | SCK pin from RFM95 (locator)|
+|SPI_MOSI = 11, 15, 27          | MOSI pin from RFM95 (locator)|
+|SPI_MISO = 8, 12, 24, 28       | MISO pin from RFM95 (locator)| 
 
 
 ## --------- Software -------------------

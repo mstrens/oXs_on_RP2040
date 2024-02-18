@@ -142,6 +142,7 @@ void sequencerLoop(){
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
         value1 = 0; // reset the value to be transmitted
+/*
         uint32_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         int8_t lastOutput;
         for (int8_t i = 0; i < seq.defsMax; i++){ 
@@ -166,6 +167,38 @@ void sequencerLoop(){
                 //printf("Priority recalculated\n");
             }
         }
+*/
+        //uint8_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        uint32_t lastOutput;
+        value1 = 0; // reset the value to be transmitted
+        uint32_t value2 = 0;
+        for (int8_t i = 0; i < seq.defsMax; i++){ 
+            // for each sequencer, fill an array with a value 1 or 2 at the position of the gipo used by the sequencer
+            // when gpio is above 16, mask the upper bits because there are only 16 pwm outputs
+            lastOutput =  ((uint32_t) ((uint8_t) seqDatas[i].lastOutputVal) << (seq.defs[i].pin & 0X07)) ;
+            
+            
+            if ((seq.defs[i].pin & 0X08) == 0) {
+                value1 |= lastOutput;
+            } else {
+                value2 |= lastOutput;
+            } 
+        }
+        fields[RESERVE3].value = (int32_t) value1;
+        fields[RESERVE3].available = true ;
+        fields[RESERVE4].value = (int32_t) value2;
+        fields[RESERVE4].available = true ;
+        
+        if ((fields[RESERVE3].onceAvailable == false) || (fields[RESERVE3].onceAvailable == false) ){
+            fields[RESERVE3].onceAvailable = true;
+            fields[RESERVE4].onceAvailable = true;
+            if ( (config.protocol == 'S') || (config.protocol == 'F') ) { 
+                calculateSportMaxBandwidth();
+                //printf("Priority recalculated\n");
+            }
+        }
+
+
 //  just to debug
 //        printf("value=%i ", (int32_t) value1);
 //        for( uint8_t i = 0 ; i<16; i++) {
