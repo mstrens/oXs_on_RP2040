@@ -82,9 +82,13 @@ void sequencerLoop(){
     uint8_t rangeUint8 = 0; 
     uint32_t rangeUint32 = 0;
     uint32_t value1 = 0;        
+    uint32_t value2 = 0;
     uint16_t idxNum = 0; // sequence nummer of the current sequence
     uint8_t lastCode = 0;
-
+    uint32_t code = 0;
+    uint32_t mask = 0; 
+    uint8_t shift = 0;
+    int8_t lastOutput = 0;
 
     #ifdef DEBUG_SIMULATE_SEQ_RC_CHANNEL
     if (lastRcChannels == 0) lastRcChannels = 1; // force a dummy value to let sequencerLoop to run
@@ -169,14 +173,14 @@ void sequencerLoop(){
         }
 */
         //uint8_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        int8_t lastOutput;
-        uint8_t shift;
+        
+        
         value1 = 0b111111111111111111111111; // set the value to be transmitted when no value
-        uint32_t value2 = value1;
+        value2 = value1;
         for (uint8_t i = 0; i < seq.defsMax; i++){ 
             // for each sequencer, fill an array with a value 1 or 2 at the position of the gipo used by the sequencer
             // when gpio is above 16, mask the upper bits because there are only 16 pwm outputs
-            uint32_t code =3;                      // value when PWM = 0
+            code = 3 ;                      // value when PWM = 0
             lastOutput =  seqDatas[i].lastOutputVal;
             if (lastOutput < 0){
                 if (lastOutput <= -75) code = 0;  // -100/-75
@@ -190,14 +194,16 @@ void sequencerLoop(){
             } 
             shift = ((7 - (seq.defs[i].pin & 0X07)) * 3);
             code =  code <<  shift  ;
-            uint32_t mask = ~((uint32_t) 0x00000003 << shift) ;  // set 3 bits to 0
+            mask = ~((uint32_t) 0x00000003 << shift) ;  // set 3 bits to 0
+            
             if ((seq.defs[i].pin & 0X08) == 0) {
                 value1 &= mask ;  // set 3 bits to 0
                 value1 |= code;              // set the value
             } else {
                 value2 &= mask ;  // set 3 bits to 0
                 value2 |= code;              // set the value
-            } 
+            }
+            printf("i=%i lo=%i s=%i c=%i m=%i v1=%i v2=%i\n" , i, lastOutput , shift, code , mask , value1 , value2); 
         }  // end for
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
@@ -213,11 +219,11 @@ void sequencerLoop(){
             }
         }
 //  just to debug
-        printf("value 0..7=%i , %O ", (int32_t) value1 , value1 ) ;
+        printf("value 0..7=%i ", (int32_t) value1 ) ;
         for( uint8_t i = 0 ; i<8; i++) {
             printf(" %i ", (int8_t) ((value1 >> (21- i*3)) & 0X07 )); // group of  bits
         }
-        printf("value 8..15=%i , %O ", (int32_t) value2 , value2 ) ;
+        printf("  value 8..15=%i ", (int32_t) value2  ) ;
         for( uint8_t i = 0 ; i<8; i++) {
             printf(" %i ", (int8_t) ((value2 >> (21- i*3)) & 0X07 )); // group of  bits
         }
