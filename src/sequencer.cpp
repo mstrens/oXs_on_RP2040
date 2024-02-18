@@ -178,7 +178,7 @@ void sequencerLoop(){
             // when gpio is above 16, mask the upper bits because there are only 16 pwm outputs
             uint32_t code =3;                      // value when PWM = 0
             lastOutput =  seqDatas[i].lastOutputVal;
-            if (lastOutput < -1){
+            if (lastOutput < 0){
                 if (lastOutput <= -75) code = 0;  // -100/-75
                 else  if (lastOutput <= -40) code = 1; //-70/-40
                 else code = 2;                         //-35/-5
@@ -190,12 +190,13 @@ void sequencerLoop(){
             } 
             shift = ((7 - (seq.defs[i].pin & 0X07)) * 3);
             code =  code <<  shift  ;
+            uint32_t mask = ~((uint32_t) 0x00000003 << shift) ;  // set 3 bits to 0
             if ((seq.defs[i].pin & 0X08) == 0) {
-                value1 &= ~(0x0000003 << shift) ;  // set 3 bits to 0
-                value1 |= lastOutput;              // set the value
+                value1 &= mask ;  // set 3 bits to 0
+                value1 |= code;              // set the value
             } else {
-                value2 &= ~(0x0000003 << shift) ;  // set 3 bits to 0
-                value2 |= lastOutput;              // set the value
+                value2 &= mask ;  // set 3 bits to 0
+                value2 |= code;              // set the value
             } 
         }  // end for
         fields[RESERVE3].value = (int32_t) value1;
@@ -212,11 +213,11 @@ void sequencerLoop(){
             }
         }
 //  just to debug
-        printf("value 0..7=%i , 0b%d ", (int32_t) value1 , value1 ) ;
+        printf("value 0..7=%i , %O ", (int32_t) value1 , value1 ) ;
         for( uint8_t i = 0 ; i<8; i++) {
             printf(" %i ", (int8_t) ((value1 >> (21- i*3)) & 0X07 )); // group of  bits
         }
-        printf("value 8..15=%i , 0b%d ", (int32_t) value2 , value2 ) ;
+        printf("value 8..15=%i , %O ", (int32_t) value2 , value2 ) ;
         for( uint8_t i = 0 ; i<8; i++) {
             printf(" %i ", (int8_t) ((value2 >> (21- i*3)) & 0X07 )); // group of  bits
         }
