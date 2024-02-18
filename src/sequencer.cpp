@@ -141,9 +141,9 @@ void sequencerLoop(){
     #define INTERVAL_BETWEEN_SEQUENCES_TRANSMIT 100 // in ms
     if ( currentSeqMillis > (lastSeqTransmitMs + INTERVAL_BETWEEN_SEQUENCES_TRANSMIT)) {
         lastSeqTransmitMs = currentSeqMillis;
-        value1 = 0; // reset the value to be transmitted
 /*
-        uint32_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+            value1 = 0; // reset the value to be transmitted
+            uint32_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         int8_t lastOutput;
         for (int8_t i = 0; i < seq.defsMax; i++){ 
             // for each sequencer, fill an array with a value 1 or 2 at the position of the gipo used by the sequencer
@@ -169,21 +169,35 @@ void sequencerLoop(){
         }
 */
         //uint8_t sortedValues[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        uint32_t lastOutput;
-        value1 = 0; // reset the value to be transmitted
-        uint32_t value2 = 0;
-        for (int8_t i = 0; i < seq.defsMax; i++){ 
+        int8_t lastOutput;
+        uint8_t shift;
+        value1 = 0b111111111111111111111111; // set the value to be transmitted when no value
+        uint32_t value2 = value1;
+        for (uint8_t i = 0; i < seq.defsMax; i++){ 
             // for each sequencer, fill an array with a value 1 or 2 at the position of the gipo used by the sequencer
             // when gpio is above 16, mask the upper bits because there are only 16 pwm outputs
-            lastOutput =  ((uint32_t) ((uint8_t) seqDatas[i].lastOutputVal) << (seq.defs[i].pin & 0X07)) ;
-            
-            
-            if ((seq.defs[i].pin & 0X08) == 0) {
-                value1 |= lastOutput;
-            } else {
-                value2 |= lastOutput;
+            uint32_t code =3;                      // value when PWM = 0
+            lastOutput =  seqDatas[i].lastOutputVal;
+            if (lastOutput < -1){
+                if (lastOutput <= -75) code = 0;  // -100/-75
+                else  if (lastOutput <= -40) code = 1; //-70/-40
+                else code = 2;                         //-35/-5
+            } else if (lastOutput >0) {
+                if (lastOutput <= 35) code = 4;        // 5/35  
+                else  if (lastOutput <= 70) code = 5;  //40/70
+                else  if (lastOutput <= 100) code = 6;  //75/100
+                else code = 7;                          //more than 100
             } 
-        }
+            shift = ((7 - (seq.defs[i].pin & 0X07)) * 3);
+            code =  code <<  shift  ;
+            if ((seq.defs[i].pin & 0X08) == 0) {
+                value1 &= ~(0x0000003 << shift) ;  // set 3 bits to 0
+                value1 |= lastOutput;              // set the value
+            } else {
+                value2 &= ~(0x0000003 << shift) ;  // set 3 bits to 0
+                value2 |= lastOutput;              // set the value
+            } 
+        }  // end for
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;
         fields[RESERVE4].value = (int32_t) value2;
@@ -197,15 +211,17 @@ void sequencerLoop(){
                 //printf("Priority recalculated\n");
             }
         }
-
-
 //  just to debug
-//        printf("value=%i ", (int32_t) value1);
-//        for( uint8_t i = 0 ; i<16; i++) {
-//            printf(" %i ", (int8_t) ((value1 % 3))); // rest of the divion by 3
-//            value1 = value1 /3;
-//        }
-//        printf("\n");       
+        printf("value 0..7=%i , 0b%d ", (int32_t) value1 , value1 ) ;
+        for( uint8_t i = 0 ; i<8; i++) {
+            printf(" %i ", (int8_t) ((value1 >> (21- i*3)) & 0X07 )); // group of  bits
+        }
+        printf("value 8..15=%i , 0b%d ", (int32_t) value2 , value2 ) ;
+        for( uint8_t i = 0 ; i<8; i++) {
+            printf(" %i ", (int8_t) ((value2 >> (21- i*3)) & 0X07 )); // group of  bits
+        }
+        
+        printf("\n");       
     }
     #endif
 }
