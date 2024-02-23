@@ -228,7 +228,6 @@ void SPL06::calculateAltitude(){
     temperature = temp_comp * 100 ; // temp in 1/100 of degree
     //printf("temp_raw %f  ", (float) spl06_temperature_raw);
     //printf("temp_raw_sc %f  ", (float) t_raw_sc);
-    //printf("temp %f\n", (float) temperature);
     
     // calculate pressure in pascal
     const double p_raw_sc = (double)spl06_pressure_raw / SPL06_RAW_VALUE_SCALE_FACTOR;
@@ -247,6 +246,11 @@ void SPL06::calculateAltitude(){
     altitudeCm = 4433000.0 * (1.0 - pow( actualPressurePa / 101325, 0.1903)); // 101325 is pressure at see level in Pa; altitude is in cm
     altIntervalMicros = _lastTempRequest - _prevAltMicros;
     _prevAltMicros = _lastTempRequest ;
-    //printf("Alt %f\n", (float) altitude); 
+    //if ( msgEverySec(0)) {
+    //    //printCalibration();
+    //    printf("temp %i   press=%i  pr_cal=%i   p_temp_cmp=%i  alt_cm=%i\n", (int) temperature, (int) pressure_comp,
+    //     (int) pressure_cal , (int) p_temp_comp , (int) altitudeCm);
+    //}
+     
 }
 

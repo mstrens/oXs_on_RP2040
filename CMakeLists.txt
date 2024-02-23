@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
+add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=128)
 
 # initialize the SDK based on PICO_SDK_PATH
 # note: this must happen before project()

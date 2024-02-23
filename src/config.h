@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.40"
+#define VERSION "2.11.41"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -229,7 +229,7 @@
 
 // ---------- ESC --------------------------------------------------------
 #define ESC_MAX_CURRENT 250000.0 // used for Hobbywing V4 to reject dummy values ; 250000 is in ma = 250 A 
-#define ESC_MIN_THROTTLE 256    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
+#define ESC_MIN_THROTTLE 10    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
@@ -329,9 +329,9 @@
 #define _escType 0xFF
 #define _pwmHz 50  // 50 hz per default
 #define _pinSpiCs   255   // default locator/spi is desabled.
-#define _pinSpiSck  10   // 10, 14, 26 (for spi1)  or 2, 6, 18, 22 (for spi0)
-#define _pinSpiMosi 11      // 11, 15, 27 (for spi1)  or 3, 7, 18, 23 (for spi0)
-#define _pinSpiMiso 12      // 8, 12, 24, 28 (for spi1) or 0, 4, 16, 20 (for spio)
+#define _pinSpiSck  255   // 10, 14, 26 (for spi1)  or 2, 6, 18, 22 (for spi0)
+#define _pinSpiMosi 255     // 11, 15, 27 (for spi1)  or 3, 7, 18, 23 (for spi0)
+#define _pinSpiMiso 255     // 8, 12, 24, 28 (for spi1) or 0, 4, 16, 20 (for spio)
 
 // ------  for gyro   -------
 #define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
@@ -387,7 +387,7 @@
                                         // for both  0=X+, 1=X- , 2=Y+ , 3=Y- , 4=Z+, 5=Z- , 6=error ;
 
 // ------------- model locator -------------
-// next lines allow to select the frequency being used by the locator.
+// next lines allow to select the frequency being used by the locator (in 3 bytes most, mid, less).
 // It must be the same values on oXs side and on locator receiver side
 #define LORA_REG_FRF_MSB                            0x06  //frequency (in steps of 61.035 Hz)
 #define LORA_REG_FRF_MID                            0x07  //frequency

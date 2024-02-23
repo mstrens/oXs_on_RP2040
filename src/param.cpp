@@ -1085,7 +1085,7 @@ void processCmd(){
         } else if ( !(ui ==8 or ui ==12 or ui ==24 or ui ==28 or ui ==255)) {
             printf("Error : pin SPI_MISO must be 8, 12, 24, 28 or 255\n");
         } else {    
-            config.pinSpiMosi = ui;
+            config.pinSpiMiso = ui;
             printf("Pin for SPI MISO = %u\n" , config.pinEsc );
             updateConfig = true;
         }
