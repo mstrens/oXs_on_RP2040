@@ -127,7 +127,7 @@
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-uint8_t loraRxPacketRssi ;
+int8_t loraRxPacketRssi ;
 uint8_t loraRxPacketSnr ;
 uint8_t loraRxPacketType ;
 uint8_t loraRxPacketTxPower ;
@@ -261,7 +261,8 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         break ;
     case  LORA_IN_SLEEP :
         if (currentMillis > loraStateMillis ){ 
-          printf("End of sleep; enter receive mode for 5 sec\n");
+          //printf("End of sleep; enter receive mode for 5 sec\n");
+          printf("Li ");
           loraRxOn(); 
           loraState = LORA_IN_RECEIVE ; 
           loraStateMillis = currentMillis + SHORT_RECEIVE_TIME ;
@@ -278,10 +279,12 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
               loraReadPacket() ; // read the data in fifo (type and TxPower) and Rssi+SNR 
               loraInSleep() ;
               loraState = LORA_TO_TRANSMIT;
-              printf("packet received\n") ;
+              //printf("packet received\n") ;
+                printf("Re ");
           }
         } else if (currentMillis > loraStateMillis) {
-           printf("receive timeout; go to sleep\n") ;
+           //printf("receive timeout; go to sleep\n") ;
+            printf("Sl \n");
            loraInSleep() ;
            loraState = LORA_IN_SLEEP;
            loraStateMillis = currentMillis + SLEEP_TIME ;
@@ -292,7 +295,8 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         loraTxOn(loraRxPacketTxPower) ; // set TxOn  (adjust frequency, number of bytes, Txpower, start Tx)  // set lora in transmit mode
         loraStateMillis = currentMillis + 400 ; // start a timeout ; normally sending is done in less than 200msec
         loraState = LORA_WAIT_END_OF_TRANSMIT ;
-        printf("packet redy for sending\n") ;
+        //printf("packet redy for sending\n") ;
+        printf("Se "); 
         break;
     case  LORA_WAIT_END_OF_TRANSMIT :
         // check if transmit is done or if timeout occurs
@@ -300,12 +304,13 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         // else, if timeOut, go in sleep for the SLEEP_TIME
         loraIrqFlags = loraReadRegister(LORA_REG_IRQ_FLAGS);
         if ( loraIrqFlags & IRQ_TX_DONE_MASK ) {
-            printf("packet has been sent; go to receive for 60sec\n") ;
+            //printf("packet has been sent; go to receive for 60sec\n") ;
+            printf("Es\n");
             loraRxOn();
             loraState = LORA_IN_RECEIVE ; 
             loraStateMillis = currentMillis + LONG_RECEIVE_TIME ;
         } else if ( currentMillis > loraStateMillis ) {
-            printf("transmit timeout; go to sleep for 66\n") ;
+            printf("transmit timeout; go to sleep for 55sec\n") ;
             loraInSleep() ;
             loraState = LORA_IN_SLEEP;
             loraStateMillis = currentMillis + SLEEP_TIME ;
@@ -375,7 +380,7 @@ void loraInSleep(){
 
 void loraReadPacket()            // read a packet with 2 bytes ; PacketType and PacketTxPower
 {
-  loraRxPacketRssi = loraReadRegister( LORA_REG_PKT_RSSI_VALUE );
+  loraRxPacketRssi = ((int16_t) loraReadRegister( LORA_REG_PKT_RSSI_VALUE ))  - 157;
   loraRxPacketSnr = loraReadRegister( LORA_REG_PKT_SNR_VALUE );
   loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0);        //set RX FIFO ptr
   SPI_SELECT ;       // start of read burst on fifo
@@ -384,6 +389,7 @@ void loraReadPacket()            // read a packet with 2 bytes ; PacketType and 
   loraRxPacketTxPower = spiSend(0);
   SPI_UNSELECT ;
   //printf("Rssi=%i Snr=%i Type=%i  pow=%i\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
+  printf("Rssi=%i \n", loraRxPacketRssi);
 }
 
 

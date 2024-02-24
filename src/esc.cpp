@@ -288,10 +288,13 @@ uint32_t lastEscConsumedMicros = 0;
 
 void processEscFrame(){ // process the incoming byte 
     //To debug the frame
+    //#define DEBUG_ESC_FRAME
+    #ifdef DEBUG_ESC_FRAME
     for (uint8_t i=0; i< escMaxFrameLen ; i++){
          printf("%2X ",escRxBuffer[i] );   
     }
     printf("\n");
+    #endif
     if (config.escType == HW4) { // when frame is received for Hobbywing V4
         processHW4Frame();
     } else if (config.escType == KONTRONIK) {
@@ -318,8 +321,7 @@ void processHW4Frame(){
             escRxBuffer[11] < 0xF &&
             escRxBuffer[13] < 0xF &&
             escRxBuffer[15] < 0xF &&
-            escRxBuffer[17] < 0xF)
-        {
+            escRxBuffer[17] < 0xF) {
         //if (throttle >= 1024 || pwm >= 1024 || rpm >= 200000 || escRxBuffer[11] & 0xF0 ||\
         //        escRxBuffer[13] & 0xF0 || escRxBuffer[15] & 0xF0 || escRxBuffer[17] & 0xF0 || escRxBuffer[1] == 0x9B)
         //        // escRxBuffer[1] == 0x9B added by mstrens to perhaps avoid info frame; in principe LEN is different and so should already be omitted
@@ -347,12 +349,13 @@ void processHW4Frame(){
                     sent2Core0( CURRENT, (int32_t)  currentf) ; 
                 
                     // calculate consumption
-                    if (lastEscConsumedMicros) { 
-                        escConsumedMah += (currentf * (float) (microsRp() - lastEscConsumedMicros)) / 3600000000.0 ;  // in mah.
+                    float interval = (float) (microsRp() - lastEscConsumedMicros);
+                    if ((interval >0 ) && (interval < 800000)) {
+                        escConsumedMah += currentf * interval / 3600000000.0 ;  // in mah.
                         sent2Core0( CAPACITY, (int32_t) escConsumedMah);
-                    }
+                    }    
                     lastEscConsumedMicros =  microsRp(); 
-                    }
+                }
             }        
             if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc
                 sent2Core0( TEMP1, calcTemp((float) tempFet)) ;
@@ -360,11 +363,8 @@ void processHW4Frame(){
             if ((config.pinVolt[3] == 255) or (config.temperature != 2)){ //  we discard temp from esc
                 sent2Core0( TEMP2, calcTemp((float) tempBec)) ;
             }
-            //if (current > HWV4_CURRENT_MAX) { // reset if value is to high
-            //    currentf = 0;
-            //}     
             
-            printf("Esc throttle=%i   pwm=%i   Volt=%i  current=%i  consumed=%i  temp1=%i  temp2=%i\n", throttle , pwm , voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+            //printf("Esc throttle=%i   pwm=%i   Volt=%i  current=%i  consumed=%i  temp1=%i  temp2=%i\n", throttle , pwm , voltage , (int) current, (int) escConsumedMah , (int) tempFet , (int) tempBec );
             
             //throttle += ALPHA*(update_throttle(raw_throttle)-throttle);
             //rpm += ALPHA*(update_rpm(raw_rpm)-rpm);
@@ -372,9 +372,7 @@ void processHW4Frame(){
             //voltage += ALPHA*(update_voltage(raw_voltage)-voltage);
             //current += ALPHA*(update_current(raw_current)-current);
             //temperature += ALPHA*(update_temperature(raw_temperature)-temperature);
-        } else {
-            lastEscConsumedMicros = 0; // reset time of previous consumption calculation because there could be a long interruption.
-        }
+        } 
     }
 }
 
