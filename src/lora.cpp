@@ -376,17 +376,14 @@ void loraInSleep(){
 void loraReadPacket()            // read a packet with 2 bytes ; PacketType and PacketTxPower
 {
   loraRxPacketRssi = loraReadRegister( LORA_REG_PKT_RSSI_VALUE );
-  loraRxPacketSnr = loraReadRegister( LORA_REG_PKT_RSSI_VALUE );
+  loraRxPacketSnr = loraReadRegister( LORA_REG_PKT_SNR_VALUE );
   loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0);        //set RX FIFO ptr
   SPI_SELECT ;       // start of read burst on fifo
   spiSend(LORA_REG_FIFO);                //address for fifo
   loraRxPacketType = spiSend(0);
   loraRxPacketTxPower = spiSend(0);
   SPI_UNSELECT ;
-  printf("Rssi=%i\n", loraRxPacketRssi ) ;
-  printf("Snr=%i\n", loraRxPacketSnr) ;
-  printf("Type=%i\n", loraRxPacketType ) ;
-  printf("Power=%i\n", loraRxPacketTxPower ) ;
+  //printf("Rssi=%i Snr=%i Type=%i  pow=%i\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
 }
 
 

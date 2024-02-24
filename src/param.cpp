@@ -1043,7 +1043,7 @@ void processCmd(){
             printf("Error : pin must be in range 0/29 or 255\n");
         } else {    
             config.pinSpiCs = ui;
-            printf("Pin for SPI CS = %u\n" , config.pinEsc );
+            printf("Pin for SPI CS = %u\n" , config.pinSpiCs );
             updateConfig = true;
         }
     }
@@ -1057,7 +1057,7 @@ void processCmd(){
             printf("Error : pin SPI_SCK must be 10,14,26 or 255\n");
         } else {    
             config.pinSpiSck = ui;
-            printf("Pin for SPI SCK = %u\n" , config.pinEsc );
+            printf("Pin for SPI SCK = %u\n" , config.pinSpiSck );
             updateConfig = true;
         }
     }
@@ -1071,7 +1071,7 @@ void processCmd(){
             printf("Error : pin SPI_MOSI must be 11, 15, 27 or 255\n");
         } else {    
             config.pinSpiMosi = ui;
-            printf("Pin for SPI MOSI = %u\n" , config.pinEsc );
+            printf("Pin for SPI MOSI = %u\n" , config.pinSpiMosi );
             updateConfig = true;
         }
     }
@@ -1086,7 +1086,7 @@ void processCmd(){
             printf("Error : pin SPI_MISO must be 8, 12, 24, 28 or 255\n");
         } else {    
             config.pinSpiMiso = ui;
-            printf("Pin for SPI MISO = %u\n" , config.pinEsc );
+            printf("Pin for SPI MISO = %u\n" , config.pinSpiMiso );
             updateConfig = true;
         }
     }

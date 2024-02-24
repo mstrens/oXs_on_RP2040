@@ -288,10 +288,10 @@ uint32_t lastEscConsumedMicros = 0;
 
 void processEscFrame(){ // process the incoming byte 
     //To debug the frame
-    //for (uint8_t i=0; i< escMaxFrameLen ; i++){
-    //     printf("%2X ",escRxBuffer[i] );   
-    //}
-    //printf("\n");
+    for (uint8_t i=0; i< escMaxFrameLen ; i++){
+         printf("%2X ",escRxBuffer[i] );   
+    }
+    printf("\n");
     if (config.escType == HW4) { // when frame is received for Hobbywing V4
         processHW4Frame();
     } else if (config.escType == KONTRONIK) {
