@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.41"
+#define VERSION "2.11.42"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -229,7 +229,7 @@
 
 // ---------- ESC --------------------------------------------------------
 #define ESC_MAX_CURRENT 250000.0 // used for Hobbywing V4 to reject dummy values ; 250000 is in ma = 250 A 
-#define ESC_MIN_THROTTLE 10    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
+//#define ESC_MIN_THROTTLE 254    // used for Hobbywing V4 to reject dummy values ; 1024 = 100%; so e.g. 256 = 25% of max
 // -------------- Camera stabilizer ----------------------------------------
 // uncomment PITCH_CONTROL_CHANNEL and/or ROLL_CONTROL_CHANNEL if you want to stabilize a camera on those axis)
  
