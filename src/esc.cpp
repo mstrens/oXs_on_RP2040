@@ -339,15 +339,10 @@ void processHW4Frame(){
             }
             if (config.pinVolt[1] == 255) { 
                 float currentf = 0;
-                //if ( throttle > ESC_MIN_THROTTLE) { // current is calculated only when throttle is more than 1/4 of max value
-                    // float curr = raw_current*(V_REF/ADC_RES)/(DIFFAMP_GAIN*DIFFAMP_SHUNT) = original formule
-                    //                         * 3300 /4096 / (DIFFAMP_GAIN * 0.25 /1000) with DIFFAMP_GAIN = e.g. 10
-                    currentf = ((float)current) * config.scaleVolt2 - config.offset2;
-                //}
+                currentf = ((float)current) * config.scaleVolt2 - config.offset2;
                 if (currentf<0) currentf = 0;
                 if (currentf < ESC_MAX_CURRENT) { // discard when current is to high
                     sent2Core0( CURRENT, (int32_t)  currentf) ; 
-                
                     // calculate consumption
                     float interval = (float) (microsRp() - lastEscConsumedMicros);
                     if ((interval >0 ) && (interval < 800000)) {

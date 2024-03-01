@@ -191,7 +191,8 @@ If you just want to use it, there is (in most cases) no need to install/use any 
 * copy and paste (or drag and drop) the oXs.uf2 file to this new drive
 * the file should be automatically picked up by the RP2040 bootloader and flashed
 * the RPI_RP2 drive should disapear from the PC and the PC shoud now have a new serial port (COMx on windows)
-* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1. Set it up in order to let it send automatically CR/LF when you press ENTER.
+* you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1.
+* IMPORTANT NOTE: Set your USB/SERIAL terminal in order to let it send automatically CR/LF (carriage return+line feed) when you press ENTER.
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
 * when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration.
 * to list all the commands, send ?.
@@ -465,6 +466,9 @@ To be checked : perhaps you have to use an additional voltage regulator (cost le
 
 To build the locator receiver, please check and use the project openXsensor for Arduino (on github) 
 
+
+Note: the locator transmitter stay in sleep mode most of the time. Once every 55 sec, it starts listening to the receiver for 5 sec. If the receiver is not powered on, the transmitter never get a request and so never sent data.
+When powered on, the receiver sent a request every 1 sec. At least 55 sec later (when entering listening mode), the transmitter should get this request and then reply immediately. It will then reply to each new request (so every 1 sec). It go back to the sleep mode if it does not get a request within the 60 sec.
 
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).

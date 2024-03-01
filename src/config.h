@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.11.44"
+#define VERSION "2.12.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -389,9 +389,19 @@
 // ------------- model locator -------------
 // next lines allow to select the frequency being used by the locator (in 3 bytes most, mid, less).
 // It must be the same values on oXs side and on locator receiver side
-#define LORA_REG_FRF_MSB                            0x06  //frequency (in steps of 61.035 Hz)
-#define LORA_REG_FRF_MID                            0x07  //frequency
-#define LORA_REG_FRF_LSB                            0x08  //frequency
+// It can be the same frequency for transmit and receive
+#define TX_FRF_MSB   0xC0 // F / 32E6 * 256 * 256 * 8
+#define TX_FRF_MID   0x00   
+#define TX_FRF_LSB   0x00
+
+#define RX_FRF_MSB   0xC0 
+#define RX_FRF_MID   0x00  
+#define RX_FRF_LSB   0x00
+
+// Next lines allows to define the timing (e.g. sleep_time can be increased to reduce consumption)
+#define SLEEP_TIME 15000 // sleep during xx milli sec before listening 
+#define SHORT_RECEIVE_TIME 5000  // stay max in listening mode for xx milli sec; if no packet, then go to sleep
+#define LONG_RECEIVE_TIME 60000  // stay in receive for YY millisec (1 min) after receiving a packet
 
 
 // --------- Reserve for developer. ---------

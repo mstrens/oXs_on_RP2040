@@ -129,3 +129,4 @@ void  VOLTAGE::convertNtcVoltToTemp (float &adcValue ) {     //Calculate tempera
         adcValue = steinhart ;    
     }  // end convertNtcVoltToTemp 
 #endif
+

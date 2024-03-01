@@ -5,7 +5,7 @@
 #include "pico/stdlib.h"
 #include "config.h"
 #include "param.h"
-
+#include "gps.h"
 
 // At oXs side, the principle is to set Lora device in continuous receive mode
 // In a loop, we look if a packet has been received (if so, it is one byte long with the Tx power for next transmit)
@@ -13,101 +13,6 @@
 // receiving and sending are done on 2 different frequencies in order to reduce the channel occupation 
 
 
-// SX127x series common LoRa registers
-#define LORA_REG_FIFO                               0x00  //oXsTx     Receiver
-#define LORA_REG_OP_MODE                            0x01  // should be 0b10000xxx
-                                                          // bit7=1=Lora mode
-                                                          // bit6=0 = do not access FSK registers
-                                                          // bit3= LowfrequencyModeOn; 0=access to HF test reg; 1=access to LF test register
-                                                          // bits2-0=Mode; 000=sleep, 001=standby, 011=Transmit, 101=Receive continous, 110=Receive single
-#define LORA_REG_PA_CONFIG                          0x09  //power amplifier source and value eg. 0x8F for 17dbm on PA_boost
-                                                          // bit 7 = 1 means PA_BOOST is used; min +2,max 17dBm (or 20 with 1%); 0= FRO pin = min -4,max 14 dBm
-                                                          // bits 6-4 = MaxPowerPmax = 10.8 + 0.6MaxPower
-                                                          // bits 0-3 = OutputPower
-                                                          // Pout= 10.8 + 0.6MaxPowerPmax - 15 + OutputPower (if bit7=0)
-                                                          // Pout= 2 + OutputPower (if bit7=1)
-#define LORA_REG_PA_RAMP                            0x0A  //power amplifier ramp: only bits 3-0; ex: 1000= 62usec; default = 0x09 = 125usec
-#define LORA_REG_OCP                                0x0B  // current protection: could be 0b00111011 (enabled at 240 ma)
-                                                          // bit 5 = 1 = enabled
-                                                          // bits 4-0 = OcpTrim
-                                                          // Imax = 45+5*OcpTrim (if OcpTrim <=15 so 120mA)
-                                                          //      = -30+10*OcpTrim (sinon et <=27 so 240mA)
-                                                          // default 0x0B = 100mA; max value = OcpTrim=27 (décimal) = 11011
-#define LORA_REG_LNA                                0x0C  // gain in reception ex: 0b00100011max gain, no boost on LNA)
-                                                          // bits 7-5 = LnaGain
-                                                          //       000 = not used
-                                                          //       001 = max gain   // 110 = min gain
-                                                          // bits 4-3 Low frequency LNA current adjustment; must be 00
-                                                          // bits 1-0 High frequency LNA current adjustment
-                                                          //       00 = Default LNA current
-                                                          //       11 = Boost on, 150% LNA current
-#define LORA_REG_FIFO_ADDR_PTR                      0x0D  // address of current byte to be read/writen in Fifo 
-#define LORA_REG_FIFO_TX_BASE_ADDR                  0x0E  // base of Tx fifo; default 0x80
-#define LORA_REG_FIFO_RX_BASE_ADDR                  0x0F  // base of Rx fifo; default 0x00
-#define LORA_REG_FIFO_RX_CURRENT_ADDR               0x10  // adress of start of last Rx packet received (can't be written)
-#define LORA_REG_IRQ_FLAGS_MASK                     0x11  // Irq flag mask
-#define LORA_REG_IRQ_FLAGS                          0x12  // Irq flags (write 1 to bit to clear); write 0xFF clear all flags
-                                                          // bit 7=RxTimeout, 6=RxDone, 5=CrcError, 4= validHeader
-                                                          //     3=TxDone, 2=CadDone, 1=FhssChange, 0= Cad detected
-#define LORA_REG_RX_NB_BYTES                        0x13  // Number of received bytes in payload of last packet received
-#define LORA_REG_RX_HEADER_CNT_VALUE_MSB            0x14  // count nr of header received
-#define LORA_REG_RX_HEADER_CNT_VALUE_LSB            0x15
-#define LORA_REG_RX_PACKET_CNT_VALUE_MSB            0x16  // count nr of packet received
-#define LORA_REG_RX_PACKET_CNT_VALUE_LSB            0x17
-#define LORA_REG_MODEM_STAT                         0x18  // Live LoRaTM modem status (see page 111 of datasheet)
-#define LORA_REG_PKT_SNR_VALUE                      0x19  // SNR of last packet received
-                                                          // SNR = (bit 7-0 in 2 complement)/4
-#define LORA_REG_PKT_RSSI_VALUE                     0x1A  // RSSI of last packet received
-                                                          // see 5.5.5 of datasheet
-#define LORA_REG_RSSI_VALUE                         0x1B  // current RSSI (not used)
-#define LORA_REG_HOP_CHANNEL                        0x1C  // start of hop channel (not used)
-#define LORA_REG_MODEM_CONFIG_1                     0x1D  // config of modem part 1  // e.g. BW=125,CR=4/5 , no Header => 0b01110011
-                                                          // bits 7-4 = BW; 0110 = 62.5Khz; 0111=125Khz
-                                                          // bits 3-1 = CR ; 001 = 4/5; 100=4/8
-                                                          //bit 0: 0=Explicit Header; 1=no Header
-#define LORA_REG_MODEM_CONFIG_2                     0x1E  // config of modem part 2 //e.g.SF=10,1 packet,CRCon,=> Ob10100100
-                                                          // bits 7-4=SF ; from 6 up to 12
-                                                          // bit 3=TxContinous mode;0=one packet only
-                                                          // bit2=RxPayloadCrcON ; 1=Enable
-                                                          // bits1-0= SymbTimeOut(9:8) = MSB
-#define LORA_REG_SYMB_TIMEOUT_LSB                   0x1F  // Receiver timeout value LSB (in single mode) in number of symbols
-#define LORA_REG_PREAMBLE_MSB                       0x20  // size of preamble; e.g. 0x0006 (default 000C)
-#define LORA_REG_PREAMBLE_LSB                       0x21
-#define LORA_REG_PAYLOAD_LENGTH                     0x22  // Payload length; has to be defined when no header 
-                                                          // e.g. 0x02 (for Receiver => 150msec) and 0x06 (for oXs => 190msec) 
-#define LORA_REG_MAX_PAYLOAD_LENGTH                 0x23  // max payload length (not used??? when no header); for safety, set to 0x06
-#define LORA_REG_HOP_PERIOD                         0x24  // frequency hop period (not used)
-#define LORA_REG_FIFO_RX_BYTE_ADDR                  0x25  // adress of last byte written in Fifo in receive mode
-#define LORA_REG_MODEM_CONFIG_3                     0x26  // config of modem part 3 ; e.g. 0b00001100
-                                                          // bit3=LowDataRateOptimize; 1=Enabled mandated when symbol length exceeds 16ms
-                                                          // bit2=AgcAutoOn; 1=LNA gain set by internal AGCloop instead of by register LnaGain
-#define LORA_REG_FEI_MSB                            0x28  // estimated frequency error
-#define LORA_REG_FEI_MID                            0x29
-#define LORA_REG_FEI_LSB                            0x2A
-#define LORA_REG_RSSI_WIDEBAND                      0x2C  //wideband RSSI measurement (= average) (not used)
-#define LORA_REG_DETECT_OPTIMIZE                    0x31  // lora detection optimize ;e.g. 0x03 (for sf10)
-                                                          // bit 2-0 = 011 for SF7 to 12; 0101 for sf6 only; default 011
-#define LORA_REG_INVERT_IQ                          0x33  // Invert lora I and Q signals
-#define LORA_REG_DETECTION_THRESHOLD                0x37  // lora detection threshold default 0X0A is ok for SF7-12; 0x0C for sf6
-#define LORA_REG_SYNC_WORD                          0x39  // lora Sync Word (default 0x12)
-#define LORA_REG_DIO_MAPPING_1                      0x40  // DIO mapping
-#define LORA_REG_DIO_MAPPING_2                      0x41
-#define LORA_REG_VERSION                            0x42  // lora version
-#define LORA_REG_PA_DAC                             0x4D  // 0x84 = normal power (up to 17 dBm); 0x87= boost (20dBm)
-
-// SX127x common LoRa modem settings
-// LORA_REG_OP_MODE                                                 MSB   LSB   DESCRIPTION
-#define LORA_SLEEP                                  0b00000000  //  2     0     sleep
-#define LORA_STANDBY                                0b00000001  //  2     0     standby
-#define LORA_TX                                     0b00000011  //  2     0     transmit
-#define LORA_RXCONTINUOUS                           0b00000101  //  2     0     receive continuous
-#define LORA_RXSINGLE                               0b00000110  //  2     0     receive single
-
-
-// IRQ masks
-#define IRQ_TX_DONE_MASK           0x08
-#define IRQ_PAYLOAD_CRC_ERROR_MASK 0x20
-#define IRQ_RX_DONE_MASK           0x40
 
 // Process depends on loraState; it can be
 #define LORA_TO_INIT 0           // device must be initialized
@@ -116,18 +21,11 @@
 #define LORA_TO_TRANSMIT 3           //fill lora with data to be send and ask for sending (but do not wait), change mode to LORA_WAIT_END_OF_TRANSMIT
 #define LORA_WAIT_END_OF_TRANSMIT 4   //wait that pakage has been sent (or wait max x sec)
 
-#define TX_FRF_MSB   0xC0 // F / 32E6 * 256 * 256 * 8
-#define TX_FRF_MID   0x00   
-#define TX_FRF_LSB   0x00
-
-#define RX_FRF_MSB   0xC0 
-#define RX_FRF_MID   0x00  
-#define RX_FRF_LSB   0x00
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-int8_t loraRxPacketRssi ;
+uint8_t loraRxPacketRssi ;
 uint8_t loraRxPacketSnr ;
 uint8_t loraRxPacketType ;
 uint8_t loraRxPacketTxPower ;
@@ -135,7 +33,7 @@ uint8_t loraState = 0 ;
 
 bool locatorInstalled = false;
 
-
+extern GPS gps;
 extern uint32_t GPS_last_fix_millis ; // time when last fix has been received (used by lora locator) 
 extern int32_t GPS_last_fix_lon ;     // last lon when a fix has been received
 extern int32_t GPS_last_fix_lat ;     // last lat when a fix has been received
@@ -240,9 +138,6 @@ void loraWriteRegisterBurst( uint8_t reg, uint8_t* dataOut, uint8_t numBytes) {
 
 
 
-#define SLEEP_TIME 55000 // sleep during 55 sec
-#define SHORT_RECEIVE_TIME 5000  // wait 5 sec for a packet
-#define LONG_RECEIVE_TIME 60000  // stay in receive for 1 min after receiving a packet
 
 void loraHandle(){   // this function is called from main.cpp only when pinSpiCs is not equal to 255
   uint8_t loraIrqFlags ;
@@ -257,12 +152,12 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         loraSetup() ; // init lora with some set up that need to be done only once
         loraState = LORA_IN_SLEEP ;
         loraStateMillis = currentMillis + SLEEP_TIME ;
-        printf("End of init\n") ;
+        //printf("End of init\n") ;
         break ;
     case  LORA_IN_SLEEP :
         if (currentMillis > loraStateMillis ){ 
           //printf("End of sleep; enter receive mode for 5 sec\n");
-          printf("Li ");
+          //printf("Li ");
           loraRxOn(); 
           loraState = LORA_IN_RECEIVE ; 
           loraStateMillis = currentMillis + SHORT_RECEIVE_TIME ;
@@ -280,11 +175,11 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
               loraInSleep() ;
               loraState = LORA_TO_TRANSMIT;
               //printf("packet received\n") ;
-                printf("Re ");
+                //printf("Re ");
           }
         } else if (currentMillis > loraStateMillis) {
            //printf("receive timeout; go to sleep\n") ;
-            printf("Sl \n");
+            //printf("Sl \n");
            loraInSleep() ;
            loraState = LORA_IN_SLEEP;
            loraStateMillis = currentMillis + SLEEP_TIME ;
@@ -296,7 +191,7 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         loraStateMillis = currentMillis + 400 ; // start a timeout ; normally sending is done in less than 200msec
         loraState = LORA_WAIT_END_OF_TRANSMIT ;
         //printf("packet redy for sending\n") ;
-        printf("Se "); 
+        //printf("Se "); 
         break;
     case  LORA_WAIT_END_OF_TRANSMIT :
         // check if transmit is done or if timeout occurs
@@ -305,12 +200,12 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         loraIrqFlags = loraReadRegister(LORA_REG_IRQ_FLAGS);
         if ( loraIrqFlags & IRQ_TX_DONE_MASK ) {
             //printf("packet has been sent; go to receive for 60sec\n") ;
-            printf("Es\n");
+            //printf("Es\n");
             loraRxOn();
             loraState = LORA_IN_RECEIVE ; 
             loraStateMillis = currentMillis + LONG_RECEIVE_TIME ;
         } else if ( currentMillis > loraStateMillis ) {
-            printf("transmit timeout; go to sleep for 55sec\n") ;
+            //printf("transmit timeout; go to sleep for 55sec\n") ;
             loraInSleep() ;
             loraState = LORA_IN_SLEEP;
             loraStateMillis = currentMillis + SLEEP_TIME ;
@@ -346,20 +241,19 @@ void loraSetup() {         // parameters that are set only once
 }
 
 void loraTxOn(uint8_t txPower){                           // if TX power <= 15, do not use the boost
-  loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_STANDBY);
-  if ( txPower <= 15) {
-    loraWriteRegister(LORA_REG_PA_CONFIG, 0x80 | txPower) ; // use PA_boost (power is from 2 up to 17dBm
-    loraWriteRegister(LORA_REG_PA_DAC , 0x84 ) ;            // 0x84 = normal power (up to 17 dBm); 0x87= boost (20dBm)
-  } else {                                                  // for this project, we use only normal power (no boost
-    loraWriteRegister(LORA_REG_PA_CONFIG, 0x80 | 15) ; // use PA_boost (power is from 2 up to 17dBm
+      loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_STANDBY);
+    if ( txPower <= 15) {
+        loraWriteRegister(LORA_REG_PA_CONFIG, 0x80 | txPower) ; // use PA_boost (power is from 2 up to 17dBm
+    } else { 
+        loraWriteRegister(LORA_REG_PA_CONFIG, 0x80 | 15) ; // use 15 as max
+    }
     loraWriteRegister(LORA_REG_PA_DAC , 0x84 ) ;            // 0x84 = normal power (up to 17 dBm); 0x87= boost (20dBm)  
-  }
-  loraWriteRegister(LORA_REG_FRF_MSB, TX_FRF_MSB);    //frequency (in steps of 61.035 Hz)
-  loraWriteRegister(LORA_REG_FRF_MID, TX_FRF_MID);      
-  loraWriteRegister(LORA_REG_FRF_LSB, TX_FRF_LSB);
-  loraWriteRegister(LORA_REG_IRQ_FLAGS, 0xFF);       //reset interrupt flags
-  loraWriteRegister(LORA_REG_PAYLOAD_LENGTH,6);      // set payload on 6 (because it is the same time on air as 5
-  loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_TX);  
+    loraWriteRegister(LORA_REG_FRF_MSB, TX_FRF_MSB);    //frequency (in steps of 61.035 Hz)
+    loraWriteRegister(LORA_REG_FRF_MID, TX_FRF_MID);      
+    loraWriteRegister(LORA_REG_FRF_LSB, TX_FRF_LSB);
+    loraWriteRegister(LORA_REG_IRQ_FLAGS, 0xFF);       //reset interrupt flags
+    loraWriteRegister(LORA_REG_PAYLOAD_LENGTH,6);      // set payload on 6 (because it is the same time on air as 5
+    loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_TX);  
 }
 
 
@@ -378,18 +272,17 @@ void loraInSleep(){
   loraWriteRegister(LORA_REG_OP_MODE,  0x80);
 }  
 
-void loraReadPacket()            // read a packet with 2 bytes ; PacketType and PacketTxPower
-{
-  loraRxPacketRssi = ((int16_t) loraReadRegister( LORA_REG_PKT_RSSI_VALUE ))  - 157;
+void loraReadPacket() {           // read a packet with 2 bytes ; PacketType and PacketTxPower
+  loraRxPacketRssi = loraReadRegister( LORA_REG_PKT_RSSI_VALUE ); // we should substract 157 or 137 ? but this is done on the receiver side
   loraRxPacketSnr = loraReadRegister( LORA_REG_PKT_SNR_VALUE );
   loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0);        //set RX FIFO ptr
   SPI_SELECT ;       // start of read burst on fifo
   spiSend(LORA_REG_FIFO);                //address for fifo
-  loraRxPacketType = spiSend(0);
-  loraRxPacketTxPower = spiSend(0);
+  loraRxPacketType = spiSend(0);         // read the first byte of the request from receiver
+  loraRxPacketTxPower = spiSend(0);      // read the second byte of the request from receiver
   SPI_UNSELECT ;
-  //printf("Rssi=%i Snr=%i Type=%i  pow=%i\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
-  printf("Rssi=%i \n", loraRxPacketRssi);
+  //printf("Rssi=%i Snr=%i Type=%x  pow=%x\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
+  //printf("Rssi=%i \n", loraRxPacketRssi);
 }
 
 
@@ -407,36 +300,36 @@ void loraFillTxPacket() {
   uint8_t temp8  = 0 ;
   int32_t gpsPos = 0 ;
   packetType = (~packetType ) & 0x80 ;                  // reverse first bit
-#if defined( A_GPS_IS_CONNECTED ) && ( A_GPS_IS_CONNECTED == YES)
-  temp16 = (GPS_hdop >> 7) ;  // Divide by 128 instead of 100 to go faster and keep only 4 bytes
-  if ( temp16 > 0x0F) temp16 = 0x0F ;
-  packetType |= (temp16 << 3 ) ; // shift in pos 3 to 6
-  if ( GPS_last_fix_millis > 0 ) { // if we receive at least one fix then we calculate the nelapsed time 
-    temp16 = ( millis() - GPS_last_fix_millis) >> 16 ; // to save bytes, we divide millisec by 1024
-    if ( temp16 > 3515 ) {
-      temp8 = 6 ; // more than 1 h (3515 = 3600000/1024 
-    } else if ( temp16 > 585 ) {
-      temp8 = 5 ; // more than 10 min (585 = 600000/1024
-    } else if ( temp16 > 59 ) {
-      temp8 = 4 ; // more than 1 min (59 = 60000/1024
-    } else if ( temp16 > 10 ) {
-      temp8 = 3 ; // more than 10 sec (10 = 10000/1024
-    } else if ( temp16 > 1 ) {
-      temp8 = 2 ; // more than 1 sec (1 = 1000/1024
-    } else {
-      temp8 = 1 ; // less than 1 sec
+  if (gps.gpsInstalled && gps.GPS_fix) {  
+    temp16 = (gps.GPS_pdop >> 7) ;  // Divide by 128 instead of 100 to go faster and keep only 4 bytes
+    if ( temp16 > 0x0F) temp16 = 0x0F ;
+    packetType |= (temp16 << 3 ) ; // shift in pos 3 to 6
+    if ( GPS_last_fix_millis > 0 ) { // if we receive at least one fix then we calculate the enlapsed time 
+        temp16 = ( millisRp() - GPS_last_fix_millis) >> 16 ; // to save bytes, we divide millisec by 1024
+        if ( temp16 > 3515 ) {
+        temp8 = 6 ; // more than 1 h (3515 = 3600000/1024 
+        } else if ( temp16 > 585 ) {
+        temp8 = 5 ; // more than 10 min (585 = 600000/1024
+        } else if ( temp16 > 59 ) {
+        temp8 = 4 ; // more than 1 min (59 = 60000/1024
+        } else if ( temp16 > 10 ) {
+        temp8 = 3 ; // more than 10 sec (10 = 10000/1024
+        } else if ( temp16 > 1 ) {
+        temp8 = 2 ; // more than 1 sec (1 = 1000/1024
+        } else {
+        temp8 = 1 ; // less than 1 sec
+        }
     }
-  }
-#endif
+  }  
   loraTxBuffer[0] = packetType | temp8 ;
   loraTxBuffer[1] = loraRxPacketRssi ; // RSSI value of last packet
-#if defined( A_GPS_IS_CONNECTED ) && ( A_GPS_IS_CONNECTED == YES)
-  if (packetType & 0x80) {
-      gpsPos = GPS_last_fix_lat ;
-  } else {
-    gpsPos = GPS_last_fix_lon ;
+  if (gps.gpsInstalled && gps.GPS_fix) {  
+    if (packetType & 0x80) {
+        gpsPos = GPS_last_fix_lat ;
+    } else {
+        gpsPos = GPS_last_fix_lon ;
+    }
   }
-#endif
   loraTxBuffer[2] = gpsPos >> 24 ;
   loraTxBuffer[3] = gpsPos >> 16 ;
   loraTxBuffer[4] = gpsPos >> 8 ;
