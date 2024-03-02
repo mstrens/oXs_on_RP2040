@@ -166,7 +166,7 @@ void sequencerLoop(){
                 value2 &= mask ;  // set 3 bits to 0
                 value2 |= code;              // set the value
             }
-            printf("i=%i lo=%i s=%i c=%i m=%i v1=%i v2=%i\n" , i, lastOutput , shift, code , mask , value1 , value2); 
+            //printf("i=%i lo=%i s=%i c=%i m=%i v1=%i v2=%i\n" , i, lastOutput , shift, code , mask , value1 , value2); 
         }  // end for
         fields[RESERVE3].value = (int32_t) value1;
         fields[RESERVE3].available = true ;

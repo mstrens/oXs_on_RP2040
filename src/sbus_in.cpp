@@ -39,6 +39,10 @@ bool sbusPriMissingFlag = true;
 bool sbusSecMissingFlag = true;
 bool sbusPriFailsafeFlag = true;
 bool sbusSecFailsafeFlag = true;
+bool sbusOutMissingFlag = false;
+bool sbusOutFailsafeFlag = false;
+
+
 
 uint32_t sbusHoldCounter = 0;
 uint32_t sbusHoldCounterTotal = 0;
@@ -194,16 +198,16 @@ void handleSbusIn(){
         case RECEIVING_SBUS :
             runningSbusFrame[sbusCounter++] = c;
             if (sbusCounter == 25 ) {  // 25 because SbusCounter is already pointing to next byte 
-            if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
-                //printf("fs=%X\n", c);
-                sbusState = NO_SBUS_FRAME;
-            } else {
-                // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
-                if ( (config.protocol == '2') && ( config.pinTlm != 255) &&
-                    ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
-                storeSbusFrame();
-                sbusState = NO_SBUS_FRAME;
-            }
+                if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
+                    //printf("fs=%X\n", c);
+                    sbusState = NO_SBUS_FRAME;
+                } else {
+                    // for Futaba protocol, if we get a Sbus2 frame and if tlm pin is defined we build 8 slots
+                    if ( (config.protocol == '2') && ( config.pinTlm != 255) &&
+                        ((c == 0x04) || (c == 0x14) || (c == 0x24) || (c == 0x34) )) fill8Sbus2Slots(c>>4);
+                    storeSbusFrame();
+                    sbusState = NO_SBUS_FRAME;
+                }
             }
         break;      
         }
@@ -283,6 +287,8 @@ void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, chan
         ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
         ( ( millisRp() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
         memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbusFrame[1], 22);
+        sbusOutMissingFlag = sbusPriMissingFlag ;
+        sbusOutFailsafeFlag = sbusPriFailsafeFlag ;
     }
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
@@ -309,6 +315,8 @@ void storeSbus2Frame(){
         (( sbusSecMissingFlag == true) && (sbusSecFailsafeFlag == false) && (sbusPriFailsafeFlag == true)) || // or previous PRI is failsafe and SEC is only missing
         (( millisRp() - lastPriChannelsMillis )  > 50 )) {                                                      // or PRI do not exist           
         memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbus2Frame[1], 22);
+        sbusOutMissingFlag = sbusSecMissingFlag ;
+        sbusOutFailsafeFlag = sbusSecFailsafeFlag ;
     }
     lastRcChannels = millisRp();
     lastSecChannelsMillis =  lastRcChannels; 

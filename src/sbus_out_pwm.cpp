@@ -163,6 +163,8 @@ void fillSbusFrame(){
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         } else {
             sbusFrame.flag = 0x00;
+            if (sbusOutMissingFlag) sbusFrame.flag |= 0X01 << 2;   // set the flags
+            if (sbusOutFailsafeFlag) sbusFrame.flag |= 0X01 << 3;
         }    
         sbusFrame.endByte = 0x00;
         //printf("ch1= %" PRIu32 "\n",sbusFrame.rcChannelsData.ch0);

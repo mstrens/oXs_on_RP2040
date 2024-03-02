@@ -61,7 +61,7 @@
 //         use Rc channels with gyro correction to the signal Sbus out. 
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
 
-//         Test Lora locator functionality that has been added.
+//         manage the failsafe flag in Sbus out.
 
 // Look at file in folder "doc" for more details
 //
