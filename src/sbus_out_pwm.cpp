@@ -42,6 +42,9 @@ extern bool sbusPriMissingFlag;
 extern bool sbusSecMissingFlag;
 extern bool sbusPriFailsafeFlag;
 extern bool sbusSecFailsafeFlag;
+extern bool sbusOutMissingFlag ;
+extern bool sbusOutFailsafeFlag ;
+
 
 // remapping from sbus value to pwm value
 extern uint16_t fromSbusMin;
