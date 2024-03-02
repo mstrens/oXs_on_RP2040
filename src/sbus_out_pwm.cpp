@@ -162,7 +162,7 @@ void fillSbusFrame(){
         lastSbusSentMillis = millisRp();   
         sbusFrame.synchro = 0x0F ; 
         if ( ( millisRp()- lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a RC channels frame, we apply failsafe
-            sbusFrame.flag = 0x10; // indicates a failsafe
+            sbusFrame.flag = 0x0C; // indicates a failsafe and missing 
             if (config.failsafeType == 'C') memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
         } else {
             sbusFrame.flag = 0x00;
