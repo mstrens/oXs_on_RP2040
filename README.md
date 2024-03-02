@@ -167,8 +167,7 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |SBUS_OUT = 0/29           |Sbus output|  
 |TLM = 0/29                |telemetry data (! for futaba Sbus2, this pin must be equal to PRI pin - 1)|  
 |V1= 26/29 ... V4= 26/29 |voltage (or current/temperatue) measurements |  
-|SDA = 2, 6, 10, 14, 18, 22, 26 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|  
-|SCL = 3, 7, 11, 15, 19, 23, 27 | I2C devices (baro, airspeed, MP6050, ADS115, ...)|
+
 |RPM = 0/29                     | RPM|
 |LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
 |LOG = 0/29                     | data to be logged |  
@@ -427,17 +426,17 @@ The principle is the following:
 * You have to build 2 devices: 
     * an oXs device with the sensors you want (ideally a GPS and optionally e.g. vario, voltages, current, ...) and a SX1276/RFM95 module
     * a "locator receiver" device with:
-        * an Arduino pro_mini running at 8 mHz 3.3V
+        * an RP2040 board
         * a second SX1276/RFM95 module
         * a display 0.96 pouces OLED 128X64 I2C SSD1306. It is small and is available for about 2€.;
 
 * Normally:
     * the locator receiver is not in use.
-    * oXs is installed in the model and transmits the sensor data's over the normal RC Rx/Tx link. The SX1276 module in oXs is in listening mode (it does not tranmit) 
+    * oXs is installed in the model and transmits the sensor data's over the normal RC Rx/Tx link. The RFM95 module in oXs is in listening mode (it does not tranmit) 
 * When a model is lost:
     * the locator receiver" is powered on. It starts sending requests to oXs.    
     * When the SX1276/RFM95 module in oXs receives a request, it replies with a small message containing the GPS coordinates and some data over the quality of the request signal.
-    * the display on the locator receiver shows those data's as wel as the quality of the signal received and the time enlapsed since the last received message.
+    * the display on the locator receiver shows those data's (longitude/latitude) as wel as the quality of the signal received and the time enlapsed since the last received message.
 
 
 Note: the range of communication between two SX1276 modules is normally several time bigger then the common RC 2.4G link.   
@@ -461,14 +460,11 @@ Cabling : The SX1276/RFM95 module must be connected to the Rp2040 in the followi
 * external (or rp2040 ) 3.3V   <=> 3.3V from module (!!! module does not support 5 Volt).
 
 
-To be checked : perhaps you have to use an additional voltage regulator (cost less than 1€) to get the 3.3 V, because it is not sure that the rp2040 voltage regulator can provide enough current when module is transmitting (for just a small time)  
+To build the locator receiver, please check this link https://github.com/mstrens/oXs_locator_receiver_on_RP2040 
 
 
-To build the locator receiver, please check and use the project openXsensor for Arduino (on github) 
-
-
-Note: the locator transmitter stay in sleep mode most of the time. Once every 55 sec, it starts listening to the receiver for 5 sec. If the receiver is not powered on, the transmitter never get a request and so never sent data.
-When powered on, the receiver sent a request every 1 sec. At least 55 sec later (when entering listening mode), the transmitter should get this request and then reply immediately. It will then reply to each new request (so every 1 sec). It go back to the sleep mode if it does not get a request within the 60 sec.
+Note: oXs (=transmitter) stay in sleep mode most of the time. Once every X (see config.h) sec, it starts listening to the receiver for e.g. 5 sec. If the receiver is not powered on, oXs never get a request and so never sent data.
+When powered on, the receiver sent a request every 1 sec. At least X sec later (when entering listening mode), oXs should get this request and then reply immediately. oXs will then reply to each new request (so every 1 sec). oXs goes back to sleep mode if it does not get a request within 60 sec.
 
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).
