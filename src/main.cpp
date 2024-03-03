@@ -61,7 +61,8 @@
 //         use Rc channels with gyro correction to the signal Sbus out. 
 //         in mpu, when we apply offsets for acc and gyro, we should check that we do not exceed the 16 bits (or put the values in 32 bits)
 
-//         manage the failsafe flag in Sbus out for protocols 
+//         manage the failsafe flag in Sbus out for protocols
+//         add AOA telemetry field when GPS, baro and gyro are installed.
 
 // Look at file in folder "doc" for more details
 //
@@ -291,13 +292,17 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
     calculateAirspeed( );
     vario1.calculateVspeedDte();
   }
-  
-
   readRpm();
   handleEsc();
   #ifdef USE_DS18B20
   ds18b20Read(); 
   #endif
+  //calculate AoA based on Vspeed, 2d ground speed and pitch
+  
+  if (fields[VSPEED].onceAvailable && fields[GROUNDSPEED].onceAvailable && fields[PITCH].onceAvailable){
+    float aoa = (float) fields[PITCH].value -  atan2f((float) fields[VSPEED].value, (float) fields[GROUNDSPEED].value) * 180.0 / 3.1416; 
+    sent2Core0( RESERVE5 , (int32_t) aoa) ;
+  }
 }
 
 //void mergeSeveralSensors(void){
@@ -619,7 +624,7 @@ void loop() {
         fillSbusFrame();
       } else if (config.protocol == 'E') {  // Jeti Exbus
         handleExbusRxTx();
-        //handleSbus2In();  // to do processa second inpunt
+        //handleSbus2In();  // to do process a second inpunt
         fillSbusFrame();
       }
       watchdog_update();

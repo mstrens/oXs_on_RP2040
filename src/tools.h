@@ -62,9 +62,9 @@ enum fieldIdx {     // Internal Id for the measurements stored in oXs and that c
       ACC_Y,
       ACC_Z,   
 
-      RESERVE3,     // currently never filled and transmitted       //40
-      RESERVE4,     // currently never filled and transmitted 
-      RESERVE5,     // currently never filled and transmitted 
+      RESERVE3,     // currently used  for sequencer feedback       //40
+      RESERVE4,     // currently used for sequencer feedback 
+      RESERVE5,     // currently used for AoA (angle of attack
       RESERVE6,     // currently never filled and transmitted 
       RESERVE7,     // currently never filled and transmitted 
 
