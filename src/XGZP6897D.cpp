@@ -57,7 +57,7 @@ void XGZP::getDifPressure() {
     prevReadUs = now;
     uint8_t writeCmd[1];
     writeCmd[0] = XGZP_PRESSURE_REGISTER ;  
-    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 2 , false, 1000) <0 ) {
+    if (i2c_write_timeout_us (i2c1 , _address, &writeCmd[0] , 1 , false, 1000) <0 ) {
         printf("error writing a cmd to XGZP (airspeed sensor)\n");
         return; // no action when i2c error
     }
@@ -70,6 +70,9 @@ void XGZP::getDifPressure() {
     // no I2C error in reading the pressure
     int32_t difPressureAdc; 
     difPressureAdc =  (readBuffer[0] << 16) + (readBuffer[1] << 8 ) + (readBuffer[2])  ;  
+    if (msgEverySec(1)) {
+        printf("rawPres=%i\n", difPressureAdc) ; 
+    }
     if ( calibrated == false) {
         calibrateCount++ ;
         if (calibrateCount == 64 ) { // after 256 reading , we can calculate the offset 
