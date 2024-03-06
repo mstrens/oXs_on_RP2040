@@ -676,10 +676,7 @@ void loop() {
   //  printf("p\n");
   //} 
   //enlapsedTime(0);
-  //printf("end of loop\n");sleep_ms(100); 
-  if (config.pinSpiCs != 255) {
-    loraHandle() ;
-  }  
+  //printf("end of loop\n");sleep_ms(100);   
 }
 
 // initialisation of core 1 that capture the sensor data
@@ -693,6 +690,9 @@ void loop1(){
     //startTimerUs(MAIN_LOOP1);
     uint8_t qCmd;
     getSensors(); // get sensor
+    if (config.pinSpiCs != 255) {
+        loraHandle() ;
+    }
     // get some request from core0
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);

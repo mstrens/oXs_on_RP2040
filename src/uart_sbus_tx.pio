@@ -21,16 +21,18 @@ bitloop:                   ; This loop will run 8 times (8n1 UART)
 % c-sdk {
 #include "hardware/clocks.h"
 
-static inline void uart_sbus_tx_program_init(PIO pio, uint sm, uint offset, uint pin_tx, uint baud) {
+static inline void uart_sbus_tx_program_init(PIO pio, uint sm, uint offset, uint pin_tx, uint baud, bool invertedSbus) {
     // Tell PIO to initially drive output-high on the selected pin, then map PIO
     // onto that pin with the IO muxes.
     pio_sm_set_pins_with_mask(pio, sm, 1u << pin_tx, 1u << pin_tx);
     pio_sm_set_pindirs_with_mask(pio, sm, 1u << pin_tx, 1u << pin_tx);
     pio_gpio_init(pio, pin_tx);
-    //gpio_set_outover(pin_tx,  GPIO_OVERRIDE_INVERT) ; // added by ms to manage inverted UART from Sbus
-    //gpio_pull_down(pin_tx); // changed by MS
-    gpio_pull_up(pin_tx); // changed by MS
-    
+    if (invertedSbus) {
+        gpio_pull_up(pin_tx); // changed by MS
+    } else {
+        gpio_set_outover(pin_tx,  GPIO_OVERRIDE_INVERT) ; // added by ms to manage original Sbus (which is an inverted UART)
+        gpio_pull_down(pin_tx); // changed by MS
+    }
 
     pio_sm_config c = uart_sbus_tx_program_get_default_config(offset);
 

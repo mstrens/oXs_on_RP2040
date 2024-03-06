@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.12.4"
+#define VERSION "2.12.5"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -163,6 +163,13 @@
 //#define EXTENDED_RANGE_UP_TO_CHANNEL 6 // (range 1/16) ;uncoment those 2 lines if you want extended PWM usec range for some (a range) servos
 #define EXTENDED_TO_PWM_MIN 500
 #define EXTENDED_TO_PWM_MAX 2500
+
+// --------- For Sbus ouput ------------------
+// SBus signal is normally an inverted UART signal
+// uncomment next line if you want to let oXs generate a normal UART signal (so an inverted Sbus)
+//#define INVERT_SBUS_OUTPUT 
+
+
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100
 #define SENSITIVITY_MAX 300
@@ -399,7 +406,7 @@
 #define RX_FRF_LSB   0x00
 
 // Next lines allows to define the timing (e.g. sleep_time can be increased to reduce consumption)
-#define SLEEP_TIME 15000 // sleep during xx milli sec before listening 
+#define SLEEP_TIME 5000 // sleep during xx milli sec before listening 
 #define SHORT_RECEIVE_TIME 5000  // stay max in listening mode for xx milli sec; if no packet, then go to sleep
 #define LONG_RECEIVE_TIME 60000  // stay in receive for YY millisec (1 min) after receiving a packet
 
@@ -417,3 +424,4 @@ typedef struct {
 
 //#define YES 1
 //#define NO 0
+

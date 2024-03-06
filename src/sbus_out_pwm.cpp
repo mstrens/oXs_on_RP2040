@@ -86,7 +86,11 @@ uint16_t rcChannelsUs[16]; // rc channels values from receiver remap in us
 void setupSbusOutPio(){
         // setup the PIO for TX UART
         uint offsetTx = pio_add_program(pioTxSbus, &uart_sbus_tx_program);
-        uart_sbus_tx_program_init(pioTxSbus, smTxSbus, offsetTx, config.pinSbusOut , SERIAL_BAUD_SBUS);
+        bool invertedSbus = false ; // standard sbus is an inverted UART
+        #ifdef INVERT_SBUS_OUTPUT
+        invertedSbus = true;
+        #endif
+        uart_sbus_tx_program_init(pioTxSbus, smTxSbus, offsetTx, config.pinSbusOut , SERIAL_BAUD_SBUS, invertedSbus);
 
         // Configure a channel to write the same word (32 bits) repeatedly to PIO0
         // SM0's TX FIFO, paced by the data request signal from that peripheral.

@@ -253,7 +253,7 @@ void loraTxOn(uint8_t txPower){                           // if TX power <= 15, 
     loraWriteRegister(LORA_REG_FRF_LSB, TX_FRF_LSB);
     loraWriteRegister(LORA_REG_IRQ_FLAGS, 0xFF);       //reset interrupt flags
     loraWriteRegister(LORA_REG_PAYLOAD_LENGTH,6);      // set payload on 6 (because it is the same time on air as 5
-    loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_TX);  
+    loraWriteRegister(LORA_REG_OP_MODE,  0x80 | LORA_TX);  // start to transmit 
 }
 
 

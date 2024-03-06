@@ -70,6 +70,8 @@ void XGZP::getDifPressure() {
     // no I2C error in reading the pressure
     int32_t difPressureAdc; 
     difPressureAdc =  (readBuffer[0] << 16) + (readBuffer[1] << 8 ) + (readBuffer[2])  ;  
+    if (difPressureAdc > 8388608)
+        difPressureAdc = difPressureAdc - 16777216 ; // convert negative in 24 bits to 32 bits
     if (msgEverySec(1)) {
         printf("rawPres=%i\n", difPressureAdc) ; 
     }
