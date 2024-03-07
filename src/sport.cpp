@@ -441,9 +441,6 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
             uintValue = ((  ((((uint32_t)( intValue < 0 ? -intValue : intValue)) / 10 ) * 6 )/ 10 ) & 0x3FFFFFFF ) ;
             if(intValue < 0) uintValue |= 0x40000000;
             break;
-        case HEADING:
-            uintValue =  intValue / 1000 ; // convert from degree * 100000 to degree * 100
-            break;
         case GROUNDSPEED:  // to do : test for the right value
             //uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
             uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)
@@ -499,7 +496,7 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         for (uint8_t j = 0 ; j < sportLength ; j++ ){
             printf(" %02X" , sportTxBuffer[j]);
         }
-        printf("/n");    
+        printf("\n");    
     }
     //sleep_us(100) ;
     sport_uart_rx_program_stop(sportPio, sportSmRx, config.pinTlm); // stop receiving
