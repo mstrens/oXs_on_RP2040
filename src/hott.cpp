@@ -26,6 +26,7 @@ It is possible to send some info to reverse some fields on the display and to ac
 #include <inttypes.h> // used by PRIu32
 #include "sport.h"
 #include "string.h" // used for memset
+#include "ads1115.h"
 
 #ifdef DEBUG
 // ************************* here Several parameters to help debugging
@@ -39,6 +40,9 @@ extern field fields[];  // list of all telemetry fields and parameters used by S
 extern GPS gps;
 extern CONFIG config;
 extern uint8_t debugTlm;
+extern ADS1115 adc1;
+extern ADS1115 adc2;
+
 
 // one pio and 2 state machines are used to manage the hott bus in halfduplex
 // one state machine (sm) handle the TX and the second the RX
@@ -252,7 +256,34 @@ bool fillHottGamFrame(){
     TxHottData.gamMsg.sensor_id     = 0xd0 ;
     TxHottData.gamMsg.stop_byte     = 0x7D ;
 // in general air module data to fill are:
-    // TxHottData.gamMsg.cell[0] =  voltageData->mVoltCell[0] /20 ; // Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+    if (adc1.adsInstalled ){
+        if (fields[ADS_1_1].available ) {
+            if ( fields[ADS_1_1].value >= 5060) { TxHottData.gamMsg.cell[0] = 253;}
+            else if ( fields[ADS_1_1].value >= 0) { TxHottData.gamMsg.cell[0] =  (uint8_t) (fields[ADS_1_1].value /20) ;} // Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+        if (fields[ADS_1_2].available ) {
+            if ( fields[ADS_1_2].value >= 5060) { TxHottData.gamMsg.cell[1] = 253;}
+            else if ( fields[ADS_1_2].value >= 0) { TxHottData.gamMsg.cell[1] =  (uint8_t) (fields[ADS_1_2].value /20) ;} // Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+        if (fields[ADS_1_3].available ) {
+            if ( fields[ADS_1_3].value >= 5060) { TxHottData.gamMsg.cell[2] = 253;}
+            else if ( fields[ADS_1_3].value >= 0) { TxHottData.gamMsg.cell[2] =  (uint8_t) (fields[ADS_1_3].value /20) ; }// Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+        if (fields[ADS_1_4].available ) {
+            if ( fields[ADS_1_4].value >= 5060) { TxHottData.gamMsg.cell[3] = 253;}
+            else if ( fields[ADS_1_4].value >= 0) { TxHottData.gamMsg.cell[3] =  (uint8_t) (fields[ADS_1_4].value /20) ; }// Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+    }
+    if (adc2.adsInstalled ){
+        if (fields[ADS_2_1].available ) {
+            if ( fields[ADS_2_1].value >= 5060) { TxHottData.gamMsg.cell[4] = 253;}
+            else if ( fields[ADS_2_1].value >= 0) { TxHottData.gamMsg.cell[4] =  (uint8_t) (fields[ADS_2_1].value /20) ;} // Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+        if (fields[ADS_2_2].available ) {
+            if ( fields[ADS_2_2].value >= 5060) { TxHottData.gamMsg.cell[5] = 253;}
+            else if ( fields[ADS_2_2].value >= 0) { TxHottData.gamMsg.cell[5] =  (uint8_t) (fields[ADS_2_2].value) /20 ;} // Volt Cell 1 (in 2 mV increments, 210 == 4.20 V)
+        }
+    }    
     // TxHottData.gamMsg.cell[1] =  voltageData->mVoltCell[1] /20 ; // Volt Cell 2 (in 2 mV increments, 210 == 4.20 V)
     // TxHottData.gamMsg.cell[2] =  voltageData->mVoltCell[2] /20 ; // Volt Cell 3 (in 2 mV increments, 210 == 4.20 V)
     // TxHottData.gamMsg.cell[3] =  voltageData->mVoltCell[3] /20 ; // Volt Cell 4 (in 2 mV increments, 210 == 4.20 V)

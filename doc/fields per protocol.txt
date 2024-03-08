@@ -110,7 +110,7 @@ GPS bearing from home        Same as above                                 GPS b
 GPS distance from home       Same as above                                 GPS distance              m
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        Hz ?????          RPM pin is defined                            GAM Rpm                   Hz/10
-Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Ads1=cells 1/4, Ads2=cells 5&6 (max output value = 5V)
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not available in hott
 Roll       0.01 degree       Same as above
 Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
