@@ -13,6 +13,7 @@
 #include "param.h"
 #include <inttypes.h> // used by PRIu32
 #include "ibus.h"
+#include "ads1115.h"
 
 // one pio and 2 state machines are used to manage the ibus in halfduplex
 // one state machine (sm) handle the TX and the second the RX
@@ -86,6 +87,9 @@ extern SPL06 baro2;
 extern BMP280 baro3;
 extern GPS gps;
 extern CONFIG config;
+extern ADS1115 adc1 ;     // class to handle first ads1115 (adr pin connected to grnd)
+extern ADS1115 adc2 ;     // class to handle second ads1115 (adr pin connected to vdd)
+
 
 #define IBUS_BAUDRATE 115200
 
@@ -118,11 +122,11 @@ uint8_t ibusTypes[NUMBER_MAX_IDX] = {  // list of ibus type in the same sequence
       IBUS_SENSOR_TYPE_ROLL,         //ROLL,        //       imu           in degree
       IBUS_SENSOR_TYPE_UNKNOWN,      //YAW ,        // not used to save data  in degree
       IBUS_SENSOR_TYPE_RPM,          //RPM ,        //      RPM sensor    in Herzt
-      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
+      IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE,      //ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
 
-      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
-      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
-      IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
+      IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE,      //ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
+      IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE,      //ADS_1_3,      // Voltage provided by ads1115 nr 1 on pin 3
+      IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE,      //ADS_1_4,      // Voltage provided by ads1115 nr 1 on pin 4
       IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_1,      // Voltage provided by ads1115 nr 2 on pin 1
       IBUS_SENSOR_TYPE_UNKNOWN,      //ADS_2_2,      // Voltage provided by ads1115 nr 2 on pin 2
       
@@ -260,6 +264,12 @@ void setupListIbusFieldsToReply() {  // fill an array with the list of fields (f
         addToIbus(GROUNDSPEED) ;
         addToIbus(HEADING) ;
         addToIbus(ALTITUDE) ;    
+    }
+    if (adc1.adsInstalled) {
+        addToIbus(ADS_1_1) ;
+        addToIbus(ADS_1_2) ;
+        addToIbus(ADS_1_3) ;
+        addToIbus(ADS_1_4) ;
     }
     #ifdef DEBUG
     printf("List of ibus fields : ");
@@ -457,7 +467,20 @@ bool formatIbusValue( uint8_t ibusAdr){
         //    break;     
         //case RELATIVEALT:
         //    value= fields[fieldId].value ; // from cm to cm
-        //    break;            
+        //    break;
+        case ADS_1_1:
+            ibusValue= int_round(fields[fieldId].value , 10); // from mvolt to 0.01V
+            break;
+        case ADS_1_2:
+            ibusValue= int_round(fields[fieldId].value , 10); // from mvolt to 0.01V
+            break;
+        case ADS_1_3:
+            ibusValue= int_round(fields[fieldId].value , 10); // from mvolt to 0.01V
+            break;
+        case ADS_1_4:
+            ibusValue= int_round(fields[fieldId].value , 10); // from mvolt to 0.01V
+            break;
+                    
     } // end switch 
     // fields[fieldId].available = false;   // reset the flag available // it seems we always have to send a value otherwise Rx try to rediscover the sensor
     return true;    
