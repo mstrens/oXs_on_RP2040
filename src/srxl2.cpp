@@ -561,9 +561,9 @@ void fbusDecodeRcChannels(){             // this code is similar to Sbus in
 // we use also a dummy value SRXL2_USE_TLM_FOR_HANDSHAKE_REQUEST = 0xFF to request a handshake
 
 uint8_t srxl2PriorityList[] = { TELE_DEVICE_VARIO_S , TELE_DEVICE_GPS_BINARY , TELE_DEVICE_AIRSPEED , TELE_DEVICE_ESC,
-                                 TELE_DEVICE_GPS_LOC , TELE_DEVICE_GPS_STATS , TELE_DEVICE_RX_MAH };
-uint8_t srxl2MaxPooling[]  = { 4, 8, 10, 10, 8, 8, 10, 10};
-uint8_t srxl2MinPooling[]  = { 2, 4, 5, 5, 4, 4, 5, 5};                                
+                                 TELE_DEVICE_GPS_LOC , TELE_DEVICE_GPS_STATS , TELE_DEVICE_RX_MAH , TELE_DEVICE_LIPOMON};
+uint8_t srxl2MaxPooling[]  = { 4, 8, 10, 10, 8, 8, 10, 10, 10};
+uint8_t srxl2MinPooling[]  = { 2, 4, 5, 5, 4, 4, 5, 5, 5};                                
 uint32_t srxl2LastPoolingNr[NUMBER_MAX_IDX] = {0}; // contains the last Pooling nr for each frame
 uint32_t srxl2PoolingNr= 0; // contains the current Pooling nr
 
@@ -916,6 +916,49 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             }
             break;
 */
+        case 7: //TELE_DEVICE_LIPOMON
+            if (fields[ADS_1_1].available || fields[ADS_1_2].available || fields[ADS_1_3].available ||fields[ADS_1_4].available ){
+                srxl2Frames.lipoMon.identifier = TELE_DEVICE_LIPOMON ;  // 0X3A
+                srxl2Frames.lipoMon.sID = 0; // Secondary ID
+                //fields[ADS_1_1].available = true;
+                //fields[ADS_1_1].value = 11111;
+                //fields[ADS_1_2].available = true;
+                //fields[ADS_1_2].value = 22222;
+                //fields[ADS_1_3].available = true;
+                //fields[ADS_1_3].value = 33333;
+                //fields[ADS_1_4].available = true;
+                //fields[ADS_1_4].value = 44444;
+                
+                if (fields[ADS_1_1].available && fields[ADS_1_1].value >= 0) {
+                    tempU16 = (uint16_t) (int_round( fields[ADS_1_1].value ,  10));   
+                } else { 
+                    tempU16 = 0x7FFF ; //		7FFF-> no data 
+                }
+                srxl2Frames.lipoMon.cell1  = swapBinary(tempU16);
+                if (fields[ADS_1_2].available && fields[ADS_1_2].value >= 0) {
+                    tempU16 = (uint16_t) (int_round( fields[ADS_1_2].value ,  10));   
+                } else { 
+                    tempU16 = 0x7FFF ; //		7FFF-> no data 
+                }
+                srxl2Frames.lipoMon.cell2  = swapBinary(tempU16);
+                if (fields[ADS_1_3].available && fields[ADS_1_3].value >= 0) {
+                    tempU16 = (uint16_t) (int_round( fields[ADS_1_3].value ,  10));   
+                } else { 
+                    tempU16 = 0x7FFF ; //		7FFF-> no data 
+                }
+                srxl2Frames.lipoMon.cell3  = swapBinary(tempU16);
+                if (fields[ADS_1_4].available && fields[ADS_1_4].value >= 0) {
+                    tempU16 = (uint16_t) (int_round( fields[ADS_1_4].value ,  10));   
+                } else { 
+                    tempU16 = 0x7FFF ; //		7FFF-> no data 
+                }
+                srxl2Frames.lipoMon.cell4  = swapBinary(tempU16);
+                srxl2Frames.lipoMon.cell5  = 0XFF7F ; // swap included
+                srxl2Frames.lipoMon.cell6  = 0XFF7F;
+                srxl2Frames.lipoMon.temp  = 0XFF7F;
+                return true;
+            }
+            break;
         default:
             return false;
             break;    
@@ -961,6 +1004,16 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
         case 6: //TELE_DEVICE_RX_MAH                   // normally not used
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.voltCurrentCap.identifier, 16);
             break;
+        case 7: //TELE_DEVICE_LIPOMON                   
+            memcpy(&srxl2TxBuffer[4], &srxl2Frames.lipoMon.identifier, 16);
+            printf("srxl2 buffer LIPOMON filled ");
+            for (uint8_t i=0; i<22 ;i++ ){
+                printf(" %2X ", srxl2TxBuffer[i]);
+            }
+            printf("\n");
+            
+            break;
+        
         case 0XFF: //request new handshake (it is a dummy value I use)
             srxl2TxBuffer[3] = 0XFF ; // overwrite destination ID with FF to ask for a request
             for (uint8_t i=4; i< 22; i++){

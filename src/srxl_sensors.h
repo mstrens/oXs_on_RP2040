@@ -545,9 +545,14 @@ typedef struct
 {
 	uint8_t		identifier;														// Source device = 0x3A
 	uint8_t		sID;															// Secondary ID
-	uint16_t		cell[6];														// Voltage across cell 1, .01V steps
+	uint16_t		cell1;														// Voltage across cell 1, .01V steps; value must be swap
 																				// 0x7FFF --> cell not present
-	uint16_t		temp;															// Temperature, 0.1C (0-655.34C)
+	uint16_t		cell2;
+    uint16_t		cell3;
+    uint16_t		cell4;
+    uint16_t		cell5;
+    uint16_t		cell6;
+    uint16_t		temp;															// Temperature, 0.1C (0-655.34C)
 } __attribute__((packed)) STRU_TELE_LIPOMON;
 
 //////////////////////////////////////////////////////////////////////////////

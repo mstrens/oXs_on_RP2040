@@ -43,5 +43,5 @@ typedef struct {
     STRU_TELE_GPS_LOC gpsLoc;
     STRU_TELE_GPS_STAT gpsStats;
     STRU_TELE_RX_MAH voltCurrentCap;
-
-} srxl2Frames_t ;
+    STRU_TELE_LIPOMON lipoMon;
+} __attribute__((packed)) srxl2Frames_t ;
