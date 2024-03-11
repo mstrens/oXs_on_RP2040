@@ -221,7 +221,7 @@ This speed (=baud rate) must be the same as the baudrate defined on the receiver
 Usually ELRS receiver uses a baudrate of 420000 to transmit the CRSF channels signal to the flight controller and to get the telemetry data.  
 Still, ELRS receivers can be configured to use another baud rate. In this case, change the baudrate in parameters accordingly.  
 
-You have to compile your self the firmware if you want to change some values in the config.h file in order e.g. to:
+You have to compile your self the firmware if you want to change some less usual values in the config.h file in order e.g. to:
 * change the setup of the ADS1115
 * allocate other slots for Sbus2 in Futaba protocol
 * allocate another physical ID for Sport in Sport/Fbus protocols
@@ -229,7 +229,7 @@ You have to compile your self the firmware if you want to change some values in 
 * assign another sequence number and/of generate alarms for some telemetry fields in Multiplex protocol
 * change the I2C address of some I2C sensors
 * use other default paramaters in order to avoid using commands via the USB/serial monitor. 
-* change the sensitivity of the XGZP sensor (if defferent from XGZP6897D001KPDPN)
+* change the sensitivity of the XGZP sensor (if different from XGZP6897D001KPDPN) (see #define XGZP_K_FACTOR in config.h)
 
 ## ------------ Failsafe---------------
 * For ELRS protocol, oXs does not received any RC channels data from the receiver(s) when RF connection is lost. If oXs is connected to 2 receivers (via PRI and SEC), oXs will generate PWM and Sbus signals on the last received data. If oXs does not get any data anymore from receiver(s), it will still continue to generate PWM and/or SBUS signals based on the failsafe setup stored inside oXs.

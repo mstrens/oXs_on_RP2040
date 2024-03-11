@@ -268,7 +268,7 @@ GPS bearing from home        Same as above                                 COG  
 GPS distance from home       Same as above                                 GPS_DIST                  m
 GPS cumulative distance m    Same as above                                 not transmitted
 RPM        ?????             RPM pin is defined                            RPM                       ???
-Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     4 voltages from the first Ads1115 (in 0.01V)
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       0.01 degree       Same as above                                 Not transmitted 
 Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
@@ -346,7 +346,7 @@ GPS bearing from home        Same as above                                 not t
 GPS distance from home       Same as above                                 not transmitted
 GPS cumulative distance m    Same as above                                 not transmitted 
 RPM        Hz                RPM pin is defined                            RPM                       10 tour/min
-Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted 
+Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     4 voltages from first ads1115 in 0.01V
 Pitch      0.01 degree       Could be added if MP6050 is installed (and SCL/SDA defined) Not transmitted 
 Roll       0.01 degree       Same as above                                 Not transmitted 
 Airspeed   cm/s              a MS4525 is installed (and SCL/SDA defined)   Airspeed                 km/h

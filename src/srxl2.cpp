@@ -984,6 +984,11 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 3: // TELE_DEVICE_ESC
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.esc.identifier, 16);
+            //printf("srxl2 buffer ESC filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         case 4: // TELE_DEVICE_GPS_LOC
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.gpsLoc.identifier, 16);
@@ -1006,12 +1011,11 @@ void srxl2FillTXBuffer(uint8_t frameIdx){
             break;
         case 7: //TELE_DEVICE_LIPOMON                   
             memcpy(&srxl2TxBuffer[4], &srxl2Frames.lipoMon.identifier, 16);
-            printf("srxl2 buffer LIPOMON filled ");
-            for (uint8_t i=0; i<22 ;i++ ){
-                printf(" %2X ", srxl2TxBuffer[i]);
-            }
-            printf("\n");
-            
+            //printf("srxl2 buffer LIPOMON filled ");
+            //for (uint8_t i=0; i<22 ;i++ ){
+            //    printf(" %2X ", srxl2TxBuffer[i]);
+            //}
+            //printf("\n");
             break;
         
         case 0XFF: //request new handshake (it is a dummy value I use)
