@@ -185,3 +185,4 @@ bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true 
 
 #define REQUEST_HORIZONTAL_MPU_CALIB 0X01
 #define REQUEST_VERTICAL_MPU_CALIB 0X02
+#define REQUEST_RESET_MPU_ACC_OFFSETS 0X03

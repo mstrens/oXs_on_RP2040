@@ -9,6 +9,8 @@
 
 // this file is based on a project found on github
 // here the address
+//  https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO
+
 
 typedef struct KF4_STATE_ {
 	float z; // altitude

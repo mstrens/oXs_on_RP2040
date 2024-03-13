@@ -18,7 +18,7 @@
 extern CONFIG config;
 //extern MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
 extern VARIO vario1;
-
+extern uint8_t debugAccZ ; // use to print a debug msg to check the acc offsets
 extern queue_t qSendCmdToCore1;
 
 bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it after a watchdog reset)
@@ -292,7 +292,7 @@ void MPU::calibrationHorizontalExecute()  //
             return;
             break; 
     }
-    printf("Upper face is "); printf(mpuOrientationNames[idx]);
+    printf("Upper face is "); printf(mpuOrientationNames[idx]); printf("\n"); 
     config.accOffsetX = (int16_t)(axAccum);
 	config.accOffsetY = (int16_t)(ayAccum);
 	config.accOffsetZ = (int16_t)(azAccum);
@@ -570,7 +570,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     sumAy += oay;
     sumAz += oaz;
     countSumAcc++;
-
+    //if (msgEverySec(0)) printf("ax=%i  ay=%i  az=%i\n", oax , oay , oaz);
     if ((config.gyroChanControl > 0) and (config.gyroChanControl <= 16) ) { // when gyro is used, send data to core0 to be used by gyro code
         sent2Core0( GYRO_X_ID , (int32_t) ogx >> (3-gyroScaleCode)) ;    // gyroScaleCode = 3 when 2000°/sec, 2=1000°/s , 1=500°/s, 0 when 250°/sec
         sent2Core0( GYRO_Y_ID , (int32_t) ogy >> (3-gyroScaleCode)) ;    // division is to get the same kind of unit (32768 = 2000°/sec) 
@@ -586,6 +586,7 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     // and gives the same result as previous formula
     float accVert = 2.0*(qh[1]*qh[3] - qh[0]*qh[2])*( (float) oax) + 2.0f*(qh[0]*qh[1] + qh[2]*qh[3])*((float)oay)
      + (qh[0]*qh[0] - qh[1]*qh[1] - qh[2]*qh[2] + qh[3]*qh[3])*((float)oaz) - accScale1G; // scale =16384 for 1g when max is 2g (to be substracted)
+    
     sumAccZ += accVert;
     countAccZ++;
     roll  = RAD_TO_DEGREE * atan2((qh[0] * qh[1] + qh[2] * qh[3]), 0.5 - (qh[1] * qh[1] + qh[2] * qh[2]));
@@ -636,6 +637,9 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         kalmanFilter4d_predict( ((float) (kfUs-lastKfUs )) /1000000.0f);
         lastKfUs = kfUs;  
         kalmanFilter4d_update( (float) vario1.rawRelAltitudeCm , (float) azWorldAverage /accScale1G * 981.0 , (float*) &zTrack , (float*)&vTrack);
+        if (debugAccZ == 'Y') {
+            if (msgEverySec(0)) printf("az=%i\n", (int) azWorldAverage );
+        }
         //printf("Vv4 Vk4  %d %d 50 -50\n", (int32_t) vario1.climbRateFloat ,  (int32_t) (float) vTrack);
         //printf("Va4 Va4  %d %d 50 -50\n", (int32_t) vario1.relativeAlt ,  (int32_t) (float) zTrack);
         sumAccZ= 0;

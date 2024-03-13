@@ -224,12 +224,12 @@ void fillFrameAttitude(uint8_t idx){
         fillBufferU8( CRSF_FRAME_ATTITUDE_PAYLOAD_SIZE + 2 ); // + 2 because we add type and crc byte 
         fillBufferU8( CRSF_FRAMETYPE_ATTITUDE );
         //if ( fields[PITCH].available ) {
-            fillBufferI16( (int16_t) ( (fields[PITCH].value * 175) / 100) ) ; //pitch  (must be in 1/1000 of deci rad )
+            fillBufferI16( (int16_t) ( (fields[PITCH].value * 1.75) ) ) ; //pitch in 0.01 deg must be converted in 1/10000 of rad )
         //} else {
         //    fillBufferI16( (int16_t) 0);
         //}
         //if ( fields[ROLL].available ) {
-            fillBufferI16( (int16_t) ( (fields[ROLL].value * 175) / 100) ) ; //roll  
+            fillBufferI16( (int16_t) ( (fields[ROLL].value * 1.75) ) ) ; //roll  
         //} else {
         //    fillBufferI16( (int16_t) 0);
         //}

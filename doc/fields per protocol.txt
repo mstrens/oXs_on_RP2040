@@ -70,8 +70,8 @@ GPS cumulative distance m    Same as above                                 not t
 RPM        ?????             RPM pin is defined                            not transmitted  
 Ads1115    0.001V (4X2)      1 or 2 Ads1115 installed +SCL/SDA defined     Not transmitted currently
 Remain     Not measured      ELRS field exist but is not used currently (one byte only = %)
-Pitch      degree            MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
-Roll       degree            Same as above                                 roll                     Rad (1/10000)
+Pitch      0.01 degree            MP6050 is installed (and SCL/SDA defined)     pitch                    Rad (1/10000)
+Roll       0.01 degree            Same as above                                 roll                     Rad (1/10000)
 Acc X     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 Acc Y     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted
 Acc Z     0.001g             MP6050 is installed (and SCL/SDA defined)     not transmitted

@@ -69,6 +69,7 @@ extern uint32_t lastRcChannels;
 CONFIG config;
 uint8_t debugTlm = 'N';
 uint8_t debugSbusOut = 'N';
+uint8_t debugAccZ = 'N';
 
 uint8_t pinCount[30] = {0};
 
@@ -226,6 +227,8 @@ void processCmd(){
         printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
         printf("                            SEQ = DEL           Erase all sequencer\n");
         printf("Force MPU6050 calibration   MPUCAL=Y            Y = H (Horizontal and still) or V (Vertical=nose up)\n");
+        printf("   Set manually ACC offsets AOX or AOY or AOZ = YYYY\n" );
+        printf("   Display raw Acc Z        DEBUGACCZ = Y or N  display vertical acc (useful to check offsets)\n");
         printf("Testing                     FV                  Field Values (display all telemetry internal values)\n")  ;
         printf("                            FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
         printf("                            FVN                      idem with negatieve values\n")  ;
@@ -378,18 +381,55 @@ void processCmd(){
             updateConfig = true;
         }
     }
+    // change for acceleration offset on X axis
+    if ( strcmp("AOX", pkey) == 0 ) { 
+        ui = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : acc offset must be an integer\n");
+        } else {    
+            config.accOffsetX = ui;
+            printf("Acc offset X = %i\n" , config.accOffsetX );
+            updateConfig = true;
+        }
+    }
+    // change for acceleration offset on Y axis
+    if ( strcmp("AOY", pkey) == 0 ) { 
+        ui = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : acc offset must be an integer\n");
+        } else {    
+            config.accOffsetY = ui;
+            printf("Acc offset Y = %i\n" , config.accOffsetY );
+            updateConfig = true;
+        }
+    }
+    // change for acceleration offset on X axis
+    if ( strcmp("AOZ", pkey) == 0 ) { 
+        ui = strtol(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : acc offset must be an integer\n");
+        } else {    
+            config.accOffsetZ = ui;
+            printf("Acc offset = %i\n" , config.accOffsetZ );
+            updateConfig = true;
+        }
+    }
+    // MPU calibration
     if ( strcmp("MPUCAL", pkey) == 0 ) {  
         if (!mpu.mpuInstalled) {
         printf("Calibration not done: no MP6050 installed\n");
-        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) )){  // only possible to request an horizontal or a vertical calibration
-            printf("Calibration not done: type must be H (Horizontal and still) or V (Vertical = nose up)\n"); 
+        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) ) ){ 
+             // only possible to request an horizontal or a vertical calibration
+            printf("Calibration not done: type must be H (Horizontal and still) , V (Vertical = nose up)\n"); 
         } else {    
-            uint8_t data = REQUEST_VERTICAL_MPU_CALIB ;
+            uint8_t data ;
             if (strcmp("H", pvalue) == 0){
-              data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration
+            data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration
+            } else {
+                data = REQUEST_VERTICAL_MPU_CALIB ;
             } 
             queue_try_add(&qSendCmdToCore1 , &data);
-            return; // retun here to avoid other messages
+            return; // retun here to avoid other messages    
         }
     }
     
@@ -466,6 +506,18 @@ void processCmd(){
             //updateConfig = true; // this is not saved
         } else  {
             printf("Error : DEBUGSBUSOUT must be Y or N\n");
+        }
+    }
+    
+    // change debugAccZ
+    if ( strcmp("DEBUGACCZ", pkey) == 0 ) { // if the key is DEBUGACCZ
+        if (strcmp("Y", pvalue) == 0) {
+            debugAccZ = 'Y';
+        } else if (strcmp("N", pvalue) == 0) {
+            debugAccZ = 'N';
+            //updateConfig = true; // this is not saved
+        } else  {
+            printf("Error : DEBUGTLM must be Y or N\n");
         }
     }
     
