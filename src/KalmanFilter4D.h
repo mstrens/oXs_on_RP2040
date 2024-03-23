@@ -38,7 +38,7 @@ void kalmanFilter4d_update(float zm, float am, float* pz, float* pv);
 
 // This is set low as the residual acceleration bias after calibration
 // is expected to have little variation/drift
-#define KF_ACCELBIAS_VARIANCE   0.005f
+#define KF_ACCELBIAS_VARIANCE   0.5f  // original value is 0.005f
 
 // injects additional uncertainty depending on magnitude of acceleration
 // helps respond quickly to large accelerations while heavily filtering

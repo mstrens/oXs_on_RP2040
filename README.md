@@ -12,7 +12,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
 - data's (telemetry and/or PWM Rc channels) to be logged on a SD card
 - localisation data's on a second Rf link in order to retrieve a lost model (= locator)
 ### For telemetry, it can provide
-   - up to 4 analog voltages measurement (with scaling and offset) (optional); one voltage is normally used to measure a current and 1 or 2 (optionnaly) for temperature
+   - up to 4 analog voltages measurement (with scaling and offset) (optional); one voltage is normally used to measure a current and 1 or 2 (optionnaly) for temperature(s)
    - one RPM measurement; a scaling (rpmMultiplicator) can be used to take care e.g. of number of blades (optional)
    - the altitude and the vertical speed when connected to a pressure sensor (optional)
    - the airspeed when connected to a differential pressure sensor (and a pitot tube) (optional)
@@ -63,6 +63,8 @@ This project requires a board with a RP2040 processor (like the rapsberry pi pic
 A better alternative is the RP2040-Zero or the RP2040-TINY (both have the same processor but smaller board)
 
 This board can be connected to:
+   * one current sensor providing an analog voltage depending on the current
+   * one or two temperature sensor(s) providing an analog voltage depending on the temperature. The sensor can be an IC like the TMP36 or a CTN (thermistor). In the last case (CTN) you have to enter the specification of the CTN in config.h and to compile yourself.
    * a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
    * a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx  or XGZP6897D differential pressure sensor to get airspeed (and compensated vertical speed)
    * a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
@@ -125,7 +127,7 @@ Note: pins between () means that they are optional.
 
 Up to 16 PWM signals can be generated on pin gpio 0...15 (to select in setup parameters). 
 
-Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max. V2 is normally used to measure a current (based on the analog voltage). V3 and V4 can be used to measure or a voltage or a temperature (based on a voltage). For each voltage being measured, you probably have to specify the offset and scale to be applied.
+Voltages 1, 2, 3, 4 can be measured on gpio 26...29. Take care to use a voltage divider (2 resistances) in order to limit the voltage on those pins to 3V max. V2 is normally used to measure a current (based on the analog voltage). V3 and V4 can be used to measure or a voltage or a temperature (based on a voltage provided by a sensor like TMP36 or a CTN/thermistor). For each voltage being measured, you probably have to specify the offset and scale to be applied.
 
 One RPM (Hz) can be measured
 * Take care to limit the voltage to the range 0-3V; so if you use capacitor coupling, add diodes and resistor to limit the voltage
@@ -276,11 +278,21 @@ Note: you can use the FV command to know the current coefficient. This allow you
 
 ## ---------------- calibration of MP6050  ---------------
 
-When an MP6050 is used, it is important to calibrate it and to let oXs knows his orientation in the plane. 
+When an MP6050 is used, it is important:
+* to calibrate it
+* to let oXs knows his orientation in the plane.
+
+To do this, oXs must be conected to the PC (via usb) and the PC must be running a serial montitor (to enter commands and display the oXs messages).
+
+Calibration concerns as well the accelerometer as the Gyro.
+* the gyro calibration is quite easy because it only requires that the sensor does not move at all. It is done automatically at each power on. Still if oXs detects that the sensor moves during this phase, it reuses the parameters that have been saved at the end of the "Horizontal" calibration (see below).
+* calibration of the accelerometer is more complex. It requires to make measerements while the sensor remains fix in many different orientations. The process starts entering a USB command MPUCAL=A. Then the sensor is put in one orientaion and while staying fix you press ENTER. oXs displays the accelerations X,Y,Z in this position if it is OK or a message saying that the measure was to noisy (then press ENTER again to take the mesures again in the same position). When done in one position, change slightly the orientation of the sensor and press ENTER again to make a new mesurement. Repeat the process in many different orientations (more than 20, less than 200). When done enter the command MPUCLA=E. oXs specifies then the number of measurements, the scale being used and a list of all measurements. Make a copy/paste of this list and save it in a txt file. Run the program "magneto12.exe" that is present in the folder doc. In this program fill the box "Norm" with the scale and open the saved txt file that you created with the measurements. Click the button "Calibrate". This provides 12 parameters ( 3 values in "(b)" and 3 rows of 3 values in "(A)"). Enter those 12 parameters (space delimited) in oXs with one  command MPUACC=xx.xxxxx yy.yyyyy .... Then enter SAVE command to save the parameters.
+ 
+
 The mpu must be installed in the model in such a way that one axis of MPU6050 is vertical and that another one is aligned with main axis of the model (nose-queue). There are 24 possible orientations to match this. Most commercial gyro's require that the user declare the orientation of the MP6050 in the model.
 oXs does it automatically with a 2 steps calibration process (named here Horizontal and Vertical).
 
-* Horizontal calibration calculates the acceleration and gyro offsets in the 3 directions. It identifies also partly the orientation of the MP6050.
+* Horizontal calibration calculates the gyro offsets in the 3 directions. It identifies also partly the orientation of the MP6050.
 It requires that the plane is set horizontally (like when it flies and roll/pitch are both 0) and do NOT move at all.
 Then a usb command MPUCAL=H is sent.
 The horizontal calibration takes a few seconds (less than 5). The result is displayed.
@@ -299,6 +311,9 @@ Still if you change the orientation of oXs in a model, you have or to perform th
 
 Note: at each power on, oXs performs automatically a new calibration of the gyro offsets (so nor acceleration offsets nor orientation).
 To get correct offset parameters, the model must stay still during the first 2 seconds. His attitude does not matter. It is possible to disable this automatic calibration with a parameter in file config.h. 
+
+In the doc folder, you can also find word document explaining again the process and a link to a video about accelerometer calibration. It shows the principle even if it is not done with an oXs device.
+
 
 Please note that when the MP6050 is used to stabilize the plane, you have also to perform a gyro mixer calibration. See gyro section.  
    

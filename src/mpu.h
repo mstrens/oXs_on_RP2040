@@ -11,10 +11,15 @@ public:
     explicit MPU(int a);  
     bool mpuInstalled = false; 
     MPU6050 mpu6050 ; 
+    bool calibAccRunning = false;
+    int16_t calibAccResults[200][3] = {0};
+    uint8_t calibAccCount = 0;
+
     void begin();
     bool getAccZWorld();
     void calibrationHorizontalExecute();
     void calibrationVerticalExecute();
+    void nextAccCalibrationExecute();
     
     void testDevicesOffsetX();
     void printOffsets();
@@ -53,7 +58,7 @@ private:
     float euler[3];         // [psi, theta, phi]    Euler angle container
     float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
     float yaw, pitch, roll;
-
+    
 };
 
 

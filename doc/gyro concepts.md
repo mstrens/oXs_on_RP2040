@@ -2,39 +2,49 @@ This document explain the way gyro corrections are done in oXs.
 
 -------------- Principles ------------
 - When oXs get the Rc channels and has a MPU6050 (accelerometer/gyro), oXs can automatically apply corrections to stabilize on 3 axis the PWM signals that drive servos (and later on also on Sbus out)
-- Gyro has 3 modes (off/Normal/Hold); user selects the active mode with a channel on the Tx with a 3 positions switch
-- The same channel allows to change the general gain of the gyro for each mode separately; 
-- Corrections can be applied on as many servos as wanted (e.g. on 4 ail servos per wing )
-- The mixers and servos limits are defined only in the handset (as usually when no gyro is used). oXs detect automatically the mixers and limits applied on the servos concerned by gyro correction during a special setup phase (= mixer calibration)
-- all other parameters (see below) can be defined with Usb commands (no compilation/reflash required) except some advanced settings that require to edit config.h file 
+- Gyro has 4 modes (off/Normal/Hold/stabilize); user selects the active mode (between 3) on the Tx with a 3 positions switch.
+- This switch must allow the handset to generate on a Rc channel a signal that is or negative (Normal mode), or null (gyro off) or positive (gyro in hold or stabilize mode depending on a oXs parameter).
+    - In "Normal" mode, the gyro tries to compensate for external perturbation (wind,...). The sticks allow to control the model.
+    - In "OFF" mode, oXs just transmit the PWM signals provided by the handset without any gyro correction
+    - In "Hold" mode, oXS tries to keep the model in the current orientation when sticks are centered. Moving the sticks allows change the orientation of the model.
+    - In "Stabilize" mode, oXs tries to keep the model horizontal when the sticks are centered. The sticks allow to control the model. 
+- Respectively the positive and negative value from this channel allows also to select the general gain of the gyro for each mode separately
+ 
+- Gyro corrections can be applied on as many servos as needed (e.g. on 4 ail servos per wing, on 2 elevator servos and/or 2 rudder servos, on Vtail stab,... )
+- On the opposite to many gyro, the mixers and servos limits are defined only in the handset (just like when no gyro is used). oXs detect automatically the mixers and limits applied on the servos concerned by gyro correction during a special setup phase (= mixer calibration)
+- several parameters (see below) can be defined with Usb commands (no compilation/reflash required) to set up the oXs gyro. 
 
 -------------- parameters to set up the gyro ----------------------
 Required:
-- 1 channel to select the gyro mode/gain:  value can be betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold; gain varies with the Rc value (bom 0% to 100% or -100%) 
-- 3 channels providing "original" stick positions (so before any mixer/limit apply by handset !!!)
-- gpio's and channels used for servos (just like when no gyro is used) 
+- 1 channel to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16). This Rc channel will provide a value betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold or Stabilize; gain varies with the Rc value (from 0% to 100% or -100%) 
+- 3 channels providing "original" stick positions (so without mixer including trim, expo/limit/subtrim...!!!!). Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
+- gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
 
 Optionnally to fine tune the settings
 - 3 gains (one per axis roll/pitch/yaw) ; the sign of the gain define the direction of the the gyro corrections.
 - 1 parameter to select the stick range around center where corrections apply (full throw , 1/2 , 1/4)
 - 1 parameter max rotate rate in hold mode (very low, low, medium , high)
 - 1 parameter to enable (or not) max rotate rate in normal mode too.
+- PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold/stabilize modes can be changes.
+
 Note: as usual with oXs:
 - the list of all usb commands and the allowed values can be displayed entering "?" command.
 - the current setting is displayed just entering ENTER
+- do not forget to enter SAVE command to keep you changes after a power off. After a SAVE command you must most of the time make a shutdown/reset to really activate the changes.
 
-PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold modes can be changes but it requires to edit the config.h and to compile/flash
 
---------------- learning process = mixer calibration -----------------------
-Before using the gyro or when mixers are changed on the handset, oXs has to capture the positions of all Rc channels when sticks are in several specific positions:
+--------------- learning process = gyro calibration = discovering the mixers -----------------------
 
 The general principle is to let the mixers+ servo centers/min/max being defined only on the handset.
 Still oXs has to apply similar mixers on the gyro corrections.
 
+Before using the gyro or when mixers are changed on the handset, oXs has to capture the positions of all Rc channels when sticks are in several specific positions:
 
 To do so, oXs has to receive from the handset not only the Rc channel values for each servo (ail1, ail2, ...) but also the positions of the 3 sticks Ail, Elv, Rud before the handset applies any mixer/curve/limit on them.
 This requires that those positions are transmitted in "unused" Rc channels on top of all other Rc channels controlling servos, ESC, sequencer, ...
-The 3 Rc channels used to sent the 3 stick positions (Ail, Elv, Rud) are defined in the parameters of oXs.
+The 3 Rc channels used to sent the 3 stick positions (Ail, Elv, Rud) are defined in the parameters of oXs (with GSA, GSE,GSR commands).
+On the handset, it is important that the 3 channels that gives the stick positions produce a signal of -100%/0%/+100% when stick are full one one side, centered and full on the other side.
+So in the mixers that generate those 3 signals, you must use a set up that discards trim, expo, ...
 
 To let oXs know the mixers to apply on gyro corrections and the limits to respect when gyro corrections are applied, a "learning" process also name "mixer calibration" is required. This process is not the same as the calibration of the mpu6050 (gyro sensor).
 

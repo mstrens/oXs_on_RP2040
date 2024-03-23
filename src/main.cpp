@@ -7,7 +7,7 @@
 #include "BMP280.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include "XGZP6897D.h"
+#include "xgzp6897d.h"
 #include "vario.h"
 #include "voltage.h"
 #include "gps.h"
@@ -700,6 +700,8 @@ void loop1(){
             mpu.calibrationHorizontalExecute();
         } else if ( qCmd == REQUEST_VERTICAL_MPU_CALIB) { // 0X02 is the code to request a vertical calibration
             mpu.calibrationVerticalExecute();
+        } else if (qCmd == REQUEST_NEXT_ACC_CALIB) {
+            mpu.nextAccCalibrationExecute();
         }
     }
     //alarmTimerUs(MAIN_LOOP1, 500);

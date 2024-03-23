@@ -192,7 +192,7 @@ void MPU::calibrationHorizontalExecute()  //
     //}
     //sleep_us(100);
     //mpu6050.initialize();
-    #define ACCEL_NUM_AVG_SAMPLES	1000
+    #define ACCEL_NUM_AVG_SAMPLES	100
 	
     int16_t ax,ay,az ;
     int16_t gx,gy,gz ;
@@ -225,14 +225,12 @@ void MPU::calibrationHorizontalExecute()  //
         ax= (buffer[0] << 8 | buffer[1]);
         ay= (buffer[2] << 8 | buffer[3]);
         az= (buffer[4] << 8 | buffer[5]);
-        //printf("az=%.0f\n", (float) az ); 
         gx= (buffer[8] << 8 | buffer[9]);
         gy= (buffer[10] << 8 | buffer[11]);
         gz= (buffer[12] << 8 | buffer[13]);
         axAccum += (int32_t) ax;
         ayAccum += (int32_t) ay;
         azAccum += (int32_t) az;
-        //printf("az=%.0f\n", (float) az ); 
         gxAccum += (int32_t) gx;
         gyAccum += (int32_t) gy;
         gzAccum += (int32_t) gz;
@@ -293,14 +291,14 @@ void MPU::calibrationHorizontalExecute()  //
             break; 
     }
     printf("Upper face is "); printf(mpuOrientationNames[idx]); printf("\n"); 
-    config.accOffsetX = (int16_t)(axAccum);
-	config.accOffsetY = (int16_t)(ayAccum);
-	config.accOffsetZ = (int16_t)(azAccum);
+    //config.accOffsetX = (int16_t)(axAccum);
+	//config.accOffsetY = (int16_t)(ayAccum);
+	//config.accOffsetZ = (int16_t)(azAccum);
     config.gyroOffsetX = (int16_t)(gxAccum);
 	config.gyroOffsetY = (int16_t)(gyAccum);
 	config.gyroOffsetZ = (int16_t)(gzAccum);
     config.mpuOrientationH =  idx ; // save the orientationH
-    printf("Acc & gyro after new calibration\n");
+    printf("Acc & gyro after new gyro calibration\n");
     printConfigOffsets() ;
     printf("Horizontal calibration done: use SAVE command to save the config!!\n");
     setupOrientation();  // refresh the parameters linked to the orientation        
@@ -345,7 +343,65 @@ void MPU::calibrationVerticalExecute() {
     setupOrientation();  // refresh the parameters linked to the orientation        
 }
 
-
+void MPU::nextAccCalibrationExecute(){
+    int16_t ax,ay,az ;
+    int16_t gx,gy,gz ;
+	int32_t axAccum, ayAccum, azAccum , axMin , axMax , ayMin , ayMax , azMin , azMax;
+	axAccum = ayAccum = azAccum = 0;
+    int32_t gxAccum, gyAccum, gzAccum , gxMin , gxMax , gyMin , gyMax , gzMin , gzMax;
+	gxAccum = gyAccum = gzAccum = 0;
+    axMin = ayMin = azMin = gxMin = gyMin = gzMin = 60000;
+    axMax = ayMax = azMax = gxMax = gyMax = gzMax = -60000;  
+    if (calibAccCount == (200 -1)){
+        printf("Number of measurements reaches the limit of 100; use MPUCAL=S to stop calibration\n");
+        return;
+    }
+    printf("Start reading nr: %i\n", calibAccCount+1) ;
+    for (int inx = 0; inx < ACCEL_NUM_AVG_SAMPLES; inx++){
+        sleep_us(2000); // take 8 msec with dlpf = 20 ; 1900us when BW = 188
+        // Start reading acceleration registers from register 0x3B for 14 bytes (acc, temp, gyro)
+        uint8_t val = 0x3B;
+        uint8_t buffer[14]; 
+        if (i2c_write_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, &val, 1, true,1000)<0) { // true to keep master control of bus
+            printf("Write error for MPU6050 calibration at 0X3B command\n");
+            return;
+        }
+        if ( i2c_read_timeout_us(i2c1, MPU6050_DEFAULT_ADDRESS, buffer, 14, false, 3500) <0){
+            printf("Read error for MPU6050 calibration\n");
+            return;
+        }     
+        ax= (buffer[0] << 8 | buffer[1]);
+        ay= (buffer[2] << 8 | buffer[3]);
+        az= (buffer[4] << 8 | buffer[5]);
+        axAccum += (int32_t) ax;
+        ayAccum += (int32_t) ay;
+        azAccum += (int32_t) az;
+        if (ax < axMin) axMin = ax;
+        if (ay < ayMin) ayMin = ay;
+        if (az < azMin) azMin = az;
+        if (ax > axMax) axMax = ax;
+        if (ay > ayMax) ayMax = ay;
+        if (az > azMax) azMax = az;
+        //printf ("%i , %i, %i\n", ax, ay , az);
+        
+    }
+    // here we know the Acc but still will reject the measurement if noise is to big
+    #define MAX_ACC_DIFF 500
+    if (((axMax - axMin) > MAX_ACC_DIFF) or ((ayMax - ayMin) > MAX_ACC_DIFF) or ((azMax - azMin) > MAX_ACC_DIFF)) {
+        printf ("Error in IMU calibration: to much variations in the acceleration values: x=%i y=%i z=%i\n", axMax - axMin, ayMax - ayMin , azMax - azMin);
+        return;
+    }
+    axAccum /= (ACCEL_NUM_AVG_SAMPLES);
+    ayAccum /= (ACCEL_NUM_AVG_SAMPLES);
+    azAccum /= (ACCEL_NUM_AVG_SAMPLES);
+    // we store the value in an array
+    calibAccResults[calibAccCount] [0]= (int16_t) axAccum; 
+    calibAccResults[calibAccCount] [1]= (int16_t) ayAccum; 
+    calibAccResults[calibAccCount] [2]= (int16_t) azAccum; 
+    calibAccCount++;
+    float g = sqrtf((float) axAccum * (float) axAccum + (float) ayAccum * (float) ayAccum + (float) azAccum * (float) azAccum) / (float) accScale1G;
+    printf("x=%i y=%i z=%i g=%f\n", axAccum , ayAccum , azAccum , g);
+}
 
 
 //--------------------------------------------------------------------------------------------------
@@ -556,9 +612,28 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
         return false; // do not process when orientation is wrong
     }
     // we still have to apply offset and afterward the orientation parameters
-    aRaw[0] -= config.accOffsetX ; aRaw[1] -= config.accOffsetY ; aRaw[2] -= config.accOffsetZ;
-    gRaw[0] -= config.gyroOffsetX; gRaw[1] -= config.gyroOffsetY; gRaw[2] -= config.gyroOffsetZ;
+    //aRaw[0] -= config.accOffsetX ; aRaw[1] -= config.accOffsetY ; aRaw[2] -= config.accOffsetZ;
+    //float accOffX = 93.633688 ; 
+    //float accOffY = 142.927034 ;
+    //float accOffZ = -1067.694384 ;
+    //float accScaleXX = 0.993415;
+    //float accScaleYY = 1.000666;
+    //float accScaleZZ = 0.998804;
+    //float accScaleXY = 0.000002;
+    //float accScaleXZ = -0.003749;
+    //float accScaleYZ = 0.001992;
+    float accWithOffX = (float) aRaw[0] - config.accOffX;
+    float accWithOffY = (float) aRaw[1] - config.accOffY;
+    float accWithOffZ= (float) aRaw[2] - config.accOffZ;
+    aRaw[0] = accWithOffX * config.accScaleXX + accWithOffY * config.accScaleXY + accWithOffZ* config.accScaleXZ ;  // = X
+    aRaw[1] = accWithOffX * config.accScaleXY + accWithOffY * config.accScaleYY + accWithOffZ* config.accScaleYZ ;  // Y
+    aRaw[2] = accWithOffX * config.accScaleXZ + accWithOffY * config.accScaleYZ + accWithOffZ* config.accScaleZZ ;  // Z
 
+    gRaw[0] -= config.gyroOffsetX;
+    gRaw[1] -= config.gyroOffsetY;
+    gRaw[2] -= config.gyroOffsetZ;
+    
+    // take care of the orientation of the sensor in the model
     oax = aRaw[orientationX] * signX;
     oay = aRaw[orientationY] * signY;
     oaz = aRaw[orientationZ] * signZ;

@@ -102,6 +102,7 @@ extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
 
 extern MPU mpu;
+extern float accScale1G ; // use here when printing the result of acc calibration.
 extern queue_t qSendCmdToCore1;
 
 extern uint8_t forcedFields;
@@ -161,6 +162,12 @@ void processCmd(){
     pvalue = NULL;
     //printf("buffer0= %X\n", cmdBuffer[0]);
     if (cmdBuffer[0] == 0x0D){ // when no cmd is entered we print the current config
+        // still when we are running a mpu calibration of the Acc, we send a command to be executed on core 1.
+        if ( mpu.calibAccRunning ) {
+            uint8_t data =  REQUEST_NEXT_ACC_CALIB;
+            queue_try_add(&qSendCmdToCore1 , &data);
+            return; // retun here to avoid other messages
+        }
         printConfigAndSequencers();
         return; 
     }
@@ -205,7 +212,7 @@ void processCmd(){
         printf("Led inversion               LED = N             N=normal , I=inverted\n");
         printf("Failsafe mode               FAILSAFE = H        Set failsafe to Hold mode\n")  ;
         printf("         values             SETFAILSAFE         Values are set on the current positions\n")  ;
-        
+
         printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers\n");
         printf("    Airspeed                ACC = YY            To select Vspeed and compensation ratio\n");   
         printf("    Gyro Mode/Gain          GMG = YY            To select mode/gain\n");
@@ -226,8 +233,10 @@ void processCmd(){
 
         printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
         printf("                            SEQ = DEL           Erase all sequencer\n");
-        printf("Force MPU6050 calibration   MPUCAL=Y            Y = H (Horizontal and still) or V (Vertical=nose up)\n");
-        printf("   Set manually ACC offsets AOX or AOY or AOZ = YYYY\n" );
+
+        printf("Force MPU6050 calibration   MPUCAL = Y          Y = H (Horizontal and still) or V (Vertical=nose up)\n");
+        printf("   Set Acc parameters       MPUACC = x.xx y.yy...  x.xx y.yy are 12 values (with decimal) space separated\n");
+
         printf("   Display raw Acc Z        DEBUGACCZ = Y or N  display vertical acc (useful to check offsets)\n");
         printf("Testing                     FV                  Field Values (display all telemetry internal values)\n")  ;
         printf("                            FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
@@ -381,48 +390,54 @@ void processCmd(){
             updateConfig = true;
         }
     }
-    // change for acceleration offset on X axis
-    if ( strcmp("AOX", pkey) == 0 ) { 
-        ui = strtol(pvalue, &ptr, 10);
-        if ( *ptr != 0x0){
-            printf("Error : acc offset must be an integer\n");
-        } else {    
-            config.accOffsetX = ui;
-            printf("Acc offset X = %i\n" , config.accOffsetX );
+    // change for getting the acceleration parameters (12 float values)
+    if ( strcmp("MPUACC", pkey) == 0 ) { 
+        if ( getAccParam()) { // return true when parameters are valid
             updateConfig = true;
         }
-    }
-    // change for acceleration offset on Y axis
-    if ( strcmp("AOY", pkey) == 0 ) { 
-        ui = strtol(pvalue, &ptr, 10);
-        if ( *ptr != 0x0){
-            printf("Error : acc offset must be an integer\n");
-        } else {    
-            config.accOffsetY = ui;
-            printf("Acc offset Y = %i\n" , config.accOffsetY );
-            updateConfig = true;
-        }
-    }
-    // change for acceleration offset on X axis
-    if ( strcmp("AOZ", pkey) == 0 ) { 
-        ui = strtol(pvalue, &ptr, 10);
-        if ( *ptr != 0x0){
-            printf("Error : acc offset must be an integer\n");
-        } else {    
-            config.accOffsetZ = ui;
-            printf("Acc offset = %i\n" , config.accOffsetZ );
-            updateConfig = true;
-        }
-    }
+    } 
     // MPU calibration
     if ( strcmp("MPUCAL", pkey) == 0 ) {  
         if (!mpu.mpuInstalled) {
         printf("Calibration not done: no MP6050 installed\n");
-        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) ) ){ 
+        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) || (strcmp("A", pvalue) == 0) || (strcmp("E", pvalue) == 0) ) ){ 
              // only possible to request an horizontal or a vertical calibration
             printf("Calibration not done: type must be H (Horizontal and still) , V (Vertical = nose up)\n"); 
         } else {    
             uint8_t data ;
+            if (strcmp("A", pvalue) == 0){
+                if (mpu.calibAccRunning){
+                    printf("Acc calibration is already running; command discarded ; enter MPUCAL=E first to stop calibration\n");
+                    return;
+                }    
+                printf("\nAccelerometer calibration process will start\n");
+                printf("   Keep sensor still and Press Enter to perform one measurement\n");
+                printf("   Repeat in many orientations (min 20, max 200)\n");
+                printf("   Enter MPUCAL=E to stop the calibration process and get all measurements\n");
+                printf("   All measurements have to be copy/paste in a txt file and imported in MAGNETO 1.2 software\n");
+                printf("   see https://sites.google.com/view/sailboatinstruments1/a-download-magneto-v1-2?authuser=0\n");
+                mpu.calibAccCount=0;
+                mpu.calibAccRunning = true;
+                return;
+            }
+            if (strcmp("E", pvalue) == 0){
+                if (mpu.calibAccCount == 0){
+                    printf("No Acc measurements have been captured yet\n");
+                    if ( mpu.calibAccRunning) {
+                        printf("Calibration is running; press Enter to perform a measurement\n");
+                    } else {
+                        printf("Calibration is not running; press MPUCAL=A to start calibration\n");
+                    }
+                } else {
+                    printf("There are %i measurements to copy/paste in a txt file and to import in MAGNETO 1.2 software\n", mpu.calibAccCount);
+                    printf("The Norm to use in MAGNETO 1.2 is %i\n", (int) accScale1G);
+                    for (int i= 0 ; i < mpu.calibAccCount ; i++){
+                    printf("%i  %i  %i\n", mpu.calibAccResults[i][0] , mpu.calibAccResults[i][1] ,mpu.calibAccResults[i][2] );
+                    }
+                }    
+                mpu.calibAccRunning = false;
+                return;
+            }
             if (strcmp("H", pvalue) == 0){
             data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration
             } else {
@@ -593,7 +608,7 @@ void processCmd(){
     }
     
     
-    // change scale
+    // change voltage scale
     if (( strcmp("SCALE1", pkey) == 0 ) || ( strcmp("SCALE2", pkey) == 0 )\
          || ( strcmp("SCALE3", pkey) == 0 )  || ( strcmp("SCALE4", pkey) == 0 ) ){ 
         db = strtod(pvalue,&ptr);
@@ -611,7 +626,7 @@ void processCmd(){
             }
         }
     }
-    // change offset
+    // change voltage offset
     if (( strcmp("OFFSET1", pkey) == 0 ) || ( strcmp("OFFSET2", pkey) == 0 )\
          || ( strcmp("OFFSET3", pkey) == 0 )  || ( strcmp("OFFSET4", pkey) == 0 ) ){ 
         db = strtod(pvalue,&ptr);
@@ -1647,7 +1662,10 @@ void printConfigAndSequencers(){   // print all and perform checks
     }
     if(mpu.mpuInstalled){
         printf("Acc/Gyro is detected using MP6050\n")  ;
-        printf("     Acceleration offsets X, Y, Z = %i , %i , %i\n", config.accOffsetX , config.accOffsetY , config.accOffsetZ);
+        printf("     Acceleration param: ACC= %f %f %f\n", config.accOffX , config.accOffY , config.accOffZ);
+        printf("                              %f %f %f\n", config.accScaleXX , config.accScaleXY ,config.accScaleXZ );
+        printf("                              %f %f %f\n", config.accScaleXY , config.accScaleYY ,config.accScaleYZ );
+        printf("                              %f %f %f\n", config.accScaleXZ , config.accScaleYZ ,config.accScaleZZ );
         printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
         printf("     Orientation          Horizontal is ");
         uint8_t nameIdx;
@@ -1731,7 +1749,21 @@ void setupConfig(){   // The config is uploaded at power on
     if (*flash_target_contents == CONFIG_VERSION ) {
         memcpy( &config , flash_target_contents, sizeof(config));
         if (config.pwmHz == 0XFFFF) config.pwmHz = _pwmHz; // set default value when it has not been defined manually
-
+        if ( ( abs( config.accScaleXY + config.accScaleXZ + config.accScaleYZ) > 0.1) ||
+                ( abs( config.accScaleXX * config.accScaleYY * config.accScaleZZ) > 1.2) ||
+                ( abs( config.accScaleXX * config.accScaleYY * config.accScaleZZ) < 0.8) ) {
+            printf("Stored Acc param are inconsistent; they are replaced by default values\n");
+            printf("Look for performing a calibration\n");            
+            config.accOffX = 0.0;
+            config.accOffY = 0.0;
+            config.accOffZ = 0.0;
+            config.accScaleXX = 1.0;
+            config.accScaleYY = 1.0;
+            config.accScaleZZ = 1.0;
+            config.accScaleXY = 0.0;
+            config.accScaleXZ = 0.0;
+            config.accScaleYZ = 0.0;
+        }    
     } else {
         config.version = CONFIG_VERSION;
         config.pinChannels[0] = _pinChannels_1;
@@ -1862,6 +1894,15 @@ void setupConfig(){   // The config is uploaded at power on
         config.pinSpiMosi = _pinSpiMosi;
         config.pinSpiMiso = _pinSpiMiso;
 
+        config.accOffX = _accOffX;
+        config.accOffY = _accOffY;
+        config.accOffZ = _accOffZ;
+        config.accScaleXX = _accScaleXX;
+        config.accScaleYY = _accScaleYY;
+        config.accScaleZZ = _accScaleZZ;
+        config.accScaleXY = _accScaleXY;
+        config.accScaleXZ = _accScaleXZ;
+        config.accScaleYZ = _accScaleYZ;
     }
             
 } 
@@ -2684,3 +2725,45 @@ bool getPid(uint8_t mode){  // get all pid parameters for one mode; return true 
     }
     return true;            
 } 
+
+bool getAccParam(){  // get all Acc parameters ; return true if valid; config is then updated
+    // we expect getting 12 float parameters; all are space delimited
+    char * ptr ;                        // get the pos of first non converted integer 
+    pvalue =  skipWhiteSpace(pvalue);   // skip space at the begining
+    double tempTable[12];
+    uint8_t i = 0;
+    while ( (*ptr != 0x00) && (i < 12)){
+        tempTable[i] = (float) strtod(pvalue,&ptr); // try to convert to double; ptr point to first non converted char. Whitespace are first discarded
+        if (pvalue == ptr) {
+            printf("Error : value %i is not a valid float\n", i+1);
+            return false;
+        } 
+        i++;
+        pvalue = ptr;    
+    }     
+    if (i < 12) {
+        printf("Error : 12 values expected; only %i detected\n", i);
+        return false;
+    }
+    pvalue =  skipWhiteSpace(pvalue);
+    if ( (*pvalue) != 0X00) {
+        printf("Error : more characters than the 12 expected values\n", i);
+        return false;
+    }
+    if ( (tempTable[4] != tempTable[6] ) || (tempTable[5] != tempTable[9] ) || (tempTable[8] != tempTable[10] ) ) {
+        printf("Error : values 5, 6, 9 must be equal respectively to values 7, 10, 11\n", i);
+        return false;        
+    } 
+    config.accOffX = tempTable[0];
+    config.accOffY = tempTable[1];
+    config.accOffZ = tempTable[2];
+    config.accScaleXX = tempTable[3];
+    config.accScaleYY = tempTable[7];
+    config.accScaleZZ = tempTable[11];
+    config.accScaleXY = tempTable[4];
+    config.accScaleXZ = tempTable[5];
+    config.accScaleYZ = tempTable[8];
+    return true;            
+} 
+
+//acc= 93.633688 142.927034 -1067.694384  0.993415  0.000002 -0.003749  0.000002  1.000666 0.001992 -0.003749  0.001992 0.998804

@@ -9,7 +9,7 @@
 #include "SPL06.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include "XGZP6897D.h"
+#include "xgzp6897d.h"
 #include "jeti.h"
 #include "tools.h"
 #include "gps.h"

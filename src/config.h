@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.12.10"
+#define VERSION "2.12.11"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -340,6 +340,16 @@
 #define _pinSpiMosi 255     // 11, 15, 27 (for spi1)  or 3, 7, 18, 23 (for spi0)
 #define _pinSpiMiso 255     // 8, 12, 24, 28 (for spi1) or 0, 4, 16, 20 (for spio)
 
+#define _accOffX 0.0;
+#define _accOffY 0.0;
+#define _accOffZ 0.0;
+#define _accScaleXX 1.0;
+#define _accScaleYY 1.0;
+#define _accScaleZZ 1.0;
+#define _accScaleXY 0.0;
+#define _accScaleXZ 0.0;
+#define _accScaleYZ 0.0;
+
 // ------  for gyro   -------
 #define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
 #define _gyroChan_AIL    0xFF // Rc channel used to transmit original Ail (Elv, Rud) stick position ; Value must be in range 1/16 when gyroControlChannel is not 255
@@ -375,9 +385,9 @@
 #define _pid_param_stab_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
 #define _pid_param_stab_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
 
-#define _pid_param_rate_output_shift 8 // do not modify
-#define _pid_param_hold_output_shift 8 // do not modify
-#define _pid_param_stab_output_shift 8 // do not modify
+#define _pid_param_rate_output_shift 4 // do not modify
+#define _pid_param_hold_output_shift 4 // do not modify
+#define _pid_param_stab_output_shift 4 // do not modify
 
 #define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
 #define _vr_gain_ELV       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )

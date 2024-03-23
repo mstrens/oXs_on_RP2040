@@ -8,7 +8,7 @@
 #include "sport.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include "XGZP6897D.h"
+#include "xgzp6897d.h"
 
 extern queue_t qSensorData; 
 extern field fields[];

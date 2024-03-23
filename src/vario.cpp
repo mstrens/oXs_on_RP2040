@@ -4,7 +4,7 @@
 #include "MS5611.h"
 #include "ms4525.h"
 #include "sdp3x.h"
-#include "XGZP6897D.h"
+#include "xgzp6897d.h"
 #include "stdio.h"
 #include <inttypes.h>
 #include "tools.h"

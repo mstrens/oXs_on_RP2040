@@ -63,7 +63,7 @@ struct CONFIG{
     
     int8_t vr_gain[3];          // store the gain per axis (to combine with global gain provided by gyroChanControl)
     enum STICK_GAIN_THROW stick_gain_throw;  // this parameter allows to limit the compensation on a part of the stick travel (gain decreases more or less rapidly with stick offset)
-    enum MAX_ROTATE max_rotate;
+    enum MAX_ROTATE max_rotate;              // this parameter varies from 1 up to 4 and is used to increase/decrease the gyro corrections (*2,*4,*8,*16)
     enum RATE_MODE_STICK_ROTATE rate_mode_stick_rotate;
     bool gyroAutolevel;           // true means that stabilize mode replies the Hold mode (on switch position)
     uint8_t mpuOrientationH;       // define the orientation of the mpu when plane is horizontal;
@@ -73,6 +73,15 @@ struct CONFIG{
     uint8_t pinSpiSck;
     uint8_t pinSpiMosi;
     uint8_t pinSpiMiso;
+    float accOffX ;
+    float accOffY ;
+    float accOffZ ;
+    float accScaleXX ;
+    float accScaleYY ;
+    float accScaleZZ ;
+    float accScaleXY ;
+    float accScaleXZ ;
+    float accScaleYZ ;
 };
 
 void handleUSBCmd(void);
@@ -175,7 +184,7 @@ void printGyro();
 void printGyroMixer();
 
 bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true if valid; config is then updated
-
+bool getAccParam();
 
 #define HW4 4
 #define HW3 3
@@ -185,4 +194,4 @@ bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true 
 
 #define REQUEST_HORIZONTAL_MPU_CALIB 0X01
 #define REQUEST_VERTICAL_MPU_CALIB 0X02
-#define REQUEST_RESET_MPU_ACC_OFFSETS 0X03
+#define REQUEST_NEXT_ACC_CALIB 0X03
