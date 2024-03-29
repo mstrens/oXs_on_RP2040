@@ -22,15 +22,8 @@ extern int32_t i2cError;
 //
 // PUBLIC
 //
-MS5611::MS5611(uint8_t deviceAddress)
+MS5611::MS5611()
 {
-  _address           = deviceAddress;
-  _result            = MS5611_NOT_READ;
-  _lastRead          = 0;
-  _state             = UNDEFINED;
-  _D1                = 0;
-  _D2                = 0;
-  _D2Prev            = 0;
   
 }
 
@@ -66,9 +59,23 @@ int8_t MS5611::ms56xx_crc(uint16_t *prom)
 
 
 void MS5611::begin()  // return true when baro exist
+{ tryAddress(0X76);
+    if ( baroInstalled == false) {
+        tryAddress(0X77);
+    }
+}
+
+void MS5611::tryAddress(uint8_t address)
 {
   baroInstalled = false;
   if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+  _result            = MS5611_NOT_READ;
+  _lastRead          = 0;
+  _state             = UNDEFINED;
+  _D1                = 0;
+  _D2                = 0;
+  _D2Prev            = 0;
+  _address           = address;
   uint8_t rxdata;
   rxdata = MS5611_CMD_RESET ;
   #ifdef DEBUG  

@@ -82,10 +82,14 @@ struct CONFIG{
     float accScaleXY ;
     float accScaleXZ ;
     float accScaleYZ ;
+    uint8_t pinHigh ;
+    uint8_t pinLow ; 
 };
 
 void handleUSBCmd(void);
 void processCmd(void);
+int8_t handleOneCmd( char * bufferPos);  // handle one command with buffer starting at bufferPos up to a 0X00
+
 
 char * skipWhiteSpace(char * str);
 void removeTrailingWhiteSpace( char * str);
@@ -102,6 +106,8 @@ void requestMpuCalibration();
 void printConfigOffsets();
 void printFieldValues();
 void printPwmValues();
+
+void dumpConfig();
 
 // for sequencer
 #define SEQUENCER_VERSION 4

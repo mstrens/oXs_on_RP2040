@@ -701,8 +701,10 @@ bool MPU::getAccZWorld(){ // return true when a value is available ; read the IM
     //ardupilot(ax, ay , az,  gx ,  gy , gz);
     //mylogic(ax, ay , az,  gx ,  gy , gz);
     //Madgwick6DOF(-ax, ay , az,  gx ,  -gy , -gz) ; // sign are from https://github.com/nickrehm/dRehmFlight/blob/master/Versions/dRehmFlight_Teensy_BETA_1.3/dRehmFlight_Teensy_BETA_1.3.ino
-
-    
+    //#define DEBUG_CAMERA_ROLL
+    #ifdef DEBUG_CAMERA_ROLL
+        if (msgEverySec(0)) printf("camera roll= %i\n", (int) roll);
+    #endif
     sent2Core0( CAMERA_PITCH_ID , (int32_t) (pitch * 10.0)) ;
     sent2Core0( CAMERA_ROLL_ID , (int32_t) (roll * 10.0)) ;
     if (vario1.newClimbRateAvailableForMpu){   // here once per about 20 msec

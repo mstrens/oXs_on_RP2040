@@ -159,7 +159,8 @@ void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param)
     int32_t err, sum_err, diff_err, pterm, iterm, dterm;
     err = ppid_state->input[i] - ppid_state->setpoint[i];
     // accumulate the error up to an i_limit threshold
-    sum_err = ppid_state->sum_err[i] = constrain(ppid_state->sum_err[i] + err, -ppid_state->i_limit[i], ppid_state->i_limit[i]);
+    ppid_state->sum_err[i] = constrain(ppid_state->sum_err[i] + err, -ppid_state->i_limit[i], ppid_state->i_limit[i]);
+    sum_err = ppid_state->sum_err[i]; 
     diff_err = err - ppid_state->last_err[i]; // difference the error
     ppid_state->last_err[i] = err;    
         
@@ -167,10 +168,11 @@ void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param)
     iterm = (ppid_param->ki[i] * sum_err) >> PID_KI_SHIFT;
     dterm = (ppid_param->kd[i] * diff_err) >> PID_KD_SHIFT;
     ppid_state->output[i] = (pterm + iterm + dterm) >> ppid_param->output_shift;
-//#define DEBUG_PID
+#define DEBUG_PID
 #if defined(DEBUG_PID) 
     if (i == 0) {
-      printf("in=%i err=%i  dif=%i p=%i i=%i d=%i Out=%i\n",  (int) ppid_state->input[i], 
+      printf("in=%i sp=%i se=%i il=%i err=%i  dif=%i p=%i i=%i d=%i Out=%i\n",
+        (int) ppid_state->input[i], (int) ppid_state->setpoint[i],  (int) ppid_state->sum_err[i], (int) ppid_state->i_limit[i], 
        (int) err , (int) diff_err , pterm , iterm , dterm , ppid_state->output[i]);
     }
 #endif
@@ -218,6 +220,17 @@ void calculateCorrectionsToApply(){
     
     if (controlUs != prevControlUs) { // check if mode changes and calculate master gain)
         prevControlUs = controlUs;
+            // -------  calculate master gain.
+        // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
+        if (controlUs <= (RX_CENTER_LOW))  {
+            master_gain = constrain(((RX_CENTER_LOW) - controlUs) , 0, master_gain_max);
+        } else if (controlUs < RX_CENTER_HIGH) {
+            master_gain = 0; 
+        } else {
+            master_gain = constrain(controlUs - (RX_CENTER_HIGH), 0, master_gain_max);		    
+        }	  	    
+                    
+    
         // stabilization mode
         //STAB_OFF when controlUs is close to 0
         //STAB_RATE when close to 988us (=switch high = normal mode)
@@ -238,17 +251,7 @@ void calculateCorrectionsToApply(){
             // reset attitude error when and i_limit threshold when mode change 
             pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;
             pid_state.i_limit[0] = 0; pid_state.i_limit[1] = 0; pid_state.i_limit[2] = 0;
-
-            // -------  calculate master gain.
-            // master gain [Rate = 1475-1075] or [Hold = 1575-1975] => [0, MASTER_GAIN_MAX] 
-            if (controlUs <= (RX_CENTER_LOW))  {
-                master_gain = constrain(((RX_CENTER_LOW) - controlUs) , 0, master_gain_max);
-            } else if (controlUs < RX_CENTER_HIGH) {
-                master_gain = 0; 
-            } else {
-                master_gain = constrain(controlUs - (RX_CENTER_HIGH), 0, master_gain_max);		    
-            }	  	    
-                        
+            pid_state.last_err[0] = 0; pid_state.last_err[1] = 0 ; pid_state.last_err[2] = 0; 
             // check for inflight rx calibration; when swith mode change 3X (ex RATE/HOLD/RATE) with no more that 0.5 sec between each change    
             //if (cfg.inflight_calibrate == INFLIGHT_CALIBRATE_ENABLE) {
             /*
@@ -455,7 +458,7 @@ void applyGyroCorrections(){
             //             by pos part (-) *  rollright (-) => result is positieve (and roll goes to the Left => OK)
             //             by neg part (-) * - rollleft (+) => result is positieve (and roll goes to the Left => OK)
             // so as rateRollRightUs and rateRollLeftUs have opposite signs, whe have to reverse the sign when applying the correction.
-            #define DEBUG_CORRECTION
+            //#define DEBUG_CORRECTION
             #ifdef DEBUG_CORRECTION
             if (msgEverySec(3)) {
                 if (i==0) {

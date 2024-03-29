@@ -16,18 +16,27 @@ extern float actualPressurePa; // used to calculate airspeed
 //
 // PUBLIC
 //
-SPL06::SPL06(uint8_t deviceAddress)
+SPL06::SPL06()
 {
-  _address           = deviceAddress;
+  //_address           = 0X76;
 }
 
 void SPL06::begin()  // baroInstalled = true when baro exist
+{ 
+    tryAddress(0X76);
+    if ( baroInstalled == false) {
+        tryAddress(0X77);
+    }
+}
+    
+void SPL06::tryAddress(uint8_t address)
 {
   baroInstalled = false;
   uint8_t writeCmd[2];
   uint8_t readValue;
   uint8_t regToRead; 
   if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+  _address = address;
   writeCmd[0] = SPL06_RST_REG ;  // reset the device
   writeCmd[1] = 0X89 ; // OX89 means clear fifo and soft reset
   sleep_ms(40);

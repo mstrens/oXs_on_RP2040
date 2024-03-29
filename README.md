@@ -178,6 +178,8 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |SPI_SCK = 10, 14, 26           | SCK pin from RFM95 (locator)|
 |SPI_MOSI = 11, 15, 27          | MOSI pin from RFM95 (locator)|
 |SPI_MISO = 8, 12, 24, 28       | MISO pin from RFM95 (locator)| 
+|HIGH = 0/29                    | set the voltage level to 3V; can be used as Vcc for some sensors|
+|LOW = 0/29                     | set the voltage level to 0V; can be used as Ground for some sensors|
 
 
 ## --------- Software -------------------
@@ -195,11 +197,13 @@ If you just want to use it, there is (in most cases) no need to install/use any 
 * you can now use a serial terminal (like putty , the one from arduino IDE, ...) and set it up for 115200 baud 8N1.
 * IMPORTANT NOTE: Set your USB/SERIAL terminal in order to let it send automatically CR/LF (carriage return+line feed) when you press ENTER.
 * while the RP2040 is connected to the pc with the USB cable, connect this serial terminal to the serial port from the RP2040
-* when the RP2040 start (or pressing the reset button), press Enter and it will display the current configuration.
+* when the RP2040 start (or pressing the reset button), press just Enter and it will display the current configuration.
 * to list all the commands, send ?.
 * if you want to change some parameters, fill in the command (code=value) and press the enter.
 * you can enter severals commands without repowering the device
+* to fill several command at once, use a ";" to separate several commands; press enter at the end. 
 * Important note : when you enter usb commands to change parameters, they are not automatically applied. Most of the time, oXs will stop most functionalities. You have to save the changes using the SAVE command and then make a power off/on.
+* with the DUMP command, you can get a list of most important parameters (not failsafe, mpu offsets nor sequencers) in a format that allows easy copy/paste/edit. This is an easy way to copy parameters from one oXs device to another one. 
 
 
 Developers can change the firmware, compile and flash it with VScode and Rapsberry SDK tools.  

@@ -26,10 +26,10 @@ static BMP280_CALIB_DATA _bmp280_coeffs;   // Last read calibration data will be
 //static uint8_t           _bmp085Mode;
 
 
-BMP280::BMP280( uint8_t deviceAddress)
+BMP280::BMP280()
 {
   // constructor
-  _address           = deviceAddress;
+  //_address           = 0X76;
   //varioData.SensorState = 0 ;
 }
 
@@ -37,15 +37,24 @@ BMP280::BMP280( uint8_t deviceAddress)
 #define BMP280_CHIP_ID_VALUE 0x58 
     
 // **************** Setup the BMP280 sensor *********************
-void BMP280::begin() {
-  
-  uint8_t writeCmd[2];
-  uint8_t readValue;
-  uint8_t regToRead; 
-  uint8_t rxdata;
-  uint16_t _calibrationData[13]; // The factory calibration data of the BMP280
-  baroInstalled = false;
-  if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+void BMP280::begin() 
+{ 
+    tryAddress(0X76);
+    if ( baroInstalled == false) {
+        tryAddress(0X77);
+    }
+}
+    
+void BMP280::tryAddress(uint8_t address)
+{
+    uint8_t writeCmd[2];
+    uint8_t readValue;
+    uint8_t regToRead; 
+    uint8_t rxdata;
+    uint16_t _calibrationData[13]; // The factory calibration data of the BMP280
+    baroInstalled = false;
+    if ( config.pinScl == 255 or config.pinSda == 255) return; // skip if pins are not defined
+    _address = address;
     #ifdef DEBUG  
     printf("Trying to detect BMP280 sensor at I2C Addr=%X\n", _address);
     #endif

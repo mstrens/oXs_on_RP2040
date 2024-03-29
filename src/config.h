@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.12.11"
+#define VERSION "2.13.0"
+
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -349,6 +350,8 @@
 #define _accScaleXY 0.0;
 #define _accScaleXZ 0.0;
 #define _accScaleYZ 0.0;
+#define _pinHigh 255;   // force a level High on this pin (when defined between 0 and 29)
+#define _pinLow 255;   // force a level Low on this pin (when defined between 0 and 29)
 
 // ------  for gyro   -------
 #define _gyroChanControl 0xFF // Rc channel used to say if gyro is implemented or not and to select the mode and the general gain. Value must be in range 1/16 or 255 (no gyro)
@@ -385,9 +388,9 @@
 #define _pid_param_stab_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
 #define _pid_param_stab_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
 
-#define _pid_param_rate_output_shift 4 // do not modify
-#define _pid_param_hold_output_shift 4 // do not modify
-#define _pid_param_stab_output_shift 4 // do not modify
+#define _pid_param_rate_output_shift 2 // do not modify Initially it was 8
+#define _pid_param_hold_output_shift 2 // do not modify
+#define _pid_param_stab_output_shift 2 // do not modify
 
 #define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
 #define _vr_gain_ELV       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )

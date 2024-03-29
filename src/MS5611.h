@@ -48,9 +48,12 @@ public:
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
   
   int32_t altIntervalMicros; // enlapstime between 2 calculations of altitude
-  explicit MS5611(uint8_t deviceAddress);
+  uint8_t  _address;
+  
+  explicit MS5611();
 
   void     begin();
+  void     tryAddress(uint8_t address);
   int      getAltitude(); // return 0 if a new value is calculated; -1 if no calculation was performed; other in case of I2C error
 
 private:
@@ -58,7 +61,6 @@ private:
   void     command(const uint8_t command);
   void     calculateAltitude();
   int8_t   ms56xx_crc(uint16_t *prom);
-  uint8_t  _address;
   //uint8_t  _samplingRate;
   
   //int32_t  _temperature;

@@ -102,9 +102,9 @@ VOLTAGE voltage ;    // class to handle voltages
 
 int32_t i2cError = 0;
 
-MS5611 baro1( (uint8_t) 0x77  );    // class to handle MS5611; adress = 0x77 or 0x76
-SPL06 baro2( (uint8_t) 0x76  );    // class to handle SPL06; adress = 0x77 or 0x76
-BMP280 baro3( (uint8_t) 0x76) ;    // class to handle BMP280; adress = 0x77 or 0x76
+MS5611 baro1;    // class to handle MS5611; adress = 0x77 or 0x76
+SPL06 baro2;    // class to handle SPL06; adress = 0x77 or 0x76
+BMP280 baro3 ;    // class to handle BMP280; adress = 0x77 or 0x76
 
 ADS1115 adc1( I2C_ADS_Add1 , 0) ;     // class to handle first ads1115 (adr pin connected to grnd)
 ADS1115 adc2( I2C_ADS_Add2 , 1) ;     // class to handle second ads1115 (adr pin connected to vdd)
@@ -405,6 +405,17 @@ void setup() {
   setupLed();
   setRgbColorOn(0,0,10);  // switch to blue during the setup of different sensors/pio/uart
   if (configIsValid) { // continue with setup only if config is valid 
+        // force level High / Low on some pins if requested in the config
+        if (config.pinHigh < 30){
+            gpio_init(config.pinHigh);
+            gpio_set_dir(config.pinHigh, GPIO_OUT);
+            gpio_put(config.pinHigh, 1);
+        }
+        if (config.pinLow < 30){
+            gpio_init(config.pinLow);
+            gpio_set_dir(config.pinLow, GPIO_OUT);
+            gpio_put(config.pinLow, 0);
+        }
       for (uint8_t i = 0 ;  i< NUMBER_MAX_IDX ; i++){ // initialise the list of fields being used 
         fields[i].value= 0;
         fields[i].available= false;

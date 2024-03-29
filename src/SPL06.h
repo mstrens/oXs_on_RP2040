@@ -96,9 +96,11 @@ public:
   int32_t temperature;     // in 1/100 Celsius
   int64_t rawPressure ;  // in 1/10000 mBar so = Pa * 10000
   int32_t altIntervalMicros; // enlapstime between 2 calculations of altitude
-  
-  explicit SPL06(uint8_t deviceAddress);
+  uint8_t  _address;
+
+  explicit SPL06();
   void     begin();
+  void     tryAddress(uint8_t address);
   int      getAltitude(); // return 0 if a new value is calculated; -1 if no calculation was performed; other in case of I2C error
 
 private:
@@ -108,7 +110,6 @@ private:
     void     requestTemperature();
     void     getTemperature();
     void     printCalibration();
-    uint8_t  _address;
     int      _result;
     SPL06_state_t  _state;
     //uint32_t _lastRead;
