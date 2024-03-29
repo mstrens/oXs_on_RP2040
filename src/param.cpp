@@ -2868,7 +2868,7 @@ bool getAccParam(){  // get all Acc parameters ; return true if valid; config is
 
 void dumpConfig(){
     for (uint8_t i = 0 ; i <16 ; i++) {
-        if (config.pinChannels[i] != 255) printf("C%i = %i;\n",i ,config.pinChannels[i] );
+        if (config.pinChannels[i] != 255) printf("C%i = %i;\n",i+1 ,config.pinChannels[i] );
     }
     if (config.pinGpsTx != 255) printf("GPS_TX = %i;\n", config.pinGpsTx );
     if (config.pinGpsRx != 255) printf("GPS_RX = %i;\n", config.pinGpsRx );
