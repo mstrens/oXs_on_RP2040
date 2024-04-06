@@ -175,11 +175,11 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
               loraInSleep() ;
               loraState = LORA_TO_TRANSMIT;
               //printf("packet received\n") ;
-                //printf("Re ");
+              //printf("Re ");
           }
         } else if (currentMillis > loraStateMillis) {
            //printf("receive timeout; go to sleep\n") ;
-            //printf("Sl \n");
+           // printf("Sl \n");
            loraInSleep() ;
            loraState = LORA_IN_SLEEP;
            loraStateMillis = currentMillis + SLEEP_TIME ;
@@ -299,7 +299,7 @@ void loraFillTxPacket() {
   uint16_t temp16 = 0 ;
   uint8_t temp8  = 0 ;
   int32_t gpsPos = 0 ;
-  packetType = (~packetType ) & 0x80 ;                  // reverse first bit
+  packetType = (~packetType ) & 0x80 ;                  // reverse first bit to transmit once Long and once lat
   if (gps.gpsInstalled && gps.GPS_fix) {  
     temp16 = (gps.GPS_pdop >> 7) ;  // Divide by 128 instead of 100 to go faster and keep only 4 bytes
     if ( temp16 > 0x0F) temp16 = 0x0F ;
@@ -334,7 +334,11 @@ void loraFillTxPacket() {
   loraTxBuffer[3] = gpsPos >> 16 ;
   loraTxBuffer[4] = gpsPos >> 8 ;
   loraTxBuffer[5] = gpsPos ;
-   
+
+  //#define DEBUG_LORA_SEND
+  #ifdef DEBUG_LORA_SEND
+  printf("lora send: %x %x %x %x %x %x\n",loraTxBuffer[0],loraTxBuffer[1],loraTxBuffer[2],loraTxBuffer[3],loraTxBuffer[4],loraTxBuffer[5]);
+  #endif
   loraWriteRegister(LORA_REG_OP_MODE, 0x80 | LORA_STANDBY) ; //  set mode in standby ( to write FIFO)
   loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0x80 );        // set FifoAddrPtr to 80 (base adress of byte to transmit)
   loraWriteRegisterBurst( LORA_REG_FIFO , loraTxBuffer, 6) ; // write the 6 bytes in lora fifo

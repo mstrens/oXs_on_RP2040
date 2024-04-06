@@ -43,6 +43,7 @@ void XGZP::begin() {
     }
     prevReadUs = microsRp();
     airspeedInstalled = true; // at this point all is OK.
+    temperatureKelvin = 273.0 + 20 ;
 }    
     
 
@@ -72,9 +73,6 @@ void XGZP::getDifPressure() {
     difPressureAdc =  (readBuffer[0] << 16) + (readBuffer[1] << 8 ) + (readBuffer[2])  ;  
     if (difPressureAdc > 8388608)
         difPressureAdc = difPressureAdc - 16777216 ; // convert negative in 24 bits to 32 bits
-    if (msgEverySec(1)) {
-        printf("rawPres=%i\n", difPressureAdc) ; 
-    }
     if ( calibrated == false) {
         calibrateCount++ ;
         if (calibrateCount == 64 ) { // after 256 reading , we can calculate the offset 
@@ -88,6 +86,9 @@ void XGZP::getDifPressure() {
         difPressurePa = (((float) difPressureAdc) - offset) / XGZP_K_FACTOR ;
         difPressureAirspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureAirspeedCount++;                // count the number of conversion
+        if (msgEverySec(1)) {
+            printf("rawPres=%i  sumPa=%f  count=%i\n", difPressureAdc, difPressureAirspeedSumPa , difPressureAirspeedCount) ;
+        }
         difPressureCompVspeedSumPa += difPressurePa; // calculate a moving average on x values
         difPressureCompVspeedCount++;                // count the number of conversion
                         
