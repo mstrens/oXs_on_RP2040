@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.13.2"
+#define VERSION "2.13.3"
 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
@@ -150,6 +150,11 @@
 //#define MPX_ALARM_TEMP2_MAX 100  // alarm when temp2 (in degree) is higher than this value
 //#define MPX_ALARM_CM_MAX 12000  // alarm when relative altitude (in cm) is higher than this value
 
+// --------- For Hott protocol ------------------
+// It is possible to let the handset generate a warning when the voltage (volt1) is lower than a value
+// uncomment next line if you want to get such a warning and specify the min voltage that trigger the warning (in milliVolt)
+//#define HOTT_MIN_VOLTAGE 16000 
+
 
 // -------- Parameters for SRXL2 protocol ---------------------------
 //#define USE_GPS_BCD_INSTEAD_OF_BINARY  // default is GPS binary format used; uncomment this line if you want to use BCD format instead of binary 
@@ -169,7 +174,6 @@
 // SBus signal is normally an inverted UART signal
 // uncomment next line if you want to let oXs generate a normal UART signal (so an inverted Sbus)
 //#define INVERT_SBUS_OUTPUT 
-
 
 // -------- Parameters for the vario -----
 #define SENSITIVITY_MIN 100

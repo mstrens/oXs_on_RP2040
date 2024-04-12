@@ -327,8 +327,11 @@ bool fillHottGamFrame(){
     }
     // TxHottData.gamMsg.speed =  airSpeedData->airSpeed.value  ;                  //  Km/h 
     // TxHottData.gamMsg.min_cell_volt =  voltageData->mVoltCellMin /20 ; // minimum cell voltage in 2mV steps. 124 = 2,48V
-    // TxHottData.gamMsg.warning_beeps = warning_beeps_Hott();   // Transmitter warning message
-
+    #ifdef HOTT_MIN_VOLTAGE
+    if( fields[MVOLT].available ) {
+        TxHottData.gamMsg.warning_beeps = warning_beeps_Hott();   // Transmitter warning message
+    }
+    #endif
 // field of msg not implemented
 //  byte climbrate3s;                     //#28 climb rate in m/3sec. Value of 120 = 0m/3sec
 //  byte min_cell_volt_num;               //#38 number of the cell with the lowest voltage
@@ -438,9 +441,9 @@ bool fillHottGpsFrame(){
 
 
 
-#if defined(NUMBEROFCELLS) && (NUMBEROFCELLS > 0) && defined(CELL_UNDERVOLTAGE_WARNING)
+#ifdef HOTT_MIN_VOLTAGE 
  
- byte OXS_OUT::warning_beeps_Hott(void) {       // Determine whether a warning has to be sent to the transmitter. 
+ uint8_t warning_beeps_Hott(void) {       // Determine whether a warning has to be sent to the transmitter. 
                                                 // Define the state variables for the state machine controlling the warning generation.
                                                 // W_IDLE is the IDLE state but that name cannot be used because IDLE is already defined in oXs_out_hott.h.
      static enum {W_IDLE = 0, WARNING, DEADTIME} state = W_IDLE;
@@ -448,20 +451,20 @@ bool fillHottGpsFrame(){
      static uint8_t current_warning;
       // In order not to flood the transmitter with warnings, we transmit our warnings only every 3 seconds.
       // If the dead time is over, fall back into the idle state.
-     if (state == DEADTIME && millisRp() - warning_start_time > 3000)  state = W_IDLE;
+     if (state == DEADTIME && (millisRp() - warning_start_time) > 3000)  state = W_IDLE;
       // State WARNING indicates that we just started to transmit a warning.
       // Repeat it for 500ms to make sure the transmitter can receive it.
       // After 500ms we stop transmitting the warning and disable new warnings for a while.
-     if (state == WARNING && millisRp() - warning_start_time > 500) {
+     if (state == WARNING && (millisRp() - warning_start_time) > 500) {
        state = DEADTIME;
        current_warning = 0;
      }
      // In the idle state, we are ready to accept new warnings.
      if (state == W_IDLE) {
-        if (voltageData->mVoltCellMin < CELL_UNDERVOLTAGE_WARNING) {
+        if (fields[MVOLT].value < HOTT_MIN_VOLTAGE) {
             warning_start_time = millisRp();
             state = WARNING;
-            current_warning = 17; /* Cell undervoltage warning */
+            current_warning = 0X10; // power voltage warning 
         }
      }
      return current_warning;
