@@ -168,7 +168,7 @@ void compute_pid(struct _pid_state *ppid_state, struct _pid_param *ppid_param)
     iterm = (ppid_param->ki[i] * sum_err) >> PID_KI_SHIFT;
     dterm = (ppid_param->kd[i] * diff_err) >> PID_KD_SHIFT;
     ppid_state->output[i] = (pterm + iterm + dterm) >> ppid_param->output_shift;
-#define DEBUG_PID
+//#define DEBUG_PID
 #if defined(DEBUG_PID) 
     if (i == 0) {
       printf("in=%i sp=%i se=%i il=%i err=%i  dif=%i p=%i i=%i d=%i Out=%i\n",

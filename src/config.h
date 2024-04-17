@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.13.3"
+#define VERSION "2.13.4"
 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
@@ -392,9 +392,9 @@
 #define _pid_param_stab_KD_ELV 500  // PID rates: hold   mode - Kd - elv (pitch)
 #define _pid_param_stab_KD_RUD 500  // PID rates: hold   mode - Kd - rud (yaw)
 
-#define _pid_param_rate_output_shift 2 // do not modify Initially it was 8
-#define _pid_param_hold_output_shift 2 // do not modify
-#define _pid_param_stab_output_shift 2 // do not modify
+#define _pid_param_rate_output_shift 8 // do not modify Initially it was 8
+#define _pid_param_hold_output_shift 8 // do not modify
+#define _pid_param_stab_output_shift 8 // do not modify
 
 #define _vr_gain_AIL       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )
 #define _vr_gain_ELV       127      // store the gain per axis (to combine with global gain provided by gyroChanControl) (0/127 or 0/-127 to reverse )

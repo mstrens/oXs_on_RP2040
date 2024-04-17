@@ -1860,7 +1860,12 @@ void setupConfig(){   // The config is uploaded at power on
             config.accScaleXY = 0.0;
             config.accScaleXZ = 0.0;
             config.accScaleYZ = 0.0;
-        }    
+        }
+        // always use the values used in config.h file because there is no usb command to update them.
+        config.pid_param_rate.output_shift = _pid_param_rate_output_shift;
+        config.pid_param_hold.output_shift = _pid_param_hold_output_shift;
+        config.pid_param_stab.output_shift = _pid_param_stab_output_shift;
+        
     } else {
         config.version = CONFIG_VERSION;
         config.pinChannels[0] = _pinChannels_1;
