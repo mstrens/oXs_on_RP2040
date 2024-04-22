@@ -50,7 +50,7 @@ To let oXs know the mixers to apply on gyro corrections and the limits to respec
 
 To start the mixer calibration, the user has to simultaneously to:
 - put AIL and RUD sticks in right corner
-- put ELV stick in up corner
+- put ELV stick in up corner (so model should goes up)
 - move the switch used to control the gyro mode more than 4 X within 5 sec.
 
 When oXs detect this situation, it will set the led on RED (and register the 3 stick positions).

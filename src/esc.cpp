@@ -265,7 +265,7 @@ void handleEsc(){
             continue ; // discard the car if buffer is full (should not happen)    
         }
         // to debug the char being received
-        //if (config.escType == ZTW1) printf("%4X\n",data ); 
+        if (config.escType == ZTW1) printf("%4X\n",data ); 
         
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
