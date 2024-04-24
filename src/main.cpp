@@ -64,6 +64,8 @@
 //         manage the failsafe flag in Sbus out for protocols
 //         add AOA telemetry field when GPS, baro and gyro are installed.
 
+//         explain the learning process (for orientation).
+
 // Look at file in folder "doc" for more details
 //
 // So pio 0 sm0 is used for CRSF Tx  or for Sport TX or JETI TX or HOTT TX or MPX TX or SRXL2 or Ibus (it uses max 6 bytes for Hott and a dma)
@@ -153,9 +155,11 @@ uint32_t lastBlinkMillis;
 extern SEQUENCER seq;
 extern struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
 extern bool gyroIsInstalled ;
+
 queue_t qSensorData;       // send one sensor data to core0; when type=0XFF, it means a command then data= the command (e.g.0XFFFFFFFF = save config)
 queue_t qSendCmdToCore1;
 volatile bool core1SetupDone = false;
+volatile bool core1OrientationMPUDone = false; // flag filled during the gyro learning process to say that orientation is done
 void core1_main(); // prototype of core 1 main function
 
 uint8_t forcedFields = 0; // use to debug a protocol; force the values when = 'P' (positive) or 'N' (negative)
@@ -251,7 +255,7 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       setupRpm(); // this function perform the setup of pio Rpm
       //printf("rpm done\n");
       
-    setupEsc() ; 
+      setupEsc() ; 
 
       core1SetupDone = true;
       //printf("end core1 setup\n") ;    
@@ -707,13 +711,20 @@ void loop1(){
     // get some request from core0
     if ( ! queue_is_empty(&qSendCmdToCore1)){
         queue_try_remove(&qSendCmdToCore1, &qCmd);
-        if ( qCmd == REQUEST_HORIZONTAL_MPU_CALIB) { // 0X01 is the code to request an horizontal calibration
-            mpu.calibrationHorizontalExecute();
-        } else if ( qCmd == REQUEST_VERTICAL_MPU_CALIB) { // 0X02 is the code to request a vertical calibration
-            mpu.calibrationVerticalExecute();
+        if ( qCmd == REQUEST_USB_HORIZONTAL_MPU_CALIB) { // 0X01 is the code to request an horizontal calibration
+            mpu.usbOrientationHorizontalExecute();
+        } else if ( qCmd == REQUEST_USB_VERTICAL_MPU_CALIB) { // 0X02 is the code to request a vertical calibration
+            mpu.usbOrientationVerticalExecute();
         } else if (qCmd == REQUEST_NEXT_ACC_CALIB) {
             mpu.nextAccCalibrationExecute();
-        }
+        } else if (qCmd == REQUEST_HORIZONTAL_MPU_ORIENTATION ) {
+            mpu.orientationExecute(true);
+        } else if (qCmd == REQUEST_VERTICAL_MPU_ORIENTATION ) {
+            mpu.orientationExecute(false); // perform check Vertical orientation
+        } else if (qCmd == REQUEST_GYRO_CALIBRATION ) {
+            mpu.gyroCalibrationExecute(); // perform gyro calibration
+        } 
+        
     }
     //alarmTimerUs(MAIN_LOOP1, 500);
 }

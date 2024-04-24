@@ -9,6 +9,7 @@
 #include "crsf_in.h"
 #include "hardware/watchdog.h"
 #include "hardware/pio.h"  
+#include "pico/util/queue.h"
 
 // gyro code is based on project FlightStab on github. Still oXs uses 4 stab modes instead of 2
 
@@ -96,6 +97,9 @@ enum LEARNING_STATE learningState = LEARNING_OFF;
 #define RX_CENTER_HIGH (RX_CENTER + RX_GAIN_HYSTERESIS)
 
 extern CONFIG config;
+extern bool orientationIsWrong; 
+
+
 extern MPU mpu;
 extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
 uint16_t rcChannelsUsCorr[16];  // Rc channels values with gyro corrections applied (in Us)
@@ -110,7 +114,8 @@ extern uint8_t ledState;
 extern int32_t cameraPitch;
 extern int32_t cameraRoll;
 
-
+extern queue_t qSendCmdToCore1;
+extern bool core1OrientationMPUDone; // use to communicate between cores that reading accelerometer has been done
 //bool autolevel = false;
 
 struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learning process for each of the 16 Rc channel
@@ -519,7 +524,23 @@ bool checkForLearning(){ // return true when learning process can start
     return false; 
 }
 
-void calibrateGyroMixers(){  // this is call in main by loop1
+void cancelLearningProcess(){
+    watchdog_update();
+    ledState = STATE_NO_SIGNAL;
+    learningState = LEARNING_OFF;    
+    // to do : stop all interrupts to avoid error messages because queues are full
+    // disable interrupt to avoid having error msg about queue being full because part of main loop is not executed
+    uart_set_irq_enables(CRSF_UART_ID, false, false);
+    uart_set_irq_enables(CRSF2_UART_ID, false, false);
+    uart_set_irq_enables(SBUS_UART_ID, false, false);
+    uart_set_irq_enables(SBUS2_UART_ID, false, false);
+    pio_set_irq0_source_enabled(pio0 ,  pis_sm1_rx_fifo_not_empty , false ); // pio/sm for Exbus, Hott, ibus,Mpx,sport, srxl2
+    pio_set_irq1_source_enabled(pio0 ,  pis_sm3_rx_fifo_not_empty , false ); // pio/sm for ESC
+    pio_set_irq0_source_enabled(pio1 ,  pis_sm0_rx_fifo_not_empty , false ); // pio/sm for GPS
+    //configIsValid is not set to false to let the user retry the learning process
+}
+
+void calibrateGyroMixers(){  // this is call in main by loop() so it run on core0; it is called only if gyro is installed
     static bool centerFlag;
     static uint16_t centerCh[16];  // rc channels when 3 sticks are centered
     //static bool dirFlag ;
@@ -550,12 +571,40 @@ void calibrateGyroMixers(){  // this is call in main by loop1
             minLimitsUs[i] = 2012; // lower Rc channel values will be discoverd during the learning process
             maxLimitsUs[i] = 988;  // idem for upper values
         }
+        
+        printf("\nThe learning process started\n");
+        
+        // reset the flag that say that Accelerometer is read
+        // send a command to core1 to read Accelerometer and the axis that is aligned with gravity
+        // wait a max time that it is done
+        // if not done within some delay or index is wrong, consider that config is not valid, set LED on error (fixed) and exit
+        // if OK, update horizontal orientation
+        core1OrientationMPUDone = false;
+        uint8_t data =  REQUEST_HORIZONTAL_MPU_ORIENTATION;
+        queue_try_add(&qSendCmdToCore1 , &data); // this will read the accelerometer and find the axis for gravity
+        uint32_t startMillis = millisRp() ; // wait max 1 sec
+        while (core1OrientationMPUDone == false){
+            if ((millisRp() - startMillis) > 1000 ) break;
+        }
+        if ((core1OrientationMPUDone == false) or (config.mpuOrientationH > 5)) {
+            printf("Error :  oXs could not find the horizontal orientation of the MPU\n");                    
+            printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!\n");                    
+            cancelLearningProcess();
+            orientationIsWrong = true;
+            return;
+        } else { // print the orientation
+            printf("Horizontal MPU orientation is %s\n",mpuOrientationNames[config.mpuOrientationH]);
+        }
         //centerCh[16]; dirCh[16]; rightUpUs[3][16]; leftDownUs[3][16]; will be filled with the flags
         startMs = millisRp();         // used to check that there is 5 msec before switching to second step
         ledState = STATE_GYRO_CAL_MIXER_NOT_DONE;
-        printf("\nThe learning process started\n");
-        learningState = LEARNING_MIXERS;   
+        learningState = LEARNING_MIXERS;
+        printf("\n1. Center ail, rud, elv sticks\n");
+        printf("2. Move each stick (ail, rud and elv) ONE BY ONE in each corner\n");
+        printf("3. Change orientation of the model in order to have the nose up (vertical)\n");
+        printf("4. While the model is hold with the nose up, change the gyro switch to enter the second phase of the learning process\n");
     }
+
     // once learning process has started, we save always the min and max servo positions
     for (uint8_t i=0; i<16;i++){
         if ( rcChannelsUs[i] > maxLimitsUs[i]) {
@@ -564,6 +613,7 @@ void calibrateGyroMixers(){  // this is call in main by loop1
             minLimitsUs[i] = rcChannelsUs[i] ; 
         }    
     }
+
     // when process starts, change led color to red (state= LEARNING_MIXERS)  
     // if state = LEARNING_MIXERS
     // if all 3 sticks are centered (+/-2), set flag and save 16 channels
@@ -688,14 +738,14 @@ void calibrateGyroMixers(){  // this is call in main by loop1
             static uint32_t prevPrintMs = 0;
             if ((millisRp() - prevPrintMs) > 1000){
                 //printf("Ail=%i  Elv=%i    Rud=%i\n", stickPosUs[0] , stickPosUs[1] , stickPosUs[2] );
-                printf("Cal mixer is done; switch may be changed\n");
+                printf("Point 1 & 2 done; set model vertically (nose up) and change the gyro switch\n");
                 prevPrintMs=millisRp();
             }
     
         } 
         // check for a switch change
         // discard the changes done in the first 5 sec
-        // if change occurs after 5 sec in case of switch change when   check for error        
+        // if change occurs after 5 sec in case of switch change then check for error        
         if ( stabMode != prevStabMode)  { 
             prevStabMode = stabMode;
             if (( millisRp() - startMs) > 5000) { // when change, occurs after 5 sec of starting the learning process
@@ -704,70 +754,94 @@ void calibrateGyroMixers(){  // this is call in main by loop1
                     if ( ( rightUpFlags[0] == false) or ( leftDownFlags[0] == false) ) {printf("Error in Gyro setup: missing one corner position for aileron alone\n");}  
                     if ( ( rightUpFlags[1] == false) or ( leftDownFlags[1] == false) ) {printf("Error in Gyro setup: missing one corner position for elevator alone\n");}  
                     if ( ( rightUpFlags[2] == false) or ( leftDownFlags[2] == false) ) {printf("Error in Gyro setup: missing one corner position for rudder alone\n");}  
-                    printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!");
-                    watchdog_update();
-                    ledState = STATE_NO_SIGNAL;
-                    learningState = LEARNING_OFF;    
-                    // to do : stop all interrupts to avoid error messages because queues are full
-                    // disable interrupt to avoid having error msg about queue being full because part of main loop is not executed
-                    uart_set_irq_enables(CRSF_UART_ID, false, false);
-                    uart_set_irq_enables(CRSF2_UART_ID, false, false);
-                    uart_set_irq_enables(SBUS_UART_ID, false, false);
-                    uart_set_irq_enables(SBUS2_UART_ID, false, false);
-                    pio_set_irq0_source_enabled(pio0 ,  pis_sm1_rx_fifo_not_empty , false ); // pio/sm for Exbus, Hott, ibus,Mpx,sport, srxl2
-                    pio_set_irq1_source_enabled(pio0 ,  pis_sm3_rx_fifo_not_empty , false ); // pio/sm for ESC
-                    pio_set_irq0_source_enabled(pio1 ,  pis_sm0_rx_fifo_not_empty , false ); // pio/sm for GPS
-                    
-    
-                    configIsValid = false;
+                    printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!\n");
+                    cancelLearningProcess();
                 } else {
                     ledState = STATE_GYRO_CAL_LIMIT;
                     printf("\nSecond step of learning process started\n");
+                    // reset the flag that say that Accelerometer is read
+                    // send a command to core1 to read Accelerometer and the axis that is aligned with gravity
+                    // wait a max time that it is done
+                    // if not done within some delay or index is wrong, consider that config is not valid, set LED on error (fixed) and exit
+                    // if OK, update horizontal orientation
+                    core1OrientationMPUDone = false;
+                    uint8_t data =  REQUEST_VERTICAL_MPU_ORIENTATION;
+                    queue_try_add(&qSendCmdToCore1 , &data); // this will read the accelerometer and find the axis for gravity
+                    uint32_t startMillis = millisRp() ; // wait max 1 sec
+                    while (core1OrientationMPUDone == false){
+                        if ((millisRp() - startMillis) > 1000 ) break;
+                    }
+                    if ((core1OrientationMPUDone == false) or (config.mpuOrientationV > 5)) {
+                        printf("Error :  oXs could not find the vertical orientation of the MPU\n");                    
+                        printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!\n");                    
+                        cancelLearningProcess();
+                        orientationIsWrong = true;
+                        return;
+                    }  else { // print the orientation
+                        printf("Vertical MPU orientation is %s\n",mpuOrientationNames[config.mpuOrientationV]);
+                    }
+                    setupOrientation(); 
+                    if (orientationIsWrong){
+                        printf("Error :  invalid combination of horizontal and vertical orientations of the MPU\n");                    
+                        printf("Error :  oXs will stop handling receiver and sensors; power off/on is required !!!!!!\n");                    
+                        cancelLearningProcess();
+                        orientationIsWrong = true;
+                        return;
+                    }
                     learningState = LEARNING_LIMITS;
+                    startMs = millisRp(); // reset the value to discard ending the learning if switch is changed again to fast
+                    printf("Move sticks simultaneously while in high rate to let oXs discover the end limits of the servos\n");
+                    printf("Change gyro switch when done to end the learning process\n");
                 }    
             }    
         }        
+    
     } else if (learningState == LEARNING_LIMITS){
-        // wait for a new change of switch to save and close
-        if ( stabMode != prevStabMode) { // when change, 
-            //build the parameters and save them
-            struct gyroMixer_t temp; // use a temporary structure
-            temp.version = GYROMIXER_VERSION;
-            temp.isCalibrated = true; 
-            for (i=0;i<16;i++) {
-                #define MM 50    // MM = MIXER MARGIN
-                // look at the channels that have to be controled by the gyro.
-                // channel is used if there are differences and channel is not a stick
-                temp.used[i] = false;
-                if ( ((i != (config.gyroChan[0]-1) ) and (i != (config.gyroChan[1]-1) ) and (i != (config.gyroChan[2]-1))  and ( i!= (config.gyroChanControl-1) ))\
-                 and ((abs(rightUpUs[0][i]-leftDownUs[0][i])>MM) or (abs(rightUpUs[0][i]-centerCh[i])>MM) or (abs(leftDownUs[0][i]-centerCh[i])>MM)\
-                    or(abs(rightUpUs[1][i]-leftDownUs[1][i])>MM) or (abs(rightUpUs[1][i]-centerCh[i])>MM) or (abs(leftDownUs[1][i]-centerCh[i])>MM)\
-                    or(abs(rightUpUs[2][i]-leftDownUs[2][i])>MM) or (abs(rightUpUs[2][i]-centerCh[i])>MM) or (abs(leftDownUs[2][i]-centerCh[i])>MM))) {
-                    temp.used[i] = true; 
-                }
-                temp.neutralUs[i] = centerCh[i];  // servo pos when 3 sticks are centered
-                
-                temp.rateRollRightUs[i] =  (int16_t) rightUpUs[0][i] - (int16_t) centerCh[i] ;//   then right rate
-                temp.rateRollLeftUs[i] =  (int16_t) leftDownUs[0][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
-                temp.ratePitchUpUs[i] =    (int16_t) rightUpUs[1][i] - (int16_t) centerCh[i] ;//   then right rate
-                temp.ratePitchDownUs[i] = (int16_t) leftDownUs[1][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
-                temp.rateYawRightUs[i] =   (int16_t) rightUpUs[2][i] - (int16_t) centerCh[i] ;//   then right rate
-                temp.rateYawLeftUs[i]  =  (int16_t) leftDownUs[2][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
-                
-                temp.minUs[i] = minLimitsUs[i];
-                temp.maxUs[i] = maxLimitsUs[i]; 
-            }  // end for (all axis processed)
-            ledState = STATE_NO_SIGNAL;
-            learningState = LEARNING_OFF;
-            printf("\nGyro calibration:\n");
-            printf("Stick Ail_Right on channel %i at %-5i%%\n", config.gyroChan[0], pc(dirCh[0] - 1500));
-            printf("Stick Elv Up    on channel %i at %-5i%%\n", config.gyroChan[1], pc(dirCh[1] - 1500));
-            printf("Stick Rud_Right on channel %i at %-5i%%\n", config.gyroChan[2], pc(dirCh[2] - 1500));
-            // update gyroMixer from temp.
-            memcpy(&gyroMixer , &temp, sizeof(temp));
-            printGyroMixer(); 
-            printf("\nEnd of learning process; result will be saved in flash\n");
-            saveGyroMixer(); //   save the gyro mixer from the learning process.                     
+        // wait for a new change of switch to save and close; discard if change is done within the 2 sec
+        if ( stabMode != prevStabMode) { 
+            prevStabMode = stabMode;
+            if (( millisRp() - startMs) > 2000) { // when change after 2 sec, 
+                //build the parameters and save them
+                struct gyroMixer_t temp; // use a temporary structure
+                temp.version = GYROMIXER_VERSION;
+                temp.isCalibrated = true; 
+                for (i=0;i<16;i++) {
+                    #define MM 50    // MM = MIXER MARGIN
+                    // look at the channels that have to be controled by the gyro.
+                    // channel is used if there are differences and channel is not a stick
+                    temp.used[i] = false;
+                    if ( ((i != (config.gyroChan[0]-1) ) and (i != (config.gyroChan[1]-1) ) and (i != (config.gyroChan[2]-1))  and ( i!= (config.gyroChanControl-1) ))\
+                    and ((abs(rightUpUs[0][i]-leftDownUs[0][i])>MM) or (abs(rightUpUs[0][i]-centerCh[i])>MM) or (abs(leftDownUs[0][i]-centerCh[i])>MM)\
+                        or(abs(rightUpUs[1][i]-leftDownUs[1][i])>MM) or (abs(rightUpUs[1][i]-centerCh[i])>MM) or (abs(leftDownUs[1][i]-centerCh[i])>MM)\
+                        or(abs(rightUpUs[2][i]-leftDownUs[2][i])>MM) or (abs(rightUpUs[2][i]-centerCh[i])>MM) or (abs(leftDownUs[2][i]-centerCh[i])>MM))) {
+                        temp.used[i] = true; 
+                    }
+                    temp.neutralUs[i] = centerCh[i];  // servo pos when 3 sticks are centered
+                    
+                    temp.rateRollRightUs[i] =  (int16_t) rightUpUs[0][i] - (int16_t) centerCh[i] ;//   then right rate
+                    temp.rateRollLeftUs[i] =  (int16_t) leftDownUs[0][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
+                    temp.ratePitchUpUs[i] =    (int16_t) rightUpUs[1][i] - (int16_t) centerCh[i] ;//   then right rate
+                    temp.ratePitchDownUs[i] = (int16_t) leftDownUs[1][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
+                    temp.rateYawRightUs[i] =   (int16_t) rightUpUs[2][i] - (int16_t) centerCh[i] ;//   then right rate
+                    temp.rateYawLeftUs[i]  =  (int16_t) leftDownUs[2][i] - (int16_t) centerCh[i] ;//   then LEFT rate 
+                    
+                    temp.minUs[i] = minLimitsUs[i];
+                    temp.maxUs[i] = maxLimitsUs[i]; 
+                }  // end for (all axis processed)
+                ledState = STATE_NO_SIGNAL;
+                learningState = LEARNING_OFF;
+                printf("\nGyro calibration:\n");
+                printf("Stick Ail_Right on channel %i at %-5i%%\n", config.gyroChan[0], pc(dirCh[0] - 1500));
+                printf("Stick Elv Up    on channel %i at %-5i%%\n", config.gyroChan[1], pc(dirCh[1] - 1500));
+                printf("Stick Rud_Right on channel %i at %-5i%%\n", config.gyroChan[2], pc(dirCh[2] - 1500));
+                // update gyroMixer from temp.
+                memcpy(&gyroMixer , &temp, sizeof(temp));
+                printGyroMixer(); 
+                printf("\nEnd of learning process; result will be saved in flash\n");
+                saveGyroMixer(); //   save the gyro mixer from the learning process. 
+                saveConfig();    // save the config because mpu orientation is perhaps changed
+                printf("Best is now to make a power reset");                    
+            }
         } // end switch change
     }    
 } 

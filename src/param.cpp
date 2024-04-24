@@ -193,6 +193,10 @@ void printHelp(){
     printf("Failsafe mode               FAILSAFE = H        Set failsafe to Hold mode\n")  ;
     printf("         values             SETFAILSAFE         Values are set on the current positions\n")  ;
 
+    printf("MPU6050 calibration         MPUCAL = Y          Y = A (Accelerometer), G(Gyro)\n");
+    printf("   Set Acc parameters       MPUACC = x.xx y.yy...  x.xx y.yy are 12 values (with decimal) space separated\n");
+    printf("MPU6050 orientation         MPUORI = Y          Y = H (Horizontal and still) or V (Vertical=nose up)\n");
+
     printf("Rc channels  (1...16 or 255 for not in use)    can be used to manage airspeed/gyro/sequencers\n");
     printf("    Airspeed                ACC = YY            To select Vspeed and compensation ratio\n");   
     printf("    Gyro Mode/Gain          GMG = YY            To select mode/gain\n");
@@ -213,9 +217,6 @@ void printHelp(){
 
     printf("Sequencers                  SEQ = YYYY          See Readme section to see how to fill YYYY\n");
     printf("                            SEQ = DEL           Erase all sequencer\n");
-
-    printf("Force MPU6050 calibration   MPUCAL = Y          Y = H (Horizontal and still) or V (Vertical=nose up)\n");
-    printf("   Set Acc parameters       MPUACC = x.xx y.yy...  x.xx y.yy are 12 values (with decimal) space separated\n");
 
     printf("   Display raw Acc Z        DEBUGACCZ = Y or N  display vertical acc (useful to check offsets)\n");
     printf("Testing                     FV                  Field Values (display all telemetry internal values)\n")  ;
@@ -469,9 +470,9 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
     if ( strcmp("MPUCAL", pkey) == 0 ) {  
         if (!mpu.mpuInstalled) {
         printf("Calibration not done: no MP6050 installed\n");
-        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) || (strcmp("A", pvalue) == 0) || (strcmp("E", pvalue) == 0) ) ){ 
-             // only possible to request an horizontal or a vertical calibration
-            printf("Calibration not done: type must be H (Horizontal and still) , V (Vertical = nose up)\n"); 
+        } else if (!((strcmp("A", pvalue) == 0) || (strcmp("G", pvalue) == 0) || (strcmp("E", pvalue) == 0) ) ){ 
+             // only possible to request an acc or gyro calibration
+            printf("Calibration not done: type must be A (accelerometers) or G (gyro)\n"); 
         } else {    
             uint8_t data ;
             if (strcmp("A", pvalue) == 0){
@@ -507,10 +508,32 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
                 mpu.calibAccRunning = false;
                 return 0;
             }
+            if (strcmp("G", pvalue) == 0){
+                data = REQUEST_GYRO_CALIBRATION;
+                queue_try_add(&qSendCmdToCore1 , &data);
+                return 0; // retun here to avoid other messages//if (strcmp("H", pvalue) == 0){
+            }
+            //    data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration by core 1
+            //} else {
+            //    data = REQUEST_VERTICAL_MPU_CALIB ;
+            //} 
+            //queue_try_add(&qSendCmdToCore1 , &data);
+            //return 0; // retun here to avoid other messages    
+        }
+    }
+    // MPU orientation
+    if ( strcmp("MPUORI", pkey) == 0 ) {  
+        if (!mpu.mpuInstalled) {
+        printf("Orientation not done: no MP6050 installed\n");
+        } else if (!((strcmp("H", pvalue) == 0) || (strcmp("V", pvalue) == 0) ) ){ 
+             // only possible to request an acc or gyro calibration
+            printf("Orientation not done: type must be H (horizontal) or V (vertical)\n"); 
+        } else {    
+            uint8_t data ;
             if (strcmp("H", pvalue) == 0){
-                data = REQUEST_HORIZONTAL_MPU_CALIB; //  = execute calibration
+                data = REQUEST_USB_HORIZONTAL_MPU_CALIB;
             } else {
-                data = REQUEST_VERTICAL_MPU_CALIB ;
+                data = REQUEST_USB_VERTICAL_MPU_CALIB ;
             } 
             queue_try_add(&qSendCmdToCore1 , &data);
             return 0; // retun here to avoid other messages    
@@ -2014,8 +2037,12 @@ void setupConfig(){   // The config is uploaded at power on
 
 void printConfigOffsets(){
     printf("\nOffset Values in config:\n");
-	printf("Acc. X = %d, Y = %d, Z = %d\n", (int) config.accOffsetX , (int) config.accOffsetY, (int) config.accOffsetZ);    
-    printf("Gyro. X = %d, Y = %d, Z = %d\n", (int) config.gyroOffsetX , (int) config.gyroOffsetY, (int) config.gyroOffsetZ);
+	printf("     Acceleration param: ACC= %f %f %f\n", config.accOffX , config.accOffY , config.accOffZ);
+    printf("                              %f %f %f\n", config.accScaleXX , config.accScaleXY ,config.accScaleXZ );
+    printf("                              %f %f %f\n", config.accScaleXY , config.accScaleYY ,config.accScaleYZ );
+    printf("                              %f %f %f\n", config.accScaleXZ , config.accScaleYZ ,config.accScaleZZ );
+    printf("     Gyro offsets         X, Y, Z = %i , %i , %i\n", config.gyroOffsetX , config.gyroOffsetY , config.gyroOffsetZ); 
+    //    printf("Gyro. X = %d, Y = %d, Z = %d\n", (int) config.gyroOffsetX , (int) config.gyroOffsetY, (int) config.gyroOffsetZ);
 }
 
 void printFieldValues(){

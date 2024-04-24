@@ -17,10 +17,13 @@ public:
 
     void begin();
     bool getAccZWorld();
-    void calibrationHorizontalExecute();
-    void calibrationVerticalExecute();
+    void usbOrientationHorizontalExecute();
+    void usbOrientationVerticalExecute();
     void nextAccCalibrationExecute();
+    void orientationExecute(bool horizontal); // true for horizontal, false for vertical
+    void gyroCalibrationExecute();
     
+    uint8_t readAndGetGravity();    
     void testDevicesOffsetX();
     void printOffsets();
     bool calibrateAccelGyro(void);

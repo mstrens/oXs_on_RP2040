@@ -67,7 +67,7 @@ This board can be connected to:
    * one or two temperature sensor(s) providing an analog voltage depending on the temperature. The sensor can be an IC like the TMP36 or a CTN (thermistor). In the last case (CTN) you have to enter the specification of the CTN in config.h and to compile yourself.
    * a pressure sensor (GY63 or GY86 board based on MS5611, SPL06 or BMP280) to get altitude and vertical speed
    * a MS4525D0_A or a SDP3X (x=1,2,3) or SDP8xx  or XGZP6897D differential pressure sensor to get airspeed (and compensated vertical speed)
-   * a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario or to get pitch/roll
+   * a MP6050 (acc+gyro e.g. GY86) to improve reaction time of the vario, to get pitch/roll, to stabilize a camera and/or the model 
    * 1 or 2 ADS1115 if you want to measure more than 4 analog voltages
    * a GPS from UBlox (like the beitian bn220) or one that support CASIC messages   
        *  note : a Ublox GPS can be re-configured automatically by oXs ( with own oXs param). It has then to use the default standard ublox config.
@@ -280,48 +280,197 @@ Then, depending on the value sent by the Tx on the selected channel, oXs manages
 
 Note: you can use the FV command to know the current coefficient. This allow you to check that your Tx sent a Rc channel value that match the expected goal and indeed required, adjust your Tx settings.
 
-## ---------------- calibration of MP6050  ---------------
+## ---------------- Calibration and orientation of MP6050  ---------------
 
-When an MP6050 is used, it is important:
-* to calibrate it
-* to let oXs knows his orientation in the plane.
+When MP6050 (=MPU) is used, oXs must know his orientation in the model. There are many possible orientations.
 
-To do this, oXs must be conected to the PC (via usb) and the PC must be running a serial montitor (to enter commands and display the oXs messages).
+Furthermore, for best result, each MP6050 must be calibrated (accelerometer and gyro). This is just optional when MP650 is used to improve vario reactivity (so not to know roll/pitch, stabilize camera and/or model). 
 
-Calibration concerns as well the accelerometer as the Gyro.
-* the gyro calibration is quite easy because it only requires that the sensor does not move at all. It is done automatically at each power on. Still if oXs detects that the sensor moves during this phase, it reuses the parameters that have been saved at the end of the "Horizontal" calibration (see below).
-* calibration of the accelerometer is more complex. It requires to make measerements while the sensor remains fix in many different orientations. The process starts entering a USB command MPUCAL=A. Then the sensor is put in one orientaion and while staying fix you press ENTER. oXs displays the accelerations X,Y,Z in this position if it is OK or a message saying that the measure was to noisy (then press ENTER again to take the mesures again in the same position). When done in one position, change slightly the orientation of the sensor and press ENTER again to make a new mesurement. Repeat the process in many different orientations (more than 20, less than 200). When done enter the command MPUCLA=E. oXs specifies then the number of measurements, the scale being used and a list of all measurements. Make a copy/paste of this list and save it in a txt file. Run the program "magneto12.exe" that is present in the folder doc. In this program fill the box "Norm" with the scale and open the saved txt file that you created with the measurements. Click the button "Calibrate". This provides 12 parameters ( 3 values in "(b)" and 3 rows of 3 values in "(A)"). Enter those 12 parameters (space delimited) in oXs with one  command MPUACC=xx.xxxxx yy.yyyyy .... Then enter SAVE command to save the parameters.
- 
+Best is to start with calibration of the accelerometer, then calibration of the gyro and finaly to set up the orientation of the MPU in the model.
 
-The mpu must be installed in the model in such a way that one axis of MPU6050 is vertical and that another one is aligned with main axis of the model (nose-queue). There are 24 possible orientations to match this. Most commercial gyro's require that the user declare the orientation of the MP6050 in the model.
-oXs does it automatically with a 2 steps calibration process (named here Horizontal and Vertical).
-
-* Horizontal calibration calculates the gyro offsets in the 3 directions. It identifies also partly the orientation of the MP6050.
-It requires that the plane is set horizontally (like when it flies and roll/pitch are both 0) and do NOT move at all.
-Then a usb command MPUCAL=H is sent.
-The horizontal calibration takes a few seconds (less than 5). The result is displayed.
-
-* Vertical calibration completes the determination of MPU6050 orientation.
-It requires that the plane is set vertically with the nose up. It is not required to keep it totally still in this position.
-Then a command MPUCAL=V is sent. The horizontal calibration is done in less than 1 second.
-
-Please note that, like other usb commands that change the configuration, you have to send afterwards a SAVE command to store the results in memory and so keep them after a power off or a reset.
-
-The current configuration is displayed (like other parameters) with the ENTER command.
-
-Once the MP6050 calibration process has been done and saved, it is normally not required to do it again.
-Still if you change the orientation of oXs in a model, you have or to perform the 2 steps calibration again or you can just change the orientation using 2 usb commands GOV (horizontal orientation) and GOV (vertical orientation). Those 2 commands can change the orientation but not the offset.
+Note: Once the MP6050 calibration process has been done and saved, it is normally not required to do it again.
+Take care that, if you change the orientation of the M6050 in a model, you have to update the orientation parameters in oXs (not the calibration).
 
 
-Note: at each power on, oXs performs automatically a new calibration of the gyro offsets (so nor acceleration offsets nor orientation).
-To get correct offset parameters, the model must stay still during the first 2 seconds. His attitude does not matter. It is possible to disable this automatic calibration with a parameter in file config.h. 
+### 1 Calibration of the accelerometer
+
+To calibrate the MP6050, oXs must be conected to the PC (via usb) and the PC must be running a serial montitor (to enter commands and display the oXs messages). It requires to make several measurements while the sensor remains fix in many different orientations.
+
+* The process starts entering a USB command MPUCAL=A.
+* Then the sensor is put in one orientation and while staying fix you press ENTER. oXs performs a measurement. It is is valid, oXs displays the accelerations X,Y,Z in this position. If the measurement is not valid, oXs displays a message saying that the measure was to noisy (then press ENTER again to take the mesures again in the same position).
+* When done in one position, change slightly the orientation of the sensor and press ENTER again to make a new mesurement.
+* Repeat the process in many different orientations (more than 20, less than 200).
+* When done, enter the command MPUCLA=E to end the process.
+* oXs specifies then the number of measurements, the scale being used and a list of all measurements.
+* Make a copy/paste of this list and save it in a txt file.
+* Run the program "magneto12.exe" that is present in the folder doc. In this program fill the box "Norm" with the scale and open the saved txt file that you created with the measurements. Click the button "Calibrate". This provides 12 parameters ( 3 values in "(b)" and 3 rows of 3 values in "(A)").
+* Enter those 12 parameters (space delimited) in oXs with one  command MPUACC=xx.xxxxx yy.yyyyy ....
+* Then enter SAVE command to save the parameters.
 
 In the doc folder, you can also find word document explaining again the process and a link to a video about accelerometer calibration. It shows the principle even if it is not done with an oXs device.
 
 
-Please note that when the MP6050 is used to stabilize the plane, you have also to perform a gyro mixer calibration. See gyro section.  
-   
+### 2 Calibration of the gyro
 
+The gyro calibration is quite easy because it only requires that the sensor does not move at all.
+
+It is normally done automatically at each power on but it requires that the model stay still the first 2 sec. If oXs detects that the sensor moves during the first 2 sec, the process will fail and oXs will reuse parameters that have been saved.
+
+Note: It is possible to disable this automatic calibration with a parameter in file config.h. 
+
+So, it is not bad practice to save gyro calibration offsets. To do so, oXs must be conected to the PC (via usb) and the PC must be running a serial montitor (to enter commands and display the oXs messages).
+
+* Keep the model absolutely still (orientation does not matter) and enter a USB command MPUCAL=G
+* After a short time, oXs says if calibration is OK or if the measurement is not valid (to noisy, model is moving)
+* If measurement is not valid, reenter the command MPUCAL=G
+* Then enter SAVE command to save the parameters.
+
+### 3 Set up the gyro orientation.
+
+The mpu must be installed in the model in such a way that one axis of MPU6050 is vertical and that another axis is aligned with main axis of the model (nose-queue). There are 24 possible orientations to match this. Most commercial gyro's require that the user declares the orientation of the MP6050 in the model. oXs does it automatically.
+
+There are 2 ways to let oXs know the MPU orientation:
+* using USB commands (MPUCAL=H and MPUCAL+V); this is the easiest way to do it when the MP6050 is not used to stabilize the model (gyro function). The process is explained here below. 
+* using the gyro learning process with the handset; this process is used when the MP6050 is use to stabilize the model (gyro function) because it is combined with the learning of the servo mixers defined on the handset. It is done from the handset (even if messages can also be displayed on the PC via USB). It is explained in the gyro section (see learning process). 
+
+#### Process with USB command is the following
+* Set the plane horizontally (like when it flies and roll/pitch are both 0) and enter the usb command MPUCAL=H. The result is displayed.
+* Set the plane vertically with the nose up and enter the usb command MPUCAL=V. The result is displayed.
+* Then enter SAVE command to save the parameters.
+
+
+Notes:
+* The current configuration is displayed (like other parameters) with the ENTER command.
+* When the MP6050 is used to stabilize the plane (gyro function), you have also to perform the gyro learning process to let oXs know the  gyro mixer calibration. See gyro section.  
+
+## ------------------ Gyro ------------------
+
+Important note: at this stage, this is still experimental. It has not been intensively tested. So used it at you own risk.
+
+### Principle.
+- When oXs get the Rc channels and has a MPU6050 (accelerometer/gyro), oXs can automatically apply corrections to stabilize on 3 axis the PWM signals that drive servos (and later on also on Sbus out)
+- Gyro has 4 modes (off/Normal/Hold/stabilize); user selects the active mode (between 3) on the Tx with a 3 positions switch.
+- This switch must allow the handset to generate on a Rc channel a signal that is or negative (Normal mode), or null (gyro off) or positive (gyro in hold or stabilize mode depending on a oXs parameter).
+    - In "Normal" mode, the gyro tries to compensate for external perturbation (wind,...). The sticks allow to control the model.
+    - In "OFF" mode, oXs just transmit the PWM signals provided by the handset without any gyro correction
+    - In "Hold" mode, oXS tries to keep the model in the current orientation when sticks are centered. Moving the sticks allows change the orientation of the model.
+    - In "Stabilize" mode, oXs tries to keep the model horizontal when the sticks are centered. The sticks allow to control the model. 
+- Respectively the positive and negative value from this channel allows also to select the general gain of the gyro for each mode separately
+ 
+- Gyro corrections can be applied on as many servos as needed (e.g. on 4 ail servos per wing, on 2 elevator servos and/or 2 rudder servos, on Vtail stab,... )
+- On the opposite to many commercial gyros, the mixers and servos limits are defined only in the handset (just like when no gyro is used). oXs detect automatically the mixers and limits applied on the servos concerned by gyro corrections during a special setup phase (= gyro learning phase = mixer calibration)
+- several parameters (see below) have to be defined with Usb commands (no compilation/reflash required) to set up the oXs gyro. 
+
+### Required parameters to set up the gyro.
+- 1 channel to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16). This Rc channel will provide a value betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold or Stabilize; gain varies with the Rc value (from 0% to 100% or -100%) 
+- 3 channels providing "original" stick positions (so without mixer including trim, expo/limit/subtrim...!!!!). Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
+- gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
+
+### Optional parameters to fine tune the settings
+- 3 gains (one per axis roll/pitch/yaw) ; the sign of the gain define the direction of the the gyro corrections.
+- 1 parameter to select the stick range around center where corrections apply (full throw , 1/2 , 1/4)
+- 1 parameter max rotate rate in hold mode (very low, low, medium , high)
+- 1 parameter to enable (or not) max rotate rate in normal mode too.
+- PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold/stabilize modes can be changes.
+
+Note: as usual with oXs:
+- the list of all usb commands and the allowed values can be displayed entering "?" command.
+- the current setting is displayed just entering ENTER
+- do not forget to enter SAVE command to keep you changes after a power off. After a SAVE command you must most of the time make a shutdown/reset to really activate the changes.
+
+
+### Gyro learning process = gyro calibration = discovering the orientation/mixers and limits
+
+The general principle is to let the mixers + servo centers/min/max being defined only on the handset.
+Still oXs has to apply similar mixers on the gyro corrections.
+
+Before using the gyro OR when MIXERS are CHANGED on the HANDSET, oXs has to capture the positions of all Rc channels when sticks are in several specific positions:
+
+To do so, oXs has to receive from the handset not only the Rc channel values for each servo (ail1, ail2, ...) but also the positions of the 3 sticks Ail, Elv, Rud before the handset applies any mixer/curve/limit on them.
+This requires that those positions are transmitted in "unused" Rc channels on top of all other Rc channels controlling servos, ESC, sequencer, ...
+The 3 Rc channels used to sent the 3 stick positions (Ail, Elv, Rud) are defined in the parameters of oXs (with GSA, GSE,GSR commands).
+On the handset, it is important that the 3 channels that gives the stick positions produce a signal of -100%/0%/+100% when stick are full one one side, centered and full on the other side.
+So in the mixers that generate those 3 signals, you must use a set up that discards trim, expo, ...
+
+To let oXs know the mixers to apply on gyro corrections and the limits to respect when gyro corrections are applied, a "learning" process also name "mixer calibration" is required. This process is not the same as the calibration of the mpu6050. This process also allow oXs to find automatically the orientation of the MPU6050 in the model (and so allows oXs know how to calculate roll, pitch and yaw corrections)
+
+Important note: the learning process must be done again if the orientation of the MPU in the model change and/or if the mixers/servo directions change on the handset.
+
+The learning process consist of several steps.
+
+#### 1 Starting the process
+
+To start the mixer calibration, the user has to put the model HORIZONTAL and, on the handset, simultaneously:
+- put AIL and RUD sticks in right corner
+- put ELV stick in up corner direction (so model should goes up)
+- move the switch used to control the gyro mode more than 4 X within 5 sec.
+
+When oXs detect this situation, It will try to find the MP6050 axis that measures gravity.
+If oXs can't, it stops moving the servos and sending telemetry. The user has to make a power off. So it is clear that the process did not ended properly.
+
+If "horizontal" orientation is found, oXs will set the led on RED and register the "horizontal" orientation and the 3 stick positions.
+It then goes to the next step (discovering the mixers)
+
+#### 2 First Phase : discovering the mixers.
+
+oXs will then analyse the positions of sticks expecting to detect 7 cases:
+- 1: AIL, RUD and ELV sticks simultaneously centered.
+- 2/7: one of the 3 sticks (AIL,ELV,RUD) is in one corner while the 2 others are centered. This should be done in all 6 possible cases (AIL in RIGHT corner, AIL in LEFT corner, RUD in RIGHT corner, RUD in LEFT corner, ELV in UP corner , ELV in DOWN corner).
+
+Each time a case is detected, oXs will register the positions of all Rc channels.
+This wil help to apply the gyro corrections with the right proportions on the rigth servos.
+
+During this phase, to avoid side effect on the discovered mixers, it is VERY IMPORTANT that :
+* Throttle does not change (so best use the safety switch to lock the transmitted RC channel to e.g. -100%)
+* switches, sliders do not change.
+
+The 7 cases can be done in any order and any number of times.
+
+When all cases have been detected at least once, LED will become BLUE (saying that it allowed to switch to next step).
+
+The user can still continue to move the sticks as previous as long as he want.
+
+#### 3 Switching to phase 2:
+
+When all cases have been detected (led is blue),next step must be activated.
+
+To do so, SET THE MODEL VERTICAL with the NOSE UP and then change (1X is enough) the position of the gyro switch.
+
+Note: switch changes during the first 5 sec of phase 1 are just discarded (so it does not matter if user changed more than 5 X the switch when it was starting the process).
+
+oXs tries to detect the new orientation (vertical nose up) and checks that it is different from the "Horizontal".
+
+In case of error (wrong orientation or at least one of the 7 cases not detected -LED still RED), oXs stops moving the servos and sending telemetry. The user has to make a power off. So it is clear that the process did not ended properly.
+
+If gyro switch is valid, LED becomes GREEN (= second phase (discovering the limits) is running).
+
+#### 4 Second phase: dicovering the limits
+
+User can now move all sticks, sliders, switches(except gyro switch) simultaneously in all positions in order to let each servo reaches his min and max allowed positions.
+
+oXs registers those limits. They will be used to limit the movements when oXs applies gyro corrections on top of the Rc channel received from the handset.
+User can make this step as long he want (but must be at least 2sec).
+During this phase, orientation of the model does not matter (it can be set e.g. horizontally in order to easily move the stick).
+
+#### Ending the learning process
+
+To close the mixer calibration process, user has to change once more the gyro switch.
+
+oXs saves then all parameters in flash so the calibration does not have to be repeated (except if mixers/mechanical limits are modified on the handset).
+
+Note: switch changes during the first 2 sec of phase 2 are just discarded (so it does not matter if user changed to often the switch when it was switching to phase 2).
+
+### Notes:
+At each power on, oXs uploads saved parameters and uses them.
+
+Outside of the learning process process, end points of each servo (=min/max limits) are automatically updated based on the Rc channel values received from the receiver (so before gyro corrections).
+This allows oXs to apply gyro corrections that exceed the limits registered during the cabration but without exceeding the limits defined in the handset.
+The drawback of skipping step 2 of learning process is that some gyro corrections could be more restricted than really required in the first minutes after a power on.
+
+### Checks.
+
+when the learning process has been done, it is important to check that every thing is OK.
+So without moving the model, first check that the servos move as expected.
 
 ## ---------------- Sequencers ---------------
 With oXs, one single channel on the handset can control one or several SERVOS in sequences defined by the user (e.g. for landing gears with doors and wheels).
@@ -422,14 +571,6 @@ This format allows to compress the data transmitted via the (quite slow) UART to
 \
 \
 The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
-
-## ------------------ Gyro ------------------
-When oXs get the Rc channels from a receiver (via Sbus, Ibus, ...) and when a MPU6050 is installed, oXs can apply gyro corrections on several servos.
-For more details, please read carrefully the file "gyro concepts.md" in the folder "doc".
-
-
-Important note: at this stage, this is still experimental. It has not been intensively tested. So used it at you own risk.
-
 
 ## ------------------ Model Locator ----------------------------------------
 oXs can be used to locate a lost model (if you add a LORA module).

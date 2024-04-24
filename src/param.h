@@ -198,6 +198,9 @@ bool getAccParam();
 #define ZTW1 1
 #define BLH 5
 
-#define REQUEST_HORIZONTAL_MPU_CALIB 0X01
-#define REQUEST_VERTICAL_MPU_CALIB 0X02
-#define REQUEST_NEXT_ACC_CALIB 0X03
+#define REQUEST_USB_HORIZONTAL_MPU_CALIB 0X01 // send from core0 to core 1
+#define REQUEST_USB_VERTICAL_MPU_CALIB 0X02   // send from core0 to core 1
+#define REQUEST_NEXT_ACC_CALIB 0X03       // send from core0 to core 1 
+#define REQUEST_HORIZONTAL_MPU_ORIENTATION 0X04 // send from core0 to core 1; there is a reply from core1 when done
+#define REQUEST_VERTICAL_MPU_ORIENTATION 0X05   // send from core0 to core 1; there is a reply from core1 when done
+#define REQUEST_GYRO_CALIBRATION 0X06       // send from core0 to core 1
