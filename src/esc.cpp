@@ -31,6 +31,23 @@
 // [15..16] temp FET (to convert)
 // [17..18] temp BEC (to convert)
 
+/*  Hobbywing V4
+1.Frame with 19bytes = telemetry
+2.Frame with 13bytes = signature
+Before throttle is raised from 0, signature packets are sent between telemetry packets. This is used to identify the hardware and firmware of the ESC.
+Telemetry packets:
+Byte | 1 | 2 | 3 | 4 | 5 | 6 |
+Value | Package Head (0x9B) | Package Number 1 | Package Number 2 | Package Number 3 | Rx Throttle 1 | Rx Throttle 2 |
+7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 |
+Output PWM 1 | Output PWM 2 | RPM 1 | RPM 2 | RPM 3 | Voltage 1 | Voltage 2 | Current 1 | Current 2 | TempFET 1 |
+17 | 18 | 19
+TempFET 2 | Temp 1 | Temp 2
+Signature packets:
+Byte | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13
+V4LV25/60/80A | 0x9B | 0x9B | 0x03 | 0xE8 | 0x01 | 0x08 | 0x5B | 0x00 | 0x01 | 0x00 | 0x21 | 0x21 | 0xB9
+*/
+
+
 // ------ Kontronix ------------------------
 // ESC sent on uart (115200 8E1) a frame every 10 msec that contains
 // "KODL" as header
@@ -423,13 +440,14 @@ void processKontronikFrame(){
 
 void processZTW1Frame(){
     if (escRxBuffer[0] == 0xDD && escRxBuffer[1] == 0x01 && escRxBuffer[2] == 0x20 ) {
-        uint32_t rpm = ((uint32_t)escRxBuffer[8]) << 8 | ((uint32_t) escRxBuffer[9]);
         uint32_t voltage = ( ((uint32_t)escRxBuffer[3] << 8) | ((uint32_t) escRxBuffer[4]) ) * 100;  // convert 0.1V to mv
-        float currentf =   ( (uint32_t)escRxBuffer[5] << 8)  | ((uint32_t) escRxBuffer[10] ) * 100;  // convert from 0.1A to ma 
-        //float current_bec = ((uint16_t)escRxBuffer[19] << 8 | escRxBuffer[18]) / 1000.0;
-        //float voltage_bec = ((uint16_t)escRxBuffer[21] << 8 | escRxBuffer[20]) / 1000.0;
-        int32_t tempFet = escRxBuffer[10] - 96;  // probably an offset of 96 to get a range -96/150
-        int32_t tempBec = escRxBuffer[21] - 96;  // probably an offset of 96 to get a range -96/150
+        float currentf =   ( (uint32_t)escRxBuffer[5] << 8)  | ((uint32_t) escRxBuffer[6] ) * 100;  // convert from 0.1A to ma 
+        // byte 7 = throttle ; not used here 
+        uint32_t rpm = ((uint32_t)escRxBuffer[8]) << 8 | ((uint32_t) escRxBuffer[9]);
+        int32_t tempFet = ((int) escRxBuffer[10]) - 96;  // probably an offset of 96 to get a range -96/150
+        int32_t tempBec = ((int) escRxBuffer[11]) - 96;  // probably an offset of 96 to get a range -96/150
+        // bytes 2/14 not used here 
+        uint32_t consumed = ( ((uint32_t)escRxBuffer[15] << 8) | ((uint32_t) escRxBuffer[16]) ); // unit = ???
         if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
             sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
         }
@@ -438,11 +456,7 @@ void processZTW1Frame(){
         }
         if (config.pinVolt[1] == 255) {
             sent2Core0( CURRENT, (int32_t) ( currentf * config.scaleVolt2 - config.offset2 ) ) ; 
-            if (lastEscConsumedMicros) { 
-                escConsumedMah += (currentf * (microsRp() - lastEscConsumedMicros)) / 3600000000.0 ;  // in mah.
-                sent2Core0( CAPACITY, (int32_t) escConsumedMah);
-            }
-            lastEscConsumedMicros =  microsRp(); 
+            sent2Core0( CAPACITY, (int32_t) consumed);
         }
         if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc    
             sent2Core0( TEMP1, tempFet) ;
@@ -450,7 +464,7 @@ void processZTW1Frame(){
         if ((config.pinVolt[3] == 255) or (config.temperature != 2)){ //  we discard temp from esc
             sent2Core0( TEMP2, tempBec) ;
         }
-        printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) escConsumedMah , (int) tempFet , (int) tempBec );
+        //printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i  temp2=%i\n", voltage , (int) currentf, (int) consumed , (int) tempFet , (int) tempBec );
     }    
 }
 

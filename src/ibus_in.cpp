@@ -28,8 +28,8 @@ uint32_t ibusInMicros;
 
 extern CONFIG config;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
+//extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsFrameReceived ;  // used to update the PWM data
 
 
 uint8_t runningIbusFrame[32];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
@@ -275,49 +275,6 @@ void handleIbusIn(){
         }
     } // end while     
 }
-  
-/*
-void handleSbus2In(){
-  static SBUS_STATE sbus2State = NO_SBUS_FRAME ;
-  static uint8_t sbus2Counter = 0;
-  static uint32_t lastSbus2Millis = 0;
-  uint8_t c;
-if (config.pinSecIn == 255) return ; // skip when pinSecIn is not defined
-    while (! queue_is_empty (&sbus2Queue) ){
-        if ( (millisRp() - lastSbus2Millis ) > 2 ){
-        sbus2State = NO_SBUS_FRAME ;
-        }
-        lastSbus2Millis = millisRp();
-        queue_try_remove ( &sbus2Queue , &c);
-        //printf(" %X\n",c);
-        switch (sbus2State) {
-        case NO_SBUS_FRAME :
-            if (c == 0x0F) {
-            sbus2Counter = 1;
-            sbus2State = RECEIVING_SBUS ;
-            }
-        break;
-        case RECEIVING_SBUS :
-            runningSbus2Frame[sbus2Counter++] = c;
-            if (sbus2Counter == 25 ) {
-            if ( (c != 0x00) && (c != 0x04) && (c != 0x14) && (c != 0x24) && (c != 0x34) ) {
-                sbus2State = NO_SBUS_FRAME;
-            } else {
-                storeSbus2Frame();
-                sbus2State = NO_SBUS_FRAME;
-            }
-            }
-        break;      
-        }
-    }     
-    if ( sbusFrameCounter >= SBUS_HOLD_COUNTED_ON_FRAMES) {
-        sent2Core0(SBUS_HOLD_COUNTER , sbusHoldCounter * 100 / sbusFrameCounter); // * 100 because the value is in %
-        sbusHoldCounter = 0;             // reset the counter
-        sbusFrameCounter = 0;
-        sent2Core0(SBUS_FAILSAFE_COUNTER , sbusFailsafeCounter);  // for failsafe, we just count the total number
-    }
-}
-*/
 
 void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes. last bit = 1/8 usec
 	//printf("exbus decoding Rc channels\n");
@@ -362,58 +319,8 @@ void ibusDecodeRcChannels(){             // channels values are coded on 2 bytes
     memcpy( (uint8_t *) &sbusFrame.rcChannelsData, &sbus[0], 23) ; // copy the data to the Sbus buffer
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
-    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+    newRcChannelsFrameReceived = true;  // used to update the PWM data
 
 } 
 
-/*
-void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, channels are coded from byte [0]
-    sbusPriMissingFlag = (runningSbusFrame[23] >> 2) & 0X01;
-    sbusPriFailsafeFlag = (runningSbusFrame[23] >> 3) & 0X01;
-    if ( ( config.pinSecIn == 255 || ( ( millisRp() - lastSecChannelsMillis )  > 50 )))  {
-        sbusFrameCounter++;
-        if ( sbusPriMissingFlag ) {
-            sbusHoldCounter++;
-            sbusHoldCounterTotal++;
-        }
-        if ( sbusPriFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
-        prevFailsafeFlag = sbusPriFailsafeFlag; 
-    }    
-    if ((( sbusPriMissingFlag == false) && (sbusPriFailsafeFlag == false)) || // copy when frame is OK   
-        ( sbusSecFailsafeFlag)  ||                                            //   or previous SEC is failsafe
-        ( ( millisRp() - lastSecChannelsMillis )  > 50 )) {                     //   or SEC do not exist                   
-        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbusFrame[1], 22);
-    }
-    lastRcChannels = millisRp();
-    lastPriChannelsMillis =  lastRcChannels;
-    //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
-    //printf("rc1 = %f\n", rc1/2);
-    //printf("sbus received\n");
-}  
-*/
 
-/*
-void storeSbus2Frame(){
-    sbusSecMissingFlag = (runningSbus2Frame[23] >> 2) & 0X01;
-    sbusSecFailsafeFlag = (runningSbus2Frame[23] >> 3) & 0X01;
-    if ( ( config.pinPrimIn == 255) || (( millisRp() - lastPriChannelsMillis )  > 50 ) ) {
-        sbusFrameCounter++;
-        if ( sbusSecMissingFlag ){
-            sbusHoldCounter++;
-            sbusHoldCounterTotal++;
-        } 
-        if ( sbusSecFailsafeFlag && (prevFailsafeFlag == false)) sbusFailsafeCounter++;
-        prevFailsafeFlag = sbusSecFailsafeFlag;
-    } 
-    if ((( sbusSecMissingFlag == false) && (sbusSecFailsafeFlag == false))  ||                               // copy when frame is OK   
-        (( sbusSecMissingFlag == true) && (sbusSecFailsafeFlag == false) && (sbusPriFailsafeFlag == true)) || // or previous PRI is failsafe and SEC is only missing
-        (( millisRp() - lastPriChannelsMillis )  > 50 )) {                                                      // or PRI do not exist           
-        memcpy(  (uint8_t *) &sbusFrame.rcChannelsData, &runningSbus2Frame[1], 22);
-    }
-    lastRcChannels = millisRp();
-    lastSecChannelsMillis =  lastRcChannels; 
-    //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
-    //printf("rc1 = %f\n", rc1/2);
-    //printf("sbus received\n");
-}  
-*/

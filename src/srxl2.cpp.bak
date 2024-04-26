@@ -158,7 +158,7 @@ extern uint32_t lastRcChannels ;
 extern uint32_t lastPriChannelsMillis ;
 extern uint32_t lastSecChannelsMillis; 
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+//extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
 
 void setupSrxl2() {
 // configure the queue to get the data from srxl2 in the irq handle

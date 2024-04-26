@@ -95,8 +95,27 @@
 // VOLT1= 26/29 ... VOLT4 = 26/29
 // SDA = 2, 6, 10, 14, 18, 22, 26  (I2C1)
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
+// SPI_MOSI=
+// SPI_MISO=
+// SPI_SLCK= 
+// SPI_CS= 
 // RPM = 0/29 
 // LED = 16
+
+// General principle:
+// We use the 2 cores: core0 manages in/out signals with receivers, PWM and USB commands, core1 manages all sensors
+// In main loop (core0) we:
+// - get the value from the sensors (via a queue)
+// - send the telemetry data (taking care of the protocol)
+// - get the rchannels (in sbusFrame) according to the protocol
+// - decide if oXs rc failsafe values must be applied (when no rcchannels are recived within some delay)
+// - copy sbusFrame to sbusFrameCorr (if sbusFrame changed)
+// - apply gyro corrections on sbusFrameCorr
+// - generate sbus out and PWM signal based on sbusFrameCorr
+// - manage sequencer
+// - manage logger
+// - manage the button and led
+
 
 
 
@@ -171,6 +190,9 @@ int16_t gyroY;
 int16_t gyroZ;
 
 extern bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it after a watchdog reset)
+extern bool rcChannelsUsChanged ; // says that rcChannelUs changed or not (to avoid some updates) (reset at each main loop)       
+extern bool rcChannelsUsCorrChanged ; // says that rcChannelUsCorr changed or not (to avoid some updates) (reset at each main loop)       
+
 
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
@@ -599,55 +621,53 @@ void loop() {
         fillCRSFFrame();
         handleCrsfIn();
         handleCrsf2In();
-        fillSbusFrame();
       } else if (config.protocol == 'S') {  // sport
         handleSportRxTx();
         handleSbusIn();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'J') {  //jeti
         handleJetiTx();
         handleSbusIn();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'H') {  //Hott
         handleHottRxTx();
         handleSbusIn();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'M') {  // multiplex
         handleMpxRxTx();
         handleSbusIn();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'I') {  // Ibus flysky
         handleIbusRxTx();
         handleIbusIn();           
         //handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == '2') { // Sbus2 Futaba
         handleSbusIn();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'F') {  // Fbus frsky
         handleFbusRxTx();
         handleSbus2In();
-        fillSbusFrame();
       } else if (config.protocol == 'L') {  // SRXL2 Spektrum
         handleSrxl2RxTx();
         //handleSbus2In();  // to do processa second inpunt
-        fillSbusFrame();
       } else if (config.protocol == 'E') {  // Jeti Exbus
         handleExbusRxTx();
         //handleSbus2In();  // to do process a second inpunt
-        fillSbusFrame();
       }
       watchdog_update();
+        // apply failsafe values on sbusframe if rchannel frames are missing
+        // convert sbusframe in rcChannelUs (when sbframe change ) and copy to rcChannelUsCorr (so ready to apply gyro corrections)
+      setRcChannels();  
       if (gyroIsInstalled) {
-        calibrateGyroMixers();   // check if user ask for gyro calibration 
+        calibrateGyroMixers();   // check if user ask for gyro calibration
+        applyGyroCorrections();  // apply corrections (if rcChannelsUs changed or if there is at least 9ms since previous corr.) 
       }
-      updatePWM(); // update PWM pins only based on channel value (not sequencer); this will call applyGyroCorrections if gyro is used
-      
+      setLedState();                // set the color of the led
+      fillSbusFrame(); // once per 9 msec convert rcChannelsUs back to Sbus format and generate the sbus frame
+      updatePWM(); // update PWM pins only based on channel values with corrections (not sequencer); 
+      rcChannelsUsCorrChanged = false;  // reset the flag used to avoid updates at each loop
+      rcChannelsUsChanged = false;
+
       sequencerLoop();  // update PWM pins based on sequencer
       if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16
         newRcChannelsReceivedForLogger = false; // reset the flag allowing a log of RC channels

@@ -160,8 +160,8 @@ extern uint32_t lastRcChannels ;
 extern uint32_t lastPriChannelsMillis ;
 extern uint32_t lastSecChannelsMillis; 
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
+//extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsFrameReceived ;  // used to update the PWM data
 
 
 extern uint32_t sbusFailsafeCounter;
@@ -531,7 +531,7 @@ void srxl2DecodeRcChannels(uint8_t channelOrFailsafe){
     prevFailsafeFlag = sbusPriFailsafeFlag;
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
-    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+    newRcChannelsFrameReceived = true;  // used to update the PWM data
 
 }
 

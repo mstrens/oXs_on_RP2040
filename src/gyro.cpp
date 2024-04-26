@@ -122,6 +122,7 @@ struct gyroMixer_t gyroMixer ; // contains the parameters provided by the learni
 
 bool gyroIsInstalled = false;  // becomes true when config.gyroChanControl is defined (not 255) and MPU6050 installed
 
+extern uint32_t rcChannelsUsChanged;
 
 extern const char* mpuOrientationNames[8] ;
 
@@ -414,11 +415,18 @@ void calculateCorrectionsToApply(){
     // end of calculateCorrectionsToApply()
 }
 
-void applyGyroCorrections(){
-    //This should be called only when new Rc values have been received (called by updatePwm)
-    // This function is called only when gyro is used (checked before calling this function) and calibrated
-    // corrections are calculated and added in rcChannelsUsCorr[]
+void applyGyroCorrections(){ // (called by main only when a gyro exist)
+    // This should be executed when 
+    // - new Rc values have been received (rcChannelsUsChanged == true)
+    // or
+    // - it has not been executed since 8 ms
+    // It has no impact when gyro is not calibrated
 
+    // corrections are calculated and added in rcChannelsUsCorr[]
+    static uint32_t lastGyroCorrMs = 0;
+    
+    if ( (rcChannelsUsChanged == false) and ( (millisRp() - lastGyroCorrMs) < 8) ) return;
+    lastGyroCorrMs = millisRp();   // update last run
     // register min and max Values in order to use them as servo limits. This part update on the fly (so also after mixer calibration)    
     for (uint8_t i=0; i<16;i++){
         if ( rcChannelsUs[i] > gyroMixer.maxUs[i]) {   // automatically update min and max (to adapt the limits from power on - values are not saved in flash)
@@ -485,11 +493,11 @@ void applyGyroCorrections(){
             if (rcChannelsUsCorr[i] > gyroMixer.maxUs[i]) rcChannelsUsCorr[i] = gyroMixer.maxUs[i] ;    
         }
     }
-    // here all PWM have been recalculated and can be used for PWM output
+    // here all PWM have been recalculated and can be used for PWM output and for Sbus output
+    rcChannelsUsChanged = true ; // says that values have been updated
 }
 
     
-
 bool checkForLearning(){ // return true when learning process can start
     // We consider that there are 5 changes within 5sec when the sum of 5 intervals between 2 changes is less than 5 sec.
     // we store the last 5 intervals

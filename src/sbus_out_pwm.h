@@ -15,6 +15,9 @@ enum LEDState{
 // functions used for the 8 PWM signals generated without the pio.
 void setupSbusOutPio();
 void setupSbusInPio();
+
+void setRcChannels();
+
 void fillSbusFrame();
 void setupPwm();
 void updatePWM();
@@ -33,4 +36,4 @@ uint16_t  fmapExtended(uint16_t x); // convert Sbus value to Pwm value using ext
 
 void applyPwmValue( uint8_t pin , uint16_t pwmValue); // apply PWM value on a pin
 
-void applyGyroCorrection() ; // apply gyro corrections on all PWM values; fill rcChannelsUsCorr[16]
+void setLedState();                // set the color of the led

@@ -23,8 +23,8 @@ enum SBUS_STATE{
 
 extern CONFIG config;
 extern sbusFrame_s sbusFrame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
-extern bool newRcChannelsReceivedForPWM ;  // used to update the PWM data
+//extern sbusFrame_s sbus2Frame; // full frame including header and End bytes; To generate PWM , we use only the RcChannels part.
+extern bool newRcChannelsFrameReceived ;  // used to update the PWM data
 
 
 uint8_t runningSbusFrame[25];  // data are accumulated in this buffer and transfered to sbusFrame when the frame is complete and valid
@@ -292,7 +292,7 @@ void storeSbusFrame(){      // running SbusFrame[0] is supposed to be 0X0F, chan
     }
     lastRcChannels = millisRp();
     lastPriChannelsMillis =  lastRcChannels;
-    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+    newRcChannelsFrameReceived = true;  // used to update the PWM data
 
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);
@@ -320,7 +320,7 @@ void storeSbus2Frame(){
     }
     lastRcChannels = millisRp();
     lastSecChannelsMillis =  lastRcChannels; 
-    newRcChannelsReceivedForPWM = true;  // used to update the PWM data
+    newRcChannelsFrameReceived = true;  // used to update the PWM data
 
     //float rc1 = ((runningSbusFrame[1]   |runningSbusFrame[2]<<8) & 0x07FF);
     //printf("rc1 = %f\n", rc1/2);
