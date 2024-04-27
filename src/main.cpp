@@ -618,23 +618,23 @@ void loop() {
       //mergeSeveralSensors();
       watchdog_update();
       if ( config.protocol == 'C'){   //elrs/crsf
-        fillCRSFFrame();
+        fillCRSFFrame();  // send telemetry
         handleCrsfIn();
         handleCrsf2In();
       } else if (config.protocol == 'S') {  // sport
-        handleSportRxTx();
+        handleSportRxTx();   // send telemetry
         handleSbusIn();
         handleSbus2In();
       } else if (config.protocol == 'J') {  //jeti
-        handleJetiTx();
+        handleJetiTx();      // send telemetry
         handleSbusIn();
         handleSbus2In();
       } else if (config.protocol == 'H') {  //Hott
-        handleHottRxTx();
+        handleHottRxTx();     // send telemetry
         handleSbusIn();
         handleSbus2In();
       } else if (config.protocol == 'M') {  // multiplex
-        handleMpxRxTx();
+        handleMpxRxTx();       // send telemetry
         handleSbusIn();
         handleSbus2In();
       } else if (config.protocol == 'I') {  // Ibus flysky
@@ -655,15 +655,16 @@ void loop() {
         //handleSbus2In();  // to do process a second inpunt
       }
       watchdog_update();
-        // apply failsafe values on sbusframe if rchannel frames are missing
-        // convert sbusframe in rcChannelUs (when sbframe change ) and copy to rcChannelUsCorr (so ready to apply gyro corrections)
-      setRcChannels();  
-      if (gyroIsInstalled) {
+        // apply failsafe values on sbusframe if rchannel frames are missing more that X msec
+        // convert sbusframe in rcChannelUs (when a new sbusframe is received or at least once every 9 msec) and copy to rcChannelUsCorr (so ready to apply gyro corrections)
+      // rcChannelsUs is used by logger and sequencer; rcChannelCorrUs is used by Gyro, PWM and SbusOut
+      setRcChannels();         // coded in sbus_out_pwm.cpp, set rcChannelsUsCorrChanged and rcChannelsUsChanged 
+      if (gyroIsInstalled) {   // coded in Gyro.cpp
         calibrateGyroMixers();   // check if user ask for gyro calibration
-        applyGyroCorrections();  // apply corrections (if rcChannelsUs changed or if there is at least 9ms since previous corr.) 
+        applyGyroCorrections();  // apply corrections (if rcChannelsCorrUs changed) 
       }
       setLedState();                // set the color of the led
-      fillSbusFrame(); // once per 9 msec convert rcChannelsUs back to Sbus format and generate the sbus frame
+      fillSbusFrame(); // once per 9 msec convert current rcChannelsUsCorr back to Sbus format and generate the sbus frame
       updatePWM(); // update PWM pins only based on channel values with corrections (not sequencer); 
       rcChannelsUsCorrChanged = false;  // reset the flag used to avoid updates at each loop
       rcChannelsUsChanged = false;

@@ -103,6 +103,7 @@ extern bool orientationIsWrong;
 extern MPU mpu;
 extern uint16_t rcChannelsUs[16];  // Rc channels values provided by the receiver in Us units 
 uint16_t rcChannelsUsCorr[16];  // Rc channels values with gyro corrections applied (in Us)
+extern bool rcChannelsUsCorrChanged; // says that rcChannelUsCorr changed or not (corr are applied only when true)       
 
 extern int16_t gyroX; // data provided by mpu, sent to core0 and with some filtering
 extern int16_t gyroY;
@@ -419,14 +420,13 @@ void applyGyroCorrections(){ // (called by main only when a gyro exist)
     // This should be executed when 
     // - new Rc values have been received (rcChannelsUsChanged == true)
     // or
-    // - it has not been executed since 8 ms
+    // - it has not been executed since some ms
     // It has no impact when gyro is not calibrated
 
     // corrections are calculated and added in rcChannelsUsCorr[]
-    static uint32_t lastGyroCorrMs = 0;
     
-    if ( (rcChannelsUsChanged == false) and ( (millisRp() - lastGyroCorrMs) < 8) ) return;
-    lastGyroCorrMs = millisRp();   // update last run
+    if  (rcChannelsUsCorrChanged == false) return;  
+    //lastGyroCorrMs = millisRp();   // update last run
     // register min and max Values in order to use them as servo limits. This part update on the fly (so also after mixer calibration)    
     for (uint8_t i=0; i<16;i++){
         if ( rcChannelsUs[i] > gyroMixer.maxUs[i]) {   // automatically update min and max (to adapt the limits from power on - values are not saved in flash)
@@ -494,7 +494,6 @@ void applyGyroCorrections(){ // (called by main only when a gyro exist)
         }
     }
     // here all PWM have been recalculated and can be used for PWM output and for Sbus output
-    rcChannelsUsChanged = true ; // says that values have been updated
 }
 
     

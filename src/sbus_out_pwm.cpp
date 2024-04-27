@@ -32,11 +32,19 @@ uint16_t sbusFrame16Bits[25];
 extern uint32_t lastRcChannels;
 extern uint32_t lastPriChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
 extern uint32_t lastSecChannelsMillis; // used in crsf.cpp and in sbus_in.cpp to say that we got Rc channels data
+
+bool rcChannelsUsChanged = true; // says that rcChannelUs changed or not (to avoid some updates)
+bool rcChannelsUsCorrChanged = true; // says that rcChannelUsCorr changed or not (to avoid some updates)        
+
 extern bool newRcChannelsFrameReceived ;  // used to update the PWM data
 extern bool newRcChannelsReceivedForLogger;  // used to update the PWM data
 
+
 //extern int16_t rcPwmChannelsComp[16];        // Pwm us taking care of gyro corrections 
 extern int16_t rcChannelsUsCorr[16];        // Pwm us taking care of gyro corrections
+
+        
+
 
 extern bool sbusPriMissingFlag;
 extern bool sbusSecMissingFlag;
@@ -155,11 +163,8 @@ void setLedState(){
     //printf("%d\n", (int) ledState);
 }
 
-bool rcChannelsUsChanged = true; // says that rcChannelUs changed or not (to avoid some updates)
-bool rcChannelsUsCorrChanged = true; // says that rcChannelUsCorr changed or not (to avoid some updates)        
-        
 
-void convertSbusToUs(){ // convert sbusFrame to rcChannelUs
+void convertSbusToUs(){ // convert sbusFrame to rcChannelUs, copy to rcChannelUsCorr (to apply gyro corrections)
     // copy the sbus into uint16; value are in Sbus units [172/1811] not in PWM us [988/2012] = [-100/+100]
     #if defined(EXTENDED_RANGE_FROM_CHANNEL) and defined(EXTENDED_RANGE_UP_TO_CHANNEL) and \
             (1 >= EXTENDED_RANGE_FROM_CHANNEL ) and (1 <= EXTENDED_RANGE_UP_TO_CHANNEL)
@@ -259,37 +264,27 @@ void convertSbusToUs(){ // convert sbusFrame to rcChannelUs
     #endif
 
     memcpy(rcChannelsUsCorr , rcChannelsUs , sizeof(rcChannelsUs)); // init the fields with corrections (for Gyro and camera) 
-    rcChannelsUsChanged = true;          // says that values have changed
-    rcChannelsUsCorrChanged = true;      // says that values have changed   
 }
 
+uint32_t lastSetRcChannelMs = 0;
 
 void setRcChannels(){
-    static bool sbusFrameChanged = true; // says that Sbus frame changed or not in this loop (used to update rchannelUs)
-    static bool oxsFailsafeIsActivated = false;
-    static uint32_t lastOxsFailsafeMs = 0;
+    uint32_t now = millisRp();    
     if (!lastRcChannels) return;  // do not apply failsafe when we never get a RC channels frame 
-    if (newRcChannelsFrameReceived) {
-        oxsFailsafeIsActivated = false; // reset the flag when a new frame has been received 
-        sbusFrameChanged = true; // says that Sbus frame changed
+    // Reload rcChannelsUs and rcChannelsCorrUs when a new frame has been received or at least each 9 ms interval
+    if ( (newRcChannelsFrameReceived) or (( now - lastSetRcChannelMs) > 9) ) {
+        lastSetRcChannelMs = now; // save timestamp
+        if (newRcChannelsFrameReceived ) {
+            newRcChannelsReceivedForLogger = true;  // used to update the logger data
+        } else if ( (( now - lastRcChannels) > FAILSAFE_DELAY ) and (config.failsafeType == 'C') )  { 
+            // if we do not get a recent RC channels frame whe use failsafe value if defined (even if they where already uploaded)                      
+            memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
+        }         
+        // note : even in failsafe mode, we reload the Rc channels
+        convertSbusToUs();    // use sbusFrame to fill rcChannelsUs and rcChannelsCorrUs
+        rcChannelsUsChanged = true;          // says that values have changed;
+        rcChannelsUsCorrChanged = true;      // says that values have changed; so gyro correction must be applied, PWM update (SbusOut is always recalculate)   
     }
-    uint32_t now = millisRp();     
-    if  ( ( now - lastRcChannels) > FAILSAFE_DELAY ) { // if we do not get a recent RC channels frame
-        if ( ( now - lastOxsFailsafeMs) > 9) { // avoid to copy again at each loop; once each 9 msec is enough (= sbus) 
-            oxsFailsafeIsActivated = true; // set the flag 
-            lastOxsFailsafeMs = now;
-            if (config.failsafeType == 'C') {
-                memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
-                sbusFrameChanged = true; // says that Sbus frame changed; used to force a conversion sbus to usec
-            }     
-        }
-    }
-    // at this stage sbusFrame is filled with last received frame or with failsafe values
-    if (sbusFrameChanged) {
-        convertSbusToUs() ; // fill rcChannelsUs and rcChannelsUsCorr and say that they changed; do not yet apply gyro correction
-        newRcChannelsReceivedForLogger = true;  // used to update the logger data
-    }
-    newRcChannelsFrameReceived = false; // reset the flag that was set when a frame is received (in each protocol).    
 }
 
 void fillSbusFrame(){
@@ -300,7 +295,7 @@ void fillSbusFrame(){
     if ( (millisRp() - lastSbusSentMillis) >= 9 ) { // we send a frame once every 9 msec
         // note this could be optimized to avoid filling sbusFrameOut again when data did not changed but there is no real added value
         lastSbusSentMillis = millisRp();   
-        sbusFrame_s sbusFrameOut;
+        sbusFrame_s sbusFrameOut;      // temporary structure to build the frame before adding parity and second stop bit
         sbusFrameOut.synchro = 0x0F ;  // set synchro byte
         // fill Rc data
         uint8_t sbus[22];
@@ -337,7 +332,7 @@ void fillSbusFrame(){
             sbusFrameOut.flag = 0x0C; // indicates a failsafe and missing 
         } else {
             sbusFrame.flag = 0x00;
-            if (sbusOutMissingFlag) sbusFrame.flag |= 0X01 << 2;   // set the flags
+            if (sbusOutMissingFlag) sbusFrame.flag |= 0X01 << 2;   // set the flags based on what we received
             if (sbusOutFailsafeFlag) sbusFrame.flag |= 0X01 << 3;
         }    
         sbusFrameOut.endByte = 0x00;
