@@ -330,12 +330,12 @@ So, it is not bad practice to save gyro calibration offsets. To do so, oXs must 
 The mpu must be installed in the model in such a way that one axis of MPU6050 is vertical and that another axis is aligned with main axis of the model (nose-queue). There are 24 possible orientations to match this. Most commercial gyro's require that the user declares the orientation of the MP6050 in the model. oXs does it automatically.
 
 There are 2 ways to let oXs know the MPU orientation:
-* using USB commands (MPUCAL=H and MPUCAL+V); this is the easiest way to do it when the MP6050 is not used to stabilize the model (gyro function). The process is explained here below. 
+* using USB commands (MPUORI=H and MPUORI+V); this is the easiest way to do it when the MP6050 is not used to stabilize the model (gyro function). The process is explained here below. 
 * using the gyro learning process with the handset; this process is used when the MP6050 is use to stabilize the model (gyro function) because it is combined with the learning of the servo mixers defined on the handset. It is done from the handset (even if messages can also be displayed on the PC via USB). It is explained in the gyro section (see learning process). 
 
 #### Process with USB command is the following
-* Set the plane horizontally (like when it flies and roll/pitch are both 0) and enter the usb command MPUCAL=H. The result is displayed.
-* Set the plane vertically with the nose up and enter the usb command MPUCAL=V. The result is displayed.
+* Set the plane horizontally (like when it flies and roll/pitch are both 0) and enter the usb command MPUORI=H. The result is displayed.
+* Set the plane vertically with the nose up and enter the usb command MPUORI=V. The result is displayed.
 * Then enter SAVE command to save the parameters.
 
 
