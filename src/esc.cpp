@@ -87,7 +87,7 @@ V4LV25/60/80A | 0x9B | 0x9B | 0x03 | 0xE8 | 0x01 | 0x08 | 0x5B | 0x00 | 0x01 | 0
 //Byte13: State-H
 //Byte14: State-L
 //Byte15: Mah-used H high value of the used/consumed power
-//Byte16: Mah-used L low value of the used/consumed power (unit = ????)
+//Byte16: Mah-used L low value of the used/consumed power (unit = mah)
 //Byte17: UART-TH serial throttle input
 //Byte18: CAN-TH can throttle
 //Byte19: BEC voltage (0-25V) so in 0.1V
@@ -444,8 +444,8 @@ void processZTW1Frame(){
         float currentf =   ( (uint32_t)escRxBuffer[5] << 8)  | ((uint32_t) escRxBuffer[6] ) * 100;  // convert from 0.1A to ma 
         // byte 7 = throttle ; not used here 
         uint32_t rpm = ((uint32_t)escRxBuffer[8]) << 8 | ((uint32_t) escRxBuffer[9]);
-        int32_t tempFet = ((int) escRxBuffer[10]) - 96;  // probably an offset of 96 to get a range -96/150
-        int32_t tempBec = ((int) escRxBuffer[11]) - 96;  // probably an offset of 96 to get a range -96/150
+        int32_t tempFet = ((int) escRxBuffer[10]) ;  // It seems that at least when positieve, the value is in degree. I do not understand why the doc refers to a range -96/150
+        int32_t tempBec = ((int) escRxBuffer[11]) ;  // 
         // bytes 2/14 not used here 
         uint32_t consumed = ( ((uint32_t)escRxBuffer[15] << 8) | ((uint32_t) escRxBuffer[16]) ); // unit = ???
         if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc

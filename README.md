@@ -331,9 +331,9 @@ The mpu must be installed in the model in such a way that one axis of MPU6050 is
 
 There are 2 ways to let oXs know the MPU orientation:
 * using USB commands (MPUORI=H and MPUORI+V); this is the easiest way to do it when the MP6050 is not used to stabilize the model (gyro function). The process is explained here below. 
-* using the gyro learning process with the handset; this process is used when the MP6050 is use to stabilize the model (gyro function) because it is combined with the learning of the servo mixers defined on the handset. It is done from the handset (even if messages can also be displayed on the PC via USB). It is explained in the gyro section (see learning process). 
+* using the gyro learning process with the handset; this process is used when the MP6050 is used to stabilize the model (gyro function) because it is combined with the learning of the servo mixers defined on the handset. It is done from the handset (even if messages can also be displayed on the PC via USB). It is explained in the gyro section (see learning process). 
 
-#### Process with USB command is the following
+#### Process with USB command:
 * Set the plane horizontally (like when it flies and roll/pitch are both 0) and enter the usb command MPUORI=H. The result is displayed.
 * Set the plane vertically with the nose up and enter the usb command MPUORI=V. The result is displayed.
 * Then enter SAVE command to save the parameters.
@@ -348,29 +348,37 @@ Notes:
 Important note: at this stage, this is still experimental. It has not been intensively tested. So used it at you own risk.
 
 ### Principle.
-- When oXs get the Rc channels and has a MPU6050 (accelerometer/gyro), oXs can automatically apply corrections to stabilize on 3 axis the PWM signals that drive servos (and later on also on Sbus out)
+- When oXs get the Rc channels and has a MPU6050 (accelerometer/gyro), oXs can automatically apply corrections on the PWM/sbus signals in order to stabilize the model on 3 axis
 - Gyro has 4 modes (off/Normal/Hold/stabilize); user selects the active mode (between 3) on the Tx with a 3 positions switch.
 - This switch must allow the handset to generate on a Rc channel a signal that is or negative (Normal mode), or null (gyro off) or positive (gyro in hold or stabilize mode depending on a oXs parameter).
-    - In "Normal" mode, the gyro tries to compensate for external perturbation (wind,...). The sticks allow to control the model.
-    - In "OFF" mode, oXs just transmit the PWM signals provided by the handset without any gyro correction
-    - In "Hold" mode, oXS tries to keep the model in the current orientation when sticks are centered. Moving the sticks allows change the orientation of the model.
+    - In "Normal" mode, the gyro tries to compensate for external perturbations (wind,...). The sticks allow to control the model.
+    - In "OFF" mode, oXs just transmit the channels provided by the handset without any gyro correction
+    - In "Hold" mode, oXS tries to keep the model in the current orientation when sticks are centered. Moving the sticks allows to change the orientation of the model.
     - In "Stabilize" mode, oXs tries to keep the model horizontal when the sticks are centered. The sticks allow to control the model. 
-- Respectively the positive and negative value from this channel allows also to select the general gain of the gyro for each mode separately
- 
-- Gyro corrections can be applied on as many servos as needed (e.g. on 4 ail servos per wing, on 2 elevator servos and/or 2 rudder servos, on Vtail stab,... )
-- On the opposite to many commercial gyros, the mixers and servos limits are defined only in the handset (just like when no gyro is used). oXs detect automatically the mixers and limits applied on the servos concerned by gyro corrections during a special setup phase (= gyro learning phase = mixer calibration)
+- Respectively the positive and the negative values from this channel allow also to select the general gain of the gyro (for each mode separately) 
+- oXs can apply Gyro corrections on as many servos as needed (e.g. for a wing with 4 aileron servos, on 2 elevator servos and/or 2 rudder servos, on Vtail stab,... )
+- On the opposite to many commercial gyros, the mixers and servos limits are defined only in the handset (just like when no gyro is used). oXs detect automatically the mixers and limits applied on the servos concerned by gyro corrections during a special setup phase (= gyro learning phase = mixer calibration).
+- To be able to apply corrections using the same mixers as the handset, oXs must also know the position of the 3 sticks aileron, elevator and rudder. This requires that the handset transmit those positions on top of all channels that control the servos. So this requires 3 more channels + 1 channel to select the gyro mode/gain than when no gyro is used.
 - several parameters (see below) have to be defined with Usb commands (no compilation/reflash required) to set up the oXs gyro. 
 
-### Required parameters to set up the gyro.
-- 1 channel to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16). This Rc channel will provide a value betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold or Stabilize; gain varies with the Rc value (from 0% to 100% or -100%) 
-- 3 channels providing "original" stick positions (so without mixer including trim, expo/limit/subtrim...!!!!). Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
-- gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
+### Setup on the handset.
+- first make your setup just like there would be no gyro (mixers, servo directions, limits, expo, differential, ...).
+- on top of your normal setup, add a channel controlled by a 2 or 3 positions switch that will let you select the gyro mode. When rc channel provides 0%, the gyro will be OFF. When the channel provides a negative value (between -100% and 0%), the gyro will be in "Normal" mode (=rate mode). When the channel provides a positive value (between 0% and 100%), the gyro will be in "Hold" or "Stabilize" mode depending on an oXs parameter. The gain of the gyro can (should) be different in each mode. So the negative value can (should) not be just the opposite of the positive. When the absolute value is 100%, the gyro gain is at max. Best is to use some global variables and/or slider if the handset allows it.
+- let the handset transmit 3 additional channels giving the stick positions (aileron, elevator and rudder). Range must be -100%/100%. Best is to avoid to include trim, expo, differential, ... so that those additional channels represent just the raw positions of the sticks.
 
-### Optional parameters to fine tune the settings
+
+### Required oXs parameters to set up the gyro.
+oXs has to know: 
+- gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
+- the channel used to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16). This Rc channel will provide a value betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold or Stabilize; gain varies with the Rc value (from 0% to 100% or -100%) 
+- the 3 additional channels providing "original" stick positions . Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
+
+### Optional oXs parameters to fine tune the settings
 - 3 gains (one per axis roll/pitch/yaw) ; the sign of the gain define the direction of the the gyro corrections.
 - 1 parameter to select the stick range around center where corrections apply (full throw , 1/2 , 1/4)
 - 1 parameter max rotate rate in hold mode (very low, low, medium , high)
 - 1 parameter to enable (or not) max rotate rate in normal mode too.
+- 1 parameter to select if oXs must apply Hold mode or Stabilize mode.
 - PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold/stabilize modes can be changes.
 
 Note: as usual with oXs:
