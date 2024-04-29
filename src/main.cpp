@@ -157,8 +157,10 @@ uint16_t toPwmMax = TO_PWM_MAX;
 EMFButton btn (3, 0); // button object will be associated to the boot button of rp2040; requires a special function to get the state (see tool.cpp)
                        // parameters are not used with RP2040 boot button 
 extern uint32_t lastRcChannels;
+extern bool rcChannelsUsChanged ; // says that rcChannelUs changed or not (to avoid some updates) (reset at each main loop)       
+extern bool rcChannelsUsCorrChanged ; // says that rcChannelUsCorr changed or not (to avoid some updates) (reset at each main loop)       
+extern bool newRcChannelsFrameReceived ;  // used to update the PWM data
 extern bool newRcChannelsReceivedForLogger;  // used to know when we have to update the logger data
-
 
 extern CONFIG config;
 bool configIsValid = true;
@@ -190,9 +192,6 @@ int16_t gyroY;
 int16_t gyroZ;
 
 extern bool calibrateImuGyro ; // recalibrate the gyro or not at reset (avoid it after a watchdog reset)
-extern bool rcChannelsUsChanged ; // says that rcChannelUs changed or not (to avoid some updates) (reset at each main loop)       
-extern bool rcChannelsUsCorrChanged ; // says that rcChannelUsCorr changed or not (to avoid some updates) (reset at each main loop)       
-
 
 void setupI2c(){
     if ( config.pinScl == 255 || config.pinSda == 255) return; // skip if pins are not defined
@@ -668,6 +667,7 @@ void loop() {
       updatePWM(); // update PWM pins only based on channel values with corrections (not sequencer); 
       rcChannelsUsCorrChanged = false;  // reset the flag used to avoid updates at each loop
       rcChannelsUsChanged = false;
+      newRcChannelsFrameReceived = false;
 
       sequencerLoop();  // update PWM pins based on sequencer
       if ((config.pinLogger != 255) && (newRcChannelsReceivedForLogger)) { // when logger is on and new RC data have been converted in uint16

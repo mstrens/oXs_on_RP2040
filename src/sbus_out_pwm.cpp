@@ -279,11 +279,12 @@ void setRcChannels(){
         } else if ( (( now - lastRcChannels) > FAILSAFE_DELAY ) and (config.failsafeType == 'C') )  { 
             // if we do not get a recent RC channels frame whe use failsafe value if defined (even if they where already uploaded)                      
             memcpy( &sbusFrame.rcChannelsData , &config.failsafeChannels, sizeof(config.failsafeChannels));
+            printf("failsafe values are applied\n");
         }         
         // note : even in failsafe mode, we reload the Rc channels
         convertSbusToUs();    // use sbusFrame to fill rcChannelsUs and rcChannelsCorrUs
         rcChannelsUsChanged = true;          // says that values have changed;
-        rcChannelsUsCorrChanged = true;      // says that values have changed; so gyro correction must be applied, PWM update (SbusOut is always recalculate)   
+        rcChannelsUsCorrChanged = true;      // says that values have changed; so gyro correction must be applied, PWM update (SbusOut is always recalculate)       
     }
 }
 
