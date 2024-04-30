@@ -2716,7 +2716,7 @@ bool parseOneStep(){
 
 void printGyro(){
     if(config.gyroChanControl>16) {
-        printf("\nGyro is not configured\n");
+        printf("\nGyro is not configured (Rc channel used to select the gyro mode/gain is not defined)\n");
         return;
     }
     printf("\nGyro configuration is:\n");

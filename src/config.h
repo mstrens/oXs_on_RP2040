@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.4"
+#define VERSION "2.14.5"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -237,6 +237,11 @@
 
 // --------- Parameters for Compensated Vspeed by airspeed ----------------
 #define DTE_DEFAULT_COMPENSATION_FACTOR 1.10  // used when a channel is not used to setup the factor
+
+// --------- Parameters for KX134 (64g accelerometer without gyro) -------------
+//#define KX134_IS_USED // uncomment this line to activate this line instead of a MPU6050
+// note: when activated, MPU6050 is automatically disabled (and so also all related functions roll/pitch/gyro...)
+#define KX134_DEFAULT_ADDRESS 0X1E // can be 0X1C, 0X1D, 0X1E, 0X1F (see datasheet - specifications)
 
 // ---------- ESC --------------------------------------------------------
 #define ESC_MAX_CURRENT 250000.0 // used for Hobbywing V4 to reject dummy values ; 250000 is in ma = 250 A 

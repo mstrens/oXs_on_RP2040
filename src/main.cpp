@@ -46,6 +46,7 @@
 #include "esc.h"
 #include "gyro.h"
 #include "lora.h"
+#include "kx134.h"
 
 // to do : add rpm, temp telemetry fields to jeti protocol
 //         try to detect MS5611 and other I2C testing the different I2C addresses
@@ -141,6 +142,9 @@ GPS gps;
 
 // objet to manage the mpu6050
 MPU mpu(1);
+#ifdef KX134_IS_USED
+KX134 kx134(1);
+#endif
 
 LOGGER logger;
 
@@ -258,7 +262,11 @@ void setupSensors(){     // this runs on core1!!!!!!!!
       //printf("adc1 done\n");
       adc2.begin() ;
       //printf("adc2 done\n");
-      mpu.begin(); 
+      #ifndef KX134_IS_USED
+      mpu.begin();
+      #else
+      kx134.begin(); 
+      #endif
       //printf("mpu done\n");
     //blinkRgb(0,10,0,500,1000000); blink red, green, blue at 500 msec for 1000 0000 X
       gps.setupGps();  //use a Pio and 1 sm (in fact reuse the same sm for RX after TX)
@@ -300,7 +308,10 @@ void getSensors(void){      // this runs on core1 !!!!!!!!!!!!
   }
   adc1.readSensor(); 
   adc2.readSensor();
-  mpu.getAccZWorld();  
+  mpu.getAccZWorld();
+  #ifdef KX134_IS_USED
+  kx134.getAcc();
+  #endif  
   gps.readGps();
   if (ms4525.airspeedInstalled){
     ms4525.getDifPressure();
