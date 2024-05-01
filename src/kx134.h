@@ -12,6 +12,7 @@ public:
     void begin();
     void getAcc();
 private:
+    uint8_t i2cAdr;
     int32_t sumAx  = 0;
     int32_t sumAy  = 0;
     int32_t sumAz  = 0;

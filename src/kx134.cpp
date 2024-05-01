@@ -30,19 +30,30 @@ void KX134::begin()  // initialise KX134
     #ifdef DEBUG  
     printf("Trying to detect KX134 sensor at I2C Addr=%X\n", KX134_DEFAULT_ADDRESS);
     #endif
-
     uint8_t bufCtl1[2] = {KX134_CTL1_ADR ,0x00};  // set KX134 on pause to allow to change registers
-    if ( i2c_write_timeout_us(i2c1, KX134_DEFAULT_ADDRESS , bufCtl1, 2, false, 1000) <0) {
-        printf("Write error for first KX134 command\n");
-        return ;
+    // test the 4 I2C address  0X1C, 0X1D, 0X1E, 0X1F 
+    i2cAdr = 0X1C;
+    if ( i2c_write_timeout_us(i2c1, i2cAdr , bufCtl1, 2, false, 1000) < 0) {
+        i2cAdr = 0X1D;
+        if ( i2c_write_timeout_us(i2c1, i2cAdr , bufCtl1, 2, false, 1000) < 0) {
+            i2cAdr = 0X1E;
+            if ( i2c_write_timeout_us(i2c1, i2cAdr , bufCtl1, 2, false, 1000) < 0) {
+                i2cAdr = 0X1F;
+                if ( i2c_write_timeout_us(i2c1, i2cAdr , bufCtl1, 2, false, 1000) < 0) {
+                    printf("Write error for first KX134 command\n");
+                    return ;
+                }
+            }
+        }            
     }
+    printf("KX134 accepts first command on i2c address = %x\n", i2cAdr);
     uint8_t bufOdCtl[2] = {KX134_ODCTL_ADR ,KX134_ODCTL_VAL};  // set refresh rate at 100hz
-        if ( i2c_write_timeout_us(i2c1, KX134_DEFAULT_ADDRESS , bufOdCtl, 2, false, 1000) <0) {
+        if ( i2c_write_timeout_us(i2c1, i2cAdr , bufOdCtl, 2, false, 1000) <0) {
         printf("Write error for KX134 ODCTL reg\n");
         return ;
     }
     bufCtl1[1] = KX134_CTL1_VAL;  // enable KX134 and set range
-    if ( i2c_write_timeout_us(i2c1, KX134_DEFAULT_ADDRESS , bufCtl1, 2, false, 1000) <0) {
+    if ( i2c_write_timeout_us(i2c1, i2cAdr , bufCtl1, 2, false, 1000) <0) {
         printf("Write error for KX134 CTL1 reg\n");
         return ;
     }
@@ -57,11 +68,11 @@ void KX134::getAcc(){
     int16_t ax,ay,az ;
     uint8_t accReg = KX134_XOUT_L_ADR ;
     uint8_t buffer[6]; 
-    if (i2c_write_timeout_us(i2c1, KX134_DEFAULT_ADDRESS, &accReg, 1, true,1000)<0) { // true to keep master control of bus
+    if (i2c_write_timeout_us(i2c1, i2cAdr, &accReg, 1, true,1000)<0) { // true to keep master control of bus
         printf("Write error for KX134 at 0X08\n");
         return ;
     }
-    if ( i2c_read_timeout_us(i2c1, KX134_DEFAULT_ADDRESS, buffer, 6, false, 3500) <0){
+    if ( i2c_read_timeout_us(i2c1, i2cAdr, buffer, 6, false, 3500) <0){
         printf("Read error for KX134\n");
         return ;
     } 
@@ -85,6 +96,7 @@ void KX134::getAcc(){
         sumAx  = 0;
         sumAy  = 0;
         sumAz  = 0;
-        countSumAcc = 0; 
+        countSumAcc = 0;
+        printf("Acc has been sent to core0\n"); 
     }
 }
