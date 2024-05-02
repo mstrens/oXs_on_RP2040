@@ -370,7 +370,7 @@ Important note: at this stage, this is still experimental. It has not been inten
 ### Required oXs parameters to set up the gyro.
 oXs has to know: 
 - gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
-- the channel used to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16). This Rc channel will provide a value betwwen -100% and 100%; negatieve values => Normal mode, 0% => OFF , positieve => Hold or Stabilize; gain varies with the Rc value (from 0% to 100% or -100%) 
+- the channel used to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16).  
 - the 3 additional channels providing "original" stick positions . Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
 
 ### Optional oXs parameters to fine tune the settings

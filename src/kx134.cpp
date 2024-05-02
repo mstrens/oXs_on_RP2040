@@ -77,9 +77,9 @@ void KX134::getAcc(){
         return ;
     } 
     lastKx134Us = microsRp();    
-    ax = (int16_t) (buffer[0] << 8 | buffer[1]) ;
-    ay = (int16_t) (buffer[2] << 8 | buffer[3]) ;
-    az = (int16_t) (buffer[4] << 8 | buffer[5]) ;
+    ax = (int16_t) (buffer[1] << 8 | buffer[0]) ;
+    ay = (int16_t) (buffer[3] << 8 | buffer[2]) ;
+    az = (int16_t) (buffer[5] << 8 | buffer[4]) ;
     
     sumAx  += ax;
     sumAy  += ay;

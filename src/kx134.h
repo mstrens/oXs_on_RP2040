@@ -9,10 +9,11 @@ public:
     explicit KX134(int a);  
     bool kx134Installed = false; 
     uint32_t lastKx134Us = 0;
+    uint8_t i2cAdr;
     void begin();
     void getAcc();
 private:
-    uint8_t i2cAdr;
+    
     int32_t sumAx  = 0;
     int32_t sumAy  = 0;
     int32_t sumAz  = 0;

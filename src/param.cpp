@@ -32,6 +32,7 @@
 #include "gyro.h"
 #include "crsf_in.h"
 #include "sbus_in.h"
+#include "kx134.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -102,6 +103,7 @@ extern ADS1115 adc1 ;
 extern ADS1115 adc2 ;    
 
 extern MPU mpu;
+extern KX134 kx134;
 extern float accScale1G ; // use here when printing the result of acc calibration.
 extern queue_t qSendCmdToCore1;
 
@@ -1780,6 +1782,13 @@ void printConfigAndSequencers(){   // print all and perform checks
             printf("Lora module for locator is not detected\n")  ;   
         }     
     }
+    #ifdef KX134_IS_USED
+    if (kx134.kx134Installed){
+        printf("KX134 is installed and uses I2C address %x\n", kx134.i2cAdr);
+    } else {
+        printf("KX134 is not detected\n");
+    }    
+    #endif
     if(mpu.mpuInstalled){
         printf("Acc/Gyro is detected using MP6050\n")  ;
         printf("     Acceleration param: ACC= %f %f %f\n", config.accOffX , config.accOffY , config.accOffZ);
@@ -1798,7 +1807,7 @@ void printConfigAndSequencers(){   // print all and perform checks
         printf(mpuOrientationNames[nameIdx] );
         printf("\n"); 
     } else {
-       printf("Acc/Gyro is not detected\n")  ;     
+       printf("Acc/Gyro (MP6050) is not detected\n")  ;     
     }
     printGyro();
     watchdog_update(); //sleep_ms(500);
