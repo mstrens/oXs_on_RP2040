@@ -47,7 +47,7 @@
 // SCL = 3, 7, 11, 15, 19, 23, 27  (I2C1)
 // RPM = 0/29 
 // LED = 16
-// PROTOCOL = C, S, J , M , I , F, 2, L, E
+// PROTOCOL = C, S, J , M , I , F, 2, L, E , B
 // for RP2040_zero, pin 16 = LED
 // When no config is found in memory, a default config is loaded (defined in config.h)
 // When a pin is not used, value = 0xFF
@@ -177,7 +177,7 @@ void printHelp(){
     printf("  Output level High (3.3V)  HIGH     = 0, 1, 2, ..., 29\n");
     printf("               LOW  (0 V)   LOW      = 0, 1, 2, ..., 29\n");
 
-    printf("Rf protocol                 PROTOCOL= Y        Y is S(Sport Frsky), F(Fbus Frsky), C(CRSF/ELRS), H(Hott), M(Mpx)\n");
+    printf("Rf protocol                 PROTOCOL= Y        Y is S(Sport Frsky), F(Fbus Frsky), B(HUB Frsky), C(CRSF/ELRS), H(Hott), M(Mpx)\n");
     printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
     printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
             
@@ -672,6 +672,9 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
         if (strcmp("S", pvalue) == 0) {
             config.protocol = 'S';
             return 1;
+        } else if (strcmp("B", pvalue) == 0) {
+            config.protocol = 'B';
+            return 1;
         } else if (strcmp("C", pvalue) == 0) {
             config.protocol = 'C';
             return 1;
@@ -700,7 +703,7 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
             config.protocol = 'L';
             return 1;
         } else  {
-            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), C(CRSF=ELRS), J(Jeti), E(jeti Exbus), H(Hott), M(Mpx), 2(Sbus2 Futaba), L(SRXL2 Spektrum) or I(Ibus/Flysky)\n");
+            printf("Error : protocol must be S(Sport Frsky), F(Fbus Frsky), B(Hub Frsky), C(CRSF=ELRS), J(Jeti), E(jeti Exbus), H(Hott), M(Mpx), 2(Sbus2 Futaba), L(SRXL2 Spektrum) or I(Ibus/Flysky)\n");
         }
     }
     
@@ -1641,6 +1644,8 @@ void printConfigAndSequencers(){   // print all and perform checks
             printf("\nProtocol is Fbus(Frsky)\n")  ;    
         } else if (config.protocol == 'L'){
             printf("\nProtocol is SRXL2 (Spektrum)\n")  ;    
+        } else if (config.protocol == 'B'){
+            printf("\nProtocol is Frsky Hub\n")  ;    
         } else {
             printf("\nProtocol is unknow\n")  ;
         }
@@ -2759,7 +2764,7 @@ void printGyro(){
 
 void printGyroMixer(){     // this function is also called at the end of the gyroMixer calibration process
     if (gyroMixer.isCalibrated == false){
-        printf("Gyro mixers must be calibrated\n");
+        printf("Gyro mixers must be calibrated (use the gyro learning process - see readme section)\n");
     } else {
         // when calibrated
         printf("\nGyro mixers are calibrated:\n");

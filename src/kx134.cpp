@@ -46,7 +46,7 @@ void KX134::begin()  // initialise KX134
             }
         }            
     }
-    printf("KX134 accepts first command on i2c address = %x\n", i2cAdr);
+    //printf("KX134 accepts first command on i2c address = %x\n", i2cAdr);
     uint8_t bufOdCtl[2] = {KX134_ODCTL_ADR ,KX134_ODCTL_VAL};  // set refresh rate at 100hz
         if ( i2c_write_timeout_us(i2c1, i2cAdr , bufOdCtl, 2, false, 1000) <0) {
         printf("Write error for KX134 ODCTL reg\n");
@@ -97,6 +97,6 @@ void KX134::getAcc(){
         sumAy  = 0;
         sumAz  = 0;
         countSumAcc = 0;
-        printf("Acc has been sent to core0\n"); 
+        //printf("Acc has been sent to core0\n"); 
     }
 }

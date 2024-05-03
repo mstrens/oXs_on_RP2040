@@ -29,7 +29,7 @@ pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_srxl2_tx_rx.pio
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_exbus_tx_rx.pio )
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_logger_tx.pio )
 pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_esc_rx.pio )
-
+pico_generate_pio_header(oXs  ${CMAKE_CURRENT_LIST_DIR}/src/uart_frsky_hub_tx.pio)
 
 file(GLOB oXs_SRC CONFIGURE_DEPENDS "src/*.h" "src/*.cpp")
 

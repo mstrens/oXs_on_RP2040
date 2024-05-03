@@ -370,37 +370,32 @@ Important note: at this stage, this is still experimental. It has not been inten
 ### Required oXs parameters to set up the gyro.
 oXs has to know: 
 - gpio's and channels used for servos (just like when no gyro is used) with commands like C2=4 (meaning channel 2 is generated on gpio 4)
-- the channel used to select the gyro mode and the general gyro gain:  this is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16).  
-- the 3 additional channels providing "original" stick positions . Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
+- the channel used to select the gyro mode and the general gyro gain. This is specified with the command GMG=xx (Gyro Mode Gain; xx = the rc channel between 1 and 16).  
+- the 3 additional channels providing "original" stick positions. Those channels are specified with the commands GSA (Gyro Stick Aileron), GSE(gyro Stick Elevator), GSR (gyro Stick Rudder)
 
-### Optional oXs parameters to fine tune the settings
-- 3 gains (one per axis roll/pitch/yaw) ; the sign of the gain define the direction of the the gyro corrections.
+### Optional oXs parameters to fine tune the settings: to get the list of commands to use, enter the USB command ? (=help)
+- 3 gains (one per axis roll/pitch/yaw). This allows to fine tune the gain per axis. Note: the sign of the gain define the direction of the gyro corrections.
 - 1 parameter to select the stick range around center where corrections apply (full throw , 1/2 , 1/4)
 - 1 parameter max rotate rate in hold mode (very low, low, medium , high)
 - 1 parameter to enable (or not) max rotate rate in normal mode too.
 - 1 parameter to select if oXs must apply Hold mode or Stabilize mode.
-- PID parameters (Kp,Ki,Kd) per axis and for Normal/Hold/stabilize modes can be changes.
+- PID parameters (Kp,Ki,Kd) per axis and per mode (Normal/Hold/stabilize). This allows a fine tuning of the gyro. The values depends on the model.
 
 Note: as usual with oXs:
 - the list of all usb commands and the allowed values can be displayed entering "?" command.
 - the current setting is displayed just entering ENTER
-- do not forget to enter SAVE command to keep you changes after a power off. After a SAVE command you must most of the time make a shutdown/reset to really activate the changes.
+- do not forget to enter SAVE command to keep you changes after a power off. After a SAVE command you must, most of the time, make a shutdown/reset to really activate the changes.
 
 
 ### Gyro learning process = gyro calibration = discovering the orientation/mixers and limits
 
 The general principle is to let the mixers + servo centers/min/max being defined only on the handset.
-Still oXs has to apply similar mixers on the gyro corrections.
+Still oXs must take care of those mixers and limits when it applies gyro corrections.
+To achieve this, oXs has to capture the positions of all Rc channels when sticks are in several specific positions. That is the reason why you had to add 3 channels on the handset (see above).
 
-Before using the gyro OR when MIXERS are CHANGED on the HANDSET, oXs has to capture the positions of all Rc channels when sticks are in several specific positions:
+The process to let oXs discover the mixers/limits to apply is named the "gyro learning" process (also named "mixer calibration"). It is mandatory. This process is not the same as the calibration of the MP6050.
 
-To do so, oXs has to receive from the handset not only the Rc channel values for each servo (ail1, ail2, ...) but also the positions of the 3 sticks Ail, Elv, Rud before the handset applies any mixer/curve/limit on them.
-This requires that those positions are transmitted in "unused" Rc channels on top of all other Rc channels controlling servos, ESC, sequencer, ...
-The 3 Rc channels used to sent the 3 stick positions (Ail, Elv, Rud) are defined in the parameters of oXs (with GSA, GSE,GSR commands).
-On the handset, it is important that the 3 channels that gives the stick positions produce a signal of -100%/0%/+100% when stick are full one one side, centered and full on the other side.
-So in the mixers that generate those 3 signals, you must use a set up that discards trim, expo, ...
-
-To let oXs know the mixers to apply on gyro corrections and the limits to respect when gyro corrections are applied, a "learning" process also name "mixer calibration" is required. This process is not the same as the calibration of the mpu6050. This process also allow oXs to find automatically the orientation of the MPU6050 in the model (and so allows oXs know how to calculate roll, pitch and yaw corrections)
+This process also let oXs find automatically the orientation of the MP6050 in the model. That is the reason why you don't need to use usb commands (MPUORI=..) to setup the orirentation of the MP6050 when gyro is used.
 
 Important note: the learning process must be done again if the orientation of the MPU in the model change and/or if the mixers/servo directions change on the handset.
 
@@ -409,8 +404,8 @@ The learning process consist of several steps.
 #### 1 Starting the process
 
 To start the mixer calibration, the user has to put the model HORIZONTAL and, on the handset, simultaneously:
-- put AIL and RUD sticks in right corner
-- put ELV stick in up corner direction (so model should goes up)
+- put AIL and RUD sticks FULL to the right
+- put ELV stick FULL in the direction that makes the model go up (so normally the stick full down)
 - move the switch used to control the gyro mode more than 4 X within 5 sec.
 
 When oXs detect this situation, It will try to find the MP6050 axis that measures gravity.
@@ -423,7 +418,7 @@ It then goes to the next step (discovering the mixers)
 
 oXs will then analyse the positions of sticks expecting to detect 7 cases:
 - 1: AIL, RUD and ELV sticks simultaneously centered.
-- 2/7: one of the 3 sticks (AIL,ELV,RUD) is in one corner while the 2 others are centered. This should be done in all 6 possible cases (AIL in RIGHT corner, AIL in LEFT corner, RUD in RIGHT corner, RUD in LEFT corner, ELV in UP corner , ELV in DOWN corner).
+- 2/7: one of the 3 sticks (AIL,ELV,RUD) is full in a direction while the 2 others are centered. This should be done in all 6 possible cases (AIL in RIGHT corner, AIL in LEFT corner, RUD in RIGHT corner, RUD in LEFT corner, ELV in UP corner , ELV in DOWN corner).
 
 Each time a case is detected, oXs will register the positions of all Rc channels.
 This wil help to apply the gyro corrections with the right proportions on the rigth servos.

@@ -47,6 +47,7 @@
 #include "gyro.h"
 #include "lora.h"
 #include "kx134.h"
+#include "frsky_hub.h"
 
 // to do : add rpm, temp telemetry fields to jeti protocol
 //         try to detect MS5611 and other I2C testing the different I2C addresses
@@ -479,6 +480,10 @@ void setup() {
         setupSbusIn();
         setupSbus2In();
         setupSport();
+      } else if (config.protocol == 'B') { // Frsky Hub
+        setupSbusIn();
+        setupSbus2In();
+        setupFrskyHub();
       } else if (config.protocol == 'J') {   //jeti non exbus
         setupSbusIn();
         setupSbus2In();
@@ -633,6 +638,10 @@ void loop() {
         handleCrsf2In();
       } else if (config.protocol == 'S') {  // sport
         handleSportRxTx();   // send telemetry
+        handleSbusIn();
+        handleSbus2In();
+      } else if (config.protocol == 'B') {  // frsky Hub
+        handleFrskyHubFrames();   // send telemetry
         handleSbusIn();
         handleSbus2In();
       } else if (config.protocol == 'J') {  //jeti
