@@ -203,8 +203,8 @@ int32_t posFieldValues[] = {
     17912,      //  HEADING =,      //  GPS 0.01 degree
     135721,     //  ALTITUDE ,    //  GPS cm
     23,         //  NUMSAT ,      //  5 GPS no unit   
-    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
-    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    0X180410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF = value for 24 04 16
+    0X160D1F00,  //  GPS_TIME ,    // GPS special format HHMMSS00 = value for 22:13:31
     123,         //  GPS_PDOP ,    // GPS no unit
     179,         //  GPS_HOME_BEARING, // GPS degree
 
@@ -259,8 +259,8 @@ int32_t negFieldValues[] = {
     -17912,      //  HEADING =,      //  GPS 0.01 degree
     -56721,     //  ALTITUDE ,    //  GPS cm
     0,         //  NUMSAT ,      //  5 GPS no unit   
-    0X170410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF
-    0X22133100,  //  GPS_TIME ,    // GPS special format HHMMSS00
+    0X180410FF,  //  GPS_DATE ,    // GPS special format AAMMJJFF = value for 24 04 16
+    0X160D1F00,  //  GPS_TIME ,    // GPS special format HHMMSS00 = value for 22:13:31
     03,         //  GPS_PDOP ,    // GPS no unit
     -179,         //  GPS_HOME_BEARING, // GPS degree
 
