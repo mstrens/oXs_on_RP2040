@@ -17,6 +17,8 @@
 #include <inttypes.h>
 #include "mpu.h"
 
+#define DEBUGHUBPROTOCOL
+
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 
 extern GPS gps ;
@@ -39,7 +41,7 @@ void setupFrskyHub(){
     if (config.pinTlm == 255) return ; // Skip when no telemetry is foreseen 
     // setup the PIO for TX UART
     uint frskyHubOffsetTx = pio_add_program(frskyHubPio, &uart_frsky_hub_tx_program);
-    uart_frsky_hub_tx_program_init(frskyHubPio, frskyHubSmTx, frskyHubOffsetTx, config.pinTlm, 9600, false) ; // not inverted???
+    uart_frsky_hub_tx_program_init(frskyHubPio, frskyHubSmTx, frskyHubOffsetTx, config.pinTlm, 9600, true) ; // true = inverted
     // Configure a channel to write the same word (32 bits) repeatedly to PIO0
     // SM0's TX FIFO, paced by the data request signal from that peripheral.
     frskyHub_dma_chan = dma_claim_unused_channel(true);
@@ -198,7 +200,7 @@ void sendFrskyHubFrame1(){  // not gps data
     for (int cntPrint = 0 ; cntPrint < frskyHubTxBufferLength ; cntPrint++) {
         printf(" %X", frskyHubTxBuffer[cntPrint]);
     }
-    prinf("\n"); 
+    printf("\n"); 
 #endif  
 }  // end send frame 1
 
@@ -254,7 +256,7 @@ void sendFrskyHubFrame2(){  // gps data
     for (int cntPrint = 0 ; cntPrint < frskyHubTxBufferLength ; cntPrint++) {
         printf(" %X", frskyHubTxBuffer[cntPrint]);
     }
-    prinf("\n"); 
+    printf("\n"); 
 #endif  
 }
 
@@ -287,7 +289,7 @@ void sendFrskyHubFrame3(){  // gps date & time
     for (int cntPrint = 0 ; cntPrint < frskyHubTxBufferLength ; cntPrint++) {
         printf(" %X", frskyHubTxBuffer[cntPrint]);
     }
-    prinf("\n"); 
+    printf("\n"); 
 #endif          
 }
 
