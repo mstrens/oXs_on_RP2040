@@ -264,21 +264,19 @@ void sendFrskyHubFrame3(){  // gps date & time
     frskyHubTxBufferLength = 0 ; // reset of number of data to send
     uint16_t value ;
     if (fields[GPS_DATE].onceAvailable )  {
-        value= (fields[GPS_DATE].value >> 8) & 0XFF;// extract DD from original date format YYMMDDXX
+        value= (fields[GPS_DATE].value >> 16) & 0XFF;// extract MM from original date format  YYMMDDXX
         value= value<<8;
-        value+= (fields[GPS_DATE].value >> 16) & 0XFF;// extract MM from original date format  YYMMDDXX
+        value+= (fields[GPS_DATE].value >> 8) & 0XFF;// extract DD from original date format YYMMDDXX
         sendHubValue(FRSKY_USERDATA_GPS_DM , value) ; // DATE (DDMM)
         value= (fields[GPS_DATE].value >> 24) & 0XFF;// extract YY from original date format  YYMMDDXX
-        value = value<<8;
         sendHubValue(FRSKY_USERDATA_GPS_YEAR , value) ; // YEAR (CC00)
     }
     if (fields[GPS_TIME].onceAvailable )  {
-        value =(fields[GPS_TIME].value >> 24) & 0XFF;// extract HHMM from original time format  HHMMSS00;
+        value =(fields[GPS_TIME].value >> 16) & 0XFF;// extract MM from original time format  HHMMSS00;
         value = value <<8;
-        value +=(fields[GPS_TIME].value >> 16) & 0XFF;// extract HHMM from original time format  HHMMSS00;
+        value +=(fields[GPS_TIME].value >> 24) & 0XFF;// extract HH from original time format  HHMMSS00;
         sendHubValue(FRSKY_USERDATA_GPS_HM , value) ; // HOURMIN (hhmm)
-        value=(fields[GPS_TIME].value >> 0) & 0XFF;// extract SS00 from original time format  HHMMSS00;
-        value = value <<8;
+        value=(fields[GPS_TIME].value >> 8) & 0XFF;// extract SS00 from original time format  HHMMSS00;
         sendHubValue(FRSKY_USERDATA_GPS_SEC , value) ; // seconds (ss00)
     }    
 // transmit
