@@ -74,6 +74,8 @@ uint8_t debugAccZ = 'N';
 
 uint8_t pinCount[30] = {0};
 
+uint32_t debugFlags = 0; // each bit says if a type of debug msg must be printed; list of bits is defined in an enum in param.h 
+
 // for sequencer
 int tempIntTable[10]; // temporary table to store n integers converted from the serial buffer (starting from pvalue)
 uint8_t nextSequencerBegin;    // true when a step is the first of the next sequencer
@@ -122,6 +124,15 @@ extern const char* mpuOrientationNames[8];
 extern bool orientationIsWrong; 
 
 extern bool locatorInstalled;
+
+//list of names when we print debugmsg list
+const char* debugMsg[DEBUG_MAX_NUMBER] = {\
+    "LOCATOR", "ESC"};
+
+//enum DEBUG_LIST : uint8_t {
+//    DEBUG_LORA,
+//    DEBUG_ESC,
+//    };
 
 
 void handleUSBCmd(void){
@@ -225,6 +236,7 @@ void printHelp(){
     printf("                            FVP                 Field Values Positieve (force the tlm values to positieve dummy values\n")  ;
     printf("                            FVN                      idem with negatieve values\n")  ;
     printf("                            PWM                 Display the current PWM values (in micro sec)\n");
+    printf("                            DEBUG=HELP          display commands to get some debug messages (up to next reset)\n");
     printf("\n");
     printf("To get the current config, just press Enter; send DUMP in order to get it in a way that allows copy/edit/paste.\n");
     printf("To save changes, send SAVE; to get list of all commands send ""?""\n");
@@ -1350,11 +1362,44 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
     if ( strcmp("A", pkey) == 0 ) { printAttitudeFrame() ; return 0; }// print Attitude frame with vario data
     if ( strcmp("G", pkey) == 0 )  { printGpsFrame();  return 0; }      // print GPS frame
     if ( strcmp("B", pkey) == 0 )  { printBatteryFrame();  return 0; }  // print battery frame 
+    if ( strcmp("DEBUG", pkey) == 0 ){
+        if (strcmp("DEL", pvalue) == 0) {
+            debugFlags = 0 ; 
+             
+        } else if (strcmp("HELP", pvalue) == 0) {
+            printDebugHelp();             
+        } else if (strcmp("LOCATOR", pvalue) == 0) {
+            debugFlags |= 1 << DEBUG_LORA ;
+        } else {
+            printf("Invalid parameter for DEBUG command");
+            return -1;
+        }
+        printDebugFlags(); 
+        return 0;  
+    }
+
     //printConfigAndSequencers();                                       // print the current config
     //printf("\n");
     return -1;
 }
 
+void printDebugHelp(){
+    printf("Enter commands with DEBUG=XXXX where XXXX is:\n");
+    printf("LOCATOR, ESC\n");
+}
+
+void printDebugFlags(){
+    if (debugFlags==0) {
+        printf("All debug messages are disabled\n");
+        return;
+    }
+    printf("Debug messages are activated for:\n");
+    for (uint8_t i=0; i < DEBUG_MAX_NUMBER; i++){
+        if(debugFlags & (1<<i)) {
+            printf("%s\n", debugMsg[i]);
+        }    
+    }
+}
 
 void addPinToCount(uint8_t pinId){
     if ( pinId != 255) {

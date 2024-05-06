@@ -137,6 +137,7 @@ void loraWriteRegisterBurst( uint8_t reg, uint8_t* dataOut, uint8_t numBytes) {
 }
 
 
+extern uint32_t debugFlags;  // each bit says if a type of debug msg must be printed; list of bits is defined in an enum in param.h 
 
 
 void loraHandle(){   // this function is called from main.cpp only when pinSpiCs is not equal to 255
@@ -156,8 +157,10 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         break ;
     case  LORA_IN_SLEEP :
         if (currentMillis > loraStateMillis ){ 
-          //printf("End of sleep; enter receive mode for 5 sec\n");
+            if (debugFlags & (1<<DEBUG_LORA)){
+               printf("End of sleep; listen for a request during 5 sec\n");
           //printf("Li ");
+            }
           loraRxOn(); 
           loraState = LORA_IN_RECEIVE ; 
           loraStateMillis = currentMillis + SHORT_RECEIVE_TIME ;
@@ -167,22 +170,26 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         // check if a packet has been received with a correct CRC
         loraIrqFlags = loraReadRegister(LORA_REG_IRQ_FLAGS);
         if ( loraIrqFlags & IRQ_RX_DONE_MASK  ) {
-          if ( loraIrqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) {
-            printf("wrong crc received\n") ;
-            loraRxOn() ; // restart reading in continous mode if CRC is wrong (reset address and interrupt)
-          } else {
-              loraReadPacket() ; // read the data in fifo (type and TxPower) and Rssi+SNR 
-              loraInSleep() ;
-              loraState = LORA_TO_TRANSMIT;
-              //printf("packet received\n") ;
-              //printf("Re ");
-          }
+            if ( loraIrqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) {
+                printf("wrong crc received\n") ;
+                loraRxOn() ; // restart reading in continous mode if CRC is wrong (reset address and interrupt)
+            } else {
+                loraReadPacket() ; // read the data in fifo (type and TxPower) and Rssi+SNR 
+                loraInSleep() ;
+                loraState = LORA_TO_TRANSMIT;
+                if (debugFlags & (1<<DEBUG_LORA)){
+                printf("Request received\n");
+                }
+            }
         } else if (currentMillis > loraStateMillis) {
-           //printf("receive timeout; go to sleep\n") ;
-           // printf("Sl \n");
-           loraInSleep() ;
-           loraState = LORA_IN_SLEEP;
-           loraStateMillis = currentMillis + SLEEP_TIME ;
+            //printf("receive timeout; go to sleep\n") ;
+            // printf("Sl \n");
+            if (debugFlags & (1<<DEBUG_LORA)){
+                printf("No request received; going to sleep for 5 sec\n");
+                }
+            loraInSleep() ;
+            loraState = LORA_IN_SLEEP;
+            loraStateMillis = currentMillis + SLEEP_TIME ;
         }
         break;
     case  LORA_TO_TRANSMIT :
@@ -190,8 +197,9 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
         loraTxOn(loraRxPacketTxPower) ; // set TxOn  (adjust frequency, number of bytes, Txpower, start Tx)  // set lora in transmit mode
         loraStateMillis = currentMillis + 400 ; // start a timeout ; normally sending is done in less than 200msec
         loraState = LORA_WAIT_END_OF_TRANSMIT ;
-        //printf("packet redy for sending\n") ;
-        //printf("Se "); 
+        if (debugFlags & (1<<DEBUG_LORA)){
+            printf("Start sending a reply\n");
+        }
         break;
     case  LORA_WAIT_END_OF_TRANSMIT :
         // check if transmit is done or if timeout occurs
@@ -204,9 +212,14 @@ void loraHandle(){   // this function is called from main.cpp only when pinSpiCs
             loraRxOn();
             loraState = LORA_IN_RECEIVE ; 
             loraStateMillis = currentMillis + LONG_RECEIVE_TIME ;
+            if (debugFlags & (1<<DEBUG_LORA)){
+                printf("Sending done; listen for a request during 60 sec\n");
+            }    
         } else if ( currentMillis > loraStateMillis ) {
             //printf("transmit timeout; go to sleep for 55sec\n") ;
-            loraInSleep() ;
+            if (debugFlags & (1<<DEBUG_LORA)){
+                printf("Sending time out; go ing to sleep during 5 sec\n");
+            }loraInSleep() ;
             loraState = LORA_IN_SLEEP;
             loraStateMillis = currentMillis + SLEEP_TIME ;
         }

@@ -17,7 +17,7 @@
 #include <inttypes.h>
 #include "mpu.h"
 
-#define DEBUGHUBPROTOCOL
+//#define DEBUGHUBPROTOCOL // print the content of each frame
 
 extern field fields[];  // list of all telemetry fields and parameters used by Sport
 

@@ -192,6 +192,9 @@ void printGyroMixer();
 bool getPid(uint8_t mode);  // get all pid parameters for one mode; return true if valid; config is then updated
 bool getAccParam();
 
+void printDebugHelp();
+void printDebugFlags();
+
 #define HW4 4
 #define HW3 3
 #define KONTRONIK 2
@@ -204,3 +207,9 @@ bool getAccParam();
 #define REQUEST_HORIZONTAL_MPU_ORIENTATION 0X04 // send from core0 to core 1; there is a reply from core1 when done
 #define REQUEST_VERTICAL_MPU_ORIENTATION 0X05   // send from core0 to core 1; there is a reply from core1 when done
 #define REQUEST_GYRO_CALIBRATION 0X06       // send from core0 to core 1
+
+enum DEBUG_LIST : uint8_t {
+    DEBUG_LORA,
+    DEBUG_ESC,
+    DEBUG_MAX_NUMBER,
+    };
