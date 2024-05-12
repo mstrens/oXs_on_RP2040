@@ -200,6 +200,7 @@ void printDebugFlags();
 #define KONTRONIK 2
 #define ZTW1 1
 #define BLH 5
+#define JETI_ESC 6
 
 #define REQUEST_USB_HORIZONTAL_MPU_CALIB 0X01 // send from core0 to core 1
 #define REQUEST_USB_VERTICAL_MPU_CALIB 0X02   // send from core0 to core 1

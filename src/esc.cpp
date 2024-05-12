@@ -157,6 +157,11 @@ V4LV25/60/80A | 0x9B | 0x9B | 0x03 | 0xE8 | 0x01 | 0x08 | 0x5B | 0x00 | 0x01 | 0
 // 10 byte at 115200 = nearly 1100 usec; there is one frame per 36000usec (or 50000)
 #define ESC_BLH_MIN_FREE_TIME_US 5000 // minimum interval without uart signal between 2 frames
 
+// Jeti ESC
+#define ESC_JETI_BAUDRATE 9600
+#define ESC_JETI_MAX_FRAME_LEN 40 // ??? not sure
+#define ESC_JETI_MIN_FREE_TIME_US 2000 // ?? not sure but there is a frame each 20ms
+
 
 // Len here must be big enough to contain all types of ESC frame
 #define ESC_MAX_BUFFER_LEN 50
@@ -211,6 +216,11 @@ void setupEsc(){
     } else if ( config.escType == BLH) { 
         escMaxFrameLen = ESC_BLH_MAX_FRAME_LEN;
         escFreeTimeUs = ESC_BLH_MIN_FREE_TIME_US;
+    } else if ( config.escType == JETI_ESC) { 
+        escMaxFrameLen = ESC_JETI_MAX_FRAME_LEN;
+        escFreeTimeUs = ESC_JETI_MIN_FREE_TIME_US;
+        escShift = 23;             // for 9N1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
+
     } 
 // configure the queue to get the data from ESC in the irq handle
     queue_init (&escRxQueue, sizeof(uint16_t), 50);
@@ -232,6 +242,9 @@ void setupEsc(){
     }  else if (config.escType == BLH){
         escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8N1_program);
         esc_uart_rx_8N1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_BLH_BAUDRATE , false); // false = not inverted
+    }  else if (config.escType == JETI_ESC){
+        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_9N1_program);
+        esc_uart_rx_9N1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_JETI_BAUDRATE , false); // false = not inverted
     }
     //#define DEBUG_ESC
     #ifdef  DEBUG_ESC
@@ -246,7 +259,7 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
     irq_clear (PIO0_IRQ_1 );
     uint32_t nowMicros = microsRp();
     while (  ! pio_sm_is_rx_fifo_empty (escPioRx ,escSmRx)){ // when some data have been received
-        uint16_t c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0xFF;         // read the data, shift by 24 or 23 and keep 8 bits
+        uint16_t c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x01FF;         // read the data, shift by 24 or 23 and keep 8 bits
         // here we discard the parity bit from Kontronik and ZWT1
          //when previous byte was received more than X usec after the previous, then add 1 in bit 15 
         if ( ( nowMicros - lastEscReceivedUs) > escFreeTimeUs ) c |= 0X8000 ; // add a flag when there is a gap between char
@@ -282,7 +295,7 @@ void handleEsc(){
             continue ; // discard the car if buffer is full (should not happen)    
         }
         // to debug the char being received
-        if (config.escType == ZTW1) printf("%4X\n",data ); 
+        if ((config.escType == ZTW1) or (config.escType == JETI_ESC))printf("%4X\n",data ); 
         
         escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it

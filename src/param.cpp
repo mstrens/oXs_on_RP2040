@@ -192,7 +192,7 @@ void printHelp(){
     printf("                                               2(Sbus2 Futaba), J(Jeti), E(jeti Exbus), L (spektrum SRXL2) ,or I(IBus/Flysky)\n");
     printf("    CRSF baudrate:          CRSFBAUD = 420000\n");
             
-    printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4(Hobbywing V4), ZTW1(ZTW mantis),KON (Kontronik) or BLH(BlHeli)\n");
+    printf("Type of ESC :               ESC_TYPE = YYY      YYY is HW4(Hobbywing V4), ZTW1(ZTW mantis),KON (Kontronik) or BLH(BlHeli) or JETI(Jeti)\n");
     printf("Logger baudrate :           LOGBAUD = 115200\n");
     printf("Refresh rate of servos      PWMHZ = 50          Value in range 50...333 (apply for PWM and sequencer)\n");
     printf("Voltage scale x(1,2,3,4)    SCALEx = nnn.ddd    e.g. SCALE1=2.3 or SCALE3=0.123\n")  ;
@@ -972,8 +972,12 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
             config.escType = BLH ;
             printf("escType is now BLH (BlHeli)\n");
             return 1;
+        } else if (strcmp("JETI", pvalue) == 0) {
+            config.escType = JETI_ESC ;
+            printf("escType is now JETI (Jeti)\n");
+            return 1;
         } else {    
-            printf("Error : ESC_TYPE must be HW4, ZTW1, KON or BLH\n");
+            printf("Error : ESC_TYPE must be HW4, ZTW1, KON or BLH or JETI\n");
         }
     }
 
@@ -1557,8 +1561,8 @@ void checkConfigAndSequencers(){     // set configIsValid
     //    configIsValid=false;
     //}    
     if ( (config.pinEsc != 255) && (config.escType!=HW3) && (config.escType!=HW4) && \
-            (config.escType!=KONTRONIK) && (config.escType!=ZTW1) && (config.escType!=BLH)) {
-        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4, ZTW1, KON or BLH\n");
+            (config.escType!=KONTRONIK) && (config.escType!=ZTW1) && (config.escType!=BLH) && (config.escType!=JETI_ESC) ) {
+        printf("Error in parameters: When gpio is defined for ESC, esc type must be HW4, ZTW1, KON or BLH or JETI\n");
         configIsValid=false;
     }    
     if ( (config.pwmHz < 50) || (config.pwmHz > 333)){
@@ -1664,6 +1668,8 @@ void printConfigAndSequencers(){   // print all and perform checks
         printf("Esc type is ZTW1 (ZTW mantis)\n")  ;
     } else if (config.escType == BLH) {
         printf("Esc type is BLH (BlHeli)\n")  ;
+    } else if (config.escType == JETI_ESC) {
+        printf("Esc type is JETI (Jeti)\n")  ;
     } else {
         printf("Esc type is not defined\n")  ;
     }    
@@ -2990,6 +2996,7 @@ void dumpConfig(){
     if (config.escType == KONTRONIK) printf("ESC_TYPE = KONTRONIK;\n");
     if (config.escType == ZTW1) printf("ESC_TYPE = ZTW1;\n");
     if (config.escType == BLH) printf("ESC_TYPE = BLH;\n");
+    if (config.escType == JETI_ESC) printf("ESC_TYPE = JETI;\n");
 
     if (config.pinLogger  != 255) printf("LOGBAUD = %i;\n", config.loggerBaudrate );
     if (config.pwmHz != 0XFFFF) printf("PWMHZ = %i;\n", config.pwmHz );
