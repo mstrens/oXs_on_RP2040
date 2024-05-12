@@ -387,7 +387,7 @@ Note: as usual with oXs:
 - do not forget to enter SAVE command to keep you changes after a power off. After a SAVE command you must, most of the time, make a shutdown/reset to really activate the changes.
 
 
-### Gyro learning process = gyro calibration = discovering the orientation/mixers and limits
+### Gyro learning process = mixer calibration = discovering the orientation/mixers and limits
 
 The general principle is to let the mixers + servo centers/min/max being defined only on the handset.
 Still oXs must take care of those mixers and limits when it applies gyro corrections.

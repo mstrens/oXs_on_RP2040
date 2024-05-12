@@ -332,19 +332,24 @@ void calculateCorrectionsToApply(){
     // gyroY and pitch change in opposite way
     // gyroZ and yaw change in opposite way
     if (stabMode == STAB_STABILIZE) {  
-        if ( (abs(cameraRoll)>600) or (abs(cameraPitch)>600) ) {  // roll and pitch are not reliable when values are hight; so discard gyro
-            pid_state.input[0] = 0;     // see text on top of this file to justify the - sign 
-            pid_state.input[1] = 0;
-            pid_state.input[2] = 0;
-            pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;    
-        } else {
+        //if ( (abs(cameraRoll)>600) or (abs(cameraPitch)>600) ) {  // roll and pitch are not reliable when values are hight; so discard gyro
+        //    pid_state.input[0] = 0;     // see text on top of this file to justify the - sign 
+        //    pid_state.input[1] = 0;
+        //    pid_state.input[2] = 0;
+        //    pid_state.sum_err[0] = 0; pid_state.sum_err[1] = 0; pid_state.sum_err[2] = 0;    
+        //} else {
             // camera roll is in 0.1 deg so varies -900/900 (not totally true because once can be 180°)
             // gyroZ varies from -32768/32768 (int16) 
             // See Xls sheet to justify the << 2 (=*4)
-            pid_state.input[0] = ((int32_t) -cameraRoll) << 2;     // see text on top of this file to justify the - sign 
+            if ( (abs(cameraPitch)>800) ) {  // when pitch is more than 80°, roll becomes unstable; so disable gyro correction on roll.
+                pid_state.input[0] = 0;
+                pid_state.sum_err[0] = 0;
+            } else {    
+                pid_state.input[0] = ((int32_t) -cameraRoll) << 2;     // see text on top of this file to justify the - sign 
+            }
             pid_state.input[1] = ((int32_t) -cameraPitch) << 2;
             pid_state.input[2] = gyroZ;
-        }            
+        //}            
     } else {
     // measured angular rate (from the gyro and apply calibration offset but no scaling)
         pid_state.input[0] = - gyroX;  // gyroX,Y,Z max value is +/-32768 = +/-2000°/sec // see top of the file to explain the "-" for gyroX/roll axis 
@@ -606,10 +611,13 @@ void calibrateGyroMixers(){  // this is call in main by loop() so it run on core
         startMs = millisRp();         // used to check that there is 5 msec before switching to second step
         ledState = STATE_GYRO_CAL_MIXER_NOT_DONE;
         learningState = LEARNING_MIXERS;
+        printf("\n\n******************************************************\n");
         printf("\n1. Center ail, rud, elv sticks\n");
         printf("2. Move each stick (ail, rud and elv) ONE BY ONE in each corner\n");
         printf("3. Change orientation of the model in order to have the nose up (vertical)\n");
         printf("4. While the model is hold with the nose up, change the gyro switch to enter the second phase of the learning process\n");
+        printf("******************************************************\n\n");
+        
     }
 
     // once learning process has started, we save always the min and max servo positions
@@ -745,7 +753,7 @@ void calibrateGyroMixers(){  // this is call in main by loop() so it run on core
             static uint32_t prevPrintMs = 0;
             if ((millisRp() - prevPrintMs) > 1000){
                 //printf("Ail=%i  Elv=%i    Rud=%i\n", stickPosUs[0] , stickPosUs[1] , stickPosUs[2] );
-                printf("Point 1 & 2 done; set model vertically (nose up) and change the gyro switch\n");
+                printf("=====>>>>> Point 1 & 2 done; set model vertically (nose up) and change the gyro switch\n");
                 prevPrintMs=millisRp();
             }
     
@@ -797,8 +805,11 @@ void calibrateGyroMixers(){  // this is call in main by loop() so it run on core
                     }
                     learningState = LEARNING_LIMITS;
                     startMs = millisRp(); // reset the value to discard ending the learning if switch is changed again to fast
+                    printf("\n\n******************************************************\n");
                     printf("Move sticks simultaneously while in high rate to let oXs discover the end limits of the servos\n");
                     printf("Change gyro switch when done to end the learning process\n");
+                    printf("******************************************************\n");
+        
                 }    
             }    
         }        
@@ -847,7 +858,7 @@ void calibrateGyroMixers(){  // this is call in main by loop() so it run on core
                 printf("\nEnd of learning process; result will be saved in flash\n");
                 saveGyroMixer(); //   save the gyro mixer from the learning process. 
                 saveConfig();    // save the config because mpu orientation is perhaps changed
-                printf("Best is now to make a power reset");                    
+                printf("Best is now to make a power reset\n");                    
             }
         } // end switch change
     }    
