@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.15"
+#define VERSION "2.14.16"
 
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
@@ -419,11 +419,11 @@
 // next lines allow to select the frequency being used by the locator (in 3 bytes most, mid, less).
 // It must be the same values on oXs side and on locator receiver side
 // It can be the same frequency for transmit and receive
-#define TX_FRF_MSB   0xC0 // F / 32E6 * 256 * 256 * 8
+#define TX_FRF_MSB   0xD9 // Freq << 19 / 32000000 => 868Mhz = 0xD90000
 #define TX_FRF_MID   0x00   
 #define TX_FRF_LSB   0x00
 
-#define RX_FRF_MSB   0xC0 
+#define RX_FRF_MSB   0xD9 
 #define RX_FRF_MID   0x00  
 #define RX_FRF_LSB   0x00
 
