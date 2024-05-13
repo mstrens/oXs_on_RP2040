@@ -219,7 +219,7 @@ void setupEsc(){
     } else if ( config.escType == JETI_ESC) { 
         escMaxFrameLen = ESC_JETI_MAX_FRAME_LEN;
         escFreeTimeUs = ESC_JETI_MIN_FREE_TIME_US;
-        escShift = 23;             // for 9N1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
+        escShift = 22;             // for 9O1 uart, we shift by 23 pos instead of 24 because we get 9 bit instead of 8
 
     } 
 // configure the queue to get the data from ESC in the irq handle
@@ -243,8 +243,8 @@ void setupEsc(){
         escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_8N1_program);
         esc_uart_rx_8N1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_BLH_BAUDRATE , false); // false = not inverted
     }  else if (config.escType == JETI_ESC){
-        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_9N1_program);
-        esc_uart_rx_9N1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_JETI_BAUDRATE , false); // false = not inverted
+        escOffsetRx = pio_add_program(escPioRx, &esc_uart_rx_9O1_program);
+        esc_uart_rx_9O1_program_init(escPioRx, escSmRx, escOffsetRx, config.pinEsc, ESC_JETI_BAUDRATE , false); // false = not inverted
     }
     //#define DEBUG_ESC
     #ifdef  DEBUG_ESC
@@ -258,8 +258,13 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
   // clear the irq flag
     irq_clear (PIO0_IRQ_1 );
     uint32_t nowMicros = microsRp();
+    uint16_t c ;
     while (  ! pio_sm_is_rx_fifo_empty (escPioRx ,escSmRx)){ // when some data have been received
-        uint16_t c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x01FF;         // read the data, shift by 24 or 23 and keep 8 bits
+        if ( config.escType == JETI_ESC) {
+            c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x03FF;      // read the data, shift by 24, 23 or 22 and keep 10 bits
+        } else {
+         c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x00FF;         // read the data, shift by 24, 23 or 22 and keep 8 bits
+        }
         // here we discard the parity bit from Kontronik and ZWT1
          //when previous byte was received more than X usec after the previous, then add 1 in bit 15 
         if ( ( nowMicros - lastEscReceivedUs) > escFreeTimeUs ) c |= 0X8000 ; // add a flag when there is a gap between char

@@ -123,31 +123,32 @@ static inline void esc_uart_rx_program_restart(PIO pio, uint sm, uint pin_rx , b
 */
 %}
 
-.program esc_uart_rx_9N1
+.program esc_uart_rx_9O1 
 
-; Slightly more fleshed-out 9n1 UART receiver which handles framing errors and
+; jeti is normaly 9 bits + odd parity + 2 stops; here we check only one stop.
+; Slightly more fleshed-out 9O1 UART receiver which handles framing errors and
 ; break conditions more gracefully.
 ; IN pin 0 and JMP pin are both mapped to the GPIO used as UART RX.
 
-start:
+start3:
     wait 0 pin 0        ; Stall until start bit is asserted
-    set x, 8    [10]    ; Preload bit counter, then delay until halfway through
-bitloop:                ; the first data bit (12 cycles incl wait, set).
+    set x, 9    [10]    ; Preload bit counter, then delay until halfway through. 9 because it is 7+1+1 (for 9 bits and odd)
+bitloop3:                ; the first data bit (12 cycles incl wait, set).
     in pins, 1          ; Shift data bit into ISR
-    jmp x-- bitloop [6] ; Loop 9 times, each loop iteration is 8 cycles
-    jmp pin good_stop   ; Check stop bit (should be high)
+    jmp x-- bitloop3 [6] ; Loop 10 times, each loop iteration is 8 cycles
+    jmp pin good_stop3   ; Check stop bit (should be high)
 
     irq 4 rel           ; Either a framing error or a break. Set a sticky flag,
     wait 1 pin 0        ; and wait for line to return to idle state.
-    jmp start           ; Don't push data if we didn't see good framing.
+    jmp start3           ; Don't push data if we didn't see good framing.
 
-good_stop:              ; No delay before returning to start; a little slack is
+good_stop3:              ; No delay before returning to start; a little slack is
     push                ; important in case the TX clock is slightly too fast.
 % c-sdk {
 
 #include "hardware/gpio.h"
 #include "hardware/clocks.h"
-static inline void esc_uart_rx_9N1_program_init(PIO pio, uint sm, uint offset, uint pin_rx, uint baud , bool invert) {
+static inline void esc_uart_rx_9O1_program_init(PIO pio, uint sm, uint offset, uint pin_rx, uint baud , bool invert) {
     //pio_sm_set_pins_with_mask(pio, sm, 1u << pin_tx, 1u << pin_tx); // was in Tx program but is normally not required for Rx
     pio_sm_set_pindirs_with_mask(pio, sm, 0 , 1u << pin_rx); // set pin as input
     //pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false); // remove by ms
@@ -158,7 +159,7 @@ static inline void esc_uart_rx_9N1_program_init(PIO pio, uint sm, uint offset, u
     } else {
         ;//gpio_pull_up(pin_rx); // changed by MS ; it seems that HW4 require a high impedance at power on
     }    
-    pio_sm_config c = esc_uart_rx_8N1_program_get_default_config(offset);
+    pio_sm_config c = esc_uart_rx_9O1_program_get_default_config(offset);
     sm_config_set_in_pins(&c, pin_rx); // for WAIT, IN
     sm_config_set_jmp_pin(&c, pin_rx); // for JMP
     // Shift to right, autopush disabled
