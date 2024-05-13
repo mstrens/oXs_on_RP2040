@@ -301,8 +301,9 @@ void handleEsc(){
         }
         // to debug the char being received
         if ((config.escType == ZTW1) or (config.escType == JETI_ESC))printf("%4X\n",data ); 
-        
-        escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
+        if ((config.escType != JETI_ESC)) {   
+            escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
+        }
         if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
             processEscFrame(); // process the incoming byte
         }     
