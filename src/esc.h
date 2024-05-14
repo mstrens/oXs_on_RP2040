@@ -12,6 +12,7 @@ void processHW3Frame();
 void processKontronikFrame();
 void processZTW1Frame();
 void processBlhFrame();
+void processJetiboxEscFrame();
 int32_t calcTemp(float tempRaw);
 
 

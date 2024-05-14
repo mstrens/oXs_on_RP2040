@@ -159,12 +159,12 @@ V4LV25/60/80A | 0x9B | 0x9B | 0x03 | 0xE8 | 0x01 | 0x08 | 0x5B | 0x00 | 0x01 | 0
 
 // Jeti ESC
 #define ESC_JETI_BAUDRATE 9600
-#define ESC_JETI_MAX_FRAME_LEN 40 // ??? not sure
-#define ESC_JETI_MIN_FREE_TIME_US 2000 // ?? not sure but there is a frame each 20ms
+#define ESC_JETI_MAX_FRAME_LEN 69 // Length can vary  but should not exceed 69
+#define ESC_JETI_MIN_FREE_TIME_US 2000 // it seems to work with 2000; there is a frame each 20ms
 
 
 // Len here must be big enough to contain all types of ESC frame
-#define ESC_MAX_BUFFER_LEN 50
+#define ESC_MAX_BUFFER_LEN 100 // jeti seems to have 32+2+29+5? = about 70
 
 queue_t escRxQueue ;
 
@@ -261,7 +261,7 @@ void escPioRxHandlerIrq(){    // when a byte is received on the esc bus, read th
     uint16_t c ;
     while (  ! pio_sm_is_rx_fifo_empty (escPioRx ,escSmRx)){ // when some data have been received
         if ( config.escType == JETI_ESC) {
-            c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x03FF;      // read the data, shift by 24, 23 or 22 and keep 10 bits
+            c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x01FF;      // read the data, shift by 22 and keep 9 bits (not the parity bit)
         } else {
          c = (pio_sm_get (escPioRx , escSmRx) >> escShift) &0x00FF;         // read the data, shift by 24, 23 or 22 and keep 8 bits
         }
@@ -301,12 +301,22 @@ void handleEsc(){
         }
         // to debug the char being received
         if ((config.escType == ZTW1) or (config.escType == JETI_ESC))printf("%4X\n",data ); 
-        if ((config.escType != JETI_ESC)) {   
+        if (config.escType == JETI_ESC){
+            if (data == 0XFE) { //start of jetibox ascii = 34 bytes including start and end
+                escRxBufferIdx = 0; // reset the counter
+                escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the start byte in the buffer            
+            } else if (data == 0XFF) { // when end has been detected, process the frame
+                processJetiboxEscFrame();
+                escRxBufferIdx = 0; // reset the counter
+            } else if ((escRxBufferIdx > 0) and (escRxBufferIdx < 34)) { // when start has been detected, Idx is > 0
+                escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
+            } // otherwise discard the byte (when start has not been detected)   
+        } else {                 // not a jeti esc  
             escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the byte in the buffer
-        }
-        if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
-            processEscFrame(); // process the incoming byte
-        }     
+            if (escRxBufferIdx == escMaxFrameLen) {         // when buffer is full, process it
+                processEscFrame(); // process the incoming byte
+            }     
+        }    
     } // end while
     #ifdef DEBUG_ESC // generate a frame once per 10 msec
     static uint32_t lastZWT1Ms;
@@ -321,6 +331,46 @@ void handleEsc(){
 
 float escConsumedMah = 0;
 uint32_t lastEscConsumedMicros = 0;
+
+
+int digit(uint8_t i){ // return the digit or 0 when it is not a digit
+        if (escRxBuffer[i] >= 0x30 and escRxBuffer[i] <= 0x39) return escRxBuffer[i] - 0x30;
+    return 0;
+}
+
+void processJetiboxEscFrame(){
+    // first byte is start byte
+    //                1 6 ,  2  V   
+    // then we have e.g. 
+    // FE 31 36 2C 30 56 20 42 31 30 30 25 20 32 34 DF 43 20 20 20 20 30 41 20 20 20 20 20 20 30 72 70 6D
+    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+    //     1  6  ,  0  V     B  1  0  0  %     2  4  °  C              0  A                    0  r  p  m
+    // Note B is sometime replaced by R
+    if (escRxBuffer[5] == 'V' and escRxBuffer[3] == ',') {
+        int32_t volt = digit(1)*10000 + digit(2)*1000 + digit(4)*100;
+        if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc
+            sent2Core0( MVOLT, volt ) ; 
+        }
+    }
+    if (escRxBuffer[15] == 0xDF and escRxBuffer[16] == 'C') {
+        int32_t degree = digit(12)*100 + digit(13)*10 + digit(14);
+        if ((config.pinVolt[2] == 255) or ((config.temperature != 1)  and (config.temperature != 2))){ //  we discard temp from esc
+            sent2Core0( TEMP1, degree) ;
+        }
+    }        
+    if (escRxBuffer[22] == 'A') {
+        int32_t current = digit(18)*1000000 + digit(19) * 100000 + digit(20)*10000 + digit(21) * 1000;
+        if (config.pinVolt[1] == 255) { 
+            sent2Core0( CURRENT, current) ; 
+        }
+    }
+    if (escRxBuffer[30] == 'r' and escRxBuffer[31] == 'p') {
+        int32_t rpm = digit(24)*100000 + digit(25)*10000 + digit(26)*1000 + digit(27) * 100 + digit(28)*10 + digit(29) ;
+        if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+        }
+    }        
+}
 
 void processEscFrame(){ // process the incoming byte 
     //To debug the frame
