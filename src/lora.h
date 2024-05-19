@@ -1,3 +1,4 @@
+#ifdef NOTUSED
 #pragma once
 
 
@@ -118,3 +119,5 @@ void loraFillTxPacket() ;
 #define IRQ_TX_DONE_MASK           0x08
 #define IRQ_PAYLOAD_CRC_ERROR_MASK 0x20
 #define IRQ_RX_DONE_MASK           0x40
+
+#endif

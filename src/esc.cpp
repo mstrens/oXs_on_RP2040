@@ -300,14 +300,14 @@ void handleEsc(){
             continue ; // discard the car if buffer is full (should not happen)    
         }
         // to debug the char being received
-        if ((config.escType == ZTW1) or (config.escType == JETI_ESC))printf("%4X\n",data ); 
+        if ((config.escType == ZTW1) )printf("%4X\n",data ); 
         if (config.escType == JETI_ESC){
             if (data == 0XFE) { //start of jetibox ascii = 34 bytes including start and end
-                printf("Start\n");
+                //printf("Start\n");
                 escRxBufferIdx = 0; // reset the counter
                 escRxBuffer[escRxBufferIdx++] = (uint8_t) data; // store the start byte in the buffer            
             } else if (data == 0XFF) { // when end has been detected, process the frame
-                printf("Process\n");
+                //printf("Process\n");
                 processJetiboxEscFrame();
                 escRxBufferIdx = 0; // reset the counter
             } else if ((escRxBufferIdx > 0) and (escRxBufferIdx < 34)) { // when start has been detected, Idx is > 0
@@ -348,10 +348,10 @@ void processJetiboxEscFrame(){
     //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
     //     1  6  ,  0  V     B  1  0  0  %     2  4  °  C              0  A                    0  r  p  m
     // Note B is sometime replaced by R
-    for (uint8_t i = 0; i<=32; i++){
-        printf("%2X ", escRxBuffer[i]);
-    }
-    printf("\n");
+    //for (uint8_t i = 0; i<=32; i++){
+    //    printf("%2X ", escRxBuffer[i]);
+    //}
+    //printf("\n");
     if (escRxBuffer[5] == 'V' and escRxBuffer[3] == ',') {
         int32_t volt = digit(1)*10000 + digit(2)*1000 + digit(4)*100;
         if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc
@@ -378,7 +378,7 @@ void processJetiboxEscFrame(){
     }        
 }
 
-void processEscFrame(){ // process the incoming byte 
+void processEscFrame(){ // process the incoming byte (except the Jeti that is procesed in another function) 
     //To debug the frame
     //#define DEBUG_ESC_FRAME
     #ifdef DEBUG_ESC_FRAME
@@ -568,8 +568,8 @@ void processBlhFrame(){
         for (uint8_t i = 0; i<10 ; i++) {
             printf(" %x", escRxBuffer[i]);
         }
-        #endif
         printf("\n");
+        #endif
         return;    
     }
     #ifdef DEBUB_BLHELI

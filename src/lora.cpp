@@ -1,3 +1,5 @@
+#ifdef NOTUSED
+
 #include "lora.h"
 #include "hardware/spi.h"
 #include "tools.h"
@@ -357,4 +359,4 @@ void loraFillTxPacket() {
   loraWriteRegisterBurst( LORA_REG_FIFO , loraTxBuffer, 6) ; // write the 6 bytes in lora fifo
 }
 
-//#endif
+#endif

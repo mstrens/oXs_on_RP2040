@@ -19,7 +19,7 @@ This project can be interfaced with 1 or 2 ELRS, FRSKY , HOTT , MPX, FLYSKY , Fu
    - compensated vertical speed when connected to a baro + a differentil pressure sensor 
    - Pitch/Roll and accelerations X/Y/Z when conncted to a MP6050 sensor (optional); 
    - GPS data (longitude, latitude, speed, altitude,...) (optional)
-   - rpm/volt/temp/current/consumption from some ESC (Hobbywing4, ZTW mantis, Kontronix, BlHeli)
+   - rpm/volt/temp/current/consumption from some ESC (Hobbywing4, ZTW mantis, Kontronix, BlHeli, Jeti)
    Note: vertical speed is improved when baro sensor is combined with MP6050 sensor.
    
 ### It can also provide up to 16 PWM RC channels to drive servos from a CRSF/ELRS or from 1 or 2 Sbus/Fbus/Exbus/Ibus/SRXL2 signal (e.g Frsky,Jeti,Flysky,Spektrum). The refresh rate can be set between 50Hz(default) and 333Hz.
@@ -80,7 +80,7 @@ This board can be connected to:
    * some voltage dividers (=2 resistors) when the voltages to measure exceed 3V  
       note : a voltage can be used to measure e.g. a current (Volt2) or a temperature (Volt3/4) when some external devices are used to generate an analog voltage
    * a RPM sensor
-   * an ESC from Hobbywing (using V4 telemetry protocol), from ZTW mantis, from Kontronik or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.
+   * an ESC from Hobbywing (using V4 telemetry protocol), ZTW mantis, Kontronik, Jeti or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.
    * another rp2040 with an SD card to log huge volume of data's
    * a LORA module SX1276/RFM95 to transmit the localisation on a long range rf link (see locator section)   
 
@@ -149,7 +149,7 @@ When a GPS is used:
 *  Connect the TX pin from GPS to the TX pin selected in parameter for RP2040
 *  So take care that wires TX and RX are not crossed (as usual in Serial connection)  
 
-When a Hobbywing, ZWT, Kontronik or BlHeli ESC is used:
+When a Hobbywing, ZWT, Kontronik, Jeti or BlHeli ESC is used:
  * Connect the serial pin from ESC to the pin selected in parameter for RP2040 (for ESC_PIN)
  * Connect GND from ESC to RP2040 GND
  * do not define gpio's in RP2040 parameters for V1, V2, RPM and let TEMP parameter on 0. You can use V3 and V4 if you want. Note: SCALE1, SCALE2, OFFSET2 and RPM_MULT have to be defined based on your ESC and your motor.
