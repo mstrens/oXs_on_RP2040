@@ -1,10 +1,11 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.19"
+#define VERSION "2.14.20"
 
 
-//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+
+#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
@@ -349,6 +350,7 @@
 #define _pinSpiSck  255   // 10, 14, 26 (for spi1)  or 2, 6, 18, 22 (for spi0)
 #define _pinSpiMosi 255     // 11, 15, 27 (for spi1)  or 3, 7, 18, 23 (for spi0)
 #define _pinSpiMiso 255     // 8, 12, 24, 28 (for spi1) or 0, 4, 16, 20 (for spio)
+#define _pinE220Busy 255    // pin for busy signal of E220-xxxMyy
 
 #define _accOffX 0.0;
 #define _accOffY 0.0;
@@ -418,14 +420,35 @@
 // ------------- model locator -------------
 // next lines allow to select the frequency being used by the locator (in 3 bytes most, mid, less).
 // It must be the same values on oXs side and on locator receiver side
-// It can be the same frequency for transmit and receive
-#define TX_FRF_MSB   0xD9 // Freq << 19 / 32000000 => 868Mhz = 0xD90000
-#define TX_FRF_MID   0x00   
-#define TX_FRF_LSB   0x00
+// We use the same frequency for transmit and receive
+#define LOCATOR_FREQUENCY 868000000UL // in Hz
 
-#define RX_FRF_MSB   0xD9 
-#define RX_FRF_MID   0x00  
-#define RX_FRF_LSB   0x00
+#define _power 0x10      // use 0x16 for 22 db
+
+#define _paDutyCycle 0x02 // this is for 17 db; for 22 db, it must be 04
+#define _hpMax 0x03       // this is for 17 db; for 22 db, it must be 07
+
+// Define modulation parameters setting
+// range increases (and time over the air too) when sf increases and BW decrease 
+#define _sf  10                 // spreading factor 7; can be between 5 and 11 (higher = higher range)
+                               // when sf=11, BW must be 500; when sf=10, BW must be 250 or 500, when sf < 10, bw can be 125,250 or 500
+#define _bw  SX126X_BW_250000  // 125 kHz     ; can be 125000(4) 250000(5) 500000(6) (smaller = higher range; 125 is not supported with sf11)
+#define _cr  SX126X_CR_4_8     // 4/5 code rate ; can be 4_5, 4_6, 4_7, 4_8
+#define _ldro  SX126X_LDRO_ON // low data rate optimize off, can be ON or OFF
+
+// Define packet parameters setting
+#define _preambleLength  12                // 12 bytes preamble
+
+
+//----- For RFM95 only (define the frequency D9 00 00 => 868Mhz)
+//#define RX_FRF_MSB   0xD9
+//#define TX_FRF_MID   0x00   
+//#define TX_FRF_LSB   0x00
+
+//#define RX_FRF_MSB   0xD9 
+//#define RX_FRF_MID   0x00  
+//#define RX_FRF_LSB   0x00
+
 
 // Next lines allows to define the timing (e.g. sleep_time can be increased to reduce consumption)
 #define SLEEP_TIME 5000 // sleep during xx milli sec before listening 

@@ -83,7 +83,8 @@ struct CONFIG{
     float accScaleXZ ;
     float accScaleYZ ;
     uint8_t pinHigh ;
-    uint8_t pinLow ; 
+    uint8_t pinLow ;
+    uint8_t pinE220Busy;
 };
 
 void handleUSBCmd(void);

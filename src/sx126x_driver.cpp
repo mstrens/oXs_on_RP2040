@@ -7,7 +7,7 @@
 #include "gps.h"
 
 
-// to do add setup of pinE220Busy (in config and param) and perhaps reset pin (if required)
+// to do add setup of  reset pin (if required)
 
 // At oXs side, the principle is to set Lora device in continuous receive mode
 // In a loop, we look if a packet has been received (if so, it is one byte long with the Tx power for next transmit)
@@ -20,6 +20,7 @@
 #define LORA_IN_RECEIVE 2           // wait that a package has been received or a max delay; if package has been received,Tx power changes, update Tx power, change mode to LORA_TO_TRANSMIT
 #define LORA_TO_TRANSMIT 3          // fill lora with data to be send and ask for sending (but do not wait), change mode to LORA_WAIT_END_OF_TRANSMIT
 #define LORA_WAIT_END_OF_TRANSMIT 4 // wait that pakage has been sent (or wait max x sec)
+#define LORA_IN_ERROR 5             // state when init fail
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -40,37 +41,28 @@ extern uint16_t GPS_hdop;
 extern uint32_t debugFlags; // each bit says if a type of debug msg must be printed; list of bits is defined in an enum in param.h
 
 extern CONFIG config;
-// #define PIN_SPI_CS   9
-// #define PIN_SPI_SCK  10
-// #define PIN_MOSI 11
-// #define PIN_MISO 12
-//  Pin setting
-int8_t resetPin = -1;
 
 #define SPI_PORT spi1
 
-// Clock reference setting. RF module using either TCXO or XTAL as clock reference
-// uncomment code below to use XTAL
-// #define SX126X_XTAL
 uint8_t xtalCap[2] = {0x12, 0x12};
 
 // RF frequency setting
-uint32_t rfFrequency = 868000000UL;
+uint32_t rfFrequency = LOCATOR_FREQUENCY;
 
 // PA and TX power setting
-uint8_t paDutyCycle = 0x02; // this is for 17 db; for 22 db, it must be 04
-uint8_t hpMax = 0x03;       // this is for 17 db; for 22 db, it must be 07
+uint8_t paDutyCycle = _paDutyCycle; // this is for 17 db; for 22 db, it must be 04
+uint8_t hpMax = _hpMax;       // this is for 17 db; for 22 db, it must be 07
 uint8_t deviceSel = 0x00;   // must always be 0
-uint8_t power = 0x11;       // use 0x16 for 22 db
+uint8_t power = _power;       // use 0x16 for 22 db
 
 // Define modulation parameters setting
-uint8_t sf = 7;                 // spreading factor 7; can be between 5 and 11 (higher = higher range)
-uint8_t bw = SX126X_BW_125000;  // 125 kHz     ; can be 125000(4) 250000(5) 500000(6) (smaller = higher range; 125 is not supported with sf11)
-uint8_t cr = SX126X_CR_4_5;     // 4/5 code rate ; can be 4_5, 4_6, 4_7, 4_8
-uint8_t ldro = SX126X_LDRO_OFF; // low data rate optimize off, can be ON or OFF
+uint8_t sf = _sf;                 // spreading factor 7; can be between 5 and 11 (higher = higher range)
+uint8_t bw = SX126X_BW_250000;  // 125 kHz     ; can be 125000(4) 250000(5) 500000(6) (smaller = higher range; 
+uint8_t cr = SX126X_CR_4_8;     // 4/5 code rate ; can be 4_5, 4_6, 4_7, 4_8
+uint8_t ldro = SX126X_LDRO_ON; // low data rate optimize off, can be ON or OFF
 
 // Define packet parameters setting
-uint16_t preambleLength = 12;                // 12 bytes preamble
+uint16_t preambleLength = _preambleLength;                // 12 bytes preamble
 uint8_t headerType = SX126X_HEADER_IMPLICIT; // explicit packet header = variable length, can also be implicit (=fix length)
 uint8_t payloadLength = 64;                  // 64 bytes payload
 uint8_t crcType = SX126X_CRC_ON;             // cyclic redundancy check (CRC) on ; can also be OFF
@@ -86,15 +78,14 @@ void initSpi()
     gpio_set_dir(config.pinSpiCs, GPIO_OUT);
     gpio_put(config.pinSpiCs, 1);
 
-    spi_init(SPI_PORT, 1000 * 1000);
+    spi_init(SPI_PORT, 2000 * 1000);
     gpio_set_function(config.pinSpiMiso, GPIO_FUNC_SPI);
     gpio_set_function(config.pinSpiSck, GPIO_FUNC_SPI);
     gpio_set_function(config.pinSpiMosi, GPIO_FUNC_SPI);
 
-    // Chip select is active-low, so we'll initialise it to a driven-high state
-#define config_pinE220Busy 10
-    gpio_init(config_pinE220Busy);
-    gpio_set_dir(config_pinE220Busy, GPIO_IN);
+    // Busy pin is used to check if spi command can be sent
+    gpio_init(config.pinE220Busy);
+    gpio_set_dir(config.pinE220Busy, GPIO_IN);
 }
 
 void loraHandle()
@@ -103,14 +94,23 @@ void loraHandle()
     static uint32_t loraStateMillis;
     // static uint32_t receiveMillis ;
     uint32_t currentMillis = millisRp();
+    if (msgEverySec(1)){
+        printf("loraState= %i\n",loraState);
+    }
+  
     switch (loraState)
     {
     case LORA_TO_INIT:
         initSpi();   // init spi
-        loraSetup(); // init lora with some set up that need to be done only once
-        loraState = LORA_IN_SLEEP;
-        loraStateMillis = currentMillis + SLEEP_TIME;
-        // printf("End of init\n") ;
+        sleep_ms(500);
+        locatorInstalled = loraSetup(); // init lora with some set up that need to be done only once
+        if (locatorInstalled){
+            loraState = LORA_IN_SLEEP;
+            loraStateMillis = currentMillis + SLEEP_TIME;
+        } else {
+            loraState = LORA_IN_ERROR;
+        }
+        printf("End of init\n") ;
         break;
 
     case LORA_IN_SLEEP:
@@ -162,9 +162,7 @@ void loraHandle()
         break;
 
     case LORA_TO_TRANSMIT:
-        loraFillTxPacket();                    // set mode to standby, fill fifo with data to be sent (6 bytes)
-        //loraTxOn(loraRxPacketTxPower);         // set TxOn  (adjust frequency, number of bytes, Txpower, start Tx)  // set lora in transmit mode
-        //loraStateMillis = currentMillis + 400; // start a timeout ; normally sending is done in less than 200msec
+        loraFillTxPacket();                    // fill buffer with data to be sent (6 bytes) and call fa unction to send it with a timeout
         loraState = LORA_WAIT_END_OF_TRANSMIT;
         if (debugFlags & (1 << DEBUG_LORA))
         {
@@ -192,52 +190,74 @@ void loraHandle()
         }
         else if (loraIrqFlags & SX126X_IRQ_TIMEOUT)
         {
-            printf("transmit timeout; go to sleep for 55sec\n") ;
+            printf("transmit timeout; go to standby (sleep) for 5sec\n") ;
             if (debugFlags & (1 << DEBUG_LORA))
             {
-                printf("Sending time out; go ing to sleep during 5 sec\n");
+                printf("Sending time out; going to sleep during 5 sec\n");
             }
-            //loraInSleep();
             loraState = LORA_IN_SLEEP;
             loraStateMillis = currentMillis + SLEEP_TIME;
         }
         break;
-
+    case LORA_IN_ERROR:
+        break; // nothing to do when lora init failed
     } // end of switch
 }
 
 bool loraSetup()
 { // making the setup; return false in case of error
 
-    // sx126x_reset(resetPin);   // configure the gpio and generate a pulse
-    // Set to standby mode
-    sx126x_setStandby(SX126X_STANDBY_XOSC); // RC set in standby using 13Mhz rc; can also be SX126X_STANDBY_XOSC for 32Mz xtal
     uint8_t mode;
+    uint16_t error;
     sx126x_getStatus(&mode); // get the status
-    if (((mode & 0x70) != SX126X_STATUS_MODE_STDBY_XOSC) and ((mode & 0x70) != SX126X_STATUS_MODE_STDBY_RC))
+    printf("Status before setStandby= %X\n",mode);
+    // Set to standby mode
+    sx126x_setStandby(SX126X_STANDBY_RC); // RC set in standby using 13Mhz rc; can also be SX126X_STANDBY_XOSC for 32Mz xtal
+    
+    sx126x_getStatus(&mode); // get the status
+    printf("Status after setStandby= %X\n",mode);
+    sx126x_getDeviceErrors(&error);
+    printf("error=%X\n", error);
+    
+    
+    if ((mode & 0x70)  != SX126X_STATUS_MODE_STDBY_RC)
     { // to compare with SX126X_STATUS_MODE_STDBY_RC when no xtal
         printf("Something wrong, can't set E220 to standby mode\n");
         return false;
     }
+        // Set packet type to LoRa
+    sx126x_setPacketType(SX126X_LORA_MODEM);
+    uint8_t packetTypeConfig = 0;
+    sx126x_getPacketType(&packetTypeConfig);
+    printf("packet type = %X\n", packetTypeConfig); 
+
     sx126x_writeRegister(SX126X_REG_XTA_TRIM, xtalCap, 2);
-    sx126x_setDio2AsRfSwitchCtrl(SX126X_DIO2_AS_RF_SWITCH); // configure DIO2 as RF switch control  (DIO2 has to be connected to TX pin)
-    sx126x_setPacketType(SX126X_LORA_MODEM);                // Set packet type to LoRa
-    // Set frequency to selected frequency (rfFrequency = rfFreq * 32000000 / 2 ^ 25)
+    uint8_t xta[2]= {0};
+    sx126x_readRegister(SX126X_REG_XTA_TRIM,xta,2);
+    printf("xtaCpa= %X %X\n", xta[0] , xta[1]);
+
+    // configure DIO2 as RF switch control  (DIO2 has to be connected to TX pin)
+    sx126x_setDio2AsRfSwitchCtrl(SX126X_DIO2_AS_RF_SWITCH);    
+    
     printf("Set frequency to %i mHz\n", rfFrequency / 1000000);
     uint32_t rfFreq = ((uint64_t)rfFrequency * 33554432UL) / 32000000UL;
-    sx126x_setRfFrequency(rfFreq);
+    sx126x_setRfFrequency(rfFreq);   
 
     // Set tx power to selected TX power
     printf("Set TX power to %i dbm\n", power);
     sx126x_setPaConfig(paDutyCycle, hpMax, deviceSel, 0x01);
     sx126x_setTxParams(power, SX126X_PA_RAMP_200U); // ramping can go from 10us to 3.4ms
-
+    
     // Configure modulation parameter with predefined spreading factor, bandwidth, coding rate, and low data rate optimize setting
     sx126x_setModulationParamsLoRa(sf, bw, cr, ldro);
-
+    
     // Configure packet parameter with predefined preamble length, header mode type, payload length, crc type, and invert iq option
     sx126x_setPacketParamsLoRa(preambleLength, headerType, payloadLength, crcType, invertIq);
 
+    // enable interruptmask 
+    sx126x_setDioIrqParams(SX126X_IRQ_TX_DONE | SX126X_IRQ_RX_DONE |SX126X_IRQ_CRC_ERR | SX126X_IRQ_TIMEOUT, 0, 0, 0);
+
+    
     // Set predefined syncronize word
     sx126x_writeRegister(SX126X_REG_LORA_SYNC_WORD_MSB, sw, 2);
 
@@ -245,7 +265,8 @@ bool loraSetup()
     //  Set buffer base address
     sx126x_setBufferBaseAddress(0x00, 0x80); // first param is base adr of TX, second for Rx
 
-    sx126x_setRxTxFallbackMode(SX126X_FALLBACK_STDBY_XOSC); // mode after a Tx or RX
+    sx126x_setRxTxFallbackMode(SX126X_FALLBACK_STDBY_RC); // mode after a Tx or RX
+
     return true;                                            // here we consider that LORA is present
 }
 
@@ -304,15 +325,15 @@ void loraReadPacket() {           // read a packet with 2 bytes ; PacketType and
     uint8_t payloadLengthRx;
     uint8_t rxStartBufferPointer;
     sx126x_getRxBufferStatus(&payloadLengthRx, &rxStartBufferPointer);
-    if (payloadLength != 2) {
-        printf("got a Lora packet with a length != 2\n");
+    if (payloadLengthRx != 2) {
+        printf("got a Lora packet with a wrong length= %i buffer= %i \n", payloadLengthRx , rxStartBufferPointer);
     }
     // Read message from buffer
     uint8_t loraRxBuffer[2];
-    sx126x_readBuffer(rxStartBufferPointer, loraRxBuffer, 2);
+    sx126x_readBuffer(rxStartBufferPointer, loraRxBuffer, payloadLengthRx);
     loraRxPacketType =  loraRxBuffer[0];
-    loraRxPacketTxPower = loraRxBuffer[0];  
-    //printf("Rssi=%i Snr=%i Type=%x  pow=%x\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
+    loraRxPacketTxPower = loraRxBuffer[1];  
+    printf("Rssi=%i Snr=%i Type=%x  pow=%x\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
     //printf("Rssi=%i \n", loraRxPacketRssi);
     //loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0);        //set RX FIFO ptr
   //SPI_SELECT ;       // start of read burst on fifo
@@ -373,54 +394,37 @@ void loraFillTxPacket() {
   loraTxBuffer[4] = gpsPos >> 8 ;
   loraTxBuffer[5] = gpsPos ;
 
-  //#define DEBUG_LORA_SEND
+  #define DEBUG_LORA_SEND
   #ifdef DEBUG_LORA_SEND
   printf("lora send: %x %x %x %x %x %x\n",loraTxBuffer[0],loraTxBuffer[1],loraTxBuffer[2],loraTxBuffer[3],loraTxBuffer[4],loraTxBuffer[5]);
   #endif
   loraTransmit(loraTxBuffer, 6, 400);  // wait max 400ms
-  //loraWriteRegister(LORA_REG_OP_MODE, 0x80 | LORA_STANDBY) ; //  set mode in standby ( to write FIFO)
-  //loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0x80 );        // set FifoAddrPtr to 80 (base adress of byte to transmit)
-  //loraWriteRegisterBurst( LORA_REG_FIFO , loraTxBuffer, 6) ; // write the 6 bytes in lora fifo
 }
 
 
 //*****************  here the general functions to manage a sw126x or LLCC68
-void sx126x_reset(int8_t reset)
-{
-    gpio_init(reset);
-    gpio_set_dir(reset, GPIO_OUT);
-    gpio_put(reset, 0);
-    sleep_us(500);
-    gpio_put(reset, 1);
-    sleep_us(100);
-    // pinMode(reset, OUTPUT); digitalWrite(reset, LOW); delayMicroseconds(500); digitalWrite(reset, HIGH); delayMicroseconds(100);
-}
 
 bool sx126x_busyCheck(uint32_t timeout)
 {
     uint32_t t = millisRp();
-    while (gpio_get(config_pinE220Busy))
+    while (gpio_get(config.pinE220Busy) !=0)
     {
-        if (millisRp() - t > timeout)
+        if (millisRp() - t > timeout) {
+            printf("busy time out expired after %i\n", timeout);
             return true;
+        }    
     }
     return false;
 }
 
-void sx126x_setSleep(uint8_t sleepConfig)
-{
-    sx126x_transfer(0x84, &sleepConfig, 1);
-}
+//void sx126x_setSleep(uint8_t sleepConfig) {     sx126x_transfer(SX126X_SetSleep, &sleepConfig, 1); }
 
 void sx126x_setStandby(uint8_t standbyConfig)
 {
-    sx126x_transfer(0x80, &standbyConfig, 1);
+    sx126x_transfer(SX126X_SetStandby, &standbyConfig, 1);
 }
 
-void sx126x_setFs()
-{
-    sx126x_transfer(0xC1, NULL, 0);
-}
+//void sx126x_setFs() {  sx126x_transfer(SX126X_SetFs, NULL, 0); }
 
 void sx126x_setTx(uint32_t timeout)
 {
@@ -428,7 +432,7 @@ void sx126x_setTx(uint32_t timeout)
     buf[0] = timeout >> 16;
     buf[1] = timeout >> 8;
     buf[2] = timeout;
-    sx126x_transfer(0x83, buf, 3);
+    sx126x_transfer(SX126X_SetTx, buf, 3);
 }
 
 void sx126x_setRx(uint32_t timeout)
@@ -437,14 +441,11 @@ void sx126x_setRx(uint32_t timeout)
     buf[0] = timeout >> 16;
     buf[1] = timeout >> 8;
     buf[2] = timeout;
-    sx126x_transfer(0x82, buf, 3);
+    sx126x_transfer(SX126X_SetRx, buf, 3);
 }
 
-void sx126x_stopTimerOnPreamble(uint8_t enable)
-{
-    sx126x_transfer(0x9F, &enable, 1);
-}
-
+//void sx126x_stopTimerOnPreamble(uint8_t enable) {    sx126x_transfer(0x9F, &enable, 1);}
+/*
 void sx126x_setRxDutyCycle(uint32_t rxPeriod, uint32_t sleepPeriod)
 {
     uint8_t buf[6];
@@ -489,7 +490,7 @@ void sx126x_calibrateImage(uint8_t freq1, uint8_t freq2)
     buf[1] = freq2;
     sx126x_transfer(0x98, buf, 2);
 }
-
+*/
 void sx126x_setPaConfig(uint8_t paDutyCycle, uint8_t hpMax, uint8_t deviceSel, uint8_t paLut)
 {
     uint8_t buf[4];
@@ -562,7 +563,7 @@ void sx126x_setDio2AsRfSwitchCtrl(uint8_t enable)
 {
     sx126x_transfer(0x9D, &enable, 1);
 }
-
+/*
 void sx126x_setDio3AsTcxoCtrl(uint8_t tcxoVoltage, uint32_t delay)
 {
     uint8_t buf[4];
@@ -572,7 +573,7 @@ void sx126x_setDio3AsTcxoCtrl(uint8_t tcxoVoltage, uint32_t delay)
     buf[3] = delay;
     sx126x_transfer(0x97, buf, 4);
 }
-
+*/
 void sx126x_setRfFrequency(uint32_t rfFreq)
 {
     uint8_t buf[4];
@@ -590,7 +591,7 @@ void sx126x_setPacketType(uint8_t packetType)
 
 void sx126x_getPacketType(uint8_t *packetType)
 {
-    uint8_t buf[2];
+    uint8_t buf[2]= {0};
     sx126x_transfer(0x11, buf, 2);
     *packetType = buf[1];
 }
@@ -612,7 +613,7 @@ void sx126x_setModulationParamsLoRa(uint8_t sf, uint8_t bw, uint8_t cr, uint8_t 
     buf[3] = ldro;
     sx126x_transfer(0x8B, buf, 8);
 }
-
+/*
 void sx126x_setModulationParamsFSK(uint32_t br, uint8_t pulseShape, uint8_t bandwidth, uint32_t Fdev)
 {
     uint8_t buf[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -626,7 +627,7 @@ void sx126x_setModulationParamsFSK(uint32_t br, uint8_t pulseShape, uint8_t band
     buf[7] = Fdev;
     sx126x_transfer(0x8B, buf, 8);
 }
-
+*/
 void sx126x_setPacketParamsLoRa(uint16_t preambleLength, uint8_t headerType, uint8_t payloadLength, uint8_t crcType, uint8_t invertIq)
 {
     uint8_t buf[9] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -638,7 +639,7 @@ void sx126x_setPacketParamsLoRa(uint16_t preambleLength, uint8_t headerType, uin
     buf[5] = invertIq;
     sx126x_transfer(0x8C, buf, 9);
 }
-
+/*
 void sx126x_setPacketParamsFSK(uint16_t preambleLength, uint8_t preambleDetector, uint8_t syncWordLength, uint8_t addrComp, uint8_t packetType, uint8_t payloadLength, uint8_t crcType, uint8_t whitening)
 {
     uint8_t buf[9] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -666,7 +667,7 @@ void sx126x_setCadParams(uint8_t cadSymbolNum, uint8_t cadDetPeak, uint8_t cadDe
     buf[6] = cadTimeout;
     sx126x_transfer(0x88, buf, 7);
 }
-
+*/
 void sx126x_setBufferBaseAddress(uint8_t txBaseAddress, uint8_t rxBaseAddress)
 {
     uint8_t buf[2];
@@ -769,6 +770,7 @@ void sx126x_fixRxTimeout()
     sx126x_writeRegister(SX126X_REG_EVENT_MASK, &value, 1);
 }
 
+/*
 void sx126x_fixInvertedIq(uint8_t invertIq)
 {
     uint8_t value;
@@ -779,7 +781,7 @@ void sx126x_fixInvertedIq(uint8_t invertIq)
         value &= 0xFB;
     sx126x_writeRegister(SX126X_REG_IQ_POLARITY_SETUP, &value, 1);
 }
-
+*/
 void sx126x_transfer(uint8_t opCode, uint8_t *data, uint8_t nData)
 {
     sx126x_transfer(opCode, data, nData, NULL, 0, true);
@@ -787,25 +789,24 @@ void sx126x_transfer(uint8_t opCode, uint8_t *data, uint8_t nData)
 
 void sx126x_transfer(uint8_t opCode, uint8_t *data, uint8_t nData, uint8_t *address, uint8_t nAddress, bool read)
 {
-    if (sx126x_busyCheck(SX126X_BUSY_TIMEOUT))
+    if (sx126x_busyCheck(SX126X_BUSY_TIMEOUT)){
         return;
-
+    }    
     gpio_put(config.pinSpiCs, 0);
-    // sx126x_spi->beginTransaction(SPISettings(sx126x_spiFrequency, MSBFIRST, SPI_MODE0));
-    spi_write_blocking(SPI_PORT, &opCode, 1); // sx126x_spi->transfer(opCode);
+    uint8_t op= opCode;
+    spi_write_blocking(SPI_PORT, &op, 1); // sx126x_spi->transfer(opCode);
     if (nAddress > 0)
         spi_write_blocking(SPI_PORT, address, nAddress); // for (int8_t i=0; i<nAddress; i++) // sx126x_spi->transfer(address[i]);
     if (nData > 0)
     { //                                                 for (int8_t i=0; i<nData; i++) {
         if (read)
         {
-            spi_read_blocking(SPI_PORT, 0, data, nData); //           if (read) data[i] = sx126x_spi->transfer(data[i]);
+            spi_write_read_blocking(SPI_PORT,data,data,nData);  //SPI,src,des, len
         }
         else
         {
             spi_write_blocking(SPI_PORT, data, nData); //       else sx126x_spi->transfer(data[i]
         }
     }
-    // sx126x_spi->endTransaction();
     gpio_put(config.pinSpiCs, 1);
 }

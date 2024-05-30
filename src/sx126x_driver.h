@@ -12,6 +12,28 @@ void loraReadPacket() ;           // read a packet with 2 bytes ; PacketType and
 void loraFillTxPacket();
 
 
+// SX126X commands
+#define SX126X_SetSleep 0x84 
+#define SX126X_SetStandby 0x80
+#define SX126X_SetFs 0xC1
+#define SX126X_SetTx 0x83
+#define SX126X_SetRx 0x82
+#define SX126X_StopTimerOnPreamble 0x9F
+#define SX126X_SetRxDutyCycle 0x94
+#define SX126X_SetCad 0xC5
+#define SX126X_SetTxContinuousWave 0xD1
+#define SX126X_SetTxInfinitePreamble 0xD2
+#define SX126X_SetRegulatorMode 0x96
+#define SX126X_Calibrate 0x89
+#define SX126X_CalibrateImage 0x98
+#define SX126X_SetPaConfig 0x95
+#define SX126X_SetRxTxFallbackMode 0x93 fallbackMode Defines into which mode the chip goes 
+#define SX126X_WriteRegister 0x0D
+#define SX126X_ReadRegister 0x1D
+#define SX126X_WriteBuffer 0x0E
+#define SX126X_ReadBuffer 0x1E
+
+
 //******************   here original driver 
 // SX126X register map
 #define SX126X_REG_FSK_WHITENING_INITIAL_MSB    0x06B8

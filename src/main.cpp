@@ -531,7 +531,8 @@ void setup() {
       
       watchdog_enable(3500, 0); // require an update once every 500 msec
   } 
-  printConfigAndSequencers(); 
+// todo - should be uncommented  
+  //printConfigAndSequencers(); 
   setRgbColorOn(10,0,0); // set color on red (= no signal)
   // to detect end of setup
   //printf("end of set up\n");

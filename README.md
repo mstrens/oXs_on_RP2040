@@ -82,7 +82,7 @@ This board can be connected to:
    * a RPM sensor
    * an ESC from Hobbywing (using V4 telemetry protocol), ZTW mantis, Kontronik, Jeti or from BlHeli. Those ESC provide one voltage, one current (+ current consumption) + RPM + 1 or 2 temperatures.
    * another rp2040 with an SD card to log huge volume of data's
-   * a LORA module SX1276/RFM95 to transmit the localisation on a long range rf link (see locator section)   
+   * a LORA module with a Ebyte E220-900M22S (previous version - about 1.14.10 was with SX1276/RFM95) to transmit the localisation on a long range rf link (see locator section)   
 
 About the SDP31, SDP32, SDP33 , SDP810:
      Those sensors are probably better than MS4525. They do not requires calibration (and reset) and are more accurate at low speed.
@@ -174,10 +174,11 @@ Note: pin 16 is reserved for an internal LED on RP2040-zero or RP2040-TINY and s
 |LED = 16                       | internal led of RP2040-zero or RP2040-TINY|  
 |LOG = 0/29                     | data to be logged |  
 |ESC_PIN = 0/29                 | data provided by ESC (rpm, volt, current, temp)|
-|SPI_CS  = 0/29                 | Chip Select pin from RMF95 (locator)|
-|SPI_SCK = 10, 14, 26           | SCK pin from RFM95 (locator)|
-|SPI_MOSI = 11, 15, 27          | MOSI pin from RFM95 (locator)|
-|SPI_MISO = 8, 12, 24, 28       | MISO pin from RFM95 (locator)| 
+|SPI_CS  = 0/29                 | Chip Select (=NSS) pin from E220-900M22S (locator)|
+|SPI_SCK = 10, 14, 26           | SCK pin from E220-900M22S  (locator)|
+|SPI_MOSI = 11, 15, 27          | MOSI pin from E220-900M22S  (locator)|
+|SPI_MISO = 8, 12, 24, 28       | MISO pin from E220-900M22S  (locator)| 
+|SPI_BUSY = 0/29                | Busy pin from E220-900M22S  (locator)|
 |HIGH = 0/29                    | set the voltage level to 3V; can be used as Vcc for some sensors|
 |LOW = 0/29                     | set the voltage level to 0V; can be used as Ground for some sensors|
 
@@ -576,58 +577,62 @@ This format allows to compress the data transmitted via the (quite slow) UART to
 The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
 
 ## ------------------ Model Locator ----------------------------------------
-oXs can be used to locate a lost model (if you add a LORA module).
+oXs can be used to locate a lost model (if you add a LORA module Ebyte E220-900M22S ).
  
 The model is normally connected to the handset but when the model is on the ground, the range is quite limitted. 
 So if a model is lost at more than a few hundreed meters, the handset will not get any telemetry data anymore. 
 oXs allows to use a separate connection (with LORA modules) in order to have an extended range and have a chance to find back a lost model.
 This is possible because those modules use a lower frequency, a lower transmitting speed and a special protocol for long range.
-The LORA modules are SX1276/RFM95 that are sall and easily available (e.g. Aliexpress, ebay, amazon)
+The LORA modules are E220-900M22S that are small, cheap and easily available (e.g. Aliexpress, ebay, amazon)
 \
 \
 The principle is the following:
 * You have to build 2 devices: 
-    * an oXs device with the sensors you want (ideally a GPS and optionally e.g. vario, voltages, current, ...) and a SX1276/RFM95 module
+    * an oXs device with the sensors you want (ideally a GPS and optionally e.g. vario, voltages, current, ...) and a E220-900M22S module
     * a "locator receiver" device with:
-        * an RP2040 board
-        * a second SX1276/RFM95 module
-        * a display 0.96 pouces OLED 128X64 I2C SSD1306. It is small and is available for about 2€.;
+        * a Wemos D1 mini (or clone) board
+        * a second E220-900M22S module
+        * optionally a display 0.96 pouces OLED 128X64 I2C SSD1306. It is small and is available for about 2€.
+        * optionally a push button to activate the Wifi 
 
 * Normally:
     * the locator receiver is not in use.
-    * oXs is installed in the model and transmits the sensor data's over the normal RC Rx/Tx link. The RFM95 module in oXs is in listening mode (it does not tranmit) 
+    * oXs is installed in the model and transmits the sensor data's over the normal RC Rx/Tx link. The E220-900M22S module in oXs is in listening mode (it does not tranmit) 
 * When a model is lost:
     * the locator receiver" is powered on. It starts sending requests to oXs.    
-    * When the SX1276/RFM95 module in oXs receives a request, it replies with a small message containing the GPS coordinates and some data over the quality of the request signal.
+    * When the E220-900M22S module in oXs receives a request, it replies with a small message containing the GPS coordinates and some data over the quality of the request signal.
     * the display on the locator receiver shows those data's (longitude/latitude) as wel as the quality of the signal received and the time enlapsed since the last received message.
+    * the same informations can be displayed on a GSM when the wifi is activated (button has been pushed). This requires connect the GSM to the Locator Wifi, to open a web browser (e.g. Chrome) and to enter an IP address. More details are given in the oXs locator receiver project.
 
 
-Note: the range of communication between two SX1276 modules is normally several time bigger then the common RC 2.4G link.   
+Note: the range of communication between two Ebyte modules is normally several time bigger then the common RC 2.4G link.   
 If oXs and locator receiver are both on the ground, it can be that there are to far away to communicate with each other.
 But there are 2 ways to extend the range:
 * use a directional antena on the locator receiver. The advantage of this solution is that, if you get a communication, you can use the system as a goniometer (looking at the quality of the signal) to know the direction of the lost model. This even works if you have no GPS connected to oXs. The drawback is that a directional antenna is not as small as a simple wire.
-* put the locator receiver (which is still a small device) on another model and fly over expected lost aera. In this case, the range can be more than 10 km and the chance is very high that a communication can be achieved between the 2 modules. Even if the communication is broken when the model used for searching goes back on the ground, you will know the location of the lost model because the display will still display the last received GPS coordinates.
+* put the locator receiver (which is still a small device) on another model and fly over expected lost aera. In this case, the range can be more than 5 km and the chance is very high that a communication can be achieved between the 2 modules. Even if the communication is broken when the model used for searching goes back on the ground, you will know the location of the lost model because the display will still display the last received GPS coordinates.
 
 
 
 
-An oXs device with a SX1276/RFM95 does not perturb the 2.4G link and consumes only a few milliAmp because it remains normally in listening mode and when sending it is just a few % of the time. So, in order to increase the reliability of the system, it is possible to power oXs with a separate 1S lipo battery of e.g. 200/500 mAh. This should allow the system to work for several hours.
+An oXs device with an Ebyte does not perturb the 2.4G link (it uses another frequency range - default 868mHz) and consumes only a few milliAmp because it remains normally in listening mode and when sending it is just a few % of the time. So, in order to increase the reliability of the system, it is possible to power oXs with a separate 1S lipo battery of e.g. 200/500 mAh. This should allow the system to work for several hours.
 
 
-Cabling : The SX1276/RFM95 module must be connected to the Rp2040 in the following way
+Cabling : The Ebyte module must be connected to the Rp2040 in the following way
 * rp2040 SPI_CS    <=> NSS from module
 * rp2040 SPI_MOSI  <=> MOSI from module
 * rp2040 SPI_MISO  <=> MISO from module
 * rp2040 SPI_SCK   <=> SCK from module
 * rp2040 GRND      <=> GRND from module
+* rp2040 SPI_BUSY  <=> Busy from module
 * external (or rp2040 ) 3.3V   <=> 3.3V from module (!!! module does not support 5 Volt).
+* Futhermore, the pins "TX" and "DI02" of the module must be connected toegether. 
 
 
-To build the locator receiver, please check this link https://github.com/mstrens/oXs_locator_receiver_on_RP2040 
+To build the locator receiver, please check this link https://github.com/mstrens/oXs_locator_receiver_on_ESP8266 
 
 
 Note: oXs (=transmitter) stay in sleep mode most of the time. Once every X (see config.h) sec, it starts listening to the receiver for e.g. 5 sec. If the receiver is not powered on, oXs never get a request and so never sent data.
-When powered on, the receiver sent a request every 1 sec. At least X sec later (when entering listening mode), oXs should get this request and then reply immediately. oXs will then reply to each new request (so every 1 sec). oXs goes back to sleep mode if it does not get a request within 60 sec.
+When powered on, the receiver sent a request every 1 sec. At least X sec later (when entering listening mode), oXs should get this request and then reply immediately. oXs will then reply to each new request (so every 1 sec). oXs goes back to sleep mode for X sec if it does not get a request within 60 sec.
 
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).

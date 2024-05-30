@@ -185,6 +185,7 @@ void printHelp(){
     printf("        SCK                 SPI_SCK = 10, 14, 26\n");
     printf("        MOSI                SPI_MOSI = 11, 15, 27\n");
     printf("        MISO                SPI_MISO = 8, 12, 24, 28\n");
+    printf("        BUSY                SPI_BUSY = 0, 1, 2, ..., 29\n");
     printf("  Output level High (3.3V)  HIGH     = 0, 1, 2, ..., 29\n");
     printf("               LOW  (0 V)   LOW      = 0, 1, 2, ..., 29\n");
 
@@ -1270,6 +1271,20 @@ int8_t handleOneCmd( char * bufferPos){ // handle one command with buffer starti
         }
     }
 
+    // change for LORA Busy 
+       if ( strcmp("SPI_BUSY", pkey) == 0 ) { 
+        ui = strtoul(pvalue, &ptr, 10);
+        if ( *ptr != 0x0){
+            printf("Error : pin must be an unsigned integer\n");
+        } else if ( !(ui <=29 or ui ==255)) {
+            printf("Error : pin must be in range 0/29 or 255\n");
+        } else {    
+            config.pinE220Busy = ui;
+            printf("Pin for E220 busy = %u\n" , config.pinE220Busy );
+            return 1;
+        }
+    }
+
     // change pinHigh
     if ( strcmp("HIGH", pkey) == 0 ) { 
         ui = strtoul(pvalue, &ptr, 10);
@@ -1447,6 +1462,8 @@ void checkConfigAndSequencers(){     // set configIsValid
     addPinToCount(config.pinSpiMiso);
     addPinToCount(config.pinHigh);
     addPinToCount(config.pinLow);
+    addPinToCount(config.pinE220Busy );
+    
     
     for (uint8_t i = 0 ; i<seq.defsMax ; i++) {
         if (seq.defs[i].pin > 29 ) {
@@ -1601,8 +1618,8 @@ void checkConfigAndSequencers(){     // set configIsValid
             orientationIsWrong= true;
         }
     }
-    if ((config.pinSpiCs != 255) && (config.pinSpiSck==255 or config.pinSpiMosi==255 or config.pinSpiMiso==255)){
-        printf("Error in parameters: when SPI_CS is not 255, then SPI_CS, SPI_MOSI and SPI_MISO must all be defined (different from 255)\n");
+    if ((config.pinSpiCs != 255) && (config.pinSpiSck==255 or config.pinSpiMosi==255 or config.pinSpiMiso==255 or config.pinE220Busy==255)){
+        printf("Error in parameters: when SPI_CS is not 255, then SPI_CS, SPI_MOSI, SPI_MISO and SPI_BUSY must all be defined (different from 255)\n");
         configIsValid=false;    
     }
 
@@ -1655,6 +1672,7 @@ void printConfigAndSequencers(){   // print all and perform checks
     printf("        SCK . . . . . . . = %4u  (SPI_SCK= 10, 14, 26)\n", config.pinSpiSck );
     printf("        MOSI  . . . . . . = %4u  (SPI_MOSI=11, 15, 27)\n", config.pinSpiMosi );
     printf("        MISO  . . . . . . = %4u  (SPI_MISO=8, 12, 24, 28)\n", config.pinSpiMiso );
+    printf("        BUSY  . . . . . . = %4u  (SPI_BUSY=0, 1, 2, ..., 29)\n", config.pinE220Busy );
     printf("Output level High . . . . = %4u  (HIGH = 0, 1, 2, ..., 29)\n", config.pinHigh );
     printf("Output level Low  . . . . = %4u  (LOW  = 0, 1, 2, ..., 29)\n", config.pinLow );
     printf("\n");
@@ -2083,6 +2101,7 @@ void setupConfig(){   // The config is uploaded at power on
         config.pinSpiSck = _pinSpiSck;
         config.pinSpiMosi = _pinSpiMosi;
         config.pinSpiMiso = _pinSpiMiso;
+        config.pinE220Busy = _pinE220Busy;
 
         config.accOffX = _accOffX;
         config.accOffY = _accOffY;
@@ -2987,6 +3006,7 @@ void dumpConfig(){
     if (config.pinSpiSck != 255) printf("SPI_SCK = %i;\n", config.pinSpiSck );
     if (config.pinSpiMosi != 255) printf("SPI_MOSI = %i;\n", config.pinSpiMosi );
     if (config.pinSpiMiso != 255) printf("SPI_MISO = %i;\n", config.pinSpiMiso );
+    if (config.pinE220Busy != 255) printf("SPI_BUSY = %i;\n", config.pinE220Busy );   
     if (config.pinHigh != 255) printf("HIGH = %i;\n", config.pinHigh );
     if (config.pinLow != 255) printf("LOW = %i;\n", config.pinLow );
     printf("PROTOCOL = %c;\n", config.protocol );
