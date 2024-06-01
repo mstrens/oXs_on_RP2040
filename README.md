@@ -625,7 +625,9 @@ Cabling : The Ebyte module must be connected to the Rp2040 in the following way
 * rp2040 GRND      <=> GRND from module
 * rp2040 SPI_BUSY  <=> Busy from module
 * external (or rp2040 ) 3.3V   <=> 3.3V from module (!!! module does not support 5 Volt).
-* Futhermore, the pins "TX" and "DI02" of the module must be connected toegether. 
+* Futhermore, the pins "TX" and "DI02" of the module must be connected toegether.
+
+Do not forget to install an antenna on the E220 module (or solder a wire of about 8.5 cm on the pin named ANT)
 
 
 To build the locator receiver, please check this link https://github.com/mstrens/oXs_locator_receiver_on_ESP8266 

@@ -204,7 +204,14 @@ bool loraSetup()
     sx126x_setDio2AsRfSwitchCtrl(SX126X_DIO2_AS_RF_SWITCH);    
     printf("Set frequency to %i mHz\n", rfFrequency / 1000000);
     uint32_t rfFreq = ((uint64_t)rfFrequency * 33554432UL) / 32000000UL;
-    sx126x_setRfFrequency(rfFreq);   
+    sx126x_setRfFrequency(rfFreq); 
+
+        // apply workarround given by semtech
+    uint8_t data[5];
+    sx126x_readRegister(SX126X_REG_TX_CLAMP_CONFIG , data, 1);
+    data[0]= data[0] | 0X1E;
+    sx126x_writeRegister(SX126X_REG_TX_CLAMP_CONFIG , data, 1);
+  
     // PA and TX power setting
     uint8_t paDutyCycle;
     uint8_t hpMax;       

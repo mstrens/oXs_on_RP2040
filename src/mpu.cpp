@@ -81,11 +81,11 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 // Kp for proportional feedback, Ki for integral
 
 
-#define KP1_LOW_LIMIT 
-float Kp1 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
-float Ki1 = 0.0;  // on same site, it is set on 0
-float Kp2 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
-float Ki2 = 0.0;  // on same site, it is set on 0
+ 
+//float Kp1 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
+//float Ki1 = 0.0;  // on same site, it is set on 0
+//float Kp2 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
+//float Ki2 = 0.0;  // on same site, it is set on 0
 
 
 Quaternion qq;                // quaternion
