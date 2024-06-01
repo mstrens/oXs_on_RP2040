@@ -14,13 +14,6 @@
 // When oXs get this byte, it transmits immediately RSSI, SNR, and GPS data (0 if no GPS) and GPS precision and then go back to receive mode
 // receiving and sending are done on 2 different frequencies in order to reduce the channel occupation
 
-// Process depends on loraState; it can be
-#define LORA_TO_INIT 0              // device must be initialized
-#define LORA_IN_SLEEP 1             // wait a delay and set lora in recieve continous mode
-#define LORA_IN_RECEIVE 2           // wait that a package has been received or a max delay; if package has been received,Tx power changes, update Tx power, change mode to LORA_TO_TRANSMIT
-#define LORA_TO_TRANSMIT 3          // fill lora with data to be send and ask for sending (but do not wait), change mode to LORA_WAIT_END_OF_TRANSMIT
-#define LORA_WAIT_END_OF_TRANSMIT 4 // wait that pakage has been sent (or wait max x sec)
-#define LORA_IN_ERROR 5             // state when init fail
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -37,6 +30,8 @@ extern uint32_t GPS_last_fix_millis; // time when last fix has been received (us
 extern int32_t GPS_last_fix_lon;     // last lon when a fix has been received
 extern int32_t GPS_last_fix_lat;     // last lat when a fix has been received
 extern uint16_t GPS_hdop;
+extern uint8_t forcedFields;
+extern field fields[];
 
 extern uint32_t debugFlags; // each bit says if a type of debug msg must be printed; list of bits is defined in an enum in param.h
 
@@ -49,10 +44,7 @@ uint8_t xtalCap[2] = {0x12, 0x12};
 // RF frequency setting
 uint32_t rfFrequency = LOCATOR_FREQUENCY;
 
-// PA and TX power setting
-uint8_t paDutyCycle = _paDutyCycle; // this is for 17 db; for 22 db, it must be 04
-uint8_t hpMax = _hpMax;       // this is for 17 db; for 22 db, it must be 07
-uint8_t deviceSel = 0x00;   // must always be 0
+//TX power setting
 uint8_t power = _power;       // use 0x16 for 22 db
 
 // Define modulation parameters setting
@@ -92,12 +84,7 @@ void loraHandle()
 { // this function is called from main.cpp only when pinSpiCs is not equal to 255
     uint16_t loraIrqFlags;
     static uint32_t loraStateMillis;
-    // static uint32_t receiveMillis ;
     uint32_t currentMillis = millisRp();
-    if (msgEverySec(1)){
-        printf("loraState= %i\n",loraState);
-    }
-  
     switch (loraState)
     {
     case LORA_TO_INIT:
@@ -110,7 +97,6 @@ void loraHandle()
         } else {
             loraState = LORA_IN_ERROR;
         }
-        printf("End of init\n") ;
         break;
 
     case LORA_IN_SLEEP:
@@ -150,13 +136,10 @@ void loraHandle()
         }
         else if (loraIrqFlags & SX126X_IRQ_TIMEOUT)
         { // back to sleep if we did not receive a packet within the expected time
-            // printf("receive timeout; go to sleep\n") ;
-            //  printf("Sl \n");
             if (debugFlags & (1 << DEBUG_LORA))
             {
                 printf("No request received; going to sleep for 5 sec\n");
             }
-            //loraInSleep();
             loraState = LORA_IN_SLEEP;
             loraStateMillis = currentMillis + SLEEP_TIME;        }
         break;
@@ -177,12 +160,9 @@ void loraHandle()
         sx126x_getIrqStatus(&loraIrqFlags);
         if (loraIrqFlags & SX126X_IRQ_TX_DONE)
         {
-            // printf("packet has been sent; go to receive for 60sec\n") ;
-            // printf("Es\n");
             loraReceiveOn(2, 60000); // expect 2 char in max 60sec
-            //loraRxOn();
             loraState = LORA_IN_RECEIVE;
-            loraStateMillis = currentMillis + LONG_RECEIVE_TIME;
+            //loraStateMillis = currentMillis + LONG_RECEIVE_TIME;
             if (debugFlags & (1 << DEBUG_LORA))
             {
                 printf("Sending done; listen for a request during 60 sec\n");
@@ -206,20 +186,12 @@ void loraHandle()
 
 bool loraSetup()
 { // making the setup; return false in case of error
-
     uint8_t mode;
     uint16_t error;
-    sx126x_getStatus(&mode); // get the status
-    printf("Status before setStandby= %X\n",mode);
     // Set to standby mode
     sx126x_setStandby(SX126X_STANDBY_RC); // RC set in standby using 13Mhz rc; can also be SX126X_STANDBY_XOSC for 32Mz xtal
-    
     sx126x_getStatus(&mode); // get the status
-    printf("Status after setStandby= %X\n",mode);
-    sx126x_getDeviceErrors(&error);
-    printf("error=%X\n", error);
-    
-    
+    printf("Status after setStandby= %X\n",mode);    
     if ((mode & 0x70)  != SX126X_STATUS_MODE_STDBY_RC)
     { // to compare with SX126X_STATUS_MODE_STDBY_RC when no xtal
         printf("Something wrong, can't set E220 to standby mode\n");
@@ -227,49 +199,44 @@ bool loraSetup()
     }
         // Set packet type to LoRa
     sx126x_setPacketType(SX126X_LORA_MODEM);
-    uint8_t packetTypeConfig = 0;
-    sx126x_getPacketType(&packetTypeConfig);
-    printf("packet type = %X\n", packetTypeConfig); 
-
     sx126x_writeRegister(SX126X_REG_XTA_TRIM, xtalCap, 2);
-    uint8_t xta[2]= {0};
-    sx126x_readRegister(SX126X_REG_XTA_TRIM,xta,2);
-    printf("xtaCpa= %X %X\n", xta[0] , xta[1]);
-
     // configure DIO2 as RF switch control  (DIO2 has to be connected to TX pin)
     sx126x_setDio2AsRfSwitchCtrl(SX126X_DIO2_AS_RF_SWITCH);    
-    
     printf("Set frequency to %i mHz\n", rfFrequency / 1000000);
     uint32_t rfFreq = ((uint64_t)rfFrequency * 33554432UL) / 32000000UL;
     sx126x_setRfFrequency(rfFreq);   
-
-    // Set tx power to selected TX power
-    printf("Set TX power to %i dbm\n", power);
-    sx126x_setPaConfig(paDutyCycle, hpMax, deviceSel, 0x01);
+    // PA and TX power setting
+    uint8_t paDutyCycle;
+    uint8_t hpMax;       
+    if (power == 22){ 
+        paDutyCycle=0X04; hpMax= 0X07;
+    } else if (power >= 20){ 
+        paDutyCycle=0X03; hpMax= 0X05;
+    } else if (power >= 17){ 
+        paDutyCycle=0X02; hpMax= 0X03;
+    } else {
+        paDutyCycle=0X02; hpMax= 0X02;
+    }
+    sx126x_setPaConfig(paDutyCycle, hpMax, 0x00, 0x01);
     sx126x_setTxParams(power, SX126X_PA_RAMP_200U); // ramping can go from 10us to 3.4ms
-    
     // Configure modulation parameter with predefined spreading factor, bandwidth, coding rate, and low data rate optimize setting
     sx126x_setModulationParamsLoRa(sf, bw, cr, ldro);
-    
     // Configure packet parameter with predefined preamble length, header mode type, payload length, crc type, and invert iq option
     sx126x_setPacketParamsLoRa(preambleLength, headerType, payloadLength, crcType, invertIq);
-
     // enable interruptmask 
     sx126x_setDioIrqParams(SX126X_IRQ_TX_DONE | SX126X_IRQ_RX_DONE |SX126X_IRQ_CRC_ERR | SX126X_IRQ_TIMEOUT, 0, 0, 0);
-
-    
     // Set predefined syncronize word
     sx126x_writeRegister(SX126X_REG_LORA_SYNC_WORD_MSB, sw, 2);
-
-    // added by mstrens
     //  Set buffer base address
     sx126x_setBufferBaseAddress(0x00, 0x80); // first param is base adr of TX, second for Rx
-
     sx126x_setRxTxFallbackMode(SX126X_FALLBACK_STDBY_RC); // mode after a Tx or RX
 
     return true;                                            // here we consider that LORA is present
 }
 
+
+void loraTransmit(uint8_t *message, uint8_t length, uint32_t timeout)
+{
 // set base adress with SetBufferBaseAddress
 // write the buffer with WriteBuffer
 // set modulation param with SetModulationParams
@@ -280,17 +247,12 @@ bool loraSetup()
 // to know the irq status, there is a command GetIrqStatus(); it provides 2 bytes; bit0= Tx done, bit1=Rx done bit 6= wrong crc received
 // to clear the irq flag, use ClearIrqStatus() with 2 bytes (set bit =1 to clear an irq flag)
 
-void loraTransmit(uint8_t *message, uint8_t length, uint32_t timeout)
-{
     // Write the message to buffer
-    //uint8_t *msgUint8 = (uint8_t *)message;
     sx126x_writeBuffer(0x00, message , length);
     // Set payload length same as message length
     sx126x_setPacketParamsLoRa(preambleLength, headerType, length, crcType, invertIq);
     // Clear the interrupt status
-    uint16_t irqStat;
-    sx126x_getIrqStatus(&irqStat);
-    sx126x_clearIrqStatus(irqStat);
+    sx126x_clearIrqStatus(0XFFFF);
     // Calculate timeout (timeout duration = timeout * 15.625 us)
     uint32_t tOut = timeout * 64; // could be changed to timeout << 6
     // Set RF module to TX mode to transmit message
@@ -302,9 +264,9 @@ void loraReceiveOn(uint8_t length, uint32_t timeout)
     // Set payload length same as message length //not sure it is required
     sx126x_setPacketParamsLoRa(preambleLength, headerType, length, crcType, invertIq);
     // Clear the interrupt status
-    uint16_t irqStat;
-    sx126x_getIrqStatus(&irqStat);
-    sx126x_clearIrqStatus(irqStat);
+    //uint16_t irqStat;
+    //sx126x_getIrqStatus(&irqStat);
+    sx126x_clearIrqStatus(0XFFFF);
     // Calculate timeout (timeout duration = timeout * 15.625 us)
     uint32_t tOut = timeout * 64; // could be changed to timeout << 6
     // Set RF module to RX mode to receive message
@@ -312,8 +274,6 @@ void loraReceiveOn(uint8_t length, uint32_t timeout)
 }
 
 void loraReadPacket() {           // read a packet with 2 bytes ; PacketType and PacketTxPower
-    //loraRxPacketRssi = loraReadRegister( LORA_REG_PKT_RSSI_VALUE ); // we should substract 157 or 137 ? but this is done on the receiver side
-    //loraRxPacketSnr = loraReadRegister( LORA_REG_PKT_SNR_VALUE );
     // read Rssi and snr
     uint8_t loraRxPacketRssiU8;
     uint8_t loraRxPacketSnrU8;
@@ -333,15 +293,7 @@ void loraReadPacket() {           // read a packet with 2 bytes ; PacketType and
     sx126x_readBuffer(rxStartBufferPointer, loraRxBuffer, payloadLengthRx);
     loraRxPacketType =  loraRxBuffer[0];
     loraRxPacketTxPower = loraRxBuffer[1];  
-    printf("Rssi=%i Snr=%i Type=%x  pow=%x\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
-    //printf("Rssi=%i \n", loraRxPacketRssi);
-    //loraWriteRegister(LORA_REG_FIFO_ADDR_PTR, 0);        //set RX FIFO ptr
-  //SPI_SELECT ;       // start of read burst on fifo
-  //spiSend(LORA_REG_FIFO);                //address for fifo
-  //loraRxPacketType = spiSend(0);         // read the first byte of the request from receiver
-  //loraRxPacketTxPower = spiSend(0);      // read the second byte of the request from receiver
-  //SPI_UNSELECT ;
-  
+    //printf("Rssi=%i Snr=%i Type=%x  pow=%x\n", loraRxPacketRssi , loraRxPacketSnr, loraRxPacketType , loraRxPacketTxPower ) ;
 }
 
 
@@ -379,9 +331,16 @@ void loraFillTxPacket() {
         temp8 = 1 ; // less than 1 sec
         }
     }
-  }  
-  loraTxBuffer[0] = packetType | temp8 ;
-  loraTxBuffer[1] = loraRxPacketRssi ; // RSSI value of last packet
+  } else if (forcedFields == 1){ // just to debug with fvp or fvn withous gps
+    temp16 = 0x0F ;
+    packetType |= (temp16 << 3 ) ; // shift in pos 3 to 6
+    temp8 = 3;
+    if (packetType & 0x80) {
+        gpsPos =  fields[LATITUDE].value;
+    } else {
+        gpsPos = fields[LONGITUDE].value ;
+    }
+  }   
   if (gps.gpsInstalled && gps.GPS_fix) {  
     if (packetType & 0x80) {
         gpsPos = GPS_last_fix_lat ;
@@ -389,6 +348,9 @@ void loraFillTxPacket() {
         gpsPos = GPS_last_fix_lon ;
     }
   }
+  loraTxBuffer[0] = packetType | temp8 ;
+  loraTxBuffer[1] = loraRxPacketRssi ; // RSSI value of last packet
+  
   loraTxBuffer[2] = gpsPos >> 24 ;
   loraTxBuffer[3] = gpsPos >> 16 ;
   loraTxBuffer[4] = gpsPos >> 8 ;

@@ -3,6 +3,16 @@
 
 #include "pico/stdlib.h"
 
+// Process depends on loraState; it can be
+#define LORA_TO_INIT 0              // device must be initialized
+#define LORA_IN_SLEEP 1             // wait a delay and set lora in recieve continous mode
+#define LORA_IN_RECEIVE 2           // wait that a package has been received or a max delay; if package has been received,Tx power changes, update Tx power, change mode to LORA_TO_TRANSMIT
+#define LORA_TO_TRANSMIT 3          // fill lora with data to be send and ask for sending (but do not wait), change mode to LORA_WAIT_END_OF_TRANSMIT
+#define LORA_WAIT_END_OF_TRANSMIT 4 // wait that pakage has been sent (or wait max x sec)
+#define LORA_IN_ERROR 5             // state when init fail
+
+
+
 void loraHandle() ;
 void initSpi();
 bool loraSetup() ;         // parameters that are set only once
@@ -11,6 +21,8 @@ void loraReceiveOn(uint8_t length, uint32_t timeout);
 void loraReadPacket() ;           // read a packet with 2 bytes ; PacketType and PacketTxPower
 void loraFillTxPacket();
 
+//++++++++++ here copy of code from https://github.com/chandrawi/LoRaRF-Arduino/tree/main/src +++++++++++++
+// Still SPI read and write have been rewritten for RP2040 without use of Arduino lib
 
 // SX126X commands
 #define SX126X_SetSleep 0x84 

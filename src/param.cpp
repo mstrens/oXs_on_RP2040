@@ -33,6 +33,7 @@
 #include "crsf_in.h"
 #include "sbus_in.h"
 #include "kx134.h"
+#include "sx126x_driver.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
@@ -124,6 +125,7 @@ extern const char* mpuOrientationNames[8];
 extern bool orientationIsWrong; 
 
 extern bool locatorInstalled;
+extern uint8_t loraState;
 
 //list of names when we print debugmsg list
 const char* debugMsg[DEBUG_MAX_NUMBER] = {\
@@ -1853,7 +1855,11 @@ void printConfigAndSequencers(){   // print all and perform checks
         if (locatorInstalled ){
             printf("Lora module for locator is detected\n")  ;   
         } else {
-            printf("Lora module for locator is not detected\n")  ;   
+            if ( loraState == LORA_TO_INIT) {
+                printf("Lora module for locator is not yet detected\n")  ;   
+            } else {
+                printf("Lora module for locator is not detected\n")  ;
+            }
         }     
     }
     #ifdef KX134_IS_USED

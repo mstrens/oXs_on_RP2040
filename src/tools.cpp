@@ -198,7 +198,7 @@ void calculateAirspeed(){
 
 int32_t posFieldValues[] = {    
     891234567L, //  LATITUDE ,  //  GPS special format
-    1781234567L, //  LONGITUDE =     //  GPS special format
+    1782134567L, //  LONGITUDE =     //  GPS special format
     2468,        //GROUNDSPEED =  //  GPS cm/s
     17912,      //  HEADING =,      //  GPS 0.01 degree
     135721,     //  ALTITUDE ,    //  GPS cm

@@ -65,7 +65,7 @@ int8_t orientationList[36][6] = {
 //float G_off[3] = { 70.0, -13.0, -9.0}; //raw offsets, determined for gyro at rest
 //float gscale = ((250./32768.0)*(PI/180.0));   //gyro default 250 LSB per d/s -> rad/s
 uint8_t accScaleCode ;
-float accScale1G ;  //divide by this to get number of g 
+float accScale1G ;  //divide raw value by this to get number of g 
 uint8_t gyroScaleCode ; 
 float gyroScaleDegree;  //   multiply adc by this to get °/s
 float gyroScaleRad;     //   multiply adc by this to get rad/s
@@ -79,8 +79,13 @@ float qh[4] = {1.0, 0.0, 0.0, 0.0};
 
 // Free parameters in the Mahony filter and fusion scheme,
 // Kp for proportional feedback, Ki for integral
-float Kp = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
-float Ki = 0.0;  // on same site, it is set on 0
+
+
+#define KP1_LOW_LIMIT 
+float Kp1 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
+float Ki1 = 0.0;  // on same site, it is set on 0
+float Kp2 = 5.0; // in github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO.blob/master it is set on 10
+float Ki2 = 0.0;  // on same site, it is set on 0
 
 
 Quaternion qq;                // quaternion
@@ -422,18 +427,43 @@ void MPU::nextAccCalibrationExecute(){
 //--------------------------------------------------------------------------------------------------
 // IMU algorithm update
 
+#define KP1_LOW_LIMIT 0.975
+#define KP1_HIGH_LIMIT 1.025
+#define KP1 2.0
+#define KI1 0.0
+
+#define KP2_LOW_LIMIT 0.950
+#define KP2_HIGH_LIMIT 1.050
+#define KP2 1.0
+#define KI2 0.0
+
 void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, float deltat) {
+    // currently ax, ay, az are in raw values (+- 32768) and gx,gy,gz are in rad/sec. 
     float recipNorm;
     float vx, vy, vz;
     float ex, ey, ez;  //error terms
     float qa, qb, qc;
     static float ix = 0.0, iy = 0.0, iz = 0.0;  //integral feedback terms
     float tmp;
+    float kp;
+    float ki;
+    float totalAccRaw = sqrt(ax * ax + ay * ay + az * az);
+    float totalAccG = totalAccRaw / accScale1G ; // convert in 1g to perform the comparison and to select best kp and ki
+    if (( totalAccG > KP1_LOW_LIMIT ) and ( totalAccG < KP1_HIGH_LIMIT )) { //When total acceleration is within some limits (close 1g)
+        kp = KP1;
+        ki = KI1;
+    } else if (( totalAccG > KP2_LOW_LIMIT ) and ( totalAccG < KP2_HIGH_LIMIT )) { //When total acceleration is within some limits (close 1g)
+        kp = KP2;
+        ki = KI2;
+    } else {
+        kp = 0;
+        ki = 0;
+    }
+    // 
     // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-    tmp = ax * ax + ay * ay + az * az;
     if (tmp > 0.0) {
         // Normalise accelerometer (assumed to measure the direction of gravity in body frame)
-        recipNorm = 1.0 / sqrt(tmp);
+        recipNorm = 1.0 / totalAccRaw;
         ax *= recipNorm;
         ay *= recipNorm;
         az *= recipNorm;
@@ -447,18 +477,24 @@ void Mahony_update(float ax, float ay, float az, float gx, float gy, float gz, f
         ey = (az * vx - ax * vz);
         ez = (ax * vy - ay * vx);
         // Compute and apply to gyro term the integral feedback, if enabled
-        if (Ki > 0.0f) {
-        ix += Ki * ex * deltat;  // integral error scaled by Ki
-        iy += Ki * ey * deltat;
-        iz += Ki * ez * deltat;
-        gx += ix;  // apply integral feedback
-        gy += iy;
-        gz += iz;
+        if (ki > 0.0f) {
+            ix += ki * ex * deltat;  // integral error scaled by Ki
+            iy += ki * ey * deltat;
+            iz += ki * ez * deltat;
+            gx += ix;  // apply integral feedback
+            gy += iy;
+            gz += iz;
         }
-        // Apply proportional feedback to gyro term
-        gx += Kp * ex;
-        gy += Kp * ey;
-        gz += Kp * ez;
+        if (kp > 0.0 ) {
+            // Apply proportional feedback to gyro term
+            gx += kp * ex;
+            gy += kp * ey;
+            gz += kp * ez;
+        } else { // total gravity is out of limits, discard accelerations and reset I terms
+            ix=0;
+            iy=0;
+            iz=0;
+        } 
     }
     // Integrate rate of change of quaternion, q cross gyro term
     deltat = 0.5 * deltat;
