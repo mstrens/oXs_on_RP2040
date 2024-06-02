@@ -256,6 +256,11 @@ void loraTransmit(uint8_t *message, uint8_t length, uint32_t timeout)
 
     // Write the message to buffer
     sx126x_writeBuffer(0x00, message , length);
+    if ((loraRxPacketTxPower > 10) and (loraRxPacketTxPower <=22)){
+        sx126x_setTxParams(loraRxPacketTxPower, SX126X_PA_RAMP_200U); // ramping can go from 10us to 3.4ms
+    } else {
+        sx126x_setTxParams(power, SX126X_PA_RAMP_200U); // ramping can go from 10us to 3.4ms
+    }
     // Set payload length same as message length
     sx126x_setPacketParamsLoRa(preambleLength, headerType, length, crcType, invertIq);
     // Clear the interrupt status

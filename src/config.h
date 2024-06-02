@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.23"
+#define VERSION "2.14.24"
 
 
 
