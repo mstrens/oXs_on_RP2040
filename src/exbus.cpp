@@ -450,6 +450,7 @@ void handleExbusRxTx(void){   // main loop : restore receiving mode , wait for t
             // so reset the buffer and process the byte
             if (data & 0X8000) {
                 exbusRxBufferIdx = 0; 
+                exbusRxBufferLen = 3;    
                 exbusIsBuffering = true; 
             } 
             if (exbusIsBuffering) {
