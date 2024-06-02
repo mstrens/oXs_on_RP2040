@@ -1,11 +1,11 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.22"
+#define VERSION "2.14.23"
 
 
 
-#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
+//#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
 // Here some additional parameters that can't be changed via the serial terminal 
 
@@ -423,10 +423,7 @@
 // We use the same frequency for transmit and receive
 #define LOCATOR_FREQUENCY 868000000UL // in Hz
 
-#define _power 0x10      // use 0x16 for 22 db
-
-#define _paDutyCycle 0x02 // this is for 17 db; for 22 db, it must be 04
-#define _hpMax 0x03       // this is for 17 db; for 22 db, it must be 07
+#define _power 16     // in Dbm; max value is 22 db for E220-900M22S
 
 // Define modulation parameters setting
 // range increases (and time over the air too) when sf increases and BW decrease 

@@ -286,7 +286,9 @@ void loraReadPacket() {           // read a packet with 2 bytes ; PacketType and
     uint8_t loraRxPacketSnrU8;
     uint8_t signalRssiPktU8;
     sx126x_getPacketStatus(&loraRxPacketRssiU8, &loraRxPacketSnrU8, &signalRssiPktU8);
-    loraRxPacketRssi = 0 - (((int)loraRxPacketRssiU8) >> 1); // rssi value = - U8/2
+    //loraRxPacketRssi = 0 - (((int)loraRxPacketRssiU8) >> 1); // rssi value = - U8/2
+    loraRxPacketRssi = loraRxPacketRssiU8; // conversion will be done on locator receiver side.
+    
     loraRxPacketSnr = ((float)loraRxPacketSnrU8) * 0.25;     // snr value = u8/4
     // get len and pointer
     uint8_t payloadLengthRx;
@@ -363,7 +365,7 @@ void loraFillTxPacket() {
   loraTxBuffer[4] = gpsPos >> 8 ;
   loraTxBuffer[5] = gpsPos ;
 
-  #define DEBUG_LORA_SEND
+  //#define DEBUG_LORA_SEND
   #ifdef DEBUG_LORA_SEND
   printf("lora send: %x %x %x %x %x %x\n",loraTxBuffer[0],loraTxBuffer[1],loraTxBuffer[2],loraTxBuffer[3],loraTxBuffer[4],loraTxBuffer[5]);
   #endif
