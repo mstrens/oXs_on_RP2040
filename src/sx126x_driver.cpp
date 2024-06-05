@@ -1,4 +1,4 @@
-// #ifdef NOTUSED
+#ifndef USE_RFM95
 #include "sx126x_driver.h"
 #include "hardware/spi.h"
 #include "config.h"
@@ -786,3 +786,4 @@ void sx126x_transfer(uint8_t opCode, uint8_t *data, uint8_t nData, uint8_t *addr
     }
     gpio_put(config.pinSpiCs, 1);
 }
+#endif

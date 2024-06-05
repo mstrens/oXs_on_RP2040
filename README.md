@@ -577,7 +577,7 @@ This format allows to compress the data transmitted via the (quite slow) UART to
 The logger will remove the stuff bytes, uncompress the data, combine the new data with previous one to create an "actual" set of data's, convert it in CSV format and finally store it on a SD card. 
 
 ## ------------------ Model Locator ----------------------------------------
-oXs can be used to locate a lost model (if you add a LORA module Ebyte E220-900M22S ).
+oXs can be used to locate a lost model if you add a LORA module Ebyte E220-900M22S (or a RFM95 - depreciated).
  
 The model is normally connected to the handset but when the model is on the ground, the range is quite limitted. 
 So if a model is lost at more than a few hundreed meters, the handset will not get any telemetry data anymore. 
@@ -635,6 +635,8 @@ To build the locator receiver, please check this link https://github.com/mstrens
 
 Note: oXs (=transmitter) stay in sleep mode most of the time. Once every X (see config.h) sec, it starts listening to the receiver for e.g. 5 sec. If the receiver is not powered on, oXs never get a request and so never sent data.
 When powered on, the receiver sent a request every 1 sec. At least X sec later (when entering listening mode), oXs should get this request and then reply immediately. oXs will then reply to each new request (so every 1 sec). oXs goes back to sleep mode for X sec if it does not get a request within 60 sec.
+
+Note: this version of oXs is foreseen to work with E220-900M22S modules and with the version of locator receiver from main branch of oXs_loacator_on_ESP8266. Still it is possible to use depreciated RFM95 module (less performant, more expensive) but it requires to edit the config.h file to activate the option "#define USE_RFM95". In this case, you have to use the locator receiver from oXs_locator_on_RP2040 (uses a rp2040 and an oled display) or from the rfm95 branch from oXs_locator_receiver_on_ESP8266 (uses a ESP8266 and wifi to communicate with a GSM or PC).When a RFM95 is used, SPI_BUSY pin must be defined but is not cnnected to the RFM95.
 
 ## ------------------ Led -------------------
 When a RP2040-Zero or RP2040-TINY is used, the firmware will handle a RGB led (internally connected to gpio16).

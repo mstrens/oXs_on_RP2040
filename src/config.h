@@ -1,9 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "2.14.25"
-
-
+#define VERSION "3.0.0"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -23,7 +21,6 @@
 //list of all possible 28 device ID codes (in sequence)
 // 0x00,0xA1,0x22,0x83,0xE4,0x45,0xC6,0x67,0x48,0xE9,0x6A,0xCB,0xAC,0x0D,0x8E,0x2F, 
 // 0xD0,0x71,0xF2,0x53,0x34,0x95,0x16,0xB7,0x98,0x39,0xBA,0x1B
-
 
 
 // -------------- for Sport, Fbus (Frsky) and Exbus (Jeti) ---------------------
@@ -418,6 +415,8 @@
                                         // for both  0=X+, 1=X- , 2=Y+ , 3=Y- , 4=Z+, 5=Z- , 6=error ;
 
 // ------------- model locator -------------
+
+// for a Ebyte E220M900-22S module
 // next lines allow to select the frequency being used by the locator (in 3 bytes most, mid, less).
 // It must be the same values on oXs side and on locator receiver side
 // We use the same frequency for transmit and receive
@@ -438,13 +437,14 @@
 
 
 //----- For RFM95 only (define the frequency D9 00 00 => 868Mhz)
-//#define RX_FRF_MSB   0xD9
-//#define TX_FRF_MID   0x00   
-//#define TX_FRF_LSB   0x00
+//#define USE_RFM95      // uncomment this line to activate a RFM95 instead of a E220M900-22S
+#define RX_FRF_MSB   0xD9
+#define TX_FRF_MID   0x00   
+#define TX_FRF_LSB   0x00
 
-//#define RX_FRF_MSB   0xD9 
-//#define RX_FRF_MID   0x00  
-//#define RX_FRF_LSB   0x00
+#define RX_FRF_MSB   0xD9 
+#define RX_FRF_MID   0x00  
+#define RX_FRF_LSB   0x00
 
 
 // Next lines allows to define the timing (e.g. sleep_time can be increased to reduce consumption)

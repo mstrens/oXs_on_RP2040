@@ -45,7 +45,7 @@
 #include "logger.h"
 #include "esc.h"
 #include "gyro.h"
-//#include "lora.h"
+#include "rfm95.h"
 #include "sx126x_driver.h"
 #include "kx134.h"
 #include "frsky_hub.h"

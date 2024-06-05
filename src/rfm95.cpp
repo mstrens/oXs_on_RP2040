@@ -1,6 +1,6 @@
-#ifdef NOTUSED
+#ifdef USE_RFM95
 
-#include "lora.h"
+#include "rfm95.h"
 #include "hardware/spi.h"
 #include "tools.h"
 #include <stdio.h>

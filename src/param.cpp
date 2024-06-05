@@ -34,6 +34,7 @@
 #include "sbus_in.h"
 #include "kx134.h"
 #include "sx126x_driver.h"
+#include "rfm95.h"
 
 // commands could be in following form:
 // C1 = 0/15  ... C16 = 0/15
