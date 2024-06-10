@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "3.0.1"
+#define VERSION "3.0.2"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -184,6 +184,14 @@
 #define SENSITIVITY_MIN_AT 100
 #define SENSITIVITY_MAX_AT 1000
 #define VARIOHYSTERESIS 5
+
+// --------- Parameters for current ---------------------------------------------------
+// When a pin is defined for Volt2, the measured voltage is converted to a current.
+// When a Hall sensors are used, there is usually an offset (voltage is not zero when current is zero).
+// It is possible to manually define this offset.
+// It is also possible to let oXs calculates automatically this offset using the value measured within 5 sec after power on.
+// To do so, uncomment next line.
+// #define CURRENT_AUTO_OFFSET
 
 // --------- Parameters for Temperature(s) when measured by a thermistor ---------------
 // uncomment the next line when a thermistor is used instead of a TP36 ic and then specify the pull up resitor and the NTC param
