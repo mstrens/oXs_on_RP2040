@@ -441,7 +441,7 @@ bool fillHottGpsFrame(){
 
 
 
-#ifdef HOTT_MIN_VOLTAGE 
+#if defined(HOTT_MIN_VOLTAGE) or defined(HOTT_MAX_CONSUMED_CAPACITY) 
  
  uint8_t warning_beeps_Hott(void) {       // Determine whether a warning has to be sent to the transmitter. 
                                                 // Define the state variables for the state machine controlling the warning generation.
@@ -461,11 +461,24 @@ bool fillHottGpsFrame(){
      }
      // In the idle state, we are ready to accept new warnings.
      if (state == W_IDLE) {
+        #ifdef HOTT_MIN_VOLTAGE 
         if (fields[MVOLT].value < HOTT_MIN_VOLTAGE) {
             warning_start_time = millisRp();
             state = WARNING;
             current_warning = 0X10; // power voltage warning 
         }
+        #endif
+
+        #ifdef HOTT_MAX_CONSUMED_CAPACITY
+        if (fields[CAPACITY].value > HOTT_MAX_CONSUMED_CAPACITY) {
+            if (state == W_IDLE){
+                warning_start_time = millisRp();
+                state = WARNING;
+                current_warning = 0X16; // max consumed capacity warning
+            }
+        }
+        #endif
+        
      }
      return current_warning;
  }

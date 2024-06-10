@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "3.0.0"
+#define VERSION "3.0.1"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -151,8 +151,13 @@
 // --------- For Hott protocol ------------------
 // It is possible to let the handset generate a warning when the voltage (volt1) is lower than a value
 // uncomment next line if you want to get such a warning and specify the min voltage that trigger the warning (in milliVolt)
-//#define HOTT_MIN_VOLTAGE 16000 
+//#define HOTT_MIN_VOLTAGE 16000 // in millivolt
 
+// It is possible to let the handset generate a warning when the consumed capacity (based on cummulated current- volt2) is more than a value
+// uncomment next line if you want to get such a warning and specify the max consumed capacity (in mAh)
+//#define HOTT_MAX_CONSUMED_CAPACITY 2000 // in mAh
+
+// note: when both lines are uncommented and both alarms are activated (voltage is low and capacity is high), oXs will transmit only the code for low voltage
 
 // -------- Parameters for SRXL2 protocol ---------------------------
 //#define USE_GPS_BCD_INSTEAD_OF_BINARY  // default is GPS binary format used; uncomment this line if you want to use BCD format instead of binary 
