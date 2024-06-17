@@ -418,7 +418,7 @@ bool sendMpxFrame(uint8_t data_id){ // data_id is the address index of the field
             mpxValue= fields[fieldId].value * 3600/ 100 /100; // from cm/sec to 0.1 km/h
             break;            
         case RPM:
-            mpxValue= fields[fieldId].value *60 / 100 ; // from Hz to 100 tr/min???? not sure it is ok
+            mpxValue= fields[fieldId].value / 100 ; // from rpm to 100 tr/min???? not sure it is ok
             break;            
         case GPS_HOME_BEARING:
             mpxValue= fields[fieldId].value *10 ; // from  deg  to 0.1 deg

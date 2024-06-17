@@ -265,7 +265,7 @@ bool retrieveFieldIfAvailable(uint8_t fieldId , int32_t * fieldValue , uint8_t *
         break ;
     case RPM :
          if ( ! fields[fieldId].available ) return 0; 
-         * fieldValue = fields[fieldId].value   * 60 ; // from Hz to RPM
+         * fieldValue = fields[fieldId].value   ; // in RPM
          * dataType = JETI22_0D ;
          fields[fieldId].available = false ;
         break ;

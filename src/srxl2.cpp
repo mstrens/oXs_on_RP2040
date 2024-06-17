@@ -706,7 +706,7 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
                 srxl2Frames.esc.identifier = TELE_DEVICE_ESC; //0X20
                 srxl2Frames.esc.sID = 0; // Secondary ID
                 if (fields[RPM].available) {
-                    tempU16 = (uint16_t) fields[RPM].value * 6  ; //from Hz to 10 tour/min
+                    tempU16 = (uint16_t) fields[RPM].value /10   ; //from rpm to 10 tour/min
                     srxl2Frames.esc.RPM = swapBinary(tempU16);
                     fields[RPM].available = false; 
                 } else {

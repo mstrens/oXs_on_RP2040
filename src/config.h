@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#define VERSION "3.0.2"
+#define VERSION "3.0.3"
 
 //#define DEBUG  // force the MCU to wait for some time for the USB connection; still continue if not connected
 
@@ -207,7 +207,7 @@
 //                        this can be done using a FTDI and program GnssToolkit3.exe (to download from internet)
 
 // --------- Parameter for RPM -------------------
-#define RPM_COUNTER_INTERVAL_USEC 100000 // in usec (so 100000 = 100 msec)
+#define RPM_COUNTER_INTERVAL_USEC 1000000 // in usec (so 1000000 = 1 sec)
 
 // --------- Parameters for Ads1115 ----------------
 #define I2C_ADS_Add1 0x48 // I2C address of ads1115 when addr pin is connected to ground

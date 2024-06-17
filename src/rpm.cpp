@@ -16,7 +16,7 @@ PIO pioRpm = pio1; // we use pio 1;
 uint smRpm = 1;  // we use the state machine 1 for rpm 
 
 //#define PIN_RPM 29
-#define RPM_COUNTER_INTERVAL_USEC 100000 // 100 msec  
+//#define RPM_COUNTER_INTERVAL_USEC 1000000 // 1 sec  
 
 uint32_t currentRpmUsec;
 uint32_t previousRpmUsec;
@@ -28,7 +28,7 @@ float rpmScaling;
 void setupRpm(){
     if (config.pinRpm == 255) return; // skip when pin is not defined
     setupRpmPio( );
-    rpmScaling = 1000000.0 * config.rpmMultiplicator; // 1000000 = nbr of microsec in a sec
+    rpmScaling = 60000000.0 * config.rpmMultiplicator; // 60000000 = nbr of microsec in a min
     //printf("RPM is set up\n");
 }
 void setupRpmPio(){
@@ -46,7 +46,7 @@ void readRpm(){
         currentRpmUsec = microsRp();
         if ( ( currentRpmUsec - previousRpmUsec ) > RPM_COUNTER_INTERVAL_USEC ) {
             currentRpmCounter = getRpmCounter();
-            uint32_t rpm = ((previousRpmCounter - currentRpmCounter) * rpmScaling ) / ( ( currentRpmUsec - previousRpmUsec )) ;
+            float rpm = 0.5 + (((float )(previousRpmCounter - currentRpmCounter)) / ( (float)( currentRpmUsec - previousRpmUsec )) * rpmScaling) ;
             //printf("PrevC= %" PRIu32 "  currentC=%" PRIu32 "  dif=%" PRIu32 "  interv=%" PRIu32 "  rpm=%" PRIu32 "\n", previousRpmCounter , currentRpmCounter ,
             //        (previousRpmCounter - currentRpmCounter) , ( currentRpmUsec - previousRpmUsec ), rpm);
             previousRpmUsec = currentRpmUsec;

@@ -156,7 +156,7 @@ JETISENSOR_CONST sensorsParam[] =  // value in this table are in the same order 
     { 19     , "Pitch"       , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //PITCH,       // 20 imu        in 0.1 degree 
     { 20     , "Roll"        , "\xB0"      , EXBUS_TYPE_14 ,        1 , 3},  //ROLL,       // 20 imu        in 0.1 degree 
     { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //{ 21         , "Yaw"        , "\xB0"      , EXBUS_TYPE_14 ,        0 },  //YAW,       // 20 imu        in degree 
-    { 22     , "Rpm"         , "t/min"     , EXBUS_TYPE_22 ,        0 , 4},  //RPM ,        // RPM sensor    in Herzt
+    { 22     , "Rpm"         , "t/min"     , EXBUS_TYPE_22 ,        0 , 4},  //RPM ,        // RPM sensor    in rpm
     { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_1,      // Voltage provided by ads1115 nr 1 on pin 1
  
     { 0xFF   , " "           , " "         , EXBUS_TYPE_NONE,       0 , 0},  //  ADS_1_2,      // Voltage provided by ads1115 nr 1 on pin 2    25
@@ -715,7 +715,7 @@ uint8_t addOneValue(  uint8_t idx , uint8_t nextBufferWrite){
             value = fields[idx].value   * 36 / 1000 ; // from cm/s to km/h
             break ;
         case RPM :
-            value = fields[idx].value   * 60 ; // from Hz to RPM
+            value = fields[idx].value   ; // in RPM
             break ;
         case PITCH :
             value = fields[idx].value   / 10 ; // from 0.01 degree to 0.1 degree

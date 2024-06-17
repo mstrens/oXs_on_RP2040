@@ -373,7 +373,7 @@ void processJetiboxEscFrame(){
     if (escRxBuffer[30] == 'r' and escRxBuffer[31] == 'p') {
         int32_t rpm = digit(24)*100000 + digit(25)*10000 + digit(26)*1000 + digit(27) * 100 + digit(28)*10 + digit(29) ;
         if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
-            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator  )) ; // in rpm
         }
     }        
 }
@@ -490,7 +490,7 @@ void processKontronikFrame(){
         int32_t tempBec = escRxBuffer[27];
         
         if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
-            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator  )) ; // rpm
         }
         if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc    
             sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1)) ; 
@@ -524,7 +524,7 @@ void processZTW1Frame(){
         // bytes 2/14 not used here 
         uint32_t consumed = ( ((uint32_t)escRxBuffer[15] << 8) | ((uint32_t) escRxBuffer[16]) ); // unit = ???
         if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
-            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator / 60 )) ; // 60 because we convert from t/min in HZ
+            sent2Core0( RPM,  (int32_t) ((float) rpm  * config.rpmMultiplicator )) ; // rpm
         }
         if (config.pinVolt[0] == 255) { // when volt1 is defined, we discard voltage from esc    
             sent2Core0( MVOLT, (int32_t)  (( float) voltage * config.scaleVolt1 - config.offset1)) ; 
@@ -597,7 +597,7 @@ void processBlhFrame(){
         sent2Core0( CAPACITY, consumption);
     }
     if (config.pinRpm == 255) { // when rpm pin is defined, we discard rpm from esc
-            sent2Core0( RPM,  (int32_t) ( ((float) rpm)  * config.rpmMultiplicator * 100.0 / 60.0 )) ; // 0.60 because we convert from 100t/min in HZ     
+            sent2Core0( RPM,  (int32_t) ( ((float) rpm)  * config.rpmMultiplicator * 100.0  )) ; // * 100  because we convert to rpm     
     }
     //printf("Esc Volt=%i   current=%i  consumed=%i  temp1=%i   rpm=%i\n", voltage , (int) currentf, consumption , temp  , rpm);
 

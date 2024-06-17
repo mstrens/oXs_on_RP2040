@@ -346,8 +346,8 @@ void fillBattery(uint8_t slot8){   // emulate SBS/01C ; Current from mA to 0.1A;
 }
 
 
-void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Hz to 0.1 RPM 
-    uint32_t value =  fields[RPM].value * 10;
+void fillRpm(uint8_t slot8){ // emulate SBS01RO ; in from Rpm to 10 RPM 
+    uint32_t value =  fields[RPM].value / 10;
     if(value > 0xffff){
     value = 0xffff;
     }

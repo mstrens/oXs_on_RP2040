@@ -458,7 +458,7 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         case AIRSPEED:
             uintValue =  (uint32_t)( ((float) intValue) * 0.194384 ) ;// from cm/s to 0.1kts/h
             if (intValue < 0) uintValue = 0; 
-            break;            
+            break;           
     }
     
     uint16_t crc = 0;
