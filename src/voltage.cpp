@@ -54,14 +54,18 @@ void VOLTAGE::getVoltages(void){
         if ( config.pinVolt[adcSeq] != 255) {
             adc_read(); // convert and sum
             //printf("V=%i\n",(int) adc_read());
-            adcValue = adc_read();
-//            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
-//            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
-            sumVoltage[adcSeq] += adcValue; // convert and sum
-            adcValue = adc_read();
-//            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
-//            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
-            sumVoltage[adcSeq] += adcValue; // convert and sum
+            //if (adcSeq==1){    // to do : just for test; must be removed
+            //     sumVoltage[adcSeq] += 3000;
+            //} else {
+                adcValue = adc_read();
+    //            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+    //            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+                sumVoltage[adcSeq] += adcValue; // convert and sum
+                adcValue = adc_read();
+    //            if (adcValue < adcMin[adcSeq]) adcMin[adcSeq] = adcValue;
+    //            if (adcValue > adcMax[adcSeq]) adcMax[adcSeq] = adcValue;
+                sumVoltage[adcSeq] += adcValue; // convert and sum
+            //}
         }     
         adcSeq = (adcSeq + 1) & 0X03 ; // increase seq and keep in range 0..3
         if ( config.pinVolt[adcSeq] != 255) {
@@ -91,8 +95,12 @@ void VOLTAGE::getVoltages(void){
                                     } else {
                                         currentAutoOffset = 0;
                                     }
-                                value = value - currentAutoOffset; 
                                 }
+                                //if (msgEverySec(1)){
+                                //    printf("offset=%fn",currentAutoOffset);
+                                //}
+                                value = value - currentAutoOffset; 
+                                
                             }    
                         }
                         #endif
