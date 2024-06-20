@@ -191,7 +191,7 @@
 // It is possible to manually define this offset.
 // It is also possible to let oXs calculates automatically this offset using the value measured within 5 sec after power on.
 // To do so, uncomment next line.
-#define CURRENT_AUTO_OFFSET
+//#define CURRENT_AUTO_OFFSET
 
 // --------- Parameters for Temperature(s) when measured by a thermistor ---------------
 // uncomment the next line when a thermistor is used instead of a TP36 ic and then specify the pull up resitor and the NTC param
