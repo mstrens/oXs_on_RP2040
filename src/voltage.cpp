@@ -88,6 +88,7 @@ void VOLTAGE::getVoltages(void){
                             if (millisRp() < 5000) { // calculate average on 5 first sec
                                 currentOffsetSum += value;
                                 currentOffsetCount++;
+                                value = 0; // set to 0 to avoid to include it into capacity
                             } else {
                                 if (currentAutoOffset < 0){ // when offset is not yet calculated
                                     if ( currentOffsetCount > 0){
