@@ -917,45 +917,51 @@ bool srxl2IsFrameDataAvailable(uint8_t frameIdx){
             break;
 */
         case 7: //TELE_DEVICE_LIPOMON
+            /* uses little-endian encoding, now swap necesary */
             if (fields[ADS_1_1].available || fields[ADS_1_2].available || fields[ADS_1_3].available ||fields[ADS_1_4].available ){
                 srxl2Frames.lipoMon.identifier = TELE_DEVICE_LIPOMON ;  // 0X3A
                 srxl2Frames.lipoMon.sID = 0; // Secondary ID
-                //fields[ADS_1_1].available = true;
-                //fields[ADS_1_1].value = 11111;
-                //fields[ADS_1_2].available = true;
-                //fields[ADS_1_2].value = 22222;
-                //fields[ADS_1_3].available = true;
-                //fields[ADS_1_3].value = 33333;
-                //fields[ADS_1_4].available = true;
-                //fields[ADS_1_4].value = 44444;
-                
+                /* Force values for Debugging*/
+                /*
+                fields[ADS_1_1].available = true;
+                fields[ADS_1_1].value = 3110;  // 3.11v
+                fields[ADS_1_2].available = true;
+                fields[ADS_1_2].value = 3220;  // 3.22v
+                fields[ADS_1_3].available = true;
+                fields[ADS_1_3].value = 3330;  // 3.33v
+                fields[ADS_1_4].available = true;
+                fields[ADS_1_4].value = 3440;  // 3.44v
+                */
+
                 if (fields[ADS_1_1].available && fields[ADS_1_1].value >= 0) {
                     tempU16 = (uint16_t) (int_round( fields[ADS_1_1].value ,  10));   
                 } else { 
                     tempU16 = 0x7FFF ; //		7FFF-> no data 
                 }
-                srxl2Frames.lipoMon.cell1  = swapBinary(tempU16);
+                srxl2Frames.lipoMon.cell1  = tempU16;
                 if (fields[ADS_1_2].available && fields[ADS_1_2].value >= 0) {
                     tempU16 = (uint16_t) (int_round( fields[ADS_1_2].value ,  10));   
                 } else { 
                     tempU16 = 0x7FFF ; //		7FFF-> no data 
                 }
-                srxl2Frames.lipoMon.cell2  = swapBinary(tempU16);
+                srxl2Frames.lipoMon.cell2  = tempU16;
                 if (fields[ADS_1_3].available && fields[ADS_1_3].value >= 0) {
                     tempU16 = (uint16_t) (int_round( fields[ADS_1_3].value ,  10));   
                 } else { 
                     tempU16 = 0x7FFF ; //		7FFF-> no data 
                 }
-                srxl2Frames.lipoMon.cell3  = swapBinary(tempU16);
+                srxl2Frames.lipoMon.cell3  = tempU16;
                 if (fields[ADS_1_4].available && fields[ADS_1_4].value >= 0) {
                     tempU16 = (uint16_t) (int_round( fields[ADS_1_4].value ,  10));   
                 } else { 
                     tempU16 = 0x7FFF ; //		7FFF-> no data 
                 }
-                srxl2Frames.lipoMon.cell4  = swapBinary(tempU16);
-                srxl2Frames.lipoMon.cell5  = 0XFF7F ; // swap included
-                srxl2Frames.lipoMon.cell6  = 0XFF7F;
-                srxl2Frames.lipoMon.temp  = 0XFF7F;
+                srxl2Frames.lipoMon.cell4  = tempU16;
+            
+                tempU16 = 0x7FFF ; //		7FFF-> no data
+                srxl2Frames.lipoMon.cell5  = tempU16 ; 
+                srxl2Frames.lipoMon.cell6  = tempU16;
+                srxl2Frames.lipoMon.temp   = tempU16;
                 return true;
             }
             break;
