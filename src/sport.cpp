@@ -139,7 +139,7 @@ void setupSportList(){     // table used by sport
     sportFieldId[GROUNDSPEED] = GPS_SPEED_FIRST_ID;
     sportFieldId[HEADING] = GPS_COURS_FIRST_ID;
     sportFieldId[ALTITUDE] = GPS_ALT_FIRST_ID;
-    sportFieldId[NUMSAT] = DIY_GPS_NUM_SAT;
+    sportFieldId[NUMSAT] = GPS_SAT_FIRST_ID;
     sportFieldId[GPS_DATE] = GPS_TIME_DATE_FIRST_ID;
     sportFieldId[GPS_TIME] = GPS_TIME_DATE_FIRST_ID;
     sportFieldId[GPS_PDOP] = DIY_GPS_PDOP;
@@ -444,6 +444,9 @@ void sendOneSport(uint8_t idx){  // fill one frame and send it
         case HEADING:
             uintValue =  intValue / 1000 ; // convert from degree * 100000 to degree * 100
             break;
+        case NUMSAT:
+            uintValue =  intValue - 100 ; // max 32
+            break;    
         case GROUNDSPEED:  // to do : test for the right value
             //uintValue =  ( ((uint32_t) uintValue) * 36 )  ; // convert cm/s in 1/100 of km/h (factor = 3.6)
             uintValue =  ( ((uint32_t) uintValue) * 700 ) / 36 ; // convert cm/s in 1/1000 of knots (factor = 19.44)

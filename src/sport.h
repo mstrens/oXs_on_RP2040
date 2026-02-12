@@ -50,6 +50,8 @@ void calculateSportMaxBandwidth();
 #define GPS_COURS_LAST_ID         0x084F
 #define GPS_TIME_DATE_FIRST_ID    0x0850
 #define GPS_TIME_DATE_LAST_ID     0x085F
+#define GPS_SAT_FIRST_ID          0x0860  // max 32
+#define GPS_SAT_LAST_ID           0x086f
 #define A3_FIRST_ID               0x0900
 #define A3_LAST_ID                0x090F
 #define A4_FIRST_ID               0x0910
